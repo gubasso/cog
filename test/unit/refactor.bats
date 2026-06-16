@@ -53,5 +53,6 @@ setup() {
   run cog::fn::refactor_scan_fingerprint_recipe
 
   assert_success
+  # shellcheck disable=SC2016
   assert_output '( cd "$SCAN" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 cat 2>/dev/null | sha256sum | cut -d'\'' '\'' -f1 )'
 }

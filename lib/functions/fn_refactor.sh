@@ -16,9 +16,9 @@ cog::fn::refactor_scan_fingerprint() {
   __cog_refactor_require_scan_dir "$scan"
 
   (
-    cd "$scan" &&
-      find . -type f -print0 | LC_ALL=C sort -z |
-      xargs -0 cat 2>/dev/null | sha256sum | cut -d' ' -f1
+    cd "$scan" \
+      && find . -type f -print0 | LC_ALL=C sort -z \
+      | xargs -0 cat 2>/dev/null | sha256sum | cut -d' ' -f1
   )
 }
 

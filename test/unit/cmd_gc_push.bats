@@ -1,0 +1,37 @@
+setup() {
+  bats_require_minimum_version 1.5.0
+  load '../test_helper/common-setup'
+  _common_setup
+  export LIB_DIR="${BATS_TEST_DIRNAME}/../../lib"
+  export HOME="${BATS_TEST_TMPDIR}/home"
+  export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
+  mkdir -p "$HOME" "$XDG_STATE_HOME"
+  source "${LIB_DIR}/helpers.sh"
+  source "${LIB_DIR}/functions/fn_ui_print.sh"
+  source "${LIB_DIR}/functions/fn_log.sh"
+  source "${LIB_DIR}/functions/fn_error_raise.sh"
+  source "${LIB_DIR}/functions/fn_json_write.sh"
+  source "${LIB_DIR}/functions/fn_git.sh"
+  source "${LIB_DIR}/commands/cmd_gc_push.sh"
+}
+
+@test "gc-push log file uses cog skill-runs path" {
+  run __cog_gc_push_new_log_file "$(__cog_gc_push_log_dir)"
+
+  assert_success
+  [[ $output == "${XDG_STATE_HOME}/cog/skill-runs/push-"* ]]
+}
+
+@test "gc-push rejects missing output mode" {
+  run --separate-stderr cog::cmd::gc_push
+
+  assert_failure 64
+  [[ $stderr == *"err.kind: MissingArgument"* ]]
+}
+
+@test "gc-push rejects duplicate output mode" {
+  run --separate-stderr cog::cmd::gc_push --json out.json
+
+  assert_failure 64
+  [[ $stderr == *"err.kind: TooManyArguments"* ]]
+}

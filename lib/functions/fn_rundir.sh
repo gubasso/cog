@@ -107,8 +107,8 @@ cog::fn::rundir_snapshot() {
   [[ -d $run_dir ]] || cog::helpers::die "$EX_NOINPUT" "InputNotFound" \
     "run directory not found" "path: ${run_dir}" "" "check the run directory"
 
-  find "$run_dir" -type f -printf '%p %T@\n' 2>/dev/null | sort >"$out" ||
-    cog::helpers::die "$EX_IOERR" "RunDirSnapshotWriteFailed" \
+  find "$run_dir" -type f -printf '%p %T@\n' 2>/dev/null | sort >"$out" \
+    || cog::helpers::die "$EX_IOERR" "RunDirSnapshotWriteFailed" \
       "could not write run directory snapshot" "path: ${out}" "" \
       "check output path permissions"
 }

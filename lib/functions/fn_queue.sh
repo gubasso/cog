@@ -96,8 +96,8 @@ cog::fn::queue_validate_file() {
   yq e '.' "$queue_path" >/dev/null || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
     "QUEUE.yaml does not parse" "path: ${queue_path}" "" "fix the YAML syntax"
 
-  [[ "$(KEY="$key" yq e 'has(strenv(KEY)) and (.[strenv(KEY)] | tag == "!!seq")' "$queue_path")" == "true" ]] ||
-    cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+  [[ "$(KEY="$key" yq e 'has(strenv(KEY)) and (.[strenv(KEY)] | tag == "!!seq")' "$queue_path")" == "true" ]] \
+    || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
       "QUEUE.yaml has invalid top-level shape" "path: ${queue_path}" \
       "expected ${key}: []" "use a supported queue schema"
 
@@ -183,9 +183,9 @@ cog::fn::queue_render_entry_block() {
   local entry_json="${1:-}"
   cog::fn::queue_entry_json_validate "$entry_json" || cog::helpers::die "$EX_USAGE" "InvalidJsonInput" \
     "invalid queue entry JSON" "" "entry does not match queue schema" ""
-  printf '%s\n' "$entry_json" |
-    yq -P -o=yaml e '.' - |
-    sed '1s/^/  - /; 2,$s/^/    /'
+  printf '%s\n' "$entry_json" \
+    | yq -P -o=yaml e '.' - \
+    | sed '1s/^/  - /; 2,$s/^/    /'
 }
 
 cog::fn::queue_append_entry() {

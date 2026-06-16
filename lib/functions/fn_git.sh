@@ -111,8 +111,8 @@ cog::fn::git_status_json() {
     --arg branch "$branch" \
     --argjson files "$(__cog_git_json_object_array_from_lines "${files[@]}")" \
     '{root: $root, branch: $branch, files: $files}')"
-  cog::fn::json_validate 'has("root") and has("branch") and (.files | type == "array")' "$json" ||
-    cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
+  cog::fn::json_validate 'has("root") and has("branch") and (.files | type == "array")' "$json" \
+    || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
       "invalid git status JSON" "function: cog::fn::git_status_json" "" "report this cog bug"
   printf '%s\n' "$json"
 }
@@ -169,8 +169,8 @@ cog::fn::git_diff_stat_json() {
     --arg mode "$mode" \
     --argjson files "$(__cog_git_json_object_array_from_lines "${files[@]}")" \
     '{mode: $mode, files: $files}')"
-  cog::fn::json_validate '(.mode == "staged" or .mode == "unstaged") and (.files | type == "array")' "$json" ||
-    cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
+  cog::fn::json_validate '(.mode == "staged" or .mode == "unstaged") and (.files | type == "array")' "$json" \
+    || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
       "invalid git diff stat JSON" "function: cog::fn::git_diff_stat_json" "" "report this cog bug"
   printf '%s\n' "$json"
 }

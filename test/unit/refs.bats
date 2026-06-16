@@ -32,6 +32,7 @@ make_docs_tree() {
   local env_docs="${BATS_TEST_TMPDIR}/env"
   make_docs_tree "$override"
   make_docs_tree "$env_docs"
+  # shellcheck disable=SC2030
   export DOCS_NOTES_REPO="$env_docs"
 
   run cog::fn::refs_resolve_docs_path "$override"
@@ -43,6 +44,7 @@ make_docs_tree() {
 @test "refs_resolve_docs_path falls back to DOCS_NOTES_REPO" {
   local env_docs="${BATS_TEST_TMPDIR}/env"
   make_docs_tree "$env_docs"
+  # shellcheck disable=SC2031
   export DOCS_NOTES_REPO="$env_docs"
 
   run cog::fn::refs_resolve_docs_path
