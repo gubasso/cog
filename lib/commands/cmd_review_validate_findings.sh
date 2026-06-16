@@ -63,8 +63,8 @@ __cog_review_validate_findings_validate() {
   jq -e . "$file" >/dev/null 2>&1 || cog::fn::error_raise "InvalidJsonInput" \
     "findings file is not valid JSON" "path: ${file}" "" "check the file contents"
   if ! jq -e "$__cog_review_validate_findings_filter" "$file" >/dev/null; then
-    reason="$(jq -r "$__cog_review_validate_findings_error_filter" "$file" 2>/dev/null ||
-      printf '%s\n' "findings JSON failed validation")"
+    reason="$(jq -r "$__cog_review_validate_findings_error_filter" "$file" 2>/dev/null \
+      || printf '%s\n' "findings JSON failed validation")"
     cog::fn::error_raise "InvalidJsonInput" \
       "$reason" "path: ${file}" "" "fix the findings JSON and retry"
   fi
@@ -100,7 +100,7 @@ cog::cmd::review_validate_findings() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate review-validate-findings output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -111,7 +111,7 @@ cog::cmd::review_validate_findings() {
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" \
           "too many review-validate-findings output paths" "argument: $1" "" "run 'cog review-validate-findings --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac

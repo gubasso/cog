@@ -132,7 +132,7 @@ cog::cmd::gc_commit() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate gc-commit output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -143,7 +143,7 @@ cog::cmd::gc_commit() {
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" \
           "too many gc-commit output paths" "argument: $1" "" "run 'cog gc-commit --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac

@@ -209,8 +209,11 @@ __cog_preflight_agents() {
   if [[ $no_cache == false && -n $cache_file ]]; then
     mkdir -p "$(dirname "$cache_file")"
     stamp="$(__cog_preflight_cache_stamp)"
-    jq --arg stamp "$stamp" '. + {_cache_stamp: $stamp}' "$out" >"${cache_file}.tmp" 2>/dev/null &&
-      mv "${cache_file}.tmp" "$cache_file" || rm -f "${cache_file}.tmp"
+    # Best-effort cache write: if jq fails the temp is removed; the || cleanup is
+    # intentional, not an if-then-else.
+    # shellcheck disable=SC2015
+    jq --arg stamp "$stamp" '. + {_cache_stamp: $stamp}' "$out" >"${cache_file}.tmp" 2>/dev/null \
+      && mv "${cache_file}.tmp" "$cache_file" || rm -f "${cache_file}.tmp"
   fi
 }
 

@@ -2,3 +2,7 @@ external-sources=true
 source-path=SCRIPTDIR
 source-path=SCRIPTDIR/lib
 shell=bash
+# SC1091: sourced libs are resolved at runtime via $LIB_DIR (dynamic path),
+# which shellcheck cannot follow statically. Kept project-wide; the rest are
+# handled with targeted inline `# shellcheck disable=` directives at their sites.
+disable=SC1091

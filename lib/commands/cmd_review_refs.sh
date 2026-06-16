@@ -78,7 +78,7 @@ __cog_review_refs_run() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate review-refs output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -98,7 +98,7 @@ __cog_review_refs_run() {
   fi
   if [[ -z $mode && ${#positionals[@]} -gt 0 ]]; then
     out="${positionals[0]}"
-    mode=file
+    mode="file"
     positionals=("${positionals[@]:1}")
   fi
 

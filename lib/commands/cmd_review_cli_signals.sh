@@ -46,7 +46,7 @@ cog::cmd::review_cli_signals() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate review-cli-signals output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -57,7 +57,7 @@ cog::cmd::review_cli_signals() {
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" \
           "too many review-cli-signals output paths" "argument: $1" "" "run 'cog review-cli-signals --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac

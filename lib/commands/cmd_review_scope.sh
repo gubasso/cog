@@ -67,7 +67,7 @@ cog::cmd::review_scope() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate review-scope output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -78,7 +78,7 @@ cog::cmd::review_scope() {
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" \
           "too many review-scope output paths" "argument: $1" "" "run 'cog review-scope --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac

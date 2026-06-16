@@ -12,9 +12,12 @@ setup() {
   source "${LIB_DIR}/commands/cmd_review_scope.sh"
 }
 
+# shellcheck disable=SC2090  # false positive: shellcheck misparses bats @test blocks
 @test "review-scope changed files include untracked status paths" {
   local staged='["b.txt"]'
   local unstaged='["a.txt"]'
+  # JSON fixture passed quoted to the helper below; not used as a word.
+  # shellcheck disable=SC2089
   local status='[{"path":"z.txt","untracked":true},{"path":"a.txt","untracked":false}]'
 
   run __cog_review_scope_changed_files "$staged" "$unstaged" "$status"
@@ -23,6 +26,7 @@ setup() {
   assert_output '["a.txt","b.txt","z.txt"]'
 }
 
+# shellcheck disable=SC2090  # false positive: shellcheck misparses bats @test blocks
 @test "review-scope rejects missing output mode" {
   run --separate-stderr cog::cmd::review_scope
 

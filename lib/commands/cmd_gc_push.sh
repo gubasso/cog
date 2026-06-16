@@ -70,7 +70,7 @@ cog::cmd::gc_push() {
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" \
           "duplicate gc-push output mode" "" "" "choose either --json or an output path"
-        mode=json
+        mode="json"
         shift
         ;;
       -*)
@@ -81,7 +81,7 @@ cog::cmd::gc_push() {
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" \
           "too many gc-push output paths" "argument: $1" "" "run 'cog gc-push --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac
