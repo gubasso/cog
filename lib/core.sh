@@ -14,9 +14,11 @@ cog::main() {
 
   cog::fn::parse_globals ctx cmd_argv "$@"
   cog::fn::config_load ctx config config_source config_line
+  cog::fn::ui_init ctx config
+  cog::fn::log_init ctx config
 
   if [[ ${ctx[version]} == true ]]; then
-    printf '%s\n' "$(<"$version_file")"
+    cog::fn::ui_data "$(<"$version_file")"
     return 0
   fi
 
@@ -27,7 +29,7 @@ cog::main() {
 
   if [[ ${ctx[print_config]} == true ]]; then
     for key in dry_run json log_level; do
-      printf '%s=%s source=%s\n' "$key" "${config[$key]}" "${config_source[$key]}"
+      cog::fn::ui_dataf '%s=%s source=%s\n' "$key" "${config[$key]}" "${config_source[$key]}"
     done
     return 0
   fi

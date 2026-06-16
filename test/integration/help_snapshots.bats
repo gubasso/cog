@@ -19,7 +19,9 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  doctor         Check cog runtime health and installation prerequisites.
   help           Show generated help for cog or a subcommand.
+  msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
   print-config   Print resolved configuration values and their sources."
 }
@@ -39,7 +41,9 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  doctor         Check cog runtime health and installation prerequisites.
   help           Show generated help for cog or a subcommand.
+  msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
   print-config   Print resolved configuration values and their sources."
 }

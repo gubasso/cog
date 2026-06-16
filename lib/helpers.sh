@@ -18,15 +18,27 @@ readonly EX_IOERR
 readonly EX_CONFIG
 
 __log_err() {
-  printf '%s\n' "$*" >&2
+  if declare -F cog::fn::log_error >/dev/null; then
+    cog::fn::log_error "cog::helpers" "msg=$*"
+  else
+    printf '%s\n' "$*" >&2
+  fi
 }
 
 __log_warn() {
-  printf '%s\n' "$*" >&2
+  if declare -F cog::fn::log_warn >/dev/null; then
+    cog::fn::log_warn "cog::helpers" "msg=$*"
+  else
+    printf '%s\n' "$*" >&2
+  fi
 }
 
 __log_info() {
-  printf '%s\n' "$*" >&2
+  if declare -F cog::fn::log_info >/dev/null; then
+    cog::fn::log_info "cog::helpers" "msg=$*"
+  else
+    printf '%s\n' "$*" >&2
+  fi
 }
 
 cog::helpers::die() {
@@ -36,6 +48,10 @@ cog::helpers::die() {
   local where="${4:-}"
   local why="${5:-}"
   local hint="${6:-}"
+
+  if declare -F cog::fn::error_raise_with_exit >/dev/null; then
+    cog::fn::error_raise_with_exit "$exit_code" "$err_kind" "$what" "$where" "$why" "$hint"
+  fi
 
   printf '%s\n' "cog: ${what}" >&2
   printf '%s\n' "  err.kind: ${err_kind}" >&2

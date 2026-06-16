@@ -6,6 +6,8 @@ setup() {
   # shellcheck source=/dev/null
   source "${LIB_DIR}/helpers.sh"
   # shellcheck source=/dev/null
+  source "${LIB_DIR}/functions/fn_ui_print.sh"
+  # shellcheck source=/dev/null
   source "${LIB_DIR}/loader.sh"
 }
 

@@ -23,6 +23,14 @@ source "${LIB_DIR}/functions/fn_parse_globals.sh"
 source "${LIB_DIR}/functions/fn_config_load.sh"
 # shellcheck source=../lib/functions/fn_help_generate.sh
 source "${LIB_DIR}/functions/fn_help_generate.sh"
+# shellcheck source=../lib/functions/fn_ui_print.sh
+source "${LIB_DIR}/functions/fn_ui_print.sh"
+# shellcheck source=../lib/functions/fn_log.sh
+source "${LIB_DIR}/functions/fn_log.sh"
+# shellcheck source=../lib/functions/fn_error_raise.sh
+source "${LIB_DIR}/functions/fn_error_raise.sh"
+# shellcheck source=../lib/functions/fn_json_write.sh
+source "${LIB_DIR}/functions/fn_json_write.sh"
 # shellcheck source=../lib/core.sh
 source "${LIB_DIR}/core.sh"
 

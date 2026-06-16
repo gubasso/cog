@@ -18,6 +18,6 @@ cog::cmd::print_config() {
   cog::fn::config_load ctx config config_source config_line
 
   for key in dry_run json log_level; do
-    printf '%s=%s source=%s\n' "$key" "${config[$key]}" "${config_source[$key]}"
+    cog::fn::ui_dataf '%s=%s source=%s\n' "$key" "${config[$key]}" "${config_source[$key]}"
   done
 }

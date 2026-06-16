@@ -3,7 +3,7 @@
 __cog_help_command_path() {
   local sub="$1"
   local derived="${sub//-/_}"
-  printf '%s/commands/cmd_%s.sh\n' "$LIB_DIR" "$derived"
+  cog::fn::ui_dataf '%s/commands/cmd_%s.sh\n' "$LIB_DIR" "$derived"
 }
 
 __cog_help_desc_for() {
@@ -12,7 +12,7 @@ __cog_help_desc_for() {
 
   line="$(sed -n '2p' "$path")"
   if [[ $line =~ ^:\ \'desc:\ (.*)\'$ ]]; then
-    printf '%s\n' "${BASH_REMATCH[1]}"
+    cog::fn::ui_data "${BASH_REMATCH[1]}"
     return 0
   fi
 
@@ -22,13 +22,13 @@ __cog_help_desc_for() {
 }
 
 __cog_help_global_flags() {
-  printf '%s\n' "Global flags:"
-  printf '%s\n' "  -h, --help          Show help"
-  printf '%s\n' "  -V, --version       Show version"
-  printf '%s\n' "      --json          Request machine-readable output"
-  printf '%s\n' "      --dry-run       Show what would happen without changing state"
-  printf '%s\n' "      --print-config  Print resolved configuration and sources"
-  printf '%s\n' "  -v, -vv, -vvv       Increase verbosity"
+  cog::fn::ui_data "Global flags:"
+  cog::fn::ui_data "  -h, --help          Show help"
+  cog::fn::ui_data "  -V, --version       Show version"
+  cog::fn::ui_data "      --json          Request machine-readable output"
+  cog::fn::ui_data "      --dry-run       Show what would happen without changing state"
+  cog::fn::ui_data "      --print-config  Print resolved configuration and sources"
+  cog::fn::ui_data "  -v, -vv, -vvv       Increase verbosity"
 }
 
 __cog_help_list_commands() {
@@ -45,7 +45,7 @@ __cog_help_list_commands() {
     slug="${slug%.sh}"
     display="${slug//_/-}"
     desc="$(__cog_help_desc_for "$path")" || return $?
-    printf '  %-14s %s\n' "$display" "$desc"
+    cog::fn::ui_dataf '  %-14s %s\n' "$display" "$desc"
   done
 }
 
@@ -56,11 +56,11 @@ cog::fn::help_generate() {
 
   case "$mode" in
     root)
-      printf '%s\n' "Usage: cog [global-flags] <command> [args]"
-      printf '\n'
+      cog::fn::ui_data "Usage: cog [global-flags] <command> [args]"
+      cog::fn::ui_data ""
       __cog_help_global_flags
-      printf '\n'
-      printf '%s\n' "Commands:"
+      cog::fn::ui_data ""
+      cog::fn::ui_data "Commands:"
       __cog_help_list_commands
       ;;
     command)
@@ -76,10 +76,10 @@ cog::fn::help_generate() {
       fi
 
       desc="$(__cog_help_desc_for "$path")" || return $?
-      printf 'Usage: cog %s [args]\n' "$sub"
-      printf '\n'
-      printf '%s\n' "$desc"
-      printf '\n'
+      cog::fn::ui_dataf 'Usage: cog %s [args]\n' "$sub"
+      cog::fn::ui_data ""
+      cog::fn::ui_data "$desc"
+      cog::fn::ui_data ""
       __cog_help_global_flags
       ;;
     *)
