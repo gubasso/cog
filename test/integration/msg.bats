@@ -10,7 +10,7 @@ setup() {
   assert_output "RESOLVED /tmp/out"
   [ -z "$stderr" ]
 
-  run --separate-stderr cog msg ok commit-push done
+  run --separate-stderr cog msg ok commit-push "done"
   assert_success
   assert_output "COMMIT_PUSH_OK done"
   [ -z "$stderr" ]

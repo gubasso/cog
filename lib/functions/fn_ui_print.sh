@@ -6,7 +6,7 @@
 
 cog::fn::ui_is_tty() {
   local fd="${1:-1}"
-  [[ -t "$fd" ]]
+  [[ -t $fd ]]
 }
 
 __cog_ui_resolve_color() {

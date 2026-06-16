@@ -68,7 +68,9 @@ setup() {
 }
 
 @test "log level threshold filters lower-priority records" {
+  # shellcheck disable=SC2034 # Nameref arguments are read by cog::fn::log_init.
   local -A ctx=([log_level]=warn)
+  # shellcheck disable=SC2034 # Nameref arguments are read by cog::fn::log_init.
   local -A config=([log_level]=warn)
   local log_file="${XDG_STATE_HOME}/cog/cog.log"
 

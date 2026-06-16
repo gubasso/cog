@@ -1,3 +1,7 @@
+# Arrays passed to cog::fn::ui_init are consumed via namerefs, so shellcheck
+# cannot see their use in tests.
+# shellcheck disable=SC2034
+
 setup() {
   bats_require_minimum_version 1.5.0
   load '../test_helper/common-setup'
@@ -24,7 +28,9 @@ setup() {
 }
 
 @test "NO_COLOR disables color" {
+  # shellcheck disable=SC2034 # Nameref arguments are read by cog::fn::ui_init.
   local -A ctx=([json]=false)
+  # shellcheck disable=SC2034 # Nameref arguments are read by cog::fn::ui_init.
   local -A config=([json]=false)
   export NO_COLOR=1
 
