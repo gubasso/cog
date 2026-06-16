@@ -1,0 +1,51 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x"]
+        files: ^(bin/.*|lib/.*\.sh|install\.sh|uninstall\.sh|test/.*\.bash|test/.*\.bats)$
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: ["-w", "-i", "2", "-ci", "-bn", "-s"]
+        files: ^(bin/.*|lib/.*\.sh|install\.sh|uninstall\.sh|test/.*\.bash|test/.*\.bats)$
+
+  - repo: local
+    hooks:
+      - id: test-unit
+        name: unit tests
+        entry: bash -c 'if compgen -G "test/unit/*.bats" > /dev/null; then bats test/unit; else printf "%s\n" "no unit tests yet"; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: test-integration
+        name: integration tests
+        entry: bash -c 'if compgen -G "test/integration/*.bats" > /dev/null; then bats test/integration; else printf "%s\n" "no integration tests yet"; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: test-live
+        name: live tests
+        entry: bash -c 'if compgen -G "test/live/*.bats" > /dev/null; then bats test/live; else printf "%s\n" "no live tests yet"; fi'
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: test-e2e
+        name: e2e tests
+        entry: bash -c 'if compgen -G "test/e2e/*.bats" > /dev/null; then bats test/e2e; else printf "%s\n" "no e2e tests yet"; fi'
+        language: system
+        pass_filenames: false
+        stages: [manual]
