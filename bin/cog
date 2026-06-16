@@ -4,18 +4,25 @@ shopt -s inherit_errexit 2>/dev/null || true # bash 4.4+
 
 # Resolve script path through symlinks (stow, make install, ln -s).
 src="${BASH_SOURCE[0]}"
-while [[ -L "$src" ]]; do
+while [[ -L $src ]]; do
   dir="$(cd -P "$(dirname "$src")" && pwd)"
   src="$(readlink "$src")"
-  [[ "$src" != /* ]] && src="$dir/$src"
+  [[ $src != /* ]] && src="$dir/$src"
 done
-readonly SCRIPT_DIR="$(cd -P "$(dirname "$src")" && pwd)"
+SCRIPT_DIR="$(cd -P "$(dirname "$src")" && pwd)"
+readonly SCRIPT_DIR
 readonly LIB_DIR="${SCRIPT_DIR}/../lib"
 
 # shellcheck source=../lib/helpers.sh
 source "${LIB_DIR}/helpers.sh"
 # shellcheck source=../lib/loader.sh
 source "${LIB_DIR}/loader.sh"
+# shellcheck source=../lib/functions/fn_parse_globals.sh
+source "${LIB_DIR}/functions/fn_parse_globals.sh"
+# shellcheck source=../lib/functions/fn_config_load.sh
+source "${LIB_DIR}/functions/fn_config_load.sh"
+# shellcheck source=../lib/functions/fn_help_generate.sh
+source "${LIB_DIR}/functions/fn_help_generate.sh"
 # shellcheck source=../lib/core.sh
 source "${LIB_DIR}/core.sh"
 

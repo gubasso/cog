@@ -12,11 +12,11 @@ setup() {
     "no readable command module was found" "check the command name and retry"
 
   assert_failure 64
-  [[ "$stderr" == *"cog: unknown command"* ]]
-  [[ "$stderr" == *"  err.kind: UnknownCommand"* ]]
-  [[ "$stderr" == *"  where: command: nope"* ]]
-  [[ "$stderr" == *"  why: no readable command module was found"* ]]
-  [[ "$stderr" == *"  hint: check the command name and retry"* ]]
+  [[ $stderr == *"cog: unknown command"* ]]
+  [[ $stderr == *"  err.kind: UnknownCommand"* ]]
+  [[ $stderr == *"  where: command: nope"* ]]
+  [[ $stderr == *"  why: no readable command module was found"* ]]
+  [[ $stderr == *"  hint: check the command name and retry"* ]]
 }
 
 @test "__require succeeds for available commands" {
@@ -29,7 +29,7 @@ setup() {
   run --separate-stderr __require __definitely_not_a_real_cmd_xyz
 
   assert_failure 69
-  [[ "$stderr" == *"err.kind: MissingRequirement"* ]]
+  [[ $stderr == *"err.kind: MissingRequirement"* ]]
 }
 
 @test "sysexits constants have expected values" {

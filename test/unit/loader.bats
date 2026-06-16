@@ -13,8 +13,8 @@ setup() {
   run --separate-stderr cog::loader::dispatch nope
 
   assert_failure 64
-  [[ "$stderr" == *"err.kind: UnknownCommand"* ]]
-  [[ "$stderr" == *"command: nope"* ]]
+  [[ $stderr == *"err.kind: UnknownCommand"* ]]
+  [[ $stderr == *"command: nope"* ]]
 }
 
 @test "placeholder command dispatches successfully" {

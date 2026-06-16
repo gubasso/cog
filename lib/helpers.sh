@@ -39,9 +39,9 @@ cog::helpers::die() {
 
   printf '%s\n' "cog: ${what}" >&2
   printf '%s\n' "  err.kind: ${err_kind}" >&2
-  [[ -z "$where" ]] || printf '%s\n' "  where: ${where}" >&2
-  [[ -z "$why" ]] || printf '%s\n' "  why: ${why}" >&2
-  [[ -z "$hint" ]] || printf '%s\n' "  hint: ${hint}" >&2
+  [[ -z $where ]] || printf '%s\n' "  where: ${where}" >&2
+  [[ -z $why ]] || printf '%s\n' "  why: ${why}" >&2
+  [[ -z $hint ]] || printf '%s\n' "  hint: ${hint}" >&2
   exit "$exit_code"
 }
 
@@ -69,7 +69,7 @@ __require() {
 # output layer revisits composable cleanup.
 __mktemp_dir() {
   local __outvar="${1:-}"
-  [[ -n "$__outvar" ]] || cog::helpers::die "$EX_SOFTWARE" "BadCall" \
+  [[ -n $__outvar ]] || cog::helpers::die "$EX_SOFTWARE" "BadCall" \
     "__mktemp_dir requires an output variable name" "call: __mktemp_dir <varname>" \
     "" "pass the name of a variable to receive the temp dir path"
 
@@ -84,8 +84,11 @@ __mktemp_dir() {
   # path (e.g. via a TMPDIR containing a single quote) could inject shell syntax.
   local __qdir
   printf -v __qdir '%q' "$__dir"
+  # shellcheck disable=SC2064 # The escaped temp path is intentionally captured at registration.
   trap "rm -rf -- ${__qdir}" EXIT
+  # shellcheck disable=SC2064 # The escaped temp path is intentionally captured at registration.
   trap "rm -rf -- ${__qdir}; exit 130" INT
+  # shellcheck disable=SC2064 # The escaped temp path is intentionally captured at registration.
   trap "rm -rf -- ${__qdir}; exit 143" TERM
   printf -v "$__outvar" '%s' "$__dir"
 }
