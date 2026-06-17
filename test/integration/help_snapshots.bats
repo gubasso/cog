@@ -31,6 +31,8 @@ Commands:
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
+  osc-preflight  Detect OBS/osc session prerequisites.
+  osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-init      Bootstrap implementation plan root files.
   plan-queue-runner-parse-commit Parse a plan-queue-runner commit result.
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
@@ -58,6 +60,12 @@ Commands:
   rundir         Create a workflow run directory and optionally acquire its lock.
   skill-builder-scaffold Compute skill scaffold paths.
   skill-builder-validate Validate skill-builder inputs.
+  suckless-apply Check, apply, and build a suckless patch.
+  suckless-conflicts List suckless patch conflict artifacts.
+  suckless-preflight Detect suckless tree signals and clean state.
+  test-review-discover Detect test runner and test-review batch status.
+  test-review-lint Emit deterministic test-review lint signals.
+  test-review-manifest Update test-review MANIFEST.yaml.
   tsk-fetch-issue Fetch or create a tsk issue.
   tsk-snapshot   Capture read-only git context for tsk workflows.
   tsk-store-init Resolve and initialize the shared tsk store."
@@ -90,6 +98,8 @@ Commands:
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
+  osc-preflight  Detect OBS/osc session prerequisites.
+  osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-init      Bootstrap implementation plan root files.
   plan-queue-runner-parse-commit Parse a plan-queue-runner commit result.
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
@@ -117,6 +127,12 @@ Commands:
   rundir         Create a workflow run directory and optionally acquire its lock.
   skill-builder-scaffold Compute skill scaffold paths.
   skill-builder-validate Validate skill-builder inputs.
+  suckless-apply Check, apply, and build a suckless patch.
+  suckless-conflicts List suckless patch conflict artifacts.
+  suckless-preflight Detect suckless tree signals and clean state.
+  test-review-discover Detect test runner and test-review batch status.
+  test-review-lint Emit deterministic test-review lint signals.
+  test-review-manifest Update test-review MANIFEST.yaml.
   tsk-fetch-issue Fetch or create a tsk issue.
   tsk-snapshot   Capture read-only git context for tsk workflows.
   tsk-store-init Resolve and initialize the shared tsk store."
