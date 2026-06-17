@@ -56,11 +56,11 @@ patterns, thread ID extraction, and timeout requirements.
 > discipline prevents. A round whose Codex stage cannot finish within the 600s window is a **planning
 > error** — split the round per `plan-lifecycle.md` — **never** a reason to background. A genuine
 > overrun surfaces deterministically as a `timeout-124`/`sigterm` status with partial logs; handle it
-> via the Resume Fallback, not by detaching. This rule is now **enforced deterministically** by a
-> `PreToolUse(Bash)` hook: a Codex Bash call that is backgrounded, or that omits a `timeout` of at
-> least `600000ms`, is blocked before it runs — so the
-> reap cannot happen even when this prose is overlooked deep in a long context. The prose remains as
-> the rationale; the hook is the guarantee. Details are recorded in
+> via the Resume Fallback, not by detaching. This rule is now **enforced deterministically** by the
+> `cog hook-guard codex-foreground` `PreToolUse(Bash)` hook: a Codex Bash call that is backgrounded,
+> or that omits a `timeout` of at least `600000ms`, is blocked before it runs when the hook is
+> installed/configured, so the reap is prevented at the source. The
+> prose remains as the rationale; the hook is the guarantee. Details are recorded in
 > [`$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md).
 
 Orchestration patterns shared with `review-loop` (proof-of- delegation, lock management, review-loop
@@ -96,7 +96,7 @@ command -v cog >/dev/null || {
   echo "prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require codex-runner rundir lock prex-parse-args prex-tsk-resolve || {
+cog require hook-guard codex-runner rundir lock prex-parse-args prex-tsk-resolve || {
   echo "prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
@@ -644,8 +644,8 @@ row to the triage table with the phase reference.
 ### Step 7: Write `stage4-review.md`
 
 Record the review summary and triage decisions in `$RUN_DIR/stage4-review.md` using the legacy prex
-status vocabulary. Downstream consumers (`prex-stop-gate.sh`) depend on this artifact name and
-format — do not rename it. Include:
+status vocabulary. Downstream consumers (the `cog hook-guard prex-stop` Stop-gate) depend on this
+artifact name and format — do not rename it. Include:
 
 - One-line summary.
 - Triage table (finding → status → action).

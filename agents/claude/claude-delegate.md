@@ -31,10 +31,11 @@ staging discipline for protected paths.
    a Bash-tool `timeout` of `600000ms` and let the call block until it exits. There is **no**
    out-of-band re-invocation here — a backgrounded long task is silently reaped when the turn ends,
    so backgrounding loses work. When you run a multi-stage skill (e.g. `/prex`), this applies to
-   **each** of its individual Codex Bash calls, not just the skill as a whole. A `PreToolUse` hook
-   enforces this for Codex calls (it blocks backgrounded or sub-`600000ms` invocations before they
-   run), but honor it everywhere regardless. If a step genuinely cannot finish within the foreground
-   budget, report it as a blocker; **never detach**.
+   **each** of its individual Codex Bash calls, not just the skill as a whole. The
+   `cog hook-guard codex-foreground` `PreToolUse(Bash)` hook enforces this for Codex calls when
+   installed/configured (it blocks backgrounded or sub-`600000ms` invocations before they run), but
+   honor it everywhere regardless. If a step genuinely cannot finish within the foreground budget,
+   report it as a blocker; **never detach**.
 3. **Run to the task's own completion criteria — do not stop early.** For a queued implementation
    round that means the plan is fully implemented and reviewed and the round's status is flipped per
    the plan's final step. Never return an "it's started / running in the background, I'll be

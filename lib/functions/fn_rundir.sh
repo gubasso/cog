@@ -48,12 +48,17 @@ cog::fn::rundir_lock_dir() {
   printf '%s\n' "${XDG_RUNTIME_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/cog/runs}"
 }
 
+cog::fn::rundir_lock_name() {
+  printf '%s\n' "prex-active"
+}
+
 cog::fn::rundir_lock_path() {
   local run_dir="${1:-}"
-  local name="${2:-prex-active}"
+  local name="${2:-}"
   local lock_dir
 
   __cog_rundir_require_arg "$run_dir" "run_dir" "cog::fn::rundir_lock_path"
+  [[ -n $name ]] || name="$(cog::fn::rundir_lock_name)"
   lock_dir="$(cog::fn::rundir_lock_dir)"
   printf '%s/%s-%s.lock\n' "$lock_dir" "$name" "${run_dir##*-}"
 }

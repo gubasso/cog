@@ -28,6 +28,7 @@ Commands:
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
+  hook-guard     Deterministic PreToolUse/Stop hook decisions.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
@@ -95,6 +96,7 @@ Commands:
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
+  hook-guard     Deterministic PreToolUse/Stop hook decisions.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
@@ -179,6 +181,23 @@ Global flags:
   assert_output "Usage: cog gc-stage [args]
 
 Reconcile and stage explicit session files.
+
+Global flags:
+  -h, --help          Show help
+  -V, --version       Show version
+      --json          Request machine-readable output
+      --dry-run       Show what would happen without changing state
+      --print-config  Print resolved configuration and sources
+  -v, -vv, -vvv       Increase verbosity"
+}
+
+@test "cog hook-guard --help resolves dashed command name" {
+  run cog hook-guard --help
+
+  assert_success
+  assert_output "Usage: cog hook-guard [args]
+
+Deterministic PreToolUse/Stop hook decisions.
 
 Global flags:
   -h, --help          Show help

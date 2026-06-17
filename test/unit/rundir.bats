@@ -36,6 +36,31 @@ setup() {
   [ ! -e "${BATS_TEST_TMPDIR}/run/events.jsonl" ]
 }
 
+@test "rundir_lock_name emits the prex lock prefix" {
+  run cog::fn::rundir_lock_name
+
+  assert_success
+  assert_output "prex-active"
+}
+
+@test "rundir_lock_path defaults to the lock-name source of truth" {
+  local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
+
+  run cog::fn::rundir_lock_path "$run_dir"
+
+  assert_success
+  assert_output "${XDG_RUNTIME_DIR}/prex-active-123.lock"
+}
+
+@test "rundir_lock_path accepts an explicit lock name override" {
+  local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
+
+  run cog::fn::rundir_lock_path "$run_dir" alternate
+
+  assert_success
+  assert_output "${XDG_RUNTIME_DIR}/alternate-123.lock"
+}
+
 @test "rundir lock acquire is atomic and release removes lock" {
   local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
   mkdir -p "$run_dir"
