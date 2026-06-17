@@ -1,0 +1,119 @@
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Check if Python files are syntactically valid
+      - id: check-ast
+      # Ensure literals are used over built-in functions like str(), dict(), etc.
+      - id: check-builtin-literals
+      # Check for files with names that would conflict on a case-insensitive filesystem
+      - id: check-case-conflict
+      # Ensure scripts with shebang are executable
+      - id: check-shebang-scripts-are-executable
+      # Check for merge conflict markers
+      - id: check-merge-conflict
+      # Check if YAML files are syntactically valid
+      - id: check-yaml
+      # Check if TOML files are syntactically valid
+      - id: check-toml
+      # Check if XML files are syntactically valid
+      - id: check-xml
+      # Ensure symlinks are not broken
+      - id: destroyed-symlinks
+      # Prevent private keys from being committed
+      - id: detect-private-key
+      # Ensure files end with a newline
+      - id: end-of-file-fixer
+      # Pretty format JSON files
+      - id: pretty-format-json
+        args: ["--autofix", "--no-ensure-ascii", "--no-sort-keys", "--indent=2"]
+        exclude: >-
+          (?x)((^|/)devcontainer\.json$|[-.]lock\.json$)
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      # Prevents large files from being committed
+      - id: check-added-large-files
+      # Verifies that test files are named correctly
+      - id: name-tests-test
+      - id: no-commit-to-branch
+        args: [--branch, staging, --branch, main, --branch, master]
+
+  - repo: https://github.com/maresb/check-json5
+    rev: v1.0.1
+    hooks:
+      # Check if JSON5/JSON files are syntactically valid
+      - id: check-json5
+        exclude: '[-.]lock\.json$'
+
+  # Pre-commit hook for Ruff, a fast Python linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.7
+    hooks:
+      # linter and sort imports (also covers autoflake + pyupgrade via F/UP rules)
+      - id: ruff
+        args: [--select, "I,UP,F,E,W,B,SIM,RUF", --fix]
+      - id: ruff-format
+
+  # Pre-commit hook to check for spelling mistakes
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.44.0
+    hooks:
+      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # deliberate identifiers / error-kind strings and can break code. Fix
+      # real typos by hand; allowlist false positives in _typos.toml.
+      - id: typos
+
+  # Pre-commit hook for shellcheck (shell script linter)
+  # Requires shellcheck to be installed: apt-get install shellcheck / brew install shellcheck
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+
+  # Pre-commit hook to format code blocks in documentation using Black
+  - repo: https://github.com/adamchainz/blacken-docs
+    rev: 1.20.0
+    hooks:
+      - id: blacken-docs
+        additional_dependencies:
+          - "black==26.1.0"
+        args:
+          - "--line-length=79"
+
+  # Pre-commit hook for Bandit, a security linter for Python
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+
+  # Pre-commit hook for Gitleaks (secret detection)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      # mypy: static type checker (runs via Poetry to use project's installed stubs)
+      # Requires mypy to be installed in the project (language: system)
+      # NOTE: For Pydantic projects, add to pyproject.toml [tool.mypy]:
+      #   plugins = ["pydantic.mypy"]
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        types: [python]
+        args:
+          - "--strict"
+
+  # --- Commit message: Conventional Commits (single SoT -> committed.toml) ---
+  - repo: https://github.com/crate-ci/committed
+    rev: v1.1.11
+    hooks:
+      - id: committed
+        stages: [commit-msg]
+  # commitizen is intentionally NOT the commit-msg linter (committed is the SoT).
+  # For version bumping / changelog only, add commitizen explicitly per-project.

@@ -1,0 +1,141 @@
+# Run `pre-commit install --hook-type commit-msg && pre-commit run --all-files`
+default_stages: [pre-commit]
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-case-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-xml
+      - id: pretty-format-json
+        args: ["--autofix", "--no-ensure-ascii", "--no-sort-keys", "--indent=2"]
+        exclude: >-
+          (?x)((^|/)devcontainer\.json$|[-.]lock\.json$|/package-lock\.json$)
+      - id: detect-private-key
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: name-tests-test
+      - id: no-commit-to-branch
+        args: [--branch, staging, --branch, main, --branch, master]
+
+  - repo: https://github.com/maresb/check-json5
+    rev: v1.0.1
+    hooks:
+      - id: check-json5
+        exclude: '[-.]lock\.json$|/package-lock\.json$'
+
+  # YAML style
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+
+  # Markdown style
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.48.0
+    hooks:
+      - id: markdownlint
+        args: [--disable, MD013, MD033, MD041]
+
+  # Spelling / typos
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        args: [--ignore-words-list, "te,thru,ons"]
+  # Typos (additional)
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.46.0
+    hooks:
+      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # deliberate identifiers / error-kind strings and can break code. Fix
+      # real typos by hand; allowlist false positives in _typos.toml.
+      - id: typos
+
+  # ESLint (JavaScript/TypeScript/Svelte)
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v10.3.0
+    hooks:
+      - id: eslint
+        args: [--fix]
+        files: \.(js|ts|svelte)$
+        additional_dependencies:
+          - eslint@9.18.0
+          - typescript@5.0.0
+          - eslint-plugin-svelte@3.0.0
+          - '@typescript-eslint/parser@8.20.0'
+          - '@typescript-eslint/eslint-plugin@8.20.0'
+          - eslint-config-prettier@10.1.5
+          - svelte
+          - globals
+
+  # Prettier (rbubley fork — pre-commit/mirrors-prettier is archived).
+  # Includes prettier-plugin-svelte & tailwind class sorter.
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.8.3
+    hooks:
+      - id: prettier
+        args: [--write]
+        additional_dependencies:
+          - prettier-plugin-svelte
+          - prettier-plugin-tailwindcss
+
+  # Stylelint for CSS/Tailwind in <style> blocks
+  - repo: https://github.com/thibaudcolas/pre-commit-stylelint
+    rev: v17.10.0
+    hooks:
+      - id: stylelint
+        args: [--fix]
+        files: '\.(css|scss|svelte)$'
+        additional_dependencies:
+          - stylelint@17.10.0   # must match the rev tag
+          - stylelint-config-tailwindcss
+
+  # gitleaks – secret scanner
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+  # Local node-based hooks ---------------------------------
+  # Require deps installed in the project's package.json (language: system).
+  - repo: local
+    hooks:
+      # SvelteKit type & a11y checking
+      - id: svelte-check
+        name: svelte-check
+        entry: npx --no-install svelte-check --tsconfig ./tsconfig.json
+        language: system
+        pass_filenames: false
+
+      # Unit tests with Vitest
+      - id: vitest
+        name: vitest
+        entry: npx --no-install vitest run --coverage
+        language: system
+        pass_filenames: false
+        always_run: true       # run even if only doc files changed
+
+  # --- Commit message: Conventional Commits (single SoT -> committed.toml) ---
+  # Language-agnostic (no Node toolchain), unlike commitlint.
+  - repo: https://github.com/crate-ci/committed
+    rev: v1.1.11
+    hooks:
+      - id: committed
+        stages: [commit-msg]

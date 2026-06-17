@@ -19,6 +19,8 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  classify-project Classify repository shape.
+  claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
   doctor         Check cog runtime health and installation prerequisites.
   gc-classify-failure Classify commit or push failure logs.
@@ -34,6 +36,8 @@ Commands:
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  precommit-apply-template Apply a pre-commit template to a project.
+  precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
   prex-parse-args Parse prex arguments into run state.
   prex-tsk-resolve Resolve a tsk issue for a prex run.
@@ -41,6 +45,9 @@ Commands:
   queue-append   Append one implementation plan queue entry.
   queue-bootstrap Create and validate an implementation plan queue.
   queue-select   Select the next runnable implementation plan round.
+  refactor-scan-drift Compute byte-stable source-scan fingerprint.
+  refactor-scan-source Run deterministic source static-analysis probes.
+  refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
   review-agents-finalize Finalize review reference resolution from classification data.
   review-cli-signals Probe whether the project is a CLI from classification data.
@@ -48,7 +55,12 @@ Commands:
   review-refs    Resolve docs-n-notes review reference files.
   review-scope   Detect changed-file review scope.
   review-validate-findings Validate review findings JSON.
-  rundir         Create a workflow run directory and optionally acquire its lock."
+  rundir         Create a workflow run directory and optionally acquire its lock.
+  skill-builder-scaffold Compute skill scaffold paths.
+  skill-builder-validate Validate skill-builder inputs.
+  tsk-fetch-issue Fetch or create a tsk issue.
+  tsk-snapshot   Capture read-only git context for tsk workflows.
+  tsk-store-init Resolve and initialize the shared tsk store."
 }
 
 @test "cog help matches root help" {
@@ -66,6 +78,8 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  classify-project Classify repository shape.
+  claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
   doctor         Check cog runtime health and installation prerequisites.
   gc-classify-failure Classify commit or push failure logs.
@@ -81,6 +95,8 @@ Commands:
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  precommit-apply-template Apply a pre-commit template to a project.
+  precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
   prex-parse-args Parse prex arguments into run state.
   prex-tsk-resolve Resolve a tsk issue for a prex run.
@@ -88,6 +104,9 @@ Commands:
   queue-append   Append one implementation plan queue entry.
   queue-bootstrap Create and validate an implementation plan queue.
   queue-select   Select the next runnable implementation plan round.
+  refactor-scan-drift Compute byte-stable source-scan fingerprint.
+  refactor-scan-source Run deterministic source static-analysis probes.
+  refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
   review-agents-finalize Finalize review reference resolution from classification data.
   review-cli-signals Probe whether the project is a CLI from classification data.
@@ -95,7 +114,12 @@ Commands:
   review-refs    Resolve docs-n-notes review reference files.
   review-scope   Detect changed-file review scope.
   review-validate-findings Validate review findings JSON.
-  rundir         Create a workflow run directory and optionally acquire its lock."
+  rundir         Create a workflow run directory and optionally acquire its lock.
+  skill-builder-scaffold Compute skill scaffold paths.
+  skill-builder-validate Validate skill-builder inputs.
+  tsk-fetch-issue Fetch or create a tsk issue.
+  tsk-snapshot   Capture read-only git context for tsk workflows.
+  tsk-store-init Resolve and initialize the shared tsk store."
 }
 
 @test "cog noop --help matches generated snapshot" {

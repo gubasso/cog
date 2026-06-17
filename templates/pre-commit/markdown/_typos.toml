@@ -1,0 +1,8 @@
+# typos allowlist. Add entries only when typos' suggestion is wrong or
+# ambiguous (non-English words, valid compound prefixes, project-specific
+# spellings). Real typos in source should be fixed in dedicated commits,
+# not silenced here.
+
+[default.extend-words]
+# Example:
+#   gere = "gere"   # Portuguese verb form, not a typo of "here"
