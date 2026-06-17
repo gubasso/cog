@@ -49,20 +49,47 @@ cog::cmd::tsk_fetch_issue() {
   local id="" title="" body_file="" op_mode="" out_mode="" out="" json
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_tsk_fetch_issue_usage; return 0 ;;
-      --id) [[ $# -ge 2 && -z $id && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing tsk id" "option: --id" "" "run 'cog tsk-fetch-issue --help'"; id="$2"; shift 2 ;;
-      --title) [[ $# -ge 2 && -z $title && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing tsk title" "option: --title" "" "run 'cog tsk-fetch-issue --help'"; title="$2"; shift 2 ;;
-      --body-file) [[ $# -ge 2 && -z $body_file && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing body file" "option: --body-file" "" "run 'cog tsk-fetch-issue --help'"; body_file="$2"; shift 2 ;;
-      --json) [[ -z $out_mode ]] || cog::fn::error_raise "InvalidInput" "duplicate tsk-fetch-issue output mode" "" "" "choose either --json or an output path"; out_mode=json; shift ;;
+      -h | --help)
+        __cog_tsk_fetch_issue_usage
+        return 0
+        ;;
+      --id)
+        [[ $# -ge 2 && -z $id && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing tsk id" "option: --id" "" "run 'cog tsk-fetch-issue --help'"
+        id="$2"
+        shift 2
+        ;;
+      --title)
+        [[ $# -ge 2 && -z $title && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing tsk title" "option: --title" "" "run 'cog tsk-fetch-issue --help'"
+        title="$2"
+        shift 2
+        ;;
+      --body-file)
+        [[ $# -ge 2 && -z $body_file && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing body file" "option: --body-file" "" "run 'cog tsk-fetch-issue --help'"
+        body_file="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $out_mode ]] || cog::fn::error_raise "InvalidInput" "duplicate tsk-fetch-issue output mode" "" "" "choose either --json or an output path"
+        out_mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown tsk-fetch-issue option" "option: $1" "" "run 'cog tsk-fetch-issue --help'" ;;
-      *) [[ -z $out_mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many tsk-fetch-issue output paths" "argument: $1" "" "run 'cog tsk-fetch-issue --help'"; out="$1"; out_mode=file; shift ;;
+      *)
+        [[ -z $out_mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many tsk-fetch-issue output paths" "argument: $1" "" "run 'cog tsk-fetch-issue --help'"
+        out="$1"
+        out_mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $out_mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing tsk-fetch-issue output mode" "usage: cog tsk-fetch-issue ... (<out.json>|--json)" "" "run 'cog tsk-fetch-issue --help'"
   [[ -n $out_mode ]] || out_mode=json
-  if [[ -n $id && -z $title && -z $body_file ]]; then op_mode=fetch
-  elif [[ -z $id && -n $title && -n $body_file ]]; then op_mode=create
-  else cog::fn::error_raise "InvalidInput" "choose exactly one tsk-fetch-issue mode" "" "pass --id or --title with --body-file" "run 'cog tsk-fetch-issue --help'"
+  if [[ -n $id && -z $title && -z $body_file ]]; then
+    op_mode=fetch
+  elif [[ -z $id && -n $title && -n $body_file ]]; then
+    op_mode=create
+  else
+    cog::fn::error_raise "InvalidInput" "choose exactly one tsk-fetch-issue mode" "" "pass --id or --title with --body-file" "run 'cog tsk-fetch-issue --help'"
   fi
   json="$(__cog_tsk_fetch_issue_build_json "$op_mode" "$id" "$title" "$body_file")"
   if [[ $out_mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_tsk_fetch_issue_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_tsk_fetch_issue_self_check" "$json"; fi

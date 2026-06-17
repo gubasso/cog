@@ -84,33 +84,46 @@ __cog_precommit_detect_build_json() {
   local template_dir="" template_config="" template_exists=false conflicts_json signals_json
   PROJECT_ROOT="$project_root"
   if [[ -n $requested_type && ! $requested_type =~ ^[a-z0-9-]+$ ]]; then
-    ok=false; reason="type must match ^[a-z0-9-]+$"
+    ok=false
+    reason="type must match ^[a-z0-9-]+$"
   elif [[ ! -d $project_root ]]; then
-    ok=false; reason="project root is not a directory"
+    ok=false
+    reason="project root is not a directory"
   elif [[ ! -d $template_root ]]; then
-    ok=false; reason="template root is not a directory"
+    ok=false
+    reason="template root is not a directory"
   fi
   if [[ $ok == true ]]; then
     classification="$(cd "$project_root" && __cog_classify_project_build_json)"
     if [[ -n $requested_type ]]; then
-      detected_type="$requested_type"; confidence=requested; SIGNALS=("requested type"); MATCHES=("$requested_type")
+      detected_type="$requested_type"
+      confidence=requested
+      SIGNALS=("requested type")
+      MATCHES=("$requested_type")
     else
       __cog_precommit_detect_matches "$classification"
       if [[ ${#MATCHES[@]} -eq 1 ]]; then
-        detected_type="${MATCHES[0]}"; confidence=high
+        detected_type="${MATCHES[0]}"
+        confidence=high
       elif [[ ${#MATCHES[@]} -gt 1 ]]; then
-        ok=false; reason="multiple pre-commit template types detected"
+        ok=false
+        reason="multiple pre-commit template types detected"
       else
-        ok=false; reason="could not detect pre-commit template type"
+        ok=false
+        reason="could not detect pre-commit template type"
       fi
     fi
     if [[ -n $detected_type ]]; then
       template_dir="$template_root/$detected_type"
       template_config="$template_dir/.pre-commit-config.yaml"
-      if [[ -f $template_config ]]; then template_exists=true; else ok=false; reason="${reason:-template config not found}"; fi
+      if [[ -f $template_config ]]; then template_exists=true; else
+        ok=false
+        reason="${reason:-template config not found}"
+      fi
     fi
   else
-    MATCHES=(); SIGNALS=()
+    MATCHES=()
+    SIGNALS=()
   fi
   conflicts_json='[]'
   if [[ $ok == false && ${#MATCHES[@]} -gt 1 && -z $requested_type ]]; then
@@ -137,13 +150,37 @@ cog::cmd::precommit_detect() {
   template_root="$(__cog_precommit_template_root_default)"
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_precommit_detect_usage; return 0 ;;
-      --project-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog precommit-detect --help'"; project_root="$2"; shift 2 ;;
-      --template-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog precommit-detect --help'"; template_root="$2"; shift 2 ;;
-      --type) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template type" "option: --type" "" "run 'cog precommit-detect --help'"; requested_type="$2"; shift 2 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate precommit-detect output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_precommit_detect_usage
+        return 0
+        ;;
+      --project-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog precommit-detect --help'"
+        project_root="$2"
+        shift 2
+        ;;
+      --template-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog precommit-detect --help'"
+        template_root="$2"
+        shift 2
+        ;;
+      --type)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template type" "option: --type" "" "run 'cog precommit-detect --help'"
+        requested_type="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate precommit-detect output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown precommit-detect option" "option: $1" "" "run 'cog precommit-detect --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many precommit-detect output paths" "argument: $1" "" "run 'cog precommit-detect --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many precommit-detect output paths" "argument: $1" "" "run 'cog precommit-detect --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing precommit-detect output mode" "usage: cog precommit-detect [flags] (<out.json>|--json)" "" "run 'cog precommit-detect --help'"

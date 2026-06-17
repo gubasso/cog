@@ -8,7 +8,10 @@ __cog_refactor_scan_source_usage() {
 }
 
 __cog_refactor_scan_source_count_lines() {
-  [[ -f $1 ]] || { printf '0\n'; return 0; }
+  [[ -f $1 ]] || {
+    printf '0\n'
+    return 0
+  }
   wc -l <"$1" | tr -d ' '
 }
 
@@ -24,16 +27,19 @@ __cog_refactor_scan_source_run_scan() {
     -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null >"$scan/manifests.txt"
   : >"$scan/readme-excerpt.txt"
   for f in README.md README.rst README docs/README.md; do
-    if [[ -f $source_root/$f ]]; then head -200 "$source_root/$f" >"$scan/readme-excerpt.txt"; break; fi
+    if [[ -f $source_root/$f ]]; then
+      head -200 "$source_root/$f" >"$scan/readme-excerpt.txt"
+      break
+    fi
   done
-  (cd "$source_root" &&
-    find . -type f \( -name '*.rs' -o -name '*.go' -o -name '*.py' -o -name '*.ts' -o -name '*.js' -o -name '*.rb' \
+  (cd "$source_root" \
+    && find . -type f \( -name '*.rs' -o -name '*.go' -o -name '*.py' -o -name '*.ts' -o -name '*.js' -o -name '*.rb' \
       -o -name '*.sh' -o -name '*.bash' -o -name '*.java' -o -name '*.kt' -o -name '*.c' -o -name '*.cc' \
       -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
       -not -path './.git/*' -not -path './node_modules/*' -not -path './target/*' -not -path './dist/*' \
       -not -path './build/*' -not -path './venv/*' -not -path './.venv/*' -not -path './vendor/*' \
-      -not -path './.cargo/*' -not -path './third_party/*' -not -path './third-party/*' -print0 |
-    xargs -0 wc -l 2>/dev/null | tail -1) >"$scan/loc.txt" 2>&1
+      -not -path './.cargo/*' -not -path './third_party/*' -not -path './third-party/*' -print0 \
+    | xargs -0 wc -l 2>/dev/null | tail -1) >"$scan/loc.txt" 2>&1
   [[ -s $scan/loc.txt ]] || echo "0 total" >"$scan/loc.txt"
   find "$source_root" -type f \( -name '*_test.*' -o -name 'test_*' -o -name '*.test.*' -o -path '*/tests/*' -o -path '*/test/*' -o -path '*/spec/*' \) \
     -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/target/*' | head -200 >"$scan/tests.txt"
@@ -76,12 +82,32 @@ cog::cmd::refactor_scan_source() {
   local source_root="" run_dir="" mode="" out="" json
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_refactor_scan_source_usage; return 0 ;;
-      --source-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing source root" "option: --source-root" "" "run 'cog refactor-scan-source --help'"; source_root="$2"; shift 2 ;;
-      --run-dir) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing run dir" "option: --run-dir" "" "run 'cog refactor-scan-source --help'"; run_dir="$2"; shift 2 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate refactor-scan-source output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_refactor_scan_source_usage
+        return 0
+        ;;
+      --source-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing source root" "option: --source-root" "" "run 'cog refactor-scan-source --help'"
+        source_root="$2"
+        shift 2
+        ;;
+      --run-dir)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing run dir" "option: --run-dir" "" "run 'cog refactor-scan-source --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate refactor-scan-source output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown refactor-scan-source option" "option: $1" "" "run 'cog refactor-scan-source --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many refactor-scan-source output paths" "argument: $1" "" "run 'cog refactor-scan-source --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many refactor-scan-source output paths" "argument: $1" "" "run 'cog refactor-scan-source --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $source_root && -n $run_dir && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing refactor-scan-source argument" "usage: cog refactor-scan-source --source-root <dir> --run-dir <dir> (<out.json>|--json)" "" "run 'cog refactor-scan-source --help'"

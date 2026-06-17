@@ -57,14 +57,18 @@ __cog_refactor_setup_build_json() {
   if [[ -n $source_arg && -e $source_arg ]]; then
     source_json="$(jq -cn --arg source "$(realpath "$source_arg")" '$source')"
   else
-    source_json=null; ok=false; reason="$(jq -cn --arg reason "source path is required and must exist" '$reason')"
+    source_json=null
+    ok=false
+    reason="$(jq -cn --arg reason "source path is required and must exist" '$reason')"
   fi
   if [[ $source_json != null && $(jq -r . <<<"$source_json") == "$target_root" ]]; then
-    ok=false; reason="$(jq -cn --arg reason "source and target must be different paths" '$reason')"
+    ok=false
+    reason="$(jq -cn --arg reason "source and target must be different paths" '$reason')"
   fi
   guideline="$(__cog_refactor_setup_guideline_json)"
   if [[ $(jq -r '.path // empty' <<<"$guideline") == "" ]]; then
-    ok=false; reason="$(jq -cn --arg reason "could not resolve refactor migration guideline or excerpt" '$reason')"
+    ok=false
+    reason="$(jq -cn --arg reason "could not resolve refactor migration guideline or excerpt" '$reason')"
   fi
   refs="$(__cog_refactor_setup_references_json)"
   [[ -e $plan_dir ]] && collision_exists=true
@@ -84,18 +88,59 @@ cog::cmd::refactor_setup() {
   target_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_refactor_setup_usage; return 0 ;;
-      --review) mode_value=review; shift ;;
-      --source) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing source path" "option: --source" "" "run 'cog refactor-setup --help'"; source_arg="$2"; shift 2 ;;
-      --source=*) source_arg="${1#--source=}"; shift ;;
-      --target-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing target root" "option: --target-root" "" "run 'cog refactor-setup --help'"; target_root="$2"; shift 2 ;;
-      --plan-dir) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing plan dir" "option: --plan-dir" "" "run 'cog refactor-setup --help'"; plan_dir="$2"; shift 2 ;;
-      --target-lang) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing target lang" "option: --target-lang" "" "run 'cog refactor-setup --help'"; target_lang="$2"; shift 2 ;;
-      --target-lang=*) target_lang="${1#--target-lang=}"; shift ;;
-      --dry-run) dry_run=true; shift ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate refactor-setup output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_refactor_setup_usage
+        return 0
+        ;;
+      --review)
+        mode_value=review
+        shift
+        ;;
+      --source)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing source path" "option: --source" "" "run 'cog refactor-setup --help'"
+        source_arg="$2"
+        shift 2
+        ;;
+      --source=*)
+        source_arg="${1#--source=}"
+        shift
+        ;;
+      --target-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing target root" "option: --target-root" "" "run 'cog refactor-setup --help'"
+        target_root="$2"
+        shift 2
+        ;;
+      --plan-dir)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing plan dir" "option: --plan-dir" "" "run 'cog refactor-setup --help'"
+        plan_dir="$2"
+        shift 2
+        ;;
+      --target-lang)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing target lang" "option: --target-lang" "" "run 'cog refactor-setup --help'"
+        target_lang="$2"
+        shift 2
+        ;;
+      --target-lang=*)
+        target_lang="${1#--target-lang=}"
+        shift
+        ;;
+      --dry-run)
+        dry_run=true
+        shift
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate refactor-setup output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown refactor-setup option" "option: $1" "" "run 'cog refactor-setup --help'" ;;
-      *) if [[ -z $source_arg ]]; then source_arg="$1"; elif [[ -z $out && -z $mode ]]; then out="$1"; mode=file; else cog::fn::error_raise "TooManyArguments" "too many refactor-setup arguments" "argument: $1" "" "run 'cog refactor-setup --help'"; fi; shift ;;
+      *)
+        if [[ -z $source_arg ]]; then source_arg="$1"; elif [[ -z $out && -z $mode ]]; then
+          out="$1"
+          mode="file"
+        else cog::fn::error_raise "TooManyArguments" "too many refactor-setup arguments" "argument: $1" "" "run 'cog refactor-setup --help'"; fi
+        shift
+        ;;
     esac
   done
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing refactor-setup output mode" "usage: cog refactor-setup ... (<out.json>|--json)" "" "run 'cog refactor-setup --help'"

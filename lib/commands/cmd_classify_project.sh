@@ -51,16 +51,16 @@ __cog_classify_project_file_contains() {
 
 __cog_classify_project_tree_contains() {
   local pattern="$1"
-  __cog_classify_project_find_files -print0 |
-    xargs -0 grep -EIl "$pattern" 2>/dev/null |
-    head -n 1 |
-    grep -q .
+  __cog_classify_project_find_files -print0 \
+    | xargs -0 grep -EIl "$pattern" 2>/dev/null \
+    | head -n 1 \
+    | grep -q .
 }
 
 __cog_classify_project_count_shell_shebangs() {
-  __cog_classify_project_find_files -print0 |
-    xargs -0 awk 'FNR == 1 && /^#!.*(ba|z|fi)?sh/ {count++} END {print count + 0}' 2>/dev/null |
-    awk '{sum += $1} END {print sum + 0}'
+  __cog_classify_project_find_files -print0 \
+    | xargs -0 awk 'FNR == 1 && /^#!.*(ba|z|fi)?sh/ {count++} END {print count + 0}' 2>/dev/null \
+    | awk '{sum += $1} END {print sum + 0}'
 }
 
 __cog_classify_project_add_language() {
@@ -119,8 +119,8 @@ __cog_classify_project_detect_cli() {
   if __cog_classify_project_file_contains Cargo.toml '^\[\[bin\]\]'; then
     CLI_SIGNALS+=("Cargo.toml with [[bin]] section")
   fi
-  if __cog_classify_project_file_contains Cargo.toml '(^|[[:space:]])clap([[:space:]]*=|[[:space:]])' ||
-    __cog_classify_project_file_contains Cargo.toml '^\[(workspace\.)?(dev-|build-)?dependencies\.clap\]'; then
+  if __cog_classify_project_file_contains Cargo.toml '(^|[[:space:]])clap([[:space:]]*=|[[:space:]])' \
+    || __cog_classify_project_file_contains Cargo.toml '^\[(workspace\.)?(dev-|build-)?dependencies\.clap\]'; then
     CLI_SIGNALS+=("clap dependency")
     __cog_classify_project_add_framework clap rust "clap in Cargo.toml deps"
   fi
@@ -137,8 +137,8 @@ __cog_classify_project_detect_cli() {
   fi
   __cog_classify_project_has_dir bin && CLI_SIGNALS+=("bin/ directory")
   __cog_classify_project_has_dir cli && CLI_SIGNALS+=("cli/ directory")
-  if __cog_classify_project_find_files -perm /111 -print0 |
-    xargs -0 awk 'FNR == 1 && /^#!/ {found=1} END {exit found ? 0 : 1}' 2>/dev/null; then
+  if __cog_classify_project_find_files -perm /111 -print0 \
+    | xargs -0 awk 'FNR == 1 && /^#!/ {found=1} END {exit found ? 0 : 1}' 2>/dev/null; then
     CLI_SIGNALS+=("executable shebang scripts")
   fi
   if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])cobra([^[:alnum:]_]|$)'; then
@@ -156,10 +156,10 @@ __cog_classify_project_detect_cli() {
 }
 
 __cog_classify_project_monorepo() {
-  if __cog_classify_project_file_contains Cargo.toml '^\[workspace\]' ||
-    __cog_classify_project_has_file pnpm-workspace.yaml ||
-    __cog_classify_project_has_file lerna.json ||
-    [[ $(__cog_classify_project_count_named_files go.mod) -gt 1 ]]; then
+  if __cog_classify_project_file_contains Cargo.toml '^\[workspace\]' \
+    || __cog_classify_project_has_file pnpm-workspace.yaml \
+    || __cog_classify_project_has_file lerna.json \
+    || [[ $(__cog_classify_project_count_named_files go.mod) -gt 1 ]]; then
     printf 'true\n'
   else
     printf 'false\n'
@@ -212,7 +212,7 @@ cog::cmd::classify_project() {
       *)
         [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many classify-project output paths" "argument: $1" "" "run 'cog classify-project --help'"
         out="$1"
-        mode=file
+        mode="file"
         shift
         ;;
     esac

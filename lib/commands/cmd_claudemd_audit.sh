@@ -96,21 +96,35 @@ __cog_claudemd_audit_stale_probes_json() {
   local path="$1" repo_root="$2" file_dir token clean exists confidence
   local -a tokens=() objects=()
   file_dir="$(dirname -- "$path")"
+  # shellcheck disable=SC2016 # grep pattern in the loop redirection uses literal backticks; must stay unexpanded.
   while IFS= read -r token || [[ -n $token ]]; do
-    clean="${token#\`}"; clean="${clean%\`}"; clean="${clean%\"}"; clean="${clean#\"}"; clean="${clean%\'}"; clean="${clean#\'}"
-    clean="${clean%,}"; clean="${clean%;}"; clean="${clean%:}"
+    clean="${token#\`}"
+    clean="${clean%\`}"
+    clean="${clean%\"}"
+    clean="${clean#\"}"
+    clean="${clean%\'}"
+    clean="${clean#\'}"
+    clean="${clean%,}"
+    clean="${clean%;}"
+    clean="${clean%:}"
     [[ $clean == *"://"* || $clean == -* || $clean == *"*"* ]] && continue
     [[ $clean == */* ]] || continue
     [[ $clean =~ ^[A-Za-z0-9._~/-]+$ ]] || continue
     tokens+=("$clean")
   done < <(grep -Eo '`[^`]+`|[A-Za-z0-9._~/-]+/[A-Za-z0-9._~/-]+' "$path" 2>/dev/null || true)
-  [[ ${#tokens[@]} -gt 0 ]] || { jq -cn '[]'; return 0; }
+  [[ ${#tokens[@]} -gt 0 ]] || {
+    jq -cn '[]'
+    return 0
+  }
   mapfile -t tokens < <(printf '%s\n' "${tokens[@]}" | LC_ALL=C sort -u)
   for token in "${tokens[@]}"; do
     exists=false
-    if [[ $token == /* && -e $token ]]; then exists=true
-    elif [[ -n $repo_root && -e $repo_root/$token ]]; then exists=true
-    elif [[ -e $file_dir/$token ]]; then exists=true
+    if [[ $token == /* && -e $token ]]; then
+      exists=true
+    elif [[ -n $repo_root && -e $repo_root/$token ]]; then
+      exists=true
+    elif [[ -e $file_dir/$token ]]; then
+      exists=true
     fi
     confidence=high
     [[ $token == /* ]] && confidence=medium
@@ -137,15 +151,19 @@ __cog_claudemd_audit_lint_json() {
       continue
     fi
     if [[ $line =~ ^#{1,6}[[:space:]].*(Files|File|Structure|Layout|Tree|Inventory|Directories) ]]; then
-      inventory_heading=true; inventory_run=0; continue
+      inventory_heading=true
+      inventory_run=0
+      continue
     fi
     if [[ $inventory_heading == true ]]; then
       if [[ $line =~ ^[[:space:]]*[-*]?[[:space:]]*[A-Za-z0-9._/-]+[[:space:]]+[-—:] || $line =~ ^[[:space:]]*[├└│] ]]; then
-        inventory_run=$((inventory_run + 1)); inventory+=("$line_no")
+        inventory_run=$((inventory_run + 1))
+        inventory+=("$line_no")
       elif [[ -z ${line//[[:space:]]/} ]]; then
         :
       else
-        inventory_heading=false; inventory_run=0
+        inventory_heading=false
+        inventory_run=0
       fi
     fi
     if [[ $in_fence == true && ($line == *"<"*">"* || $line =~ ^[[:space:]]*\$[[:space:]]+) ]]; then
@@ -167,7 +185,8 @@ __cog_claudemd_audit_build_json() {
   [[ -n $repo_root ]] && repo_relative_path="$(__cog_claudemd_audit_repo_relative_path_for "$repo_root" "$path")"
   line_count="$(__cog_claudemd_audit_line_count_for "$path")"
   estimated_tokens=$((line_count * 5))
-  over_200=false; [[ $line_count -gt 200 ]] && over_200=true
+  over_200=false
+  [[ $line_count -gt 200 ]] && over_200=true
   history="$(__cog_claudemd_audit_history_json "$repo_root" "$repo_relative_path")"
   line_map="$(__cog_claudemd_audit_line_map_json "$path" "$repo_root" "$repo_relative_path" "$history")"
   stale_probes="$(__cog_claudemd_audit_stale_probes_json "$path" "$repo_root")"
@@ -188,11 +207,27 @@ cog::cmd::claudemd_audit() {
   local claude_path="" mode="" out="" json
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_claudemd_audit_usage; return 0 ;;
-      --path) [[ $# -ge 2 && -z $claude_path ]] || cog::fn::error_raise "MissingArgument" "missing CLAUDE.md path" "option: --path" "" "run 'cog claudemd-audit --help'"; claude_path="$2"; shift 2 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate claudemd-audit output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_claudemd_audit_usage
+        return 0
+        ;;
+      --path)
+        [[ $# -ge 2 && -z $claude_path ]] || cog::fn::error_raise "MissingArgument" "missing CLAUDE.md path" "option: --path" "" "run 'cog claudemd-audit --help'"
+        claude_path="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate claudemd-audit output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown claudemd-audit option" "option: $1" "" "run 'cog claudemd-audit --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many claudemd-audit output paths" "argument: $1" "" "run 'cog claudemd-audit --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many claudemd-audit output paths" "argument: $1" "" "run 'cog claudemd-audit --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $claude_path && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing claudemd-audit argument" "usage: cog claudemd-audit --path <CLAUDE.md> (<out.json>|--json)" "" "run 'cog claudemd-audit --help'"

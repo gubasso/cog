@@ -29,10 +29,22 @@ cog::cmd::tsk_snapshot() {
   local mode="" out="" json
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_tsk_snapshot_usage; return 0 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate tsk-snapshot output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_tsk_snapshot_usage
+        return 0
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate tsk-snapshot output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown tsk-snapshot option" "option: $1" "" "run 'cog tsk-snapshot --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many tsk-snapshot output paths" "argument: $1" "" "run 'cog tsk-snapshot --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many tsk-snapshot output paths" "argument: $1" "" "run 'cog tsk-snapshot --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing tsk-snapshot output mode" "usage: cog tsk-snapshot (<out.json>|--json)" "" "run 'cog tsk-snapshot --help'"

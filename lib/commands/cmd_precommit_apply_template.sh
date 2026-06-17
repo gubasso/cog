@@ -56,13 +56,26 @@ __cog_precommit_apply_template_build_json() {
   local ok=true reason="" template_dir="$template_root/$type" template_config="$template_root/$type/.pre-commit-config.yaml"
   local op src dst rel policy enum_status copied=() skipped=() conflicts=()
   if ! __cog_precommit_apply_template_valid_policy "$config_conflict" || ! __cog_precommit_apply_template_valid_policy "$companion_conflict"; then
-    ok=false; reason="conflict policy must be overwrite, skip, or abort"
-  elif [[ -z $type ]]; then ok=false; reason="type is required"
-  elif [[ ! $type =~ ^[a-z0-9-]+$ ]]; then ok=false; reason="type must match ^[a-z0-9-]+$"
-  elif [[ ! -d $project_root ]]; then ok=false; reason="project root is not a directory"
-  elif [[ ! -d $template_dir ]]; then ok=false; reason="template dir is not a directory"
-  elif [[ ! -f $template_config ]]; then ok=false; reason="template config not found"
-  elif [[ ! -f $template_root/committed.toml ]]; then ok=false; reason="committed.toml not found"
+    ok=false
+    reason="conflict policy must be overwrite, skip, or abort"
+  elif [[ -z $type ]]; then
+    ok=false
+    reason="type is required"
+  elif [[ ! $type =~ ^[a-z0-9-]+$ ]]; then
+    ok=false
+    reason="type must match ^[a-z0-9-]+$"
+  elif [[ ! -d $project_root ]]; then
+    ok=false
+    reason="project root is not a directory"
+  elif [[ ! -d $template_dir ]]; then
+    ok=false
+    reason="template dir is not a directory"
+  elif [[ ! -f $template_config ]]; then
+    ok=false
+    reason="template config not found"
+  elif [[ ! -f $template_root/committed.toml ]]; then
+    ok=false
+    reason="committed.toml not found"
   fi
   if [[ $ok == true ]]; then
     enum_status=0
@@ -83,7 +96,10 @@ __cog_precommit_apply_template_build_json() {
       policy="$(__cog_precommit_apply_template_policy "$rel" "$config_conflict" "$companion_conflict")"
       [[ -e $dst && $policy == abort ]] && conflicts+=("$(__cog_precommit_apply_template_record_json "$src" "$dst")")
     done
-    [[ ${#conflicts[@]} -eq 0 ]] || { ok=false; reason="destination conflict"; }
+    [[ ${#conflicts[@]} -eq 0 ]] || {
+      ok=false
+      reason="destination conflict"
+    }
   fi
   if [[ $ok == true ]]; then
     for op in "${OPERATIONS[@]}"; do
@@ -96,7 +112,9 @@ __cog_precommit_apply_template_build_json() {
       if install -D -m 0644 "$src" "$dst"; then
         copied+=("$(__cog_precommit_apply_template_record_json "$src" "$dst")")
       else
-        ok=false; reason="copy failed"; break
+        ok=false
+        reason="copy failed"
+        break
       fi
     done
   fi
@@ -117,15 +135,47 @@ cog::cmd::precommit_apply_template() {
   template_root="$(__cog_precommit_template_root_default)"
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_precommit_apply_template_usage; return 0 ;;
-      --type) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template type" "option: --type" "" "run 'cog precommit-apply-template --help'"; type="$2"; shift 2 ;;
-      --project-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog precommit-apply-template --help'"; project_root="$2"; shift 2 ;;
-      --template-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog precommit-apply-template --help'"; template_root="$2"; shift 2 ;;
-      --config-conflict) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing config conflict policy" "option: --config-conflict" "" "run 'cog precommit-apply-template --help'"; config_conflict="$2"; shift 2 ;;
-      --companion-conflict) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing companion conflict policy" "option: --companion-conflict" "" "run 'cog precommit-apply-template --help'"; companion_conflict="$2"; shift 2 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate precommit-apply-template output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_precommit_apply_template_usage
+        return 0
+        ;;
+      --type)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template type" "option: --type" "" "run 'cog precommit-apply-template --help'"
+        type="$2"
+        shift 2
+        ;;
+      --project-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog precommit-apply-template --help'"
+        project_root="$2"
+        shift 2
+        ;;
+      --template-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog precommit-apply-template --help'"
+        template_root="$2"
+        shift 2
+        ;;
+      --config-conflict)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing config conflict policy" "option: --config-conflict" "" "run 'cog precommit-apply-template --help'"
+        config_conflict="$2"
+        shift 2
+        ;;
+      --companion-conflict)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing companion conflict policy" "option: --companion-conflict" "" "run 'cog precommit-apply-template --help'"
+        companion_conflict="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate precommit-apply-template output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown precommit-apply-template option" "option: $1" "" "run 'cog precommit-apply-template --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many precommit-apply-template output paths" "argument: $1" "" "run 'cog precommit-apply-template --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many precommit-apply-template output paths" "argument: $1" "" "run 'cog precommit-apply-template --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $type && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing precommit-apply-template argument" "usage: cog precommit-apply-template --type <type> ... (<out.json>|--json)" "" "run 'cog precommit-apply-template --help'"

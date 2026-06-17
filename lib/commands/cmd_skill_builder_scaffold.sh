@@ -45,18 +45,36 @@ __cog_skill_builder_scaffold_build_json() {
   shift 6
   local companions=("$@") ok=true reason="" write_mode="" stage_dir="" dest_dir="" performs_install=false companion relative_path
   local -a files=() install_commands=()
-  [[ $name =~ ^[a-z0-9-]{1,64}$ ]] || { ok=false; reason="invalid skill name"; }
-  [[ $scope == personal || $scope == project ]] || { ok=false; reason="${reason:-scope must be personal or project}"; }
-  [[ $runtime == claude || $runtime == codex ]] || { ok=false; reason="${reason:-runtime must be claude or codex}"; }
-  [[ $scope != personal || -n $run_dir ]] || { ok=false; reason="${reason:-run dir required for personal scope}"; }
+  [[ $name =~ ^[a-z0-9-]{1,64}$ ]] || {
+    ok=false
+    reason="invalid skill name"
+  }
+  [[ $scope == personal || $scope == project ]] || {
+    ok=false
+    reason="${reason:-scope must be personal or project}"
+  }
+  [[ $runtime == claude || $runtime == codex ]] || {
+    ok=false
+    reason="${reason:-runtime must be claude or codex}"
+  }
+  [[ $scope != personal || -n $run_dir ]] || {
+    ok=false
+    reason="${reason:-run dir required for personal scope}"
+  }
   for companion in "${companions[@]}"; do
-    if ! __cog_skill_builder_path_is_safe "$companion"; then ok=false; reason="${reason:-unsafe companion path}"; break; fi
+    if ! __cog_skill_builder_path_is_safe "$companion"; then
+      ok=false
+      reason="${reason:-unsafe companion path}"
+      break
+    fi
   done
   dest_dir="$(__cog_skill_builder_scaffold_dest_dir "$scope" "$runtime" "$project_root" "$home_dir" "$name")"
   if [[ $scope == personal ]]; then
     write_mode=stage-then-install
     stage_dir="$run_dir/staging/skills/$runtime/$name"
+    # shellcheck disable=SC2016 # Literal command template; $DEST is expanded at install time, not here.
     install_commands+=('install -d "$DEST"')
+    # shellcheck disable=SC2016 # Literal command template; $STAGE/$DEST are expanded at install time, not here.
     install_commands+=('cp -a "$STAGE/." "$DEST/"')
   else
     write_mode=direct-project
@@ -78,17 +96,57 @@ cog::cmd::skill_builder_scaffold() {
   project_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
-      -h | --help) __cog_skill_builder_scaffold_usage; return 0 ;;
-      --name) [[ $# -ge 2 && -z $name ]] || cog::fn::error_raise "MissingArgument" "missing skill name" "option: --name" "" "run 'cog skill-builder-scaffold --help'"; name="$2"; shift 2 ;;
-      --runtime) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing runtime" "option: --runtime" "" "run 'cog skill-builder-scaffold --help'"; runtime="$2"; shift 2 ;;
-      --scope) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing skill scope" "option: --scope" "" "run 'cog skill-builder-scaffold --help'"; scope="$2"; shift 2 ;;
-      --project-root) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog skill-builder-scaffold --help'"; project_root="$2"; shift 2 ;;
-      --home) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing home dir" "option: --home" "" "run 'cog skill-builder-scaffold --help'"; home_dir="$2"; shift 2 ;;
-      --run-dir) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing run dir" "option: --run-dir" "" "run 'cog skill-builder-scaffold --help'"; run_dir="$2"; shift 2 ;;
-      --companion) [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing companion path" "option: --companion" "" "run 'cog skill-builder-scaffold --help'"; companions+=("$2"); shift 2 ;;
-      --json) [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate skill-builder-scaffold output mode" "" "" "choose either --json or an output path"; mode=json; shift ;;
+      -h | --help)
+        __cog_skill_builder_scaffold_usage
+        return 0
+        ;;
+      --name)
+        [[ $# -ge 2 && -z $name ]] || cog::fn::error_raise "MissingArgument" "missing skill name" "option: --name" "" "run 'cog skill-builder-scaffold --help'"
+        name="$2"
+        shift 2
+        ;;
+      --runtime)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing runtime" "option: --runtime" "" "run 'cog skill-builder-scaffold --help'"
+        runtime="$2"
+        shift 2
+        ;;
+      --scope)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing skill scope" "option: --scope" "" "run 'cog skill-builder-scaffold --help'"
+        scope="$2"
+        shift 2
+        ;;
+      --project-root)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog skill-builder-scaffold --help'"
+        project_root="$2"
+        shift 2
+        ;;
+      --home)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing home dir" "option: --home" "" "run 'cog skill-builder-scaffold --help'"
+        home_dir="$2"
+        shift 2
+        ;;
+      --run-dir)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing run dir" "option: --run-dir" "" "run 'cog skill-builder-scaffold --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --companion)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing companion path" "option: --companion" "" "run 'cog skill-builder-scaffold --help'"
+        companions+=("$2")
+        shift 2
+        ;;
+      --json)
+        [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate skill-builder-scaffold output mode" "" "" "choose either --json or an output path"
+        mode=json
+        shift
+        ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown skill-builder-scaffold option" "option: $1" "" "run 'cog skill-builder-scaffold --help'" ;;
-      *) [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many skill-builder-scaffold output paths" "argument: $1" "" "run 'cog skill-builder-scaffold --help'"; out="$1"; mode=file; shift ;;
+      *)
+        [[ -z $mode && -z $out ]] || cog::fn::error_raise "TooManyArguments" "too many skill-builder-scaffold output paths" "argument: $1" "" "run 'cog skill-builder-scaffold --help'"
+        out="$1"
+        mode="file"
+        shift
+        ;;
     esac
   done
   [[ -n $name && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing skill-builder-scaffold argument" "usage: cog skill-builder-scaffold --name <skill-name> ... (<out.json>|--json)" "" "run 'cog skill-builder-scaffold --help'"
