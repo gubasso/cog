@@ -14,6 +14,53 @@ setup() {
   printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and (.line | startswith("COMMIT_PUSH_OK"))' >/dev/null
 }
 
+@test "cog plan-queue-runner-parse-commit preserves legacy single-repo outputs" {
+  local out="${BATS_TEST_TMPDIR}/gc.out"
+  printf '%s\n' "COMMIT_OK abc1234" >"$out"
+
+  run cog plan-queue-runner-parse-commit "$out"
+
+  assert_success
+  assert_output "COMMIT_SHA=abc1234"
+
+  run cog plan-queue-runner-parse-commit "$out" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and .line == "COMMIT_OK abc1234"' >/dev/null
+}
+
+@test "cog plan-queue-runner-parse-commit emits multi-repo lines and json" {
+  local out="${BATS_TEST_TMPDIR}/gc.out"
+  printf '%s\n' \
+    "COMMIT_OK abc1234 repo=/repo/a" \
+    "COMMIT_PUSH_OK def4567 repo=/repo/b" >"$out"
+
+  run cog plan-queue-runner-parse-commit "$out"
+
+  assert_success
+  assert_line "COMMIT_SHA=abc1234 repo=/repo/a"
+  assert_line "COMMIT_SHA=def4567 repo=/repo/b"
+
+  run cog plan-queue-runner-parse-commit "$out" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .ok == true and
+    (.commits[] | select(.repo == "/repo/a" and .sha == "abc1234")) and
+    (.commits[] | select(.repo == "/repo/b" and .sha == "def4567"))
+  ' >/dev/null
+}
+
+@test "cog plan-queue-runner-parse-commit fails if any repo failed" {
+  local out="${BATS_TEST_TMPDIR}/gc.out"
+  printf '%s\n' "COMMIT_OK abc1234 repo=/repo/a" "COMMIT_FAILED hook repo=/repo/b log=/tmp/log" >"$out"
+
+  run --separate-stderr cog plan-queue-runner-parse-commit "$out" --json
+
+  assert_failure
+  [[ $stderr == *"gc commit failed"* ]]
+}
+
 @test "cog plan-queue-runner-parse-commit rejects failures and missing lines" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "COMMIT_FAILED hook" >"$out"

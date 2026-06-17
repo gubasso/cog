@@ -4,7 +4,7 @@
 __cog_gc_push_self_check='.ok != null and (.repo_root | type == "string") and (.log | type == "string") and (.exit_code | type == "number") and (.failure_class == null or (.failure_class | type == "string"))'
 
 __cog_gc_push_usage() {
-  cog::fn::ui_data "Usage: cog gc-push (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog gc-push [--repo-root <dir>] (<out.json>|--json)"
 }
 
 __cog_gc_push_log_dir() {
@@ -23,12 +23,20 @@ __cog_gc_push_new_log_file() {
 }
 
 __cog_gc_push_build_json() {
+  local repo_root_flag="${1:-}"
   local root sha log_file ok exit_code classification failure_class="" reason=""
-  root="$(cog::fn::git_root)"
-  sha="$(git rev-parse --short HEAD 2>/dev/null || true)"
+  local -a git_c=()
+  if [[ -n $repo_root_flag ]]; then
+    root="$(cog::fn::git_root_for "$repo_root_flag")" || cog::fn::error_raise "InvalidInput" \
+      "gc-push: not a git worktree" "path: ${repo_root_flag}" "" "pass a git worktree root"
+    git_c=(-C "$root")
+  else
+    root="$(cog::fn::git_root)"
+  fi
+  sha="$(git "${git_c[@]}" rev-parse --short HEAD 2>/dev/null || true)"
   log_file="$(__cog_gc_push_new_log_file "$(__cog_gc_push_log_dir)")"
 
-  if git push >"$log_file" 2>&1; then
+  if git "${git_c[@]}" push >"$log_file" 2>&1; then
     ok=true
     exit_code=0
   else
@@ -59,7 +67,7 @@ __cog_gc_push_build_json() {
 }
 
 cog::cmd::gc_push() {
-  local mode="" out="" json
+  local repo_root_flag="" mode="" out="" json
 
   while (($# > 0)); do
     case "$1" in
@@ -72,6 +80,12 @@ cog::cmd::gc_push() {
           "duplicate gc-push output mode" "" "" "choose either --json or an output path"
         mode="json"
         shift
+        ;;
+      --repo-root)
+        [[ $# -ge 2 && -n ${2:-} && -z $repo_root_flag ]] || cog::fn::error_raise "MissingArgument" \
+          "missing repo root" "option: --repo-root" "" "run 'cog gc-push --help'"
+        repo_root_flag="$2"
+        shift 2
         ;;
       -*)
         cog::fn::error_raise "InvalidInput" \
@@ -91,7 +105,7 @@ cog::cmd::gc_push() {
   [[ -n $mode ]] || cog::fn::error_raise "MissingArgument" \
     "missing gc-push output mode" "usage: cog gc-push (<out.json>|--json)" "" "run 'cog gc-push --help'"
 
-  json="$(__cog_gc_push_build_json)"
+  json="$(__cog_gc_push_build_json "$repo_root_flag")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_gc_push_self_check" "$json"
   else

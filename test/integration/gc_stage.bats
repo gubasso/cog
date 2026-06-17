@@ -9,13 +9,20 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME" "${BATS_TEST_TMPDIR}/fakebin"
   cat >"${BATS_TEST_TMPDIR}/fakebin/git" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+git_root="/tmp/repo"
+if [ "$1" = "-C" ]; then
+  git_root="$2"
+  printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+  shift 2
+else
+  printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+fi
 case "$*" in
   "rev-parse --show-toplevel")
-    printf '%s\n' "/tmp/repo"
+    printf '%s\n' "$git_root"
     ;;
   "diff --staged --name-only")
-    count="$(grep -c '^diff --staged --name-only$' "${GIT_FAKE_LOG}" 2>/dev/null || true)"
+    count="$(grep -c 'diff --staged --name-only$' "${GIT_FAKE_LOG}" 2>/dev/null || true)"
     if [ "$count" -eq 1 ]; then
       printf '%s\n' "old.txt"
     elif [ "$count" -eq 2 ]; then
@@ -48,6 +55,20 @@ EOF
   printf '%s\n' "$output" | jq -e '.ok == true and .unstaged == ["old.txt"] and .staged == ["session.txt"]' >/dev/null
   assert_file_contains "$GIT_FAKE_LOG" "reset HEAD -- old.txt"
   assert_file_contains "$GIT_FAKE_LOG" "add -- session.txt"
+}
+
+@test "cog gc-stage targets repo-root with git -C" {
+  local session="${BATS_TEST_TMPDIR}/session.txt"
+  local repo="${BATS_TEST_TMPDIR}/target-repo"
+  mkdir -p "$repo"
+  printf '%s\n' session.txt >"$session"
+
+  run cog gc-stage --session-files "$session" --repo-root "$repo" --json
+
+  assert_success
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo diff --staged --name-only"
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo reset HEAD -- old.txt"
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo add -- session.txt"
 }
 
 @test "cog gc-stage reports mismatch after emitting JSON" {

@@ -14,6 +14,9 @@ case "$*" in
   "rev-parse --show-toplevel")
     printf '%s\n' "/tmp/repo"
     ;;
+  -C\ */worktree\ rev-parse\ --show-toplevel)
+    printf '%s\n' "/tmp/repo-for"
+    ;;
   "branch --show-current")
     printf '%s\n' "main"
     ;;
@@ -64,6 +67,20 @@ EOF
   assert_success
   assert_line "?? untracked dir/file.txt"
   assert_file_contains "$GIT_FAKE_LOG" "status --porcelain=v1 -uall"
+}
+
+@test "git_root_for resolves arbitrary worktree and returns false for missing dir" {
+  mkdir -p "${BATS_TEST_TMPDIR}/worktree"
+
+  run cog::fn::git_root_for "${BATS_TEST_TMPDIR}/worktree"
+
+  assert_success
+  assert_output "/tmp/repo-for"
+
+  run cog::fn::git_root_for "${BATS_TEST_TMPDIR}/missing"
+
+  assert_failure
+  assert_output ""
 }
 
 @test "git_status_json maps staged unstaged untracked and rename entries" {

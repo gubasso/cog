@@ -25,6 +25,7 @@ Commands:
   doctor         Check cog runtime health and installation prerequisites.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
+  gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
@@ -94,6 +95,7 @@ Commands:
   doctor         Check cog runtime health and installation prerequisites.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
+  gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.

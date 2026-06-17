@@ -4,7 +4,7 @@
 __cog_gc_commit_self_check='.ok != null and (.paths | type == "array") and (.log | type == "string") and (.exit_code | type == "number")'
 
 __cog_gc_commit_usage() {
-  cog::fn::ui_data "Usage: cog gc-commit --message-file <file> --paths-file <file> (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog gc-commit --message-file <file> --paths-file <file> [--repo-root <dir>] (<out.json>|--json)"
 }
 
 __cog_gc_commit_json_array() {
@@ -73,19 +73,27 @@ __cog_gc_commit_new_log_file() {
 __cog_gc_commit_build_json() {
   local message_file="$1"
   local paths_file="$2"
+  local repo_root_flag="${3:-}"
   local root log_file sha="" exit_code ok
+  local -a git_c=()
   local -a paths=()
 
   [[ -r $message_file ]] || cog::fn::error_raise "InputUnreadable" \
     "message file is not readable" "path: ${message_file}" "" "check the file path"
   __cog_gc_commit_read_paths paths "$paths_file"
-  root="$(cog::fn::git_root)"
+  if [[ -n $repo_root_flag ]]; then
+    root="$(cog::fn::git_root_for "$repo_root_flag")" || cog::fn::error_raise "InvalidInput" \
+      "gc-commit: not a git worktree" "path: ${repo_root_flag}" "" "pass a git worktree root"
+    git_c=(-C "$root")
+  else
+    root="$(cog::fn::git_root)"
+  fi
   log_file="$(__cog_gc_commit_new_log_file "$(__cog_gc_commit_log_dir)")"
 
-  if git commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
+  if git "${git_c[@]}" commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
     ok=true
     exit_code=0
-    sha="$(git rev-parse --short HEAD)"
+    sha="$(git "${git_c[@]}" rev-parse --short HEAD)"
   else
     ok=false
     exit_code=1
@@ -109,7 +117,7 @@ __cog_gc_commit_build_json() {
 }
 
 cog::cmd::gc_commit() {
-  local message_file="" paths_file="" mode="" out="" json
+  local message_file="" paths_file="" repo_root_flag="" mode="" out="" json
 
   while (($# > 0)); do
     case "$1" in
@@ -127,6 +135,12 @@ cog::cmd::gc_commit() {
         [[ $# -ge 2 && -n ${2:-} && -z $paths_file ]] || cog::fn::error_raise "MissingArgument" \
           "missing paths file" "option: --paths-file" "" "run 'cog gc-commit --help'"
         paths_file="$2"
+        shift 2
+        ;;
+      --repo-root)
+        [[ $# -ge 2 && -n ${2:-} && -z $repo_root_flag ]] || cog::fn::error_raise "MissingArgument" \
+          "missing repo root" "option: --repo-root" "" "run 'cog gc-commit --help'"
+        repo_root_flag="$2"
         shift 2
         ;;
       --json)
@@ -154,7 +168,7 @@ cog::cmd::gc_commit() {
     "missing gc-commit argument" "usage: cog gc-commit --message-file <file> --paths-file <file> (<out.json>|--json)" "" \
     "run 'cog gc-commit --help'"
 
-  json="$(__cog_gc_commit_build_json "$message_file" "$paths_file")"
+  json="$(__cog_gc_commit_build_json "$message_file" "$paths_file" "$repo_root_flag")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_gc_commit_self_check" "$json"
   else

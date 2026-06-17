@@ -106,3 +106,35 @@ forbidden_scan_codex() {
   [[ $status -eq 1 ]]
   [[ -z $output ]]
 }
+
+@test "gc skills document canonical multi-repo status contract" {
+  local file
+  for file in "$repo_root/skills/claude/gc/SKILL.md" "$repo_root/skills/codex/gc/SKILL.md"; do
+    assert_file_contains "$file" "cog msg ok commit"
+    assert_file_contains "$file" "COMMIT_OK <sha>"
+    assert_file_contains "$file" "COMMIT_PUSH_OK <sha> repo=<root>"
+    assert_file_contains "$file" "COMMIT_FAILED"
+    assert_file_contains "$file" "COMMIT_PUSH_FAILED"
+    assert_file_contains "$file" "nothing after it"
+    assert_file_contains "$file" "repo-root"
+    assert_file_contains "$file" "repo-set"
+  done
+}
+
+@test "plan queue runner documents delegate multi-repo commit flow" {
+  local file="$repo_root/skills/claude/plan-queue-runner/SKILL.md"
+
+  assert_file_contains "$file" "claude-delegate"
+  assert_file_contains "$file" "cog queue-select"
+  assert_file_contains "$file" "repo"
+  assert_file_contains "$file" "repos:"
+  assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"
+  assert_file_contains "$file" "commits"
+}
+
+@test "plan writer multi documents satellite repos" {
+  local file="$repo_root/skills/claude/plan-writer-multi/SKILL.md"
+
+  assert_file_contains "$file" "repos:"
+  assert_file_contains "$file" "/gc -y -a --repo <sat>"
+}

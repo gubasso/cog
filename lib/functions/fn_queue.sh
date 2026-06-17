@@ -101,6 +101,18 @@ cog::fn::queue_validate_file() {
       "QUEUE.yaml has invalid top-level shape" "path: ${queue_path}" \
       "expected ${key}: []" "use a supported queue schema"
 
+  if [[ "$(yq e 'has("repos")' "$queue_path")" == "true" ]]; then
+    [[ "$(yq e '.repos | tag == "!!seq"' "$queue_path")" == "true" ]] \
+      || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+        "QUEUE.yaml repos: must be a sequence of absolute paths" "path: ${queue_path}" "" \
+        "use absolute satellite repo paths"
+    local bad_repos
+    bad_repos="$(yq e -r '.repos[]? | select((tag != "!!str") or (. == "") or ((. | test("^/")) | not))' "$queue_path")"
+    [[ -z $bad_repos ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+      "QUEUE.yaml repos: entries must be non-empty absolute paths:" "path: ${queue_path}" \
+      "$bad_repos" "use absolute satellite repo paths"
+  fi
+
   invalid="$(KEY="$key" yq e -r '
     .[strenv(KEY)][]? |
     select(
@@ -167,12 +179,17 @@ cog::fn::queue_assert_helper_owned_shape() {
   awk -v key="$key" '
     /^[[:space:]]*($|#)/ { next }
     /^[^[:space:]][A-Za-z0-9_-]+:[[:space:]]*/ {
-      if ($0 !~ ("^" key ":[[:space:]]*(\\[\\])?[[:space:]]*$")) {
+      if ($0 ~ ("^" key ":[[:space:]]*(\\[\\])?[[:space:]]*$")) {
+        schema_seen++
+        last_is_schema = 1
+      } else if ($0 ~ "^repos:[[:space:]]*(\\[\\])?[[:space:]]*$") {
+        repos_seen++
+        last_is_schema = 0
+      } else {
         bad = 1
       }
-      top_seen++
     }
-    END { exit !(bad == 0 && top_seen == 1) }
+    END { exit !(bad == 0 && schema_seen == 1 && repos_seen <= 1 && last_is_schema == 1) }
   ' "$queue_path" || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
     "unsupported queue shape for append-only splice" "path: ${queue_path}" \
     "queue contains unsupported top-level data" "use a helper-owned queue file"

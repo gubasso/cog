@@ -106,7 +106,69 @@ EOF
   run cog queue-select --queue "$queue" --repo-root "$target" --json
 
   assert_failure
-  printf '%s\n' "$output" | jq -e '.ok == false and .reason == "dirty worktree"' >/dev/null
+  printf '%s\n' "$output" | jq -e --arg target "$target" '.ok == false and .reason == ("dirty worktree: " + $target)' >/dev/null
+}
+
+@test "cog queue-select accepts absolute repos block and rejects relative entries" {
+  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  cat >"$queue" <<EOF
+repos:
+  - ${BATS_TEST_TMPDIR}/satellite
+rounds:
+  - item: first
+    status: todo
+    depends_on: []
+    prompt: /prex -ar first.md
+    notes: note
+EOF
+
+  run cog queue-select --queue "$queue" --no-clean-check --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.state == "selected" and .selected.item == "first"' >/dev/null
+
+  cat >"$queue" <<'EOF'
+repos:
+  - relative/repo
+rounds:
+  - item: first
+    status: todo
+    depends_on: []
+    prompt: /prex -ar first.md
+    notes: note
+EOF
+
+  run --separate-stderr cog queue-select --queue "$queue" --no-clean-check --json
+
+  assert_failure
+  [[ $stderr == *"repos: entries must be non-empty absolute paths"* ]]
+}
+
+@test "cog queue-select clean check includes satellite repos" {
+  local primary="${BATS_TEST_TMPDIR}/primary"
+  local satellite="${BATS_TEST_TMPDIR}/satellite"
+  mkdir -p "$primary" "$satellite"
+  git -C "$primary" init -q
+  git -C "$satellite" init -q
+  git -C "$primary" config user.email t@e.st
+  git -C "$primary" config user.name tester
+  git -C "$satellite" config user.email t@e.st
+  git -C "$satellite" config user.name tester
+  git -C "$primary" commit -q --allow-empty -m init
+  git -C "$satellite" commit -q --allow-empty -m init
+  printf 'dirty\n' >"${satellite}/dirty.txt"
+  local queue="${BATS_TEST_TMPDIR}/satellite-QUEUE.yaml"
+  write_queue "$queue"
+
+  run cog queue-select --queue "$queue" --repo-root "$primary" --repo "$satellite" --json
+
+  assert_failure
+  printf '%s\n' "$output" | jq -e --arg satellite "$satellite" '.ok == false and .reason == ("dirty worktree: " + $satellite)' >/dev/null
+
+  run cog queue-select --queue "$queue" --repo-root "$primary" --repo "$satellite" --no-clean-check --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.state == "selected"' >/dev/null
 }
 
 @test "cog queue-select --help dispatches" {

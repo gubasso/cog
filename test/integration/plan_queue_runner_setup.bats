@@ -35,6 +35,29 @@ EOF
   jq -e '.selected.item == "next"' "${run_dir}/queue-select.json" >/dev/null
 }
 
+@test "cog plan-queue-runner-setup persists satellite repos from queue" {
+  mkdir -p "${BATS_TEST_TMPDIR}/satellite"
+  cat >"${BATS_TEST_TMPDIR}/repo/plan/QUEUE.yaml" <<EOF
+repos:
+  - ${BATS_TEST_TMPDIR}/satellite
+rounds:
+  - item: next
+    status: todo
+    depends_on: []
+    prompt: /prex -ar next.md
+    notes: note
+EOF
+
+  run cog plan-queue-runner-setup --json "plan"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg sat "${BATS_TEST_TMPDIR}/satellite" '.repos == [$sat]' >/dev/null
+  local run_dir
+  run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
+  assert_file_contains "${run_dir}/ctx.env" "REPOS="
+  assert_file_contains "${run_dir}/ctx.env" "${BATS_TEST_TMPDIR}/satellite"
+}
+
 @test "cog plan-queue-runner-setup rejects invalid max and missing target" {
   run --separate-stderr cog plan-queue-runner-setup --json "--max 0 plan"
   assert_failure 2

@@ -9,10 +9,17 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_RUNTIME_DIR" "${BATS_TEST_TMPDIR}/fakebin"
   cat >"${BATS_TEST_TMPDIR}/fakebin/git" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+git_root="/tmp/repo"
+if [ "$1" = "-C" ]; then
+  git_root="$2"
+  printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+  shift 2
+else
+  printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+fi
 case "$*" in
   "rev-parse --show-toplevel")
-    printf '%s\n' "/tmp/repo"
+    printf '%s\n' "$git_root"
     ;;
   "rev-parse --short HEAD")
     printf '%s\n' "abc1234"
@@ -47,6 +54,27 @@ make_inputs() {
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .sha == "abc1234" and .paths == ["file one.txt"]' >/dev/null
   assert_file_contains "$GIT_FAKE_LOG" "commit -F - -- file one.txt"
+}
+
+@test "cog gc-commit targets repo-root with git -C" {
+  local repo="${BATS_TEST_TMPDIR}/target-repo"
+  mkdir -p "$repo"
+  make_inputs
+
+  run cog gc-commit --message-file "${BATS_TEST_TMPDIR}/message.txt" --paths-file "${BATS_TEST_TMPDIR}/paths.txt" --repo-root "$repo" --json
+
+  assert_success
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo commit -F - -- file one.txt"
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo rev-parse --short HEAD"
+}
+
+@test "cog gc-commit rejects invalid repo-root" {
+  make_inputs
+
+  run --separate-stderr cog gc-commit --message-file "${BATS_TEST_TMPDIR}/message.txt" --paths-file "${BATS_TEST_TMPDIR}/paths.txt" --repo-root "${BATS_TEST_TMPDIR}/missing" --json
+
+  assert_failure
+  [[ $stderr == *"gc-commit: not a git worktree"* ]]
 }
 
 @test "cog gc-commit emits failure JSON and exits nonzero" {

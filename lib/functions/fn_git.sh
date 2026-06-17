@@ -45,6 +45,12 @@ cog::fn::git_root() {
   git rev-parse --show-toplevel
 }
 
+cog::fn::git_root_for() {
+  local dir="${1:-}"
+  [[ -n $dir && -d $dir ]] || return 1
+  git -C "$dir" rev-parse --show-toplevel 2>/dev/null
+}
+
 cog::fn::git_current_branch() {
   __cog_git_require_git
   git branch --show-current

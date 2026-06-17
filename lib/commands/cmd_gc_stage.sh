@@ -4,7 +4,7 @@
 __cog_gc_stage_self_check='.ok != null and (.session_files | type == "array") and (.final_staged | type == "array")'
 
 __cog_gc_stage_usage() {
-  cog::fn::ui_data "Usage: cog gc-stage --session-files <file> (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog gc-stage --session-files <file> [--repo-root <dir>] (<out.json>|--json)"
 }
 
 __cog_gc_stage_json_array() {
@@ -71,33 +71,41 @@ __cog_gc_stage_command_object() {
 
 __cog_gc_stage_build_json() {
   local session_file="$1"
+  local repo_root_flag="${2:-}"
   local root staged_path session_path final_path ok=true reason=""
+  local -a git_c=()
   local -a session_files=() initial_staged=() final_staged=() unstaged=() staged=() mismatch=() commands=()
 
-  root="$(cog::fn::git_root)"
+  if [[ -n $repo_root_flag ]]; then
+    root="$(cog::fn::git_root_for "$repo_root_flag")" || cog::fn::error_raise "InvalidInput" \
+      "gc-stage: not a git worktree" "path: ${repo_root_flag}" "" "pass a git worktree root"
+    git_c=(-C "$root")
+  else
+    root="$(cog::fn::git_root)"
+  fi
   __cog_gc_stage_read_session_files session_files "$session_file"
-  mapfile -t initial_staged < <(git diff --staged --name-only)
+  mapfile -t initial_staged < <(git "${git_c[@]}" diff --staged --name-only)
 
   for staged_path in "${initial_staged[@]}"; do
     if ! __cog_gc_stage_contains "$staged_path" "${session_files[@]}"; then
-      if git reset HEAD -- "$staged_path" >/dev/null; then
+      if git "${git_c[@]}" reset HEAD -- "$staged_path" >/dev/null; then
         unstaged+=("$staged_path")
         commands+=("$(__cog_gc_stage_command_object unstage "$staged_path")")
       fi
     fi
   done
 
-  mapfile -t final_staged < <(git diff --staged --name-only)
+  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --name-only)
   for session_path in "${session_files[@]}"; do
     if ! __cog_gc_stage_contains "$session_path" "${final_staged[@]}"; then
-      if git add -- "$session_path"; then
+      if git "${git_c[@]}" add -- "$session_path"; then
         staged+=("$session_path")
         commands+=("$(__cog_gc_stage_command_object stage "$session_path")")
       fi
     fi
   done
 
-  mapfile -t final_staged < <(git diff --staged --name-only)
+  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --name-only)
   for final_path in "${final_staged[@]}"; do
     __cog_gc_stage_contains "$final_path" "${session_files[@]}" || mismatch+=("$final_path")
   done
@@ -135,7 +143,7 @@ __cog_gc_stage_build_json() {
 }
 
 cog::cmd::gc_stage() {
-  local session_file="" mode="" out="" json
+  local session_file="" repo_root_flag="" mode="" out="" json
 
   while (($# > 0)); do
     case "$1" in
@@ -147,6 +155,12 @@ cog::cmd::gc_stage() {
         [[ $# -ge 2 && -n ${2:-} && -z $session_file ]] || cog::fn::error_raise "MissingArgument" \
           "missing session files path" "option: --session-files" "" "run 'cog gc-stage --help'"
         session_file="$2"
+        shift 2
+        ;;
+      --repo-root)
+        [[ $# -ge 2 && -n ${2:-} && -z $repo_root_flag ]] || cog::fn::error_raise "MissingArgument" \
+          "missing repo root" "option: --repo-root" "" "run 'cog gc-stage --help'"
+        repo_root_flag="$2"
         shift 2
         ;;
       --json)
@@ -174,7 +188,7 @@ cog::cmd::gc_stage() {
     "missing gc-stage argument" "usage: cog gc-stage --session-files <file> (<out.json>|--json)" "" \
     "run 'cog gc-stage --help'"
 
-  json="$(__cog_gc_stage_build_json "$session_file")"
+  json="$(__cog_gc_stage_build_json "$session_file" "$repo_root_flag")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_gc_stage_self_check" "$json"
   else

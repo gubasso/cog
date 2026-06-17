@@ -4,7 +4,7 @@
 __cog_queue_select_self_check='(.ok|type=="boolean") and (.queue_path|type=="string") and (.clean_check|type=="boolean") and (.state == "selected" or .state == "complete" or .state == "blocked") and ((.selected == null) or (.selected.item|type=="string")) and (.todo_remaining|type=="array") and (.blocked|type=="array")'
 
 __cog_queue_select_usage() {
-  cog::fn::ui_data "Usage: cog queue-select --queue <path> [--repo-root <dir>] [--no-clean-check] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog queue-select --queue <path> [--repo-root <dir>] [--repo <dir>]... [--no-clean-check] (<out.json>|--json)"
 }
 
 __cog_queue_select_result_json() {
@@ -26,21 +26,25 @@ __cog_queue_select_result_json() {
 
 __cog_queue_select_build_json() {
   local queue_path="$1" repo_root="$2" clean_check="$3"
+  shift 3
+  local -a extra_repos=("$@")
   local selected_json dirty state selected todo blocked ok=true reason=""
   cog::fn::queue_validate_rounds_selectable "$queue_path"
 
   if [[ $clean_check == true ]]; then
-    # Bind the clean check to repo_root (not the caller's cwd) so a queue runner
-    # cannot start work against a dirty target repository, or be wrongly blocked
-    # by an unrelated dirty cwd. Mirrors the source `git -C "$repo_root"` form.
-    if ! dirty="$(cd "$repo_root" 2>/dev/null && cog::fn::git_status_porcelain 2>/dev/null)"; then
-      __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "repo-root is not a verifiable git worktree"
-      return 0
-    fi
-    if [[ -n $dirty ]]; then
-      __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "dirty worktree"
-      return 0
-    fi
+    local r
+    for r in "$repo_root" "${extra_repos[@]}"; do
+      # Bind the clean check to explicit repo roots (not the caller's cwd) so a
+      # queue runner cannot start work against a dirty target or satellite repo.
+      if ! dirty="$(git -C "$r" status --porcelain=v1 2>/dev/null)"; then
+        __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "not a verifiable git worktree: $r"
+        return 0
+      fi
+      if [[ -n $dirty ]]; then
+        __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "dirty worktree: $r"
+        return 0
+      fi
+    done
   fi
 
   selected_json="$(cog::fn::queue_select_next_round "$queue_path")"
@@ -57,6 +61,7 @@ __cog_queue_select_build_json() {
 
 cog::cmd::queue_select() {
   local queue_path="" repo_root="" clean_check=true mode="" out="" json
+  local -a extra_repos=()
   repo_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
@@ -72,6 +77,11 @@ cog::cmd::queue_select() {
       --repo-root)
         [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing repo root" "option: --repo-root" "" "run 'cog queue-select --help'"
         repo_root="$2"
+        shift 2
+        ;;
+      --repo)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing repo" "option: --repo" "" "run 'cog queue-select --help'"
+        extra_repos+=("$2")
         shift 2
         ;;
       --no-clean-check)
@@ -100,7 +110,7 @@ cog::cmd::queue_select() {
     "run 'cog queue-select --help'"
   [[ -n $mode ]] || mode=json
 
-  json="$(__cog_queue_select_build_json "$queue_path" "$repo_root" "$clean_check")"
+  json="$(__cog_queue_select_build_json "$queue_path" "$repo_root" "$clean_check" "${extra_repos[@]}")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_queue_select_self_check" "$json"
   else
