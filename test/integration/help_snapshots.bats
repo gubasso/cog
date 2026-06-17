@@ -29,6 +29,7 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic PreToolUse/Stop hook decisions.
+  lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.
@@ -97,6 +98,7 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic PreToolUse/Stop hook decisions.
+  lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
   noop           Exercise command dispatch without side effects.

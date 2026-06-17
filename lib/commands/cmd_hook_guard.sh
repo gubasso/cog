@@ -16,10 +16,11 @@ Both read the hook JSON payload on stdin and use the hook deny contract:
 exit 2 + a human reason on stderr to BLOCK; exit 0 to allow.
 
 codex-foreground
-  Denies a Bash tool call whose command runs codex-session / codex-runner when
-  it is backgrounded (run_in_background=true) or lacks a timeout of at least
-  600000ms — the two ways a Codex child gets SIGTERM-reaped. Foreground,
-  long-timeout, and all non-Codex Bash calls are allowed untouched.
+  Denies a Bash tool call whose command runs `cog codex-runner run-exec` or
+  `cog codex-runner run-resume` when it is backgrounded (run_in_background=true)
+  or lacks a timeout of at least 600000ms — the two ways a Codex child gets
+  SIGTERM-reaped. Foreground, long-timeout, and all non-Codex Bash calls are
+  allowed untouched.
 
 prex-stop
   Blocks the owning session from stopping while a prex run's required artifacts
@@ -44,20 +45,19 @@ __cog_hook_guard_codex_foreground() {
   payload="$(cat)"
 
   cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""' 2>/dev/null || printf '')"
-  case "$cmd" in
-    *codex-session* | *codex-runner*) ;;
-    *) exit 0 ;;
-  esac
+  local nl=$'\n'
+  local codex_re="(^|[;&|({${nl}])[[:space:]]*cog[[:space:]]+codex-runner[[:space:]]+run-(exec|resume)([[:space:];&|)}${nl}]|\$)"
+  [[ $cmd =~ $codex_re ]] || exit 0
 
   bg="$(printf '%s' "$payload" | jq -r '.tool_input.run_in_background // false' 2>/dev/null || printf 'false')"
-  if [[ "$bg" == "true" ]]; then
+  if [[ $bg == "true" ]]; then
     printf 'BLOCKED: never background a Codex call (run_in_background=true). Re-issue it in the FOREGROUND (omit run_in_background) with a Bash timeout of %sms. A backgrounded Codex child is SIGTERM-reaped when the turn ends — it loses all work and leaves a 0-byte runner JSON.\n' \
       "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" >&2
     exit 2
   fi
 
   t="$(printf '%s' "$payload" | jq -r '.tool_input.timeout // empty' 2>/dev/null || printf '')"
-  if [[ -z "$t" || ! "$t" =~ ^[0-9]+$ || "$t" -lt "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" ]]; then
+  if [[ -z $t || ! $t =~ ^[0-9]+$ || $t -lt $__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS ]]; then
     printf 'BLOCKED: a Codex call needs a Bash timeout of at least %sms (got: %s). The default (~120000ms) SIGTERMs Codex mid-run. Re-issue this call with timeout: %s.\n' \
       "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" "${t:-unset}" "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" >&2
     exit 2
@@ -68,7 +68,7 @@ __cog_hook_guard_codex_foreground() {
 
 __cog_hook_guard_prex_stop() {
   local owner_pid=""
-  while [[ "$#" -gt 0 ]]; do
+  while [[ $# -gt 0 ]]; do
     case "$1" in
       --owner-pid)
         owner_pid="${2:-}"
@@ -93,8 +93,8 @@ __cog_hook_guard_prex_stop() {
   local all_missing=()
   local flag run_dir op
   for flag in "${flags[@]}"; do
-    [[ "$flag" == *.lock ]] || continue
-    [[ -f "$flag" ]] || continue
+    [[ $flag == *.lock ]] || continue
+    [[ -f $flag ]] || continue
 
     run_dir=""
     op=""
@@ -103,15 +103,15 @@ __cog_hook_guard_prex_stop() {
       read -r op
     } <"$flag" 2>/dev/null || true
 
-    if [[ -z "$run_dir" || ! -d "$run_dir" ]]; then
+    if [[ -z $run_dir || ! -d $run_dir ]]; then
       rm -f "$flag"
       continue
     fi
-    if [[ -n "$op" ]] && ! kill -0 "$op" 2>/dev/null; then
+    if [[ -n $op ]] && ! kill -0 "$op" 2>/dev/null; then
       rm -f "$flag"
       continue
     fi
-    if [[ -n "$op" && -n "$owner_pid" && "$op" != "$owner_pid" ]]; then
+    if [[ -n $op && -n $owner_pid && $op != "$owner_pid" ]]; then
       continue
     fi
 

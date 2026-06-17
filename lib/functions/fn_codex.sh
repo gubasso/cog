@@ -1,4 +1,9 @@
 # shellcheck shell=bash
+#
+# Codex invocation source of truth:
+# this file is the only layer that builds or runs direct codex-session exec
+# and resume command lines. Skills and commands above it must invoke Codex
+# through `cog codex-runner run-exec` or `cog codex-runner run-resume`.
 
 __cog_codex_require_arg() {
   local value="${1:-}"
