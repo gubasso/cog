@@ -5,7 +5,7 @@ setup() {
 }
 
 require_live_tests() {
-  [[ "${COG_LIVE_TESTS:-}" == "1" ]] || skip "set COG_LIVE_TESTS=1 to run live tests"
+  [[ ${COG_LIVE_TESTS:-} == "1" ]] || skip "set COG_LIVE_TESTS=1 to run live tests"
   return 0
 }
 

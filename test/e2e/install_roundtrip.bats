@@ -16,7 +16,7 @@ setup() {
 }
 
 teardown() {
-  rm -rf "$BATS_TEST_TMPDIR/home"
+  rm -rf "${BATS_TEST_TMPDIR:?}/home"
 }
 
 @test "install and invoke from PATH" {

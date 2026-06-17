@@ -1,11 +1,30 @@
 # cog Documentation
 
-This directory is organized using Diataxis zones:
+This directory is organized using Diataxis zones.
 
-- `decisions/` records accepted, rejected, proposed, superseded, and implemented ADRs.
-- `guides/` contains task-oriented workflows.
-- `reference/` contains lookup material.
-- `explanation/` contains background and design rationale.
+## Decisions
 
-Round 1 only seeds the documentation structure. Durable project documentation is added as behavior
-and operational workflows are implemented in later rounds.
+- [ADR template](decisions/template.md)
+- [ADR-0001: Project extraction](decisions/0001-project-extraction.md)
+- [ADR-0002: Name cog](decisions/0002-name-cog.md)
+- [ADR-0003: Multi-target install](decisions/0003-multi-target-install.md)
+- [ADR-0004: Pre-commit as test source of truth](decisions/0004-pre-commit-as-test-sot.md)
+- [ADR-0005: Parallel skill trees](decisions/0005-parallel-skill-trees.md)
+- [ADR-0006: Loader-based architecture](decisions/0006-loader-based-architecture.md)
+- [ADR-0007: In-session subagent delegation](decisions/0007-in-session-subagent-delegation.md)
+
+## Guides
+
+- [Install cog](guides/install.md)
+- [Release and man-page build](guides/release-and-man-build.md)
+
+## Reference
+
+- [CLI commands](reference/cli-commands.md)
+- [Install layout](reference/install-layout.md)
+- [Skills](reference/skills.md)
+- [Codex single entrypoint](reference/codex-single-entrypoint.md)
+
+## Explanation
+
+- [Architecture overview](explanation/architecture.md)

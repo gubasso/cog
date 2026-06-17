@@ -16,14 +16,14 @@ valid_manifest_path() {
     return 1
   fi
 
-  if path_under "$path" "$app_root" ||
-    path_under "$path" "$prefix/bin" ||
-    path_under "$path" "$home/.claude/skills" ||
-    path_under "$path" "$home/.claude/agents" ||
-    path_under "$path" "$home/.agents/skills" ||
-    path_under "$path" "$comp_dir" ||
-    path_under "$path" "$man_dir" ||
-    path_under "$path" "$state_dir"; then
+  if path_under "$path" "$app_root" \
+    || path_under "$path" "$prefix/bin" \
+    || path_under "$path" "$home/.claude/skills" \
+    || path_under "$path" "$home/.claude/agents" \
+    || path_under "$path" "$home/.agents/skills" \
+    || path_under "$path" "$comp_dir" \
+    || path_under "$path" "$man_dir" \
+    || path_under "$path" "$state_dir"; then
     return 0
   fi
 

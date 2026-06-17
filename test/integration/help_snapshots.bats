@@ -2,6 +2,22 @@ setup() {
   bats_require_minimum_version 1.5.0
   load '../test_helper/common-setup'
   _common_setup
+  REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  export REPO_ROOT
+}
+
+derived_commands() {
+  find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | sort \
+    | sed 's#.*/cmd_##; s#\.sh$##; s#_#-#g'
+}
+
+completion_commands() {
+  # Assumes one command name per line inside the `local -a commands=( ... )` block
+  # of completions/cog.bash (the file's canonical, generated layout). If that file
+  # is ever reformatted to place multiple commands on a line or add inline comments,
+  # update this parser so the drift check below cannot silently weaken.
+  sed -n '/local -a commands=(/,/)/p' "$REPO_ROOT/completions/cog.bash" \
+    | sed -n 's/^[[:space:]]*\([a-z][a-z0-9-]*\)[[:space:]]*$/\1/p'
 }
 
 @test "cog --help matches generated snapshot" {
@@ -227,4 +243,48 @@ Global flags:
       --dry-run       Show what would happen without changing state
       --print-config  Print resolved configuration and sources
   -v, -vv, -vvv       Increase verbosity"
+}
+
+@test "every command has generated command help" {
+  local name expected
+
+  while IFS= read -r name; do
+    run cog "$name" --help
+
+    assert_success
+    expected="Usage: cog ${name} [args]"
+    [[ $output == *"$expected"* ]]
+  done < <(derived_commands)
+}
+
+@test "root help contains every command desc sentinel" {
+  local path line desc
+
+  run cog --help
+  assert_success
+  local root_help="$output"
+
+  while IFS= read -r path; do
+    line="$(sed -n '2p' "$path")"
+    [[ $line =~ ^:\ \'desc:\ (.*)\'$ ]]
+    desc="${BASH_REMATCH[1]}"
+    [[ $root_help == *"$desc"* ]]
+  done < <(find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | sort)
+}
+
+@test "bash completion command list matches command modules" {
+  local expected actual
+
+  expected="$(derived_commands)"
+  actual="$(completion_commands)"
+
+  assert_equal "$actual" "$expected"
+}
+
+@test "man source lists every command" {
+  local name
+
+  while IFS= read -r name; do
+    grep -F "*${name}*" "$REPO_ROOT/man/cog.1.scd" >/dev/null
+  done < <(derived_commands)
 }
