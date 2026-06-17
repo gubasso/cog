@@ -30,6 +30,16 @@ forbidden_scan() {
   fi
 }
 
+forbidden_scan_codex() {
+  local pattern='agent-helper|AGENT_HELPER|/workspaces/\.dotfiles'
+
+  if command -v rg >/dev/null 2>&1; then
+    rg -n "$pattern" "$repo_root/skills/codex"
+  else
+    grep -rE -n "$pattern" "$repo_root/skills/codex"
+  fi
+}
+
 @test "all Claude skills have valid frontmatter" {
   local skills=(
     ask
@@ -60,12 +70,38 @@ forbidden_scan() {
   done
 }
 
+@test "all Codex skills have valid frontmatter" {
+  local skills=(
+    ask
+    ast-grep
+    gc
+    implementation-reviewer
+    plan-writer
+    refactor-migration-plan
+    review-code-deep
+    suckless-patcher
+    test-review
+  )
+  local skill
+
+  for skill in "${skills[@]}"; do
+    assert_markdown_frontmatter "$repo_root/skills/codex/$skill/SKILL.md"
+  done
+}
+
 @test "claude-delegate agent has valid frontmatter" {
   assert_markdown_frontmatter "$repo_root/agents/claude/claude-delegate.md"
 }
 
 @test "Claude skills and agents do not reference dotfiles helper source" {
   run forbidden_scan
+
+  [[ $status -eq 1 ]]
+  [[ -z $output ]]
+}
+
+@test "Codex skills do not reference dotfiles helper source" {
+  run forbidden_scan_codex
 
   [[ $status -eq 1 ]]
   [[ -z $output ]]
