@@ -6,8 +6,7 @@ cog - deterministic helper CLI for agent-oriented development workflows
 
 # SYNOPSIS
 
-*cog* [*-h*|*--help*] [*-V*|*--version*] [*--json*] [*--dry-run*]
-[*--print-config*] [*-v*|*-vv*|*-vvv*] <command> [args]
+*cog* [*-h*|*--help*] [*-V*|*--version*] [*--json*] [*--dry-run*] [*--print-config*] [*-v*|*-vv*|*-vvv*] <command> [args]
 
 *cog help* [command]
 
