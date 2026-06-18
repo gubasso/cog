@@ -8,6 +8,8 @@ description: >
 model: haiku
 ---
 
+<!-- trigger-tests: "tsk-new", "create an issue", "new task", "file a tsk issue", "capture this as an issue" -->
+
 # Tsk New
 
 Create a new `tsk` issue from three inputs: current repository state, the

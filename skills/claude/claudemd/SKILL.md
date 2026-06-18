@@ -10,6 +10,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "claudemd", "review claude.md", "optimize claude.md", "fix claude.md" -->
+
 # CLAUDE.md Reviewer & Optimizer
 
 Deterministic audit mechanics are delegated to

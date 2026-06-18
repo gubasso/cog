@@ -12,6 +12,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0005: Parallel skill trees](decisions/0005-parallel-skill-trees.md)
 - [ADR-0006: Loader-based architecture](decisions/0006-loader-based-architecture.md)
 - [ADR-0007: In-session subagent delegation](decisions/0007-in-session-subagent-delegation.md)
+- [ADR-0008: Skill bodies stay probabilistic; deterministic mechanics live in cog](decisions/0008-skill-script-boundary.md)
 
 ## Guides
 
@@ -23,6 +24,7 @@ This directory is organized using Diataxis zones.
 - [CLI commands](reference/cli-commands.md)
 - [Install layout](reference/install-layout.md)
 - [Skills](reference/skills.md)
+- [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
 
 ## Explanation

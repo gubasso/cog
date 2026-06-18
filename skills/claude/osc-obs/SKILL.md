@@ -5,6 +5,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "osc", "osc results", "osc buildlog", "watch the build", "branch from upstream" -->
+
 # osc-obs - OBS operations skill
 
 runbook-execute helper extraction is DEFERRED because it is high-risk, environment-sensitive,

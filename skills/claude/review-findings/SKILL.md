@@ -11,6 +11,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "review findings", "address findings", "fix review", "review report", "handle feedback" -->
+
 # Review Findings Processor
 
 Process a list of code review findings, triage each one, and either address it or justify skipping

@@ -79,6 +79,7 @@ Commands:
   rundir         Create a workflow run directory and optionally acquire its lock.
   skill-builder-scaffold Compute skill scaffold paths.
   skill-builder-validate Validate skill-builder inputs.
+  skill-lint     Lint SKILL.md files against the skill/script boundary.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
@@ -149,6 +150,7 @@ Commands:
   rundir         Create a workflow run directory and optionally acquire its lock.
   skill-builder-scaffold Compute skill scaffold paths.
   skill-builder-validate Validate skill-builder inputs.
+  skill-lint     Lint SKILL.md files against the skill/script boundary.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.

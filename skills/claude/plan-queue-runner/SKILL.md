@@ -13,6 +13,8 @@ disable-model-invocation: true
 allowed-tools: Bash Read Agent Skill
 ---
 
+<!-- trigger-tests: "plan-queue-runner", "run the queue", "run the plan queue", "execute the plan rounds", "drive the plan directory" -->
+
 # Plan Queue Runner
 
 Drive a plan-writer directory plan to completion from its `QUEUE.yaml`. For each runnable `todo`

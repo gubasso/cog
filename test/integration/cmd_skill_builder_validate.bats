@@ -19,6 +19,26 @@ setup() {
   [[ $output != *".claude/skills"* ]]
 }
 
+@test "cog skill-builder-validate detects personal codex skill collisions" {
+  export COG_SKILLS_HOME="${BATS_TEST_TMPDIR}/skillshome"
+  mkdir -p "${COG_SKILLS_HOME}/codex/demo-skill"
+
+  run --separate-stderr cog skill-builder-validate --name demo-skill --scope personal --run-dir "$RUN_DIR" --json
+
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.ok == false and (.collisions[] | contains("/codex/demo-skill"))' >/dev/null
+}
+
+@test "cog skill-builder-validate rejects reserved names in build mode" {
+  run --separate-stderr cog skill-builder-validate --name claude --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.ok == false and .valid_name == false' >/dev/null
+
+  run --separate-stderr cog skill-builder-validate --name anthropic --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.ok == false and .valid_name == false' >/dev/null
+}
+
 @test "cog skill-builder-validate validates draft files" {
   cat >"${BATS_TEST_TMPDIR}/SKILL.md" <<'EOF'
 ---

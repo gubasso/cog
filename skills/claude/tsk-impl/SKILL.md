@@ -7,6 +7,8 @@ description: >
   issue <id>", or "implement the tsk issue".
 ---
 
+<!-- trigger-tests: "tsk-impl", "implement this issue", "implement the task", "work on issue", "implement the tsk issue" -->
+
 # Tsk Impl
 
 Implement a `tsk` issue directly in the current Claude session. The issue body

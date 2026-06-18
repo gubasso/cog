@@ -65,6 +65,7 @@ _cog() {
     rundir
     skill-builder-scaffold
     skill-builder-validate
+    skill-lint
     suckless-apply
     suckless-conflicts
     suckless-preflight

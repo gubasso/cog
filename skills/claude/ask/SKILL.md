@@ -7,6 +7,8 @@ description: >
 argument-hint: "[-f|--fast] [-w|--web-search] [-c|--codex] <question about the project>"
 ---
 
+<!-- trigger-tests: "ask", "explain", "what is", "how does", "why does" -->
+
 # Ask
 
 Answer a question about the project. **Do not modify any files in the repo.**

@@ -14,6 +14,8 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 ---
 
+<!-- trigger-tests: "plan-writer-multi", "dual-engine plan", "plan with codex", "two plans then synthesize" -->
+
 # Plan Writer Multi
 
 Coordinate **two independent plan-writers** — Claude and Codex — running in parallel from the

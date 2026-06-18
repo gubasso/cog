@@ -15,6 +15,8 @@ agent: general-purpose
 allowed-tools: Read Write Grep Glob WebSearch WebFetch
 ---
 
+<!-- trigger-tests: "review this plan", "validate this implementation", "check this approach", "second opinion on this plan", "here is what Codex suggested" -->
+
 # Plan Reviewer
 
 You receive a user request paired with an implementation plan from an external source. Your job is

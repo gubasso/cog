@@ -9,6 +9,8 @@ description: >
 model: haiku
 ---
 
+<!-- trigger-tests: "gc", "commit", "commit this", "save changes", "stage and commit", "commit and push" -->
+
 # Commit changes
 
 The shared mechanical contract is identical to the Codex `gc` skill.

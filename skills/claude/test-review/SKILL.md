@@ -9,6 +9,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "test-review", "audit the tests", "test anti-patterns", "review the test suite" -->
+
 # `test-review`
 
 This skill preserves the live Claude skill contract: it is plan-only and writes only under the

@@ -174,6 +174,9 @@ The command list and short descriptions are sourced from command modules under
 *skill-builder-validate*
 	Validate skill-builder inputs.
 
+*skill-lint*
+	Lint SKILL.md files against the skill/script boundary.
+
 *suckless-apply*
 	Check, apply, and build a suckless patch.
 

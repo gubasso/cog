@@ -10,6 +10,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "pre-commit", "set up pre-commit", "configure hooks", "add lint hooks", "install pre-commit" -->
+
 # Pre-commit Skill
 
 Set up a tailored `.pre-commit-config.yaml` for the current project by combining a broad cog

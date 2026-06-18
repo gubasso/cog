@@ -32,6 +32,19 @@ The Codex tree is smaller than the Claude tree because Codex and Claude expose d
 tool surfaces. Keep instructions runtime-native instead of forcing one shared skill body to cover
 both systems.
 
+## Project-Local Authoring Skill
+
+The repo-local authoring skill lives under:
+
+```text
+.claude/skills/skill-builder/SKILL.md
+```
+
+This skill is for maintaining this repository's shipped skill trees. It is not copied by
+`install.sh`, which only installs payload skills from `skills/claude/` and `skills/codex/`.
+
+Skill authoring and lint rules are defined in [Skill contract](skill-contract.md).
+
 ## Reference Resolution
 
 Skill docs may point to docs-n-notes references and should use progressive disclosure: load the

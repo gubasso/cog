@@ -57,7 +57,6 @@ forbidden_scan_codex() {
     review-code-deep
     review-findings
     review-loop
-    skill-builder
     suckless-patcher
     test-review
     tsk-impl
@@ -68,6 +67,10 @@ forbidden_scan_codex() {
   for skill in "${skills[@]}"; do
     assert_markdown_frontmatter "$repo_root/skills/claude/$skill/SKILL.md"
   done
+}
+
+@test "project-local skill-builder has valid frontmatter" {
+  assert_markdown_frontmatter "$repo_root/.claude/skills/skill-builder/SKILL.md"
 }
 
 @test "all Codex skills have valid frontmatter" {

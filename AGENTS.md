@@ -22,6 +22,16 @@ then dispatches through `lib/loader.sh`. The loader derives `cmd_<slug>.sh` and
 `cog::cmd::<slug>` from the requested command. Keep command-specific logic in command modules and
 shared behavior in namespaced functions.
 
+## Skill and Script Responsibility Boundary
+
+Skills keep sequencing, judgment, and runtime orchestration in prose. Deterministic routines,
+repeated shell mechanics, parsing, validation, and filesystem/git/workflow operations belong in
+`cog` subcommands or shared `cog::fn::*` helpers. When a skill or command script is created or
+edited, validate the change against `docs/reference/skill-contract.md` and run `cog skill-lint` on
+touched `SKILL.md` files before finishing.
+
+See `docs/decisions/0008-skill-script-boundary.md`.
+
 ## Test and Lint Policy
 
 Pre-commit is the source of truth for quality gates.

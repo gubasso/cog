@@ -7,6 +7,8 @@ description: >
 argument-hint: "[--review] <source-project-path> [--target-lang=<lang>]"
 ---
 
+<!-- trigger-tests: "refactor-migration-plan", "migration plan", "rewrite plan", "refactor plan from source project" -->
+
 # `refactor-migration-plan`
 
 This skill preserves the live skill contract: it writes only the plan directory, never source code,

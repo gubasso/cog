@@ -5,6 +5,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "ast-grep", "search for code patterns", "find code structure", "AST query" -->
+
 # ast-grep Code Search
 
 ## Overview

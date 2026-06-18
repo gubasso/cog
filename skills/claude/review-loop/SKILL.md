@@ -11,6 +11,8 @@ agent: general-purpose
 allowed-tools: Bash Read Write Edit
 ---
 
+<!-- trigger-tests: "review loop", "keep reviewing until clean", "iterative code review", "multi-pass review with Codex" -->
+
 # Review Loop
 
 Orchestrate an automated review loop: each round invokes the Codex `review-code-deep` twin in

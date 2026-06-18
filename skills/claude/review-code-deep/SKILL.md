@@ -10,6 +10,8 @@ argument-hint: "[--cli] [--no-cli] [--lang <lang>] [--scope <glob>] [--severity 
 allowed-tools: Bash, Read, Write, Grep, Glob, WebSearch, WebFetch
 ---
 
+<!-- trigger-tests: "review-code-deep", "deep code review", "multi-pass review", "review this code" -->
+
 # Review Code Deep
 
 Multi-language, multi-pass code review. Loads only the language guides and cross-cutting themes the

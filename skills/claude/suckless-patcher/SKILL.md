@@ -10,6 +10,8 @@ model: opus
 effort: low
 ---
 
+<!-- trigger-tests: "suckless-patcher", "apply a patch", "patch dwm/st/dmenu", "apply suckless patch", "patch and build" -->
+
 # Suckless Patcher
 
 The shared mechanical contract is identical

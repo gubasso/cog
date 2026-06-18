@@ -34,7 +34,7 @@ __cog_skill_builder_validate_build_json() {
   local name="$1" scope="$2" project_root="$3" home_dir="$4" run_dir="$5"
   local ok=true valid_name=true reason="" invalid_chars collisions_json personal_root
   local -a collisions=()
-  if [[ ! $name =~ ^[a-z0-9-]{1,64}$ ]]; then
+  if ! cog::fn::skill::name_is_valid "$name"; then
     ok=false
     valid_name=false
     reason="invalid skill name"
@@ -51,6 +51,11 @@ __cog_skill_builder_validate_build_json() {
     personal_root="$(__cog_skill_builder_personal_root "$home_dir")"
     if [[ $scope == personal && -e $personal_root/claude/$name ]]; then
       collisions+=("$personal_root/claude/$name")
+      ok=false
+      reason="${reason:-skill name collision}"
+    fi
+    if [[ $scope == personal && -e $personal_root/codex/$name ]]; then
+      collisions+=("$personal_root/codex/$name")
       ok=false
       reason="${reason:-skill name collision}"
     fi
@@ -74,57 +79,6 @@ __cog_skill_builder_validate_build_json() {
     '{ok: $ok, name: $name, scope: $scope, project_root: $project_root, home: $home, run_dir: $run_dir,
       valid_name: $valid_name, invalid_characters: $invalid_characters, collisions: $collisions,
       reason: (if $ok then null else $reason end)}'
-}
-
-__cog_skill_builder_nums_to_json() {
-  jq -R 'select(length > 0) | tonumber' | jq -s 'unique'
-}
-
-__cog_skill_builder_validate_draft_json() {
-  local file="$1" name line_count under_500 valid_name has_trigger_tests ok reason="" emoji_lines fence_lines emojis_json fences_json
-  [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "draft skill file is not readable" "path: ${file}" "" "check the path"
-  line_count="$(wc -l <"$file")"
-  line_count="${line_count//[^0-9]/}"
-  if [[ $line_count -le 500 ]]; then under_500=true; else under_500=false; fi
-  name="$(awk 'NR==1 && $0=="---"{f=1; next} f && $0=="---"{exit} f && /^name:[[:space:]]/{sub(/^name:[[:space:]]*/,""); print; exit}' "$file")"
-  name="${name%\"}"
-  name="${name#\"}"
-  name="${name%\'}"
-  name="${name#\'}"
-  name="${name%"${name##*[![:space:]]}"}"
-  if [[ $name =~ ^[a-z0-9-]{1,64}$ ]]; then valid_name=true; else valid_name=false; fi
-  if grep -qE '<!--[[:space:]]*trigger-tests:' "$file"; then has_trigger_tests=true; else has_trigger_tests=false; fi
-  emoji_lines="$(grep -nP '[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}]' "$file" | cut -d: -f1 || true)"
-  fence_lines="$(awk '/^```/{if(!inf){inf=1; l=$0; sub(/^```[ \t]*/,"",l); if(l=="") print NR} else {inf=0}}' "$file" || true)"
-  emojis_json="$(printf '%s\n' "$emoji_lines" | __cog_skill_builder_nums_to_json)"
-  fences_json="$(printf '%s\n' "$fence_lines" | __cog_skill_builder_nums_to_json)"
-  ok=true
-  [[ $under_500 == true ]] || {
-    ok=false
-    reason="SKILL.md exceeds 500 lines"
-  }
-  [[ $valid_name == true ]] || {
-    ok=false
-    reason="${reason:-invalid or missing skill name}"
-  }
-  [[ $has_trigger_tests == true ]] || {
-    ok=false
-    reason="${reason:-missing trigger-tests comment}"
-  }
-  [[ $emojis_json == "[]" ]] || {
-    ok=false
-    reason="${reason:-emoji characters present}"
-  }
-  [[ $fences_json == "[]" ]] || {
-    ok=false
-    reason="${reason:-untagged code fences}"
-  }
-  jq -n --argjson ok "$ok" --arg file "$file" --argjson line_count "$line_count" --argjson under_500 "$under_500" \
-    --arg name "$name" --argjson valid_name "$valid_name" --argjson has_trigger_tests "$has_trigger_tests" \
-    --argjson emojis "$emojis_json" --argjson untagged_fences "$fences_json" --arg reason "$reason" \
-    '{ok: $ok, mode: "draft", file: $file, line_count: $line_count, under_500: $under_500,
-      name: $name, valid_name: $valid_name, has_trigger_tests: $has_trigger_tests,
-      emojis: $emojis, untagged_fences: $untagged_fences, reason: (if $ok then null else $reason end)}'
 }
 
 cog::cmd::skill_builder_validate() {
@@ -183,7 +137,7 @@ cog::cmd::skill_builder_validate() {
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing skill-builder-validate output mode" "usage: cog skill-builder-validate ... (<out.json>|--json)" "" "run 'cog skill-builder-validate --help'"
   [[ -n $mode ]] || mode=json
   if [[ -n $draft_file && -z $name ]]; then
-    json="$(__cog_skill_builder_validate_draft_json "$draft_file")"
+    json="$(cog::fn::skill::draft_json "$draft_file")"
     check="$__cog_skill_builder_validate_draft_self_check"
   elif [[ -n $name && -z $draft_file ]]; then
     json="$(__cog_skill_builder_validate_build_json "$name" "$scope" "$project_root" "$home_dir" "$run_dir")"

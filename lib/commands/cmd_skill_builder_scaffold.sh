@@ -45,7 +45,7 @@ __cog_skill_builder_scaffold_build_json() {
   shift 6
   local companions=("$@") ok=true reason="" write_mode="" stage_dir="" dest_dir="" performs_install=false companion relative_path
   local -a files=() install_commands=()
-  [[ $name =~ ^[a-z0-9-]{1,64}$ ]] || {
+  cog::fn::skill::name_is_valid "$name" || {
     ok=false
     reason="invalid skill name"
   }
