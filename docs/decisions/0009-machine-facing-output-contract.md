@@ -18,6 +18,11 @@ Chosen option: **declare `cog` machine-facing**. Command output is machine-outpu
 structured stdout or JSON when requested/defaulted, BSD sysexits exit codes, stable error kinds, and
 file-first log-messages. Human-UX is optional and opt-in, never the default contract.
 
+Being machine-facing does **not** change the universal Unix stream contract: `stdout` carries only
+the successful result, while errors, warnings, and diagnostics go to `stderr` with a non-zero exit
+code (structured JSON for machine-output, prose for human-UX). Coding agents rely on that contract
+(`2>/dev/null`, pipes, exit-code checks) exactly as humans do, so `cog` honors it always.
+
 This references [ADR-0006](0006-loader-based-architecture.md) and
 [ADR-0008](0008-skill-script-boundary.md). The general taxonomy lives in the `docs-n-notes`
 repository under `tech/programming/cli-design/00-architecture.md` (section "Facing category &
