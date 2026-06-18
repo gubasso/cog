@@ -6,3 +6,8 @@ plans:
     depends_on: []
     prompt: /prex -ar @.implementation-plans/plans/skills-under-skills-env-first/
     notes: 'Env-first no-backgrounding guarantee around claude-session; revert codex-foreground hook with no leftovers; keep+fix prex-stop; document findings (ADR-0009/reference/explanation/guards); encode skill-lint + full audit sweep. L, 3 rounds. Multi-repo: cog + /home/gbasso/.dotfiles.'
+  - item: man-page-sync-precommit-hook.md
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/man-page-sync-precommit-hook.md
+    notes: 'Single-file S plan. New ''cog man-build'' command (scdoc SoT, write + --check), fail-closed on missing scdoc; pre-commit fixer hook scoped to man/cog.1(.scd); justfile man recipe delegates to the hook. Mirrors: completions, man/cog.1.scd, cli-commands.md, two help snapshots; new cmd_man_build.bats.'
