@@ -105,7 +105,7 @@ The authoritative order and status live in `QUEUE.yaml`. Overview:
 ```
 
 This plan writes into more than one repo. Run it through `/plan-queue-runner`, which guards every
-declared repo's clean tree and commits each via `/gc -y -a --repo <sat>` — the inner `QUEUE.yaml`
+declared repo's clean tree and commits each via `/gc -a --repo <sat>` — the inner `QUEUE.yaml`
 declares `/home/gbasso/.dotfiles` as a satellite.
 
 ## Execution Discipline

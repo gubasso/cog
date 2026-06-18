@@ -298,7 +298,7 @@ If the plan's rounds implement into a **satellite git repo** other than the one 
 (for example, extracting code into a target project or writing into a SoT docs repo), add an optional
 top-level `repos:` list to the inner `QUEUE.yaml` — one absolute path per satellite, placed
 **before** `rounds:`. `/plan-queue-runner` then guards every declared repo's clean tree and commits
-each one via `/gc -y -a --repo <sat>...`, so the round's artifacts are committed, not just the
+each one via `/gc -a --repo <sat>...`, so the round's artifacts are committed, not just the
 `QUEUE.yaml` flip.
 
 When degraded (Codex unavailable), synthesis is over the Claude draft alone.

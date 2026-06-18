@@ -139,5 +139,5 @@ forbidden_scan_codex() {
   local file="$repo_root/skills/claude/plan-writer-multi/SKILL.md"
 
   assert_file_contains "$file" "repos:"
-  assert_file_contains "$file" "/gc -y -a --repo <sat>"
+  assert_file_contains "$file" "/gc -a --repo <sat>"
 }

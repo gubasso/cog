@@ -222,7 +222,7 @@ Grep `/workspaces/cog` and `/home/gbasso/.dotfiles` for `codex-foreground`, `gua
 and "hook is the guarantee"; confirm the only surviving `hook-guard` references are the `prex-stop`
 ones plus the Round-3-scoped skill prose still pending sweep. Run `just lint` and `just test`
 (pre-commit is the quality SoT). Commit via `/gc` (cog repo) and the dotfiles satellite via
-`/plan-queue-runner` / `/gc -y -a --repo /home/gbasso/.dotfiles` — the executor must NOT run git
+`/plan-queue-runner` / `/gc -a --repo /home/gbasso/.dotfiles` — the executor must NOT run git
 directly.
 
 ### Final Step: Update the queue

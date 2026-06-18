@@ -99,9 +99,9 @@ closed if any repo's line is `*_FAILED`.
 
 ## Workflow
 
-1. Read the branch and snapshot context using read-only commands: current branch,
-   porcelain status, staged diff, unstaged diff, and recent log. Display the branch
-   before any staging or commit attempt.
+1. Snapshot context using read-only commands: porcelain status, staged diff,
+   unstaged diff, and recent log. This informs the session file list and the commit
+   message draft.
 
 2. Decide the session file list in prose. This remains judgment:
    - With `--all`/`-a`, include every dirty path the user asked to commit across the
@@ -135,11 +135,9 @@ closed if any repo's line is `*_FAILED`.
       If `ok` is not `true`, stop and ask before committing.
    3. Draft the Conventional Commit message from **that** repo's staged diff,
       following its `committed.toml` if present. Write it to `$MESSAGE_FILE`.
-   4. Apply branch confirmation policy for that repo. Protected branches require user
-      confirmation unless `--yes`/`-y` or the accepted aliases are active.
-   5. `cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json`.
-   6. If commit fails, classify the captured log and handle per the discipline below.
-   7. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
+   4. `cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json`.
+   5. If commit fails, classify the captured log and handle per the discipline below.
+   6. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
 
 6. Emit one result line per committed repo (see the result line contract), with the
    `repo=` suffix in multi-repo mode and the bare line for a single repo. Emit

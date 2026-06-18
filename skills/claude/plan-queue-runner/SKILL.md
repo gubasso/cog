@@ -6,7 +6,7 @@ description: >
   plan queue", "execute the plan rounds", "drive the plan directory", or
   invokes "plan-queue-runner". Dispatches each queued /prex round to a fresh
   claude-delegate subagent, verifies QUEUE.yaml reached done, commits with
-  /gc -y -a across every repo the round touched, and loops until complete or
+  /gc -a across every repo the round touched, and loops until complete or
   failed closed.
 argument-hint: "[-n|--dry-run] [--max <n>] <plan-dir-or-queue-path>"
 disable-model-invocation: true
@@ -19,7 +19,7 @@ allowed-tools: Bash Read Agent Skill
 
 Drive a plan-writer directory plan to completion from its `QUEUE.yaml`. For each runnable `todo`
 round, dispatch that round's exact `prompt` to a fresh `claude-delegate` subagent, verify the round
-flipped itself to `done`, commit with `/gc -y -a`, and continue until the queue drains or a failure
+flipped itself to `done`, commit with `/gc -a`, and continue until the queue drains or a failure
 stops the run.
 
 This skill runs **inline** in the orchestrating session. Dispatch each round to the `claude-delegate`
@@ -55,7 +55,7 @@ rounds:
 ```
 
 When present, the clean-tree guard covers every declared repo and the commit step runs
-`/gc -y -a --repo <sat>...` so `/gc` commits both the `QUEUE.yaml` flip in `REPO_ROOT` and the
+`/gc -a --repo <sat>...` so `/gc` commits both the `QUEUE.yaml` flip in `REPO_ROOT` and the
 round's artifacts in satellites. `plan-queue-runner-setup` persists satellites to `ctx.env` as
 newline-joined `REPOS`; rebuild `--repo` flags from it whenever shelling out:
 
@@ -87,7 +87,7 @@ mode than `bypassPermissions` — restart it under the intended mode after confi
 ```
 
 `--max N` stops after `N` successfully committed rounds in this invocation. `--dry-run` prints the
-next runnable round, all remaining `todo` rounds, and the planned `/gc -y -a` commit without
+next runnable round, all remaining `todo` rounds, and the planned `/gc -a` commit without
 dispatching any delegate.
 
 The plan directory or `QUEUE.yaml` path must not contain whitespace (arguments are tokenized by
@@ -106,7 +106,7 @@ word-splitting, matching the convention used by `/prex` and the `.implementation
 5. Dispatch the round to a `claude-delegate` subagent via the **Agent tool** (foreground). The call
    blocks until the delegate's whole workflow finishes and returns its structured result.
 6. Re-read `QUEUE.yaml` and require that round's status to be `done`; never write the queue.
-7. Dispatch `/gc -y -a` plus `--repo` flags for satellites to a `claude-delegate` subagent the same
+7. Dispatch `/gc -a` plus `--repo` flags for satellites to a `claude-delegate` subagent the same
    way, parse the captured `COMMIT_*` line(s), then loop.
 
 ## Runner
@@ -141,7 +141,7 @@ ITEM="$(jq -r '.selected.item // empty' "$RUN_DIR/queue-select.json")"
 PROMPT="$(jq -r '.selected.prompt // empty' "$RUN_DIR/queue-select.json")"
 ```
 
-For `--dry-run`, do not dispatch any delegate. Print the selected round, planned `/gc -y -a`, and all
+For `--dry-run`, do not dispatch any delegate. Print the selected round, planned `/gc -a`, and all
 remaining `todo` rounds:
 
 ```bash
@@ -214,7 +214,7 @@ fi
 ### Commit the round
 
 Dispatch the commit to a `claude-delegate` subagent the same way. **Invoke the Agent tool**
-(foreground). When `REPOS` is non-empty, run `/gc -y -a` with one `--repo <path>` flag per
+(foreground). When `REPOS` is non-empty, run `/gc -a` with one `--repo <path>` flag per
 satellite so `/gc` commits every repo the round touched.
 
 - `subagent_type`: `claude-delegate`
@@ -225,7 +225,7 @@ satellite so `/gc` commits every repo the round touched.
   ```text
   Working repo (your cwd): <REPO_ROOT>
 
-  Run `/gc -y -a <REPO_FLAGS>` to commit the current round's changes across every repo it touched.
+  Run `/gc -a <REPO_FLAGS>` to commit the current round's changes across every repo it touched.
   Then write ONLY the verbatim final `COMMIT_*` line(s) that /gc printed — one line per repo, in
   order (e.g. `COMMIT_OK <sha> repo=<root>`), and nothing else — to this exact path:
   <RUN_DIR>/commit-<n>.out
@@ -258,7 +258,7 @@ remaining `todo` rounds, and `stop_reason`.
   per round. Never use `run_in_background` for a dispatch.
 - `/gc` is the only commit authority; parse only `COMMIT_OK`, `COMMIT_PUSH_OK`, `COMMIT_FAILED`, or
   `COMMIT_PUSH_FAILED` (each optionally `repo=`-suffixed) from the captured block.
-- Always commit with `/gc -y -a` plus `--repo` per declared satellite; the startup clean-tree guard
+- Always commit with `/gc -a` plus `--repo` per declared satellite; the startup clean-tree guard
   across every declared repo is what makes stage-all safe.
 - Fail closed on existing `doing`, dirty startup tree in any declared repo, invalid queue shape, a
   round status other than `done` after the delegate returns, missing or failed commit status for any
