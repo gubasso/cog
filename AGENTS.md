@@ -33,6 +33,16 @@ touched `SKILL.md` files before finishing.
 
 See `docs/decisions/0008-skill-script-boundary.md`.
 
+## Orchestration Guards
+
+- Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.
+- Never background a Codex or long orchestration call.
+- Chain skills inline when same-context is enough.
+- Use foreground Agent delegation only at true isolation boundaries.
+- Track the fixed 5-level subagent depth budget.
+- Verify a durable postcondition at every orchestration boundary.
+- Keep deterministic mechanics in `cog`.
+
 ## Test and Lint Policy
 
 Pre-commit is the source of truth for quality gates.

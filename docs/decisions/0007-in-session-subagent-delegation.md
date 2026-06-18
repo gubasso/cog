@@ -36,5 +36,5 @@ Codex call" rule stays inline in every Codex-driving skill as the prose safeguar
 
 ## Status
 
-Accepted. Ported from dotfiles ADR-0001. Canon:
-`docs-n-notes/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`.
+Accepted. Hook stance amended by ADR-0010 (env-first guarantee). Ported from dotfiles ADR-0001.
+Canon: `docs-n-notes/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`.

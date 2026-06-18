@@ -15,11 +15,9 @@ and error classification.
 `codex-session exec` and resume command lines. It is the only layer that should
 build or run those direct calls.
 
-`cog hook-guard codex-foreground` recognizes a Codex spawn only when the Bash
-tool command contains `cog codex-runner run-exec` or
-`cog codex-runner run-resume` at shell command position. Mentions of
-`codex-session` as a path, package name, quoted string, or prose are not Codex
-spawns for the guard.
+Foreground execution is enforced through the session environment and `cog`
+preflight contract, not through the removed `codex-foreground` hook. See
+[Orchestration contract](orchestration-contract.md).
 
 `cog lint-codex-wrapper` enforces this invariant in markdown shell examples
 under:

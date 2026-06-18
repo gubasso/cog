@@ -36,6 +36,8 @@ DOCS_NOTES="${DOCS_NOTES_REPO:-}"
 If `$DOCS_NOTES_REPO` is unset, warn and continue without external skill-authoring references. When
 it is set, read the relevant skill-authoring references before drafting. Treat
 `docs/reference/skill-contract.md` in this repo as the authoritative local contract.
+When the skill will spawn Codex, delegate, queue work, or orchestrate nested execution, also read
+`docs/reference/orchestration-contract.md`.
 
 ## Inputs
 
@@ -110,37 +112,43 @@ Fix every reported issue before presenting the draft.
    - when no helper exists, plan the new `cog` command before embedding any shell;
    - keep only sequencing, judgment, escalation, and runtime orchestration in the skill body.
 
-6. Run the DRY/SoT check. Do not duplicate command logic already present in `lib/commands/` or
+6. For orchestration skills, run the orchestration interview:
+   - choose Skill-inline when same-context chaining is enough;
+   - choose Agent-delegate only at true isolation boundaries;
+   - include env-preflight requirements when foreground execution matters;
+   - never reintroduce `codex-foreground`.
+
+7. Run the DRY/SoT check. Do not duplicate command logic already present in `lib/commands/` or
    shared mechanics already present in `lib/functions/`.
 
-7. Ask opt-in metadata questions only when the answers signal the need: `allowed-tools`, `context`,
+8. Ask opt-in metadata questions only when the answers signal the need: `allowed-tools`, `context`,
    `model`, `effort`, `paths`, or runtime-specific frontmatter from the contract.
 
-8. Draft frontmatter and body together. Include only frontmatter fields justified by the interview
+9. Draft frontmatter and body together. Include only frontmatter fields justified by the interview
    and allowed by the runtime contract. Use a folded `description` when the trigger text is long.
 
-9. Decide whether companions are needed. Prefer a single `SKILL.md`; propose a `references/` split
-   when the body would exceed roughly 300 lines or when progressive disclosure makes the skill
-   clearer. Do not create unreferenced companions.
+10. Decide whether companions are needed. Prefer a single `SKILL.md`; propose a `references/` split
+    when the body would exceed roughly 300 lines or when progressive disclosure makes the skill
+    clearer. Do not create unreferenced companions.
 
-10. Run `skill-builder-scaffold` with the final companion list. Use its JSON as the mechanical plan
+11. Run `skill-builder-scaffold` with the final companion list. Use its JSON as the mechanical plan
     for writing after approval.
 
-11. Validate and lint the draft:
+12. Validate and lint the draft:
 
     ```bash
     cog skill-builder-validate --draft "$DRAFT_FILE" --json
     cog skill-lint "$DRAFT_FILE"
     ```
 
-12. Present the proposed tree in fenced blocks, one block per file, labeled with the relative path.
+13. Present the proposed tree in fenced blocks, one block per file, labeled with the relative path.
     Wait for `approve`, `approve with changes: <notes>`, or `abort`. Never auto-apply.
 
-13. After approval, write files according to the scaffold JSON. Personal scope writes to stage paths
+14. After approval, write files according to the scaffold JSON. Personal scope writes to stage paths
     first, then installs from `$STAGE` to `$DEST`. Project scope writes directly to
     `skills/<runtime>/<name>/`.
 
-14. On success, report written paths and the invocation hint.
+15. On success, report written paths and the invocation hint.
 
 ## Rules
 
@@ -151,6 +159,7 @@ Fix every reported issue before presenting the draft.
 - Never ask opt-in metadata questions by default.
 - Never treat `skill-builder-scaffold` output as permission to write. It is path computation only.
 - Never embed deterministic shell when a `cog` subcommand or shared helper should own it.
+- Never reintroduce `codex-foreground`.
 
 ## Guardrails
 

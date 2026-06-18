@@ -18,6 +18,17 @@ commands and decide what to do with their results.
 When a skill or command script is created or edited, check for duplicated deterministic mechanics.
 If two command modules need the same logic, move it to `lib/functions/` under `cog::fn::*`.
 
+## Orchestration Contract
+
+Skills that spawn Codex, delegate to agents, manage queues, or otherwise orchestrate nested work must
+read and follow [Orchestration contract](orchestration-contract.md). Choose Skill-inline composition
+or Agent-delegate isolation deliberately. Include the env-preflight requirement where a workflow
+depends on foreground execution. Never reintroduce `codex-foreground`; runtime no-backgrounding is an
+env-first contract asserted by `cog`, not a `PreToolUse` hook.
+
+This round sets the authoring contract in prose. Mechanical `cog skill-lint` encoding for these
+rules lands in the follow-up lint-and-sweep round.
+
 ## Frontmatter Contract
 
 All runtimes require:
@@ -93,6 +104,7 @@ fail.
 
 - Does every deterministic routine live behind `cog` or an existing external tool contract?
 - Is repeated command logic shared through `cog::fn::*`?
+- Does orchestration prose follow `docs/reference/orchestration-contract.md`?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?
 - Do command surface mirrors and help snapshots stay in sync for new commands?

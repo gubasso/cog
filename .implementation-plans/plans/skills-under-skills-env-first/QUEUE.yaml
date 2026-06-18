@@ -10,7 +10,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/revert-and-assert-core.md
     notes: Inject env into claude-session base.json; add fail-closed cog env-preflight; remove codex-foreground hook end-to-end (cog+dotfiles); fix prex-stop stage3; rewrite core orchestration prose. Multi-repo.
   - item: document-orchestration-contract
-    status: todo
+    status: done
     depends_on:
       - revert-and-assert-core
     prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/document-orchestration-contract.md

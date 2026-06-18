@@ -14,6 +14,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0007: In-session subagent delegation](decisions/0007-in-session-subagent-delegation.md)
 - [ADR-0008: Skill bodies stay probabilistic; deterministic mechanics live in cog](decisions/0008-skill-script-boundary.md)
 - [ADR-0009: Machine-facing output contract](decisions/0009-machine-facing-output-contract.md)
+- [ADR-0010: Orchestration env-first](decisions/0010-orchestration-env-first.md)
 
 ## Guides
 
@@ -27,7 +28,9 @@ This directory is organized using Diataxis zones.
 - [Skills](reference/skills.md)
 - [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
+- [Orchestration contract](reference/orchestration-contract.md)
 
 ## Explanation
 
 - [Architecture overview](explanation/architecture.md)
+- [Foreground orchestration](explanation/foreground-orchestration.md)
