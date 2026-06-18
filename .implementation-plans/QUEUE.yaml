@@ -11,3 +11,8 @@ plans:
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/man-page-sync-precommit-hook.md
     notes: 'Single-file S plan. New ''cog man-build'' command (scdoc SoT, write + --check), fail-closed on missing scdoc; pre-commit fixer hook scoped to man/cog.1(.scd); justfile man recipe delegates to the hook. Mirrors: completions, man/cog.1.scd, cli-commands.md, two help snapshots; new cmd_man_build.bats.'
+  - item: robust-plan-slug-stopword-aware.md
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware.md
+    notes: 'Make cog plan-slug stopword-aware: drop filler words before selecting up to 6 meaningful words, empty-input fallback, redesigned additive JSON (normalized/words/dropped/fallback/truncated/max_words) preserving .slug/.ok. Updates 2 test files, cli-commands.md, 3 plan-writer SKILL.md. S/M single-file, prex.'
