@@ -15,13 +15,14 @@ names, maps dashes to underscores, sources `lib/commands/cmd_<slug>.sh`, and cal
 `cog::cmd::<slug>`. A request for `cog print-config` therefore loads `cmd_print_config.sh` and calls
 `cog::cmd::print_config`.
 
-Command modules own user-facing command behavior. Shared mechanics live under `lib/functions/` as
+Command modules own command behavior. Shared mechanics live under `lib/functions/` as
 `cog::fn::*`, so queue parsing, JSON writing, run-directory creation, Codex invocation, review
 helpers, and related behavior have one implementation.
 
-The agent-facing contract is deterministic output. Commands emit parseable text or JSON fragments
-that skills can validate and compose. Claude and Codex skills use `cog` as their mechanics layer,
-while the skill bodies keep sequencing, judgment, and runtime-specific orchestration.
+`cog` is machine-facing. Commands emit structured stdout or JSON fragments that skills can validate
+and compose, return BSD sysexits-compatible codes, and write file-first log-messages under XDG state
+paths. Claude and Codex skills use `cog` as their mechanics layer, while the skill bodies keep
+sequencing, judgment, and runtime-specific orchestration.
 
 Installation follows the same separation. The app payload is copied into `$PREFIX/lib/cog`, while
 skills and agents are copied into the runtime overlay trees under the user's home directory. The

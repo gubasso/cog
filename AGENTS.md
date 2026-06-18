@@ -4,7 +4,8 @@
 
 `cog` is a Bash CLI plus shipped Claude/Codex skills and Claude agents. The CLI owns deterministic
 mechanics for agent-oriented workflows; skills and agents call into `cog` instead of reimplementing
-those mechanics in prose.
+those mechanics in prose. `cog` is machine-facing: its default contract is machine-output plus
+file-first logs; human-UX is optional and opt-in.
 
 ## Command Conventions
 

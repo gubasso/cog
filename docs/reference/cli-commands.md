@@ -1,5 +1,9 @@
 # CLI commands
 
+`cog` is machine-facing. `--json`, generated help, man pages, Bash completion, and `doctor` are
+self-documentation surfaces for agents and scripts. `init` is the remaining target-state setup
+surface; it is not currently a command.
+
 ## Global flags
 
 `cog` accepts these global flags before the command name:
@@ -8,7 +12,7 @@
 | ---- | ------- |
 | `-h`, `--help` | Show help. |
 | `-V`, `--version` | Show version. |
-| `--json` | Request machine-readable output. |
+| `--json` | Request JSON when a command has a non-JSON default. |
 | `--dry-run` | Show what would happen without changing state. |
 | `--print-config` | Print resolved configuration and sources. |
 | `-v`, `-vv`, `-vvv` | Increase verbosity. |
@@ -87,5 +91,5 @@ this reference table.
 ## Mirrors
 
 Root help is generated dynamically by `lib/functions/fn_help_generate.sh`.
-`completions/cog.bash` and `man/cog.1.scd` are static mirrors of the command surface and must be
-kept in sync with `lib/commands/cmd_*.sh`.
+`completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command
+surface and must be kept in sync with `lib/commands/cmd_*.sh`.

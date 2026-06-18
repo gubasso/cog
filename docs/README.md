@@ -13,6 +13,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0006: Loader-based architecture](decisions/0006-loader-based-architecture.md)
 - [ADR-0007: In-session subagent delegation](decisions/0007-in-session-subagent-delegation.md)
 - [ADR-0008: Skill bodies stay probabilistic; deterministic mechanics live in cog](decisions/0008-skill-script-boundary.md)
+- [ADR-0009: Machine-facing output contract](decisions/0009-machine-facing-output-contract.md)
 
 ## Guides
 

@@ -23,6 +23,12 @@ no prebuilt `man/cog.1` exists, the installer skips the man page with a warning.
 By default, `PREFIX` is `$HOME/.local`, `XDG_DATA_HOME` is `$HOME/.local/share`, and
 `XDG_STATE_HOME` is `$HOME/.local/state`.
 
+## Logging Behavior
+
+`cog` writes logs to XDG state by default, normally `$XDG_STATE_HOME/cog/cog.log` with
+`XDG_STATE_HOME` defaulting to `$HOME/.local/state`. Stderr log mirroring is opt-in through CLI
+verbosity or logging options. Log levels include at least `info`, `warn`, `error`, and `debug`.
+
 ## Custom Prefix
 
 ```bash

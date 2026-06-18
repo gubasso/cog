@@ -6,7 +6,8 @@ This reference defines the repository contract for `SKILL.md` files and the skil
 
 Skills are probabilistic orchestrators. They keep sequencing, judgment, escalation policy, and
 runtime-specific tool choreography in prose. Deterministic mechanics belong in `cog` commands and
-shared `cog::fn::*` helpers.
+shared `cog::fn::*` helpers. Skill-callable command output must preserve the machine-facing contract
+in [ADR-0009](../decisions/0009-machine-facing-output-contract.md).
 
 ## Responsibility Boundary
 
