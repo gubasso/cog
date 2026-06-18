@@ -116,7 +116,7 @@ Fix every reported issue before presenting the draft.
    - choose Skill-inline when same-context chaining is enough;
    - choose Agent-delegate only at true isolation boundaries;
    - include env-preflight requirements when foreground execution matters;
-   - never reintroduce `codex-foreground`.
+   - never reintroduce the removed foreground hook.
 
 7. Run the DRY/SoT check. Do not duplicate command logic already present in `lib/commands/` or
    shared mechanics already present in `lib/functions/`.
@@ -159,7 +159,7 @@ Fix every reported issue before presenting the draft.
 - Never ask opt-in metadata questions by default.
 - Never treat `skill-builder-scaffold` output as permission to write. It is path computation only.
 - Never embed deterministic shell when a `cog` subcommand or shared helper should own it.
-- Never reintroduce `codex-foreground`.
+- Never reintroduce the removed foreground hook.
 
 ## Guardrails
 

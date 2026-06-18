@@ -301,6 +301,151 @@ EOF
   [[ $stderr == *"while loop"* ]]
 }
 
+@test "cog skill-lint rejects removed codex-foreground command references" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Run cog hook-guard codex-foreground before Codex.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-removed-codex-foreground"* ]]
+}
+
+@test "cog skill-lint rejects removed guard-codex-foreground references" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Install guard-codex-foreground for foreground enforcement.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-removed-codex-foreground"* ]]
+}
+
+@test "cog skill-lint rejects codex-foreground commands inside fenced code" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+cog hook-guard codex-foreground --owner-pid "$PPID"
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-removed-codex-foreground"* ]]
+}
+
+@test "cog skill-lint allows a marked codex-foreground line inside fenced code" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+<!-- cog-skill-lint: allow-orchestration-history orchestration-removed-codex-foreground historical removed-hook example -->
+```text
+cog hook-guard codex-foreground  # removed; shown only as rejected history
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects PreToolUse no-backgrounding guarantee claims" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'The PreToolUse hook is the no-backgrounding guarantee for Codex.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-pretooluse-guarantee"* ]]
+}
+
+@test "cog skill-lint rejects backgrounded Codex instructions" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Set run_in_background: true for the Codex delegation.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-background-codex"* ]]
+}
+
+@test "cog skill-lint rejects imperative background instruction with determiner" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Background the Codex call so the round can continue.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-background-codex"* ]]
+}
+
+@test "cog skill-lint accepts prohibition of backgrounding with determiner" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Never background the Codex call; run it in the foreground.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint accepts foreground Codex discipline wording" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+Run every Codex call in the foreground with run_in_background false/omitted and timeout 600000ms.
+Never background Codex orchestration work.
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects headless claude -p as preferred recursion primitive" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016
+  printf '%s\n' 'Use headless `claude -p` as the preferred recursion primitive.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-claude-p-recursion"* ]]
+}
+
+@test "cog skill-lint allows marked historical claude -p references" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+<!-- cog-skill-lint: allow-orchestration-history orchestration-claude-p-recursion fixture historical note -->
+Headless claude -p remains abandoned as a recursion primitive.
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects unlimited depth claims" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Foreground subagents can nest at unlimited depth.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"orchestration-unlimited-depth"* ]]
+}
+
+@test "cog skill-lint accepts fixed five-level depth budget wording" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Foreground subagents share the fixed five-level depth budget; the depth is not configurable.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
 @test "frontmatter allowlists are the single source of truth across helper and contract doc" {
   source "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh"
   local contract="${BATS_TEST_DIRNAME}/../../docs/reference/skill-contract.md"
@@ -324,4 +469,21 @@ EOF
       return 1
     }
   done < <(cog::fn::skill::allowed_frontmatter_keys_json claude | jq -r '.[]')
+}
+
+@test "lint suppression allowlists are the single source of truth across helper and contract doc" {
+  source "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh"
+  local contract="${BATS_TEST_DIRNAME}/../../docs/reference/skill-contract.md"
+  local expected
+  expected="$(jq -cn '$ARGS.positional | sort' --args allow-inline-shell allow-orchestration-history)"
+
+  assert_equal "$(cog::fn::skill::allowed_lint_suppressions_json | jq -c 'sort')" "$expected"
+
+  local suppression
+  while IFS= read -r suppression; do
+    grep -qF "\`${suppression}\`" "$contract" || {
+      echo "missing suppression '${suppression}' in ${contract}" >&2
+      return 1
+    }
+  done < <(cog::fn::skill::allowed_lint_suppressions_json | jq -r '.[]')
 }

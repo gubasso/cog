@@ -145,6 +145,12 @@ cog::fn::skill::allowed_frontmatter_keys_json() {
   esac
 }
 
+# Suppression names must stay synchronized with docs/reference/skill-contract.md
+# and test/integration/cmd_skill_lint.bats.
+cog::fn::skill::allowed_lint_suppressions_json() {
+  cog::fn::skill::json_string_array allow-inline-shell allow-orchestration-history
+}
+
 cog::fn::skill::unknown_frontmatter_keys_json() {
   local file="$1" runtime="$2" keys allowed
   keys="$(cog::fn::skill::frontmatter_keys_json "$file")"

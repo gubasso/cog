@@ -250,6 +250,181 @@ __cog_skill_lint_scan_premise_file() {
   return "$failed"
 }
 
+__cog_skill_lint_is_orchestration_rule() {
+  local rule="$1"
+  case "$rule" in
+    orchestration-removed-codex-foreground | orchestration-pretooluse-guarantee | orchestration-background-codex | orchestration-claude-p-recursion | orchestration-unlimited-depth)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+__cog_skill_lint_has_background_prohibition() {
+  local line="${1,,}"
+  [[ $line =~ never[[:space:]]+background ]] && return 0
+  [[ $line =~ do[[:space:]]+not[[:space:]]+background ]] && return 0
+  [[ $line =~ must[[:space:]]+not[[:space:]]+background ]] && return 0
+  [[ $line =~ run_in_background.*(false|omitted) ]] && return 0
+  return 1
+}
+
+__cog_skill_lint_emit_orchestration_finding() {
+  local file="$1" line_no="$2" rule="$3"
+  case "$rule" in
+    orchestration-removed-codex-foreground)
+      # shellcheck disable=SC2016
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" "removed codex-foreground hook reference" 'describe env-first no-backgrounding plus `cog preflight`; do not reference the removed hook'
+      ;;
+    orchestration-pretooluse-guarantee)
+      # shellcheck disable=SC2016
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" "PreToolUse hook claimed as runtime no-backgrounding guarantee" 'say `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is the guarantee and `cog` asserts it fail-closed'
+      ;;
+    orchestration-background-codex)
+      # shellcheck disable=SC2016
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" "instruction to background orchestration work" 'run foreground with `run_in_background` false/omitted and timeout `600000ms`'
+      ;;
+    orchestration-claude-p-recursion)
+      # shellcheck disable=SC2016
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" 'headless `claude -p` described as preferred recursion primitive' "use Skill-inline for same-context composition or Agent-delegate for isolation"
+      ;;
+    orchestration-unlimited-depth)
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" "unqualified unlimited foreground-subagent depth claim" "state the hard cap is five subagent levels below the main conversation"
+      ;;
+  esac
+}
+
+__cog_skill_lint_is_removed_hook_line() {
+  # The unambiguous removed-hook tokens. These are real command/identifier
+  # strings, not prose, so they are flagged even inside fenced code blocks
+  # (a `cog hook-guard codex-foreground` command in a ```bash fence is exactly
+  # the "no leftovers" leftover the rule must catch).
+  local line="$1"
+  [[ $line =~ cog[[:space:]]+hook-guard[[:space:]]+codex-foreground || $line =~ guard-codex-foreground || $line =~ codex-foreground ]]
+}
+
+__cog_skill_lint_orchestration_rule_for_line() {
+  local line="$1" lower="${1,,}"
+
+  if __cog_skill_lint_is_removed_hook_line "$line"; then
+    printf '%s\n' "orchestration-removed-codex-foreground"
+    return 0
+  fi
+
+  if { [[ $line =~ PreToolUse && $lower =~ guarantee ]] \
+    || [[ $line =~ PreToolUse && $lower =~ no-background ]] \
+    || [[ $line =~ PreToolUse && $lower =~ prevent.*background ]] \
+    || [[ $lower =~ hook && $lower =~ guarantee && $lower =~ background ]]; }; then
+    printf '%s\n' "orchestration-pretooluse-guarantee"
+    return 0
+  fi
+
+  if ! __cog_skill_lint_has_background_prohibition "$line"; then
+    if { [[ $line =~ run_in_background.*true && $lower =~ (codex|orchestration|subagent|delegate) ]] \
+      || [[ $lower =~ (^|[[:space:]\`[:punct:]])background[[:space:]]+(the[[:space:]]+|a[[:space:]]+|an[[:space:]]+|this[[:space:]]+|that[[:space:]]+)?(codex|orchestration|delegate|subagent) ]] \
+      || [[ $lower =~ (^|[[:space:]\`[:punct:]])detach[[:space:]]+(the[[:space:]]+|a[[:space:]]+|an[[:space:]]+|this[[:space:]]+|that[[:space:]]+)?(codex|orchestration|delegate|subagent) ]]; }; then
+      printf '%s\n' "orchestration-background-codex"
+      return 0
+    fi
+  fi
+
+  if { [[ $lower =~ headless[[:space:]]+\`?claude[[:space:]]+-p\`? && $lower =~ (preferred|use|primitive) ]] \
+    || [[ $lower =~ claude[[:space:]]+-p && $lower =~ (recursion|delegate|subagent|process[[:space:]]+primitive|preferred) ]]; }; then
+    printf '%s\n' "orchestration-claude-p-recursion"
+    return 0
+  fi
+
+  if [[ ! $lower =~ depth.*not[[:space:]]+configurable ]]; then
+    if [[ $lower =~ unlimited[[:space:]]+depth || $lower =~ nest.*unlimited || $lower =~ unbounded.*subagent || $lower =~ no[[:space:]]+depth[[:space:]]+limit ]]; then
+      printf '%s\n' "orchestration-unlimited-depth"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+__cog_skill_lint_scan_prose_file() {
+  local file="$1"
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
+  local pending_allow_rule="" rule reason current_allow_rule
+  local marker_re='^[[:space:]]*<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-orchestration-history[[:space:]]+([^[:space:]]+)[[:space:]]+([^>][^>]*)-->[[:space:]]*$'
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+
+    # Inside a fenced code block the prose rules (background/claude-p/depth)
+    # are skipped to avoid flagging documented negative examples, but the
+    # unambiguous removed-hook tokens are still flagged: a real stale command
+    # most often lives in a ```bash fence, and the "no leftovers" guarantee
+    # must reach there too. The allow-orchestration-history marker (which
+    # precedes the fence) still suppresses it.
+    if [[ $in_fence == true ]]; then
+      current_allow_rule=""
+      if [[ -n ${line//[[:space:]]/} && -n $pending_allow_rule ]]; then
+        current_allow_rule="$pending_allow_rule"
+        pending_allow_rule=""
+      fi
+      if __cog_skill_lint_is_removed_hook_line "$line"; then
+        if [[ $current_allow_rule != "orchestration-removed-codex-foreground" ]]; then
+          __cog_skill_lint_emit_orchestration_finding "$file" "$line_no" "orchestration-removed-codex-foreground"
+          failed=1
+        fi
+      fi
+      continue
+    fi
+
+    if [[ $line =~ $marker_re ]]; then
+      rule="${BASH_REMATCH[1]}"
+      reason="${BASH_REMATCH[2]}"
+      if __cog_skill_lint_is_orchestration_rule "$rule" && [[ -n ${reason//[[:space:]]/} ]]; then
+        pending_allow_rule="$rule"
+      else
+        pending_allow_rule=""
+      fi
+      continue
+    fi
+
+    current_allow_rule=""
+    if [[ -n ${line//[[:space:]]/} && -n $pending_allow_rule ]]; then
+      current_allow_rule="$pending_allow_rule"
+      pending_allow_rule=""
+    fi
+
+    if rule="$(__cog_skill_lint_orchestration_rule_for_line "$line")"; then
+      if [[ $rule == "$current_allow_rule" ]]; then
+        continue
+      fi
+      __cog_skill_lint_emit_orchestration_finding "$file" "$line_no" "$rule"
+      failed=1
+    fi
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -257,6 +432,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_scan_prose_file "$file"; then
     failed=1
   fi
   return "$failed"

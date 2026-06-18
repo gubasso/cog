@@ -16,7 +16,7 @@ and error classification.
 build or run those direct calls.
 
 Foreground execution is enforced through the session environment and `cog`
-preflight contract, not through the removed `codex-foreground` hook. See
+preflight contract, not through the removed foreground hook. See
 [Orchestration contract](orchestration-contract.md).
 
 `cog lint-codex-wrapper` enforces this invariant in markdown shell examples

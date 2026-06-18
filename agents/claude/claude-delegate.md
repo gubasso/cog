@@ -18,7 +18,8 @@ machine-read result the orchestrator parses — not a human-facing chat reply.
 `tools` is intentionally unset: you inherit the full tool set (including `Agent` and `Skill`), so a
 delegated workflow such as `/prex` can run _and_ spawn its own review subagents. Claude Code supports
 nested subagents (≥ v2.1.172); foreground subagent calls block until they return, so the whole chain
-is synchronous. CLAUDE.md and project rules are loaded in your context — honor them, including any
+is synchronous. Subagent nesting still spends the fixed depth budget: five levels below the main
+conversation. CLAUDE.md and project rules are loaded in your context — honor them, including any
 staging discipline for protected paths.
 
 ## How to run the task

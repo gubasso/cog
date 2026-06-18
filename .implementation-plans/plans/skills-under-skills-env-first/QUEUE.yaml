@@ -16,7 +16,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/document-orchestration-contract.md
     notes: ADR-0009 (supersedes 0007 hook stance); reference orchestration-contract; explanation mental-model + deferred trampoline; AGENTS/CLAUDE guards; reconcile skill-contract + codex-single-entrypoint; teach skill-builder.
   - item: encode-lint-and-sweep
-    status: todo
+    status: done
     depends_on:
       - document-orchestration-contract
     prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/encode-lint-and-sweep.md

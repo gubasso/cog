@@ -23,11 +23,8 @@ If two command modules need the same logic, move it to `lib/functions/` under `c
 Skills that spawn Codex, delegate to agents, manage queues, or otherwise orchestrate nested work must
 read and follow [Orchestration contract](orchestration-contract.md). Choose Skill-inline composition
 or Agent-delegate isolation deliberately. Include the env-preflight requirement where a workflow
-depends on foreground execution. Never reintroduce `codex-foreground`; runtime no-backgrounding is an
-env-first contract asserted by `cog`, not a `PreToolUse` hook.
-
-This round sets the authoring contract in prose. Mechanical `cog skill-lint` encoding for these
-rules lands in the follow-up lint-and-sweep round.
+depends on foreground execution. Never reintroduce the removed foreground hook; runtime
+no-backgrounding is an env-first contract asserted by `cog`, not a `PreToolUse` hook.
 
 ## Frontmatter Contract
 
@@ -82,6 +79,35 @@ The Claude allowlist above must match `cog::fn::skill::allowed_frontmatter_keys_
 
 Codex skills do not require `trigger-tests`.
 
+## Orchestration Lint Checks
+
+`cog skill-lint` scans skill prose for high-confidence violations of the env-first orchestration
+contract:
+
+- `orchestration-removed-codex-foreground`: removed `codex-foreground` hook or wrapper references.
+  Unlike the other orchestration checks, this rule also scans fenced code blocks, since a stale
+  `cog hook-guard codex-foreground` command most often appears inside a ```bash fence;
+- `orchestration-pretooluse-guarantee`: claims that `PreToolUse` is the runtime no-backgrounding
+  guarantee;
+- `orchestration-background-codex`: instructions to background Codex, delegation, subagent, or
+  orchestration work;
+- `orchestration-claude-p-recursion`: headless `claude -p` framed as the preferred recursion or
+  delegation primitive;
+- `orchestration-unlimited-depth`: unqualified unlimited or unbounded foreground-subagent depth
+  claims.
+
+Prefer keeping historical or rejected-alternative discussion outside `SKILL.md`. When a skill must
+mention one of these phrases as history, place this marker immediately before the next nonblank line:
+
+```text
+<!-- cog-skill-lint: allow-orchestration-history <rule-id> <reason> -->
+```
+
+The reason must be non-empty, and `<rule-id>` must be the exact orchestration rule being suppressed.
+The marker suppresses only that next nonblank line and only for orchestration checks; structural and
+shell-premise findings still fail. For `orchestration-removed-codex-foreground` the suppressed next
+nonblank line may be inside a fenced code block (place the marker immediately before the fence).
+
 ## Premise Lint Checks
 
 `cog skill-lint` scans `bash`, `sh`, and `shell` fences for high-signal deterministic routines:
@@ -99,6 +125,9 @@ To acknowledge intentional inline shell, place this marker immediately before th
 
 The reason must be non-empty. The marker suppresses premise findings only; structural findings still
 fail.
+
+The suppression names `allow-inline-shell` and `allow-orchestration-history` must match
+`cog::fn::skill::allowed_lint_suppressions_json` and `test/integration/cmd_skill_lint.bats`.
 
 ## Review Checklist
 
