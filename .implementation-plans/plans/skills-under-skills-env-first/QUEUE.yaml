@@ -1,0 +1,23 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+# Satellite repos this plan writes into besides REPO_ROOT (claude-session config lives here).
+# Only round `revert-and-assert-core` edits the satellite; later rounds leave it clean.
+repos:
+  - /home/gbasso/.dotfiles
+rounds:
+  - item: revert-and-assert-core
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/revert-and-assert-core.md
+    notes: Inject env into claude-session base.json; add fail-closed cog env-preflight; remove codex-foreground hook end-to-end (cog+dotfiles); fix prex-stop stage3; rewrite core orchestration prose. Multi-repo.
+  - item: document-orchestration-contract
+    status: todo
+    depends_on:
+      - revert-and-assert-core
+    prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/document-orchestration-contract.md
+    notes: ADR-0009 (supersedes 0007 hook stance); reference orchestration-contract; explanation mental-model + deferred trampoline; AGENTS/CLAUDE guards; reconcile skill-contract + codex-single-entrypoint; teach skill-builder.
+  - item: encode-lint-and-sweep
+    status: todo
+    depends_on:
+      - document-orchestration-contract
+    prompt: /prex -ar .implementation-plans/plans/skills-under-skills-env-first/encode-lint-and-sweep.md
+    notes: Encode new cog skill-lint rules + tests; full per-skill (~30) + per-script (~66) audit/sweep; clear review-loop/ask/plan-writer-multi prose; verify no leftovers cross-repo.

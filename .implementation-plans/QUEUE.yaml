@@ -1,0 +1,8 @@
+# Source of truth for the .implementation-plans/ queue. Status & order live HERE, not in paths.
+# status: backlog | todo | doing | done
+plans:
+  - item: skills-under-skills-env-first
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/skills-under-skills-env-first/
+    notes: 'Env-first no-backgrounding guarantee around claude-session; revert codex-foreground hook with no leftovers; keep+fix prex-stop; document findings (ADR-0009/reference/explanation/guards); encode skill-lint + full audit sweep. L, 3 rounds. Multi-repo: cog + /home/gbasso/.dotfiles.'
