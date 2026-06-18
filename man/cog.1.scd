@@ -73,7 +73,7 @@ The command list and short descriptions are sourced from command modules under
 	Show generated help for cog or a subcommand.
 
 *hook-guard*
-	Deterministic PreToolUse/Stop hook decisions.
+	Deterministic Stop hook decisions for active workflows.
 
 *lint-codex-wrapper*
 	Enforce Codex single-entrypoint markdown snippets.
@@ -116,6 +116,11 @@ The command list and short descriptions are sourced from command modules under
 
 *preflight*
 	Run centralized orchestrator preflight checks.
+
+	*cog preflight claude-env <out.json> [--allow-legacy-session]* asserts
+	the Claude Code no-backgrounding session env. Strict mode requires
+	*CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1*; Bash timeout env vars are
+	recorded as diagnostics only.
 
 *prex-parse-args*
 	Parse prex arguments into run state.

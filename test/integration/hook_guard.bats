@@ -8,10 +8,6 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME"
 }
 
-guard_fg() {
-  printf '%s' "$1" | cog hook-guard codex-foreground
-}
-
 guard_stop() {
   printf '{}' | cog hook-guard prex-stop --owner-pid "$1"
 }
@@ -21,92 +17,6 @@ acquire() {
   out="$(cog rundir prex --lock --owner-pid "$1")"
   RUN_DIR="$(sed -n 's/^RUN_DIR=//p' <<<"$out")"
   LOCK_FILE="$(sed -n 's/^LOCK_FILE=//p' <<<"$out")"
-}
-
-@test "codex-foreground blocks a backgrounded Codex call" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner run-resume","run_in_background":true,"timeout":600000}}'
-
-  [ "$status" -eq 2 ]
-}
-
-@test "codex-foreground blocks a Codex call with a sub-600000ms timeout" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner run-exec --mode danger","timeout":120000}}'
-
-  [ "$status" -eq 2 ]
-}
-
-@test "codex-foreground blocks a Codex call with no timeout" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner run-exec"}}'
-
-  [ "$status" -eq 2 ]
-}
-
-@test "codex-foreground allows a foreground Codex call with timeout >= 600000" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner run-exec --mode danger","timeout":600000}}'
-
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground ignores a backgrounded NON-Codex call" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"npm run dev","run_in_background":true}}'
-
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground ignores a plain non-Codex call" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}'
-
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground deny reason is legible on stderr" {
-  run --separate-stderr guard_fg '{"tool_input":{"command":"cog codex-runner run-resume","run_in_background":true,"timeout":600000}}'
-
-  [ "$status" -eq 2 ]
-  [[ $stderr == *"BLOCKED"* ]]
-  [[ $stderr == *"FOREGROUND"* ]]
-}
-
-@test "codex-foreground allows codex-session package path mentions" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"git diff -- lib/commands codex-session","run_in_background":true,"timeout":120000}}'
-  [ "$status" -eq 0 ]
-
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cat codex-session/foo","run_in_background":true,"timeout":120000}}'
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground allows fast codex-runner probes" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner gate sandbox out.json","timeout":120000}}'
-
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground allows quoted or echoed wrapper mentions" {
-  run guard_fg '{"tool_name":"Bash","tool_input":{"command":"echo cog codex-runner run-exec","timeout":120000}}'
-
-  [ "$status" -eq 0 ]
-}
-
-@test "codex-foreground matches multiline wrapper command position" {
-  run --separate-stderr guard_fg '{"tool_name":"Bash","tool_input":{"command":"RUNNER_MODE=native\ncog codex-runner run-exec","run_in_background":true,"timeout":600000}}'
-
-  [ "$status" -eq 2 ]
-  [[ $stderr == *"BLOCKED"* ]]
-}
-
-@test "codex-foreground matches separator wrapper command position" {
-  run --separate-stderr guard_fg '{"tool_name":"Bash","tool_input":{"command":"foo && cog codex-runner run-exec","timeout":120000}}'
-
-  [ "$status" -eq 2 ]
-  [[ $stderr == *"600000"* ]]
-}
-
-@test "codex-foreground matches subshell and trailing ampersand wrapper forms" {
-  run --separate-stderr guard_fg '{"tool_name":"Bash","tool_input":{"command":"(cog codex-runner run-exec)","timeout":120000}}'
-  [ "$status" -eq 2 ]
-
-  run --separate-stderr guard_fg '{"tool_name":"Bash","tool_input":{"command":"cog codex-runner run-exec&","timeout":120000}}'
-  [ "$status" -eq 2 ]
 }
 
 @test "prex-stop allows when there are no locks" {
@@ -143,11 +53,25 @@ acquire() {
   acquire "$$"
   printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
   printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
+  printf '%s\n' x >"$RUN_DIR/stage3-impl-report.txt"
   printf '%s\n' x >"$RUN_DIR/stage4-review.md"
 
   run guard_stop "$$"
 
   [ "$status" -eq 0 ]
+  rm -rf "$RUN_DIR" "$LOCK_FILE"
+}
+
+@test "prex-stop blocks when stage3 artifact is missing" {
+  acquire "$$"
+  printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
+  printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
+  printf '%s\n' x >"$RUN_DIR/stage4-review.md"
+
+  run --separate-stderr guard_stop "$$"
+
+  [ "$status" -eq 2 ]
+  [[ $stderr == *"Stage 3: Implementation report"* ]]
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 

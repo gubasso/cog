@@ -1,26 +1,16 @@
 # shellcheck shell=bash
-: 'desc: Deterministic PreToolUse/Stop hook decisions.'
-
-__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS=600000
+: 'desc: Deterministic Stop hook decisions for active workflows.'
 
 __cog_hook_guard_usage() {
   cat <<'EOF'
-cog hook-guard — deterministic PreToolUse/Stop hook decisions
+cog hook-guard — deterministic Stop hook decisions for active workflows
 
 USAGE
-  cog hook-guard codex-foreground            # PreToolUse(Bash)
   cog hook-guard prex-stop --owner-pid <pid> # Stop
   cog hook-guard --help
 
-Both read the hook JSON payload on stdin and use the hook deny contract:
+Reads the hook JSON payload on stdin and uses the hook deny contract:
 exit 2 + a human reason on stderr to BLOCK; exit 0 to allow.
-
-codex-foreground
-  Denies a Bash tool call whose command runs `cog codex-runner run-exec` or
-  `cog codex-runner run-resume` when it is backgrounded (run_in_background=true)
-  or lacks a timeout of at least 600000ms — the two ways a Codex child gets
-  SIGTERM-reaped. Foreground, long-timeout, and all non-Codex Bash calls are
-  allowed untouched.
 
 prex-stop
   Blocks the owning session from stopping while a prex run's required artifacts
@@ -33,37 +23,6 @@ EXIT CODES
   2   block (hook deny contract)
   1   usage error
 EOF
-}
-
-__cog_hook_guard_codex_foreground() {
-  command -v jq >/dev/null || {
-    printf 'hook-guard: jq is required\n' >&2
-    exit 1
-  }
-
-  local payload cmd bg t
-  payload="$(cat)"
-
-  cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""' 2>/dev/null || printf '')"
-  local nl=$'\n'
-  local codex_re="(^|[;&|({${nl}])[[:space:]]*cog[[:space:]]+codex-runner[[:space:]]+run-(exec|resume)([[:space:];&|)}${nl}]|\$)"
-  [[ $cmd =~ $codex_re ]] || exit 0
-
-  bg="$(printf '%s' "$payload" | jq -r '.tool_input.run_in_background // false' 2>/dev/null || printf 'false')"
-  if [[ $bg == "true" ]]; then
-    printf 'BLOCKED: never background a Codex call (run_in_background=true). Re-issue it in the FOREGROUND (omit run_in_background) with a Bash timeout of %sms. A backgrounded Codex child is SIGTERM-reaped when the turn ends — it loses all work and leaves a 0-byte runner JSON.\n' \
-      "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" >&2
-    exit 2
-  fi
-
-  t="$(printf '%s' "$payload" | jq -r '.tool_input.timeout // empty' 2>/dev/null || printf '')"
-  if [[ -z $t || ! $t =~ ^[0-9]+$ || $t -lt $__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS ]]; then
-    printf 'BLOCKED: a Codex call needs a Bash timeout of at least %sms (got: %s). The default (~120000ms) SIGTERMs Codex mid-run. Re-issue this call with timeout: %s.\n' \
-      "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" "${t:-unset}" "$__COG_HOOK_GUARD_CODEX_MIN_TIMEOUT_MS" >&2
-    exit 2
-  fi
-
-  exit 0
 }
 
 __cog_hook_guard_prex_stop() {
@@ -118,6 +77,7 @@ __cog_hook_guard_prex_stop() {
     local missing=()
     [[ -s "$run_dir/stage1-plan.txt" ]] || missing+=("Stage 1: Plan")
     [[ -s "$run_dir/stage2-reviewed-plan.md" ]] || missing+=("Stage 2: Reviewed plan")
+    [[ -s "$run_dir/stage3-impl-report.txt" ]] || missing+=("Stage 3: Implementation report")
     [[ -s "$run_dir/stage4-review.md" ]] || missing+=("Stage 4: Implementation review")
     if ((${#missing[@]} > 0)); then
       all_missing+=("$(IFS=', ' && printf '%s' "${flag##*/}: remaining — ${missing[*]}")")
@@ -137,10 +97,6 @@ __cog_hook_guard_prex_stop() {
 
 cog::cmd::hook_guard() {
   case "${1:-}" in
-    codex-foreground)
-      shift
-      __cog_hook_guard_codex_foreground "$@"
-      ;;
     prex-stop)
       shift
       __cog_hook_guard_prex_stop "$@"

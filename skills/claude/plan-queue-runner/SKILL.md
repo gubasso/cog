@@ -31,11 +31,12 @@ process is **obsolete and removed** — see
 
 A foreground Agent call blocks the orchestrator until the delegate's entire agentic loop completes
 and returns, so the _outer_ per-round process reap is gone. The delegate's **own** Codex Bash calls,
-one level down, could still be backgrounded or run under too short a timeout — that is now prevented
-deterministically by the `cog hook-guard codex-foreground` `PreToolUse(Bash)` hook, which fires
-inside subagents too and blocks any backgrounded or sub-`600000ms` Codex call before it runs.
-Multi-level round completion is independently guaranteed by the QUEUE-status check below: after the
-delegate returns, this runner re-reads `QUEUE.yaml` and fails closed unless the round is `done`.
+one level down, rely on the same session env guarantee as the parent:
+`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` must be in force so Claude Code does not auto-background
+long-running Bash calls. `/prex` asserts that env at bootstrap; the foreground discipline still
+applies to every Codex invocation. Multi-level round completion is independently guaranteed by the
+QUEUE-status check below: after the delegate returns, this runner re-reads `QUEUE.yaml` and fails
+closed unless the round is `done`.
 
 ## Multi-Repo Plans
 

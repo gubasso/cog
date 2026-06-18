@@ -68,3 +68,47 @@ EOF
   run cog preflight --help
   assert_success
 }
+
+@test "cog preflight claude-env passes when background tasks are disabled" {
+  local out="${BATS_TEST_TMPDIR}/claude-env.json"
+
+  run env CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 \
+    BASH_DEFAULT_TIMEOUT_MS=600000 \
+    BASH_MAX_TIMEOUT_MS=600000 \
+    cog preflight claude-env "$out"
+
+  assert_success
+  assert_output "RESOLVED $out"
+  jq -e '.claude_env.ok == true
+    and .claude_env.advisory == false
+    and .claude_env.checks.background_tasks_disabled == true' "$out" >/dev/null
+}
+
+@test "cog preflight claude-env fails strict mode when only timeout env is set" {
+  local out="${BATS_TEST_TMPDIR}/claude-env-timeouts.json"
+
+  run --separate-stderr env -u CLAUDE_CODE_DISABLE_BACKGROUND_TASKS \
+    BASH_DEFAULT_TIMEOUT_MS=600000 \
+    BASH_MAX_TIMEOUT_MS=600000 \
+    cog preflight claude-env "$out"
+
+  assert_failure
+  [[ $stderr == *"err.kind: ClaudeEnvMissing"* ]]
+  jq -e '.claude_env.ok == false
+    and .claude_env.advisory == false
+    and .claude_env.checks.bash_default_timeout_ge_600000 == true
+    and .claude_env.checks.bash_max_timeout_ge_600000 == true' "$out" >/dev/null
+}
+
+@test "cog preflight claude-env advisory mode warns and exits zero when env is absent" {
+  local out="${BATS_TEST_TMPDIR}/claude-env-advisory.json"
+
+  run env -u CLAUDE_CODE_DISABLE_BACKGROUND_TASKS \
+    -u BASH_DEFAULT_TIMEOUT_MS \
+    -u BASH_MAX_TIMEOUT_MS \
+    cog preflight claude-env "$out" --allow-legacy-session
+
+  assert_success
+  [[ $output == *"WARNING claude-env preflight advisory"* ]]
+  jq -e '.claude_env.ok == false and .claude_env.advisory == true' "$out" >/dev/null
+}

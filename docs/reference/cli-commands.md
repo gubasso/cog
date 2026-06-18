@@ -43,7 +43,7 @@ this reference table.
 | `gc-push` | Run git push without force support. |
 | `gc-stage` | Reconcile and stage explicit session files. |
 | `help` | Show generated help for cog or a subcommand. |
-| `hook-guard` | Deterministic PreToolUse/Stop hook decisions. |
+| `hook-guard` | Deterministic Stop hook decisions for active workflows. |
 | `lint-codex-wrapper` | Enforce Codex single-entrypoint markdown snippets. |
 | `lock` | Acquire or release a workflow run lock. |
 | `msg` | Emit uniform machine status lines and human messages. |
@@ -93,3 +93,7 @@ this reference table.
 Root help is generated dynamically by `lib/functions/fn_help_generate.sh`.
 `completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command
 surface and must be kept in sync with `lib/commands/cmd_*.sh`.
+
+`cog preflight claude-env <out.json> [--allow-legacy-session]` asserts the Claude Code
+no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash
+timeout env vars are recorded as diagnostics only.

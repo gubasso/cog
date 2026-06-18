@@ -45,7 +45,7 @@ Commands:
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
-  hook-guard     Deterministic PreToolUse/Stop hook decisions.
+  hook-guard     Deterministic Stop hook decisions for active workflows.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
@@ -116,7 +116,7 @@ Commands:
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
-  hook-guard     Deterministic PreToolUse/Stop hook decisions.
+  hook-guard     Deterministic Stop hook decisions for active workflows.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
@@ -219,7 +219,7 @@ Global flags:
   assert_success
   assert_output "Usage: cog hook-guard [args]
 
-Deterministic PreToolUse/Stop hook decisions.
+Deterministic Stop hook decisions for active workflows.
 
 Global flags:
   -h, --help          Show help

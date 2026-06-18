@@ -2,7 +2,8 @@
 : 'desc: Run centralized orchestrator preflight checks.'
 
 __cog_preflight_usage() {
-  cog::fn::ui_data "Usage: cog preflight <codex|sandbox|git> <out.json>"
+  cog::fn::ui_data "Usage: cog preflight <codex|sandbox|git|claude-env> <out.json>"
+  cog::fn::ui_data "Usage: cog preflight claude-env <out.json> [--allow-legacy-session]"
   cog::fn::ui_data "Usage: cog preflight agents <out.json> [--classification <file>] [--no-cache]"
 }
 
@@ -98,6 +99,110 @@ __cog_preflight_git() {
     --arg path "$path" \
     '{git_root: {available: $available, path: $path}}')"
   __cog_preflight_write "$out" '.git_root.available != null' "$json"
+}
+
+__cog_preflight_uint_ge() {
+  local value="$1"
+  local min="$2"
+  [[ $value =~ ^[0-9]+$ && $value -ge $min ]]
+}
+
+__cog_preflight_claude_env_json() {
+  local ok="$1"
+  local advisory="$2"
+  local reason="$3"
+  local disable_bg="${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS-}"
+  local default_timeout="${BASH_DEFAULT_TIMEOUT_MS-}"
+  local max_timeout="${BASH_MAX_TIMEOUT_MS-}"
+  local auto_background="${CLAUDE_AUTO_BACKGROUND_TASKS-}"
+  local default_timeout_ok=false max_timeout_ok=false auto_background_set=false
+
+  __cog_preflight_uint_ge "$default_timeout" 600000 && default_timeout_ok=true
+  __cog_preflight_uint_ge "$max_timeout" 600000 && max_timeout_ok=true
+  [[ -n $auto_background ]] && auto_background_set=true
+
+  jq -cn \
+    --argjson ok "$ok" \
+    --argjson advisory "$advisory" \
+    --arg reason "$reason" \
+    --arg disable_bg "$disable_bg" \
+    --arg default_timeout "$default_timeout" \
+    --arg max_timeout "$max_timeout" \
+    --arg auto_background "$auto_background" \
+    --argjson default_timeout_ok "$default_timeout_ok" \
+    --argjson max_timeout_ok "$max_timeout_ok" \
+    --argjson auto_background_set "$auto_background_set" \
+    '{
+      claude_env: {
+        ok: $ok,
+        advisory: $advisory,
+        reason: $reason,
+        observed: {
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: $disable_bg,
+          BASH_DEFAULT_TIMEOUT_MS: $default_timeout,
+          BASH_MAX_TIMEOUT_MS: $max_timeout,
+          CLAUDE_AUTO_BACKGROUND_TASKS: $auto_background
+        },
+        checks: {
+          background_tasks_disabled: ($disable_bg == "1"),
+          bash_default_timeout_ge_600000: $default_timeout_ok,
+          bash_max_timeout_ge_600000: $max_timeout_ok,
+          auto_background_tasks_set: $auto_background_set
+        }
+      }
+    }'
+}
+
+__cog_preflight_claude_env() {
+  local out="" allow_legacy=false
+
+  while (($# > 0)); do
+    case "$1" in
+      --allow-legacy-session)
+        allow_legacy=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown preflight claude-env option" "option: $1" "" "run 'cog preflight --help'"
+        ;;
+      *)
+        [[ -z $out ]] || cog::fn::error_raise "TooManyArguments" \
+          "too many output paths" "argument: $1" "" "run 'cog preflight --help'"
+        out="$1"
+        shift
+        ;;
+    esac
+  done
+
+  [[ -n $out ]] || cog::fn::error_raise "MissingArgument" \
+    "missing output path" "usage: cog preflight claude-env <out.json> [--allow-legacy-session]" "" \
+    "run 'cog preflight --help'"
+
+  if [[ ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS-} == "1" ]]; then
+    __cog_preflight_write "$out" '.claude_env.ok != null' \
+      "$(__cog_preflight_claude_env_json true false "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is in force")"
+    return 0
+  fi
+
+  # Advisory downgrade is reserved for legacy sessions that predate the env
+  # injection — i.e. the variable is wholly ABSENT from this process. An
+  # explicitly-present wrong value (e.g. =0, =false) signals a bad base env
+  # layer, not a legacy session, so it must take the fail-closed path below.
+  if [[ $allow_legacy == true && -z ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS+x} ]]; then
+    __cog_preflight_write "$out" '.claude_env.ok != null' \
+      "$(__cog_preflight_claude_env_json false true "env not in force in the current session; warn-only per migration sequencing")"
+    cog::fn::ui_human "WARNING claude-env preflight advisory: CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is not in force in this session; restart claude-session after this round."
+    return 0
+  fi
+
+  __cog_preflight_write "$out" '.claude_env.ok != null' \
+    "$(__cog_preflight_claude_env_json false false "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is required to disable auto-backgrounding")"
+  cog::fn::error_raise "ClaudeEnvMissing" \
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is not in force" \
+    "path: ${out}" \
+    "BASH timeout env vars are diagnostic only and do not disable auto-backgrounding" \
+    "restart claude-session after updating the base env layer"
 }
 
 __cog_preflight_cache_dir() {
@@ -241,6 +346,10 @@ cog::cmd::preflight() {
       [[ $# -eq 1 ]] || cog::fn::error_raise "InvalidInput" \
         "invalid preflight git arguments" "usage: cog preflight git <out.json>" "" "run 'cog preflight --help'"
       __cog_preflight_git "$1"
+      ;;
+    claude-env)
+      shift
+      __cog_preflight_claude_env "$@"
       ;;
     agents)
       shift

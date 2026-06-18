@@ -46,23 +46,19 @@ Read
 before running any Codex command. Treat that file as the source of truth for CLI invocation
 patterns, thread ID extraction, and timeout requirements.
 
-> **Execution discipline — never background a Codex call.** `/prex` runs as an **in-session
-> delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator such as
-> `plan-queue-runner`) or standalone in an interactive session — not, as before, "always headless
-> `claude -p`". Backgrounding is unsafe in either case. Every Codex Bash call (and every other tool
-> call in this workflow) **MUST run in the foreground** with `run_in_background` false/omitted and a
-> Bash-tool `timeout` of `600000ms`; the call blocks until Codex exits. Backgrounding breaks the
-> synchronous sequencing the workflow relies on, and in any headless host the detached Codex is
-> **reaped ~5s after the turn's final result**: implementation files may land, but Stages 4–5 never
-> run, the round silently stays `doing`, and the process still exits `0` — the exact failure this
-> discipline prevents. A round whose Codex stage cannot finish within the 600s window is a **planning
-> error** — split the round per `plan-lifecycle.md` — **never** a reason to background. A genuine
-> overrun surfaces deterministically as a `timeout-124`/`sigterm` status with partial logs; handle it
-> via the Resume Fallback, not by detaching. This rule is now **enforced deterministically** by the
-> `cog hook-guard codex-foreground` `PreToolUse(Bash)` hook: a Codex Bash call that is backgrounded,
-> or that omits a `timeout` of at least `600000ms`, is blocked before it runs when the hook is
-> installed/configured, so the reap is prevented at the source. The
-> prose remains as the rationale; the hook is the guarantee. Details are recorded in
+> **Execution discipline — env first, never background a Codex call.** `/prex` runs as an
+> **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
+> such as `plan-queue-runner`) or standalone in an interactive session — not, as before, "always
+> headless `claude -p`". The no-backgrounding guarantee comes from the `claude-session` env layer:
+> `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` disables Claude Code auto-backgrounding for the session.
+> The `cog preflight claude-env` assertion below verifies that guarantee at bootstrap. Foreground
+> discipline remains the in-session contract: every Codex Bash call (and every other tool call in
+> this workflow) **MUST run in the foreground** with `run_in_background` false/omitted and a Bash-tool
+> `timeout` of `600000ms`; the call blocks until Codex exits. A round whose Codex stage cannot finish
+> within the 600s window is a **planning error** — split the round per `plan-lifecycle.md` — **never**
+> a reason to background. A genuine overrun surfaces deterministically as a `timeout-124`/`sigterm`
+> status with partial logs; handle it via the Resume Fallback, not by detaching. Details are recorded
+> in
 > [`$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md).
 
 Orchestration patterns shared with `review-loop` (proof-of- delegation, lock management, review-loop
@@ -98,7 +94,7 @@ command -v cog >/dev/null || {
   echo "prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require hook-guard codex-runner rundir lock prex-parse-args prex-tsk-resolve || {
+cog require hook-guard codex-runner rundir lock preflight prex-parse-args prex-tsk-resolve || {
   echo "prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
@@ -115,6 +111,20 @@ LOCK_FILE=<path>
 Shell state does not persist between Bash tool invocations. Read `RUN_DIR` and `LOCK_FILE` from this
 output and **substitute the literal paths** in every subsequent command. All `cog` calls
 below use the bare command (it is on `PATH`); no library sourcing or path resolution is needed.
+
+Immediately after creating the run directory, assert the session env guarantee before Stage 1.
+Substitute the literal `RUN_DIR` and `LOCK_FILE` values from the `cog rundir` output:
+
+```bash
+cog preflight claude-env "$RUN_DIR/preflight-claude-env.json" --allow-legacy-session \
+  || { cog lock release "$LOCK_FILE"; exit 1; }
+```
+
+The `--allow-legacy-session` flag exists only for this env rollout. In the already-running session
+that predates the `base.json` env change, an absent guarantee is advisory: `cog` writes
+`preflight-claude-env.json`, warns, and returns 0 so the current plan can finish. In a restarted
+session the strict check should pass because `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is in force.
+Without that migration flag, `cog preflight claude-env` fails closed when the env guarantee is absent.
 
 The lock file stores two lines — the `RUN_DIR` path and the owning Claude Code PID (`$PPID`). The
 Stop hook uses the PID to scope enforcement: only the session that created the lock is blocked while

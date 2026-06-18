@@ -16,10 +16,6 @@ setup() {
   source "${LIB_DIR}/commands/cmd_hook_guard.sh"
 }
 
-guard_fg_direct() {
-  printf '%s' "$1" | cog::cmd::hook_guard codex-foreground
-}
-
 guard_stop_direct() {
   printf '{}' | cog::cmd::hook_guard prex-stop --owner-pid "$1"
 }
@@ -36,61 +32,12 @@ guard_stop_direct() {
   assert_failure 1
 }
 
-@test "hook_guard direct help lists both hook actions" {
+@test "hook_guard direct help lists stop hook action only" {
   run cog::cmd::hook_guard --help
 
   assert_success
-  [[ $output == *"codex-foreground"* ]]
   [[ $output == *"prex-stop"* ]]
-}
-
-@test "hook_guard codex-foreground returns hook block status directly" {
-  run --separate-stderr guard_fg_direct '{"tool_input":{"command":"cog codex-runner run-resume","run_in_background":true,"timeout":600000}}'
-
-  assert_failure 2
-  [[ $stderr == *"BLOCKED"* ]]
-}
-
-@test "hook_guard codex-foreground allows codex-session package path mentions" {
-  run guard_fg_direct '{"tool_input":{"command":"git diff -- lib/commands codex-session","run_in_background":true,"timeout":120000}}'
-  assert_success
-
-  run guard_fg_direct '{"tool_input":{"command":"cat codex-session/foo","run_in_background":true,"timeout":120000}}'
-  assert_success
-}
-
-@test "hook_guard codex-foreground allows fast codex-runner probes" {
-  run guard_fg_direct '{"tool_input":{"command":"cog codex-runner gate sandbox out.json","timeout":120000}}'
-
-  assert_success
-}
-
-@test "hook_guard codex-foreground allows quoted or echoed wrapper mentions" {
-  run guard_fg_direct '{"tool_input":{"command":"echo cog codex-runner run-exec","timeout":120000}}'
-
-  assert_success
-}
-
-@test "hook_guard codex-foreground matches multiline wrapper command position" {
-  run --separate-stderr guard_fg_direct '{"tool_input":{"command":"RUNNER_MODE=native\ncog codex-runner run-exec","run_in_background":true,"timeout":600000}}'
-
-  assert_failure 2
-  [[ $stderr == *"BLOCKED"* ]]
-}
-
-@test "hook_guard codex-foreground matches separator wrapper command position" {
-  run --separate-stderr guard_fg_direct '{"tool_input":{"command":"foo && cog codex-runner run-exec","timeout":120000}}'
-
-  assert_failure 2
-  [[ $stderr == *"600000"* ]]
-}
-
-@test "hook_guard codex-foreground matches subshell and trailing ampersand wrapper forms" {
-  run --separate-stderr guard_fg_direct '{"tool_input":{"command":"(cog codex-runner run-exec)","timeout":120000}}'
-  assert_failure 2
-
-  run --separate-stderr guard_fg_direct '{"tool_input":{"command":"cog codex-runner run-exec&","timeout":120000}}'
-  assert_failure 2
+  [[ $output != *"codex-foreground"* ]]
 }
 
 @test "hook_guard prex-stop returns hook block status directly" {
@@ -103,5 +50,37 @@ guard_stop_direct() {
 
   assert_failure 2
   [[ $stderr == *'"decision":"block"'* ]]
+  rm -rf "$run_dir" "$lock_file"
+}
+
+@test "hook_guard prex-stop blocks when stage3 artifact is missing" {
+  local run_dir="${BATS_TEST_TMPDIR}/prex-stage3-missing"
+  local lock_file
+  mkdir -p "$run_dir"
+  lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
+  printf '%s\n' x >"$run_dir/stage1-plan.txt"
+  printf '%s\n' x >"$run_dir/stage2-reviewed-plan.md"
+  printf '%s\n' x >"$run_dir/stage4-review.md"
+
+  run --separate-stderr guard_stop_direct "$$"
+
+  assert_failure 2
+  [[ $stderr == *"Stage 3: Implementation report"* ]]
+  rm -rf "$run_dir" "$lock_file"
+}
+
+@test "hook_guard prex-stop allows when all required artifacts exist" {
+  local run_dir="${BATS_TEST_TMPDIR}/prex-complete"
+  local lock_file
+  mkdir -p "$run_dir"
+  lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
+  printf '%s\n' x >"$run_dir/stage1-plan.txt"
+  printf '%s\n' x >"$run_dir/stage2-reviewed-plan.md"
+  printf '%s\n' x >"$run_dir/stage3-impl-report.txt"
+  printf '%s\n' x >"$run_dir/stage4-review.md"
+
+  run guard_stop_direct "$$"
+
+  assert_success
   rm -rf "$run_dir" "$lock_file"
 }
