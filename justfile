@@ -19,10 +19,27 @@ test-e2e:
 test-manual: test-live test-e2e
 
 install:
-	./install.sh
+	@printf '\033[1;34m==>\033[0m Installing cog\n'
+	@printf '    prefix : %s\n' "${PREFIX:-$HOME/.local}"
+	@printf '    data   : %s\n' "${XDG_DATA_HOME:-$HOME/.local/share}"
+	@printf '    state  : %s\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
+	@printf '    This copies the cog payload, links the cog binary, and installs\n'
+	@printf '    Claude/Codex skills, bash completions, and the man page.\n'
+	@printf '\n'
+	@./install.sh
+	@printf '\n'
+	@printf '\033[1;32m==>\033[0m Done. Make sure \033[1m%s\033[0m is on your PATH.\n' "${PREFIX:-$HOME/.local}/bin"
+	@printf '    Try: \033[1mcog --help\033[0m  (you may need to open a new shell first)\n'
 
 uninstall:
-	./uninstall.sh
+	@printf '\033[1;34m==>\033[0m Uninstalling cog\n'
+	@printf '    state  : %s\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
+	@printf '    This removes every file recorded in the install manifest and prunes\n'
+	@printf '    the empty directories left behind. User-authored content is untouched.\n'
+	@printf '\n'
+	@./uninstall.sh
+	@printf '\n'
+	@printf '\033[1;32m==>\033[0m Done.\n'
 
 man:
 	@if command -v scdoc >/dev/null 2>&1; then \
