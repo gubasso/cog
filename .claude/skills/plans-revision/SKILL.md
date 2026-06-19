@@ -62,7 +62,9 @@ round prose files.
 
 6. For newly found gaps, regressions, or follow-up work, append new queue entries only through
    `cog queue-append`. Use `plans` for new main-plan entries and `rounds` for inner plan rounds.
-   Do not reorder existing entries.
+   Do not reorder existing entries. Any new plan is a flat sibling directory under
+   `.implementation-plans/plans/` (`plans/<slug>/`) wired via `depends_on` — never a nested
+   directory. `cog plans-revision-scan` fails closed on any nested plan it inventories.
 
 7. Run the after scan into `$RUN_DIR/after.json`, then verify with `cog plans-revision-verify` into
    `$RUN_DIR/verify.json`. If verification fails, return `STATUS: FAILED`; the parent runner must stop.
@@ -82,6 +84,8 @@ round prose files.
 ## Guardrails
 
 - Adaptive revision may change only remaining `todo` and `backlog` work.
+- Plan directories are flat siblings under `plans/`; appended plans are never nested. The scan fails
+  closed on any nested plan, so reconciliation stops rather than silently ignoring it.
 - Completed history is immutable: never edit a `done` item's status, prompt, dependencies, notes, or
   recorded prose. The verify gate deterministically enforces this for the queue-YAML fields
   (status, prompt, depends_on, notes); the prose-file content of a `done` item is your responsibility

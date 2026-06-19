@@ -104,3 +104,11 @@ defaults to `rounds`.
 `cog preflight claude-env <out.json> [--allow-legacy-session]` asserts the Claude Code
 no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash
 timeout env vars are recorded as diagnostics only.
+
+## Implementation plan layout
+
+Plan directories are flat siblings, a single level under `.implementation-plans/plans/`
+(`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
+filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
+`cog plans-revision-scan` (revision inventory, via `cog::fn::plans_revision_assert_flat`), and
+`cog plan-queue-runner-resolve-plan` (a resolved target must be a direct child of `plans/`).

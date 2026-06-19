@@ -52,6 +52,12 @@ fails closed in setup. Live data is directory-only in this round: every main pla
 `kind: "inner_queue"` backed by `<plan-dir>/queue-rounds.yaml`; any other form fails closed in
 `cog plan-queue-runner-resolve-plan`.
 
+Plan directories are **flat siblings** directly under `.implementation-plans/plans/`
+(`plans/<slug>/`); ordering between plans lives only in the top-level `queue-plans.yaml` `depends_on`
+field, never in the filesystem. The runner resolves each main-plan entry to exactly one
+`plans/<slug>/` directory — `cog plan-queue-runner-resolve-plan` fails closed if a resolved target is
+a nested directory rather than a direct child of `plans/`.
+
 DO NOT delegate the main loop to a subagent. Main loop = depth 0; each round delegate = +1; each
 plans-revision subagent = +1 sibling, not nested under the round delegate; hard cap = 5.
 
@@ -460,6 +466,8 @@ Assumption: `plans-revision` already performs `cog plans-revision-scan`,
   queue's repos (`INNER_REPOS`), not the main-queue `REPOS`; the clean-tree guard across every
   declared repo is what makes stage-all safe.
 - Use queued prompts verbatim. Do not reconstruct `/prex` commands.
+- Plan directories are flat siblings under `plans/`; the resolver fails closed on a nested target.
+  Do not work around it by hand-resolving a nested path.
 - Never delegate the main loop to a subagent. Never background Agent, `/prex`, `/gc`, or revision
   work.
 

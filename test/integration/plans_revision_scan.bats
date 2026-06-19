@@ -105,6 +105,19 @@ EOF
   assert_equal "$(jq -r '.plans_fingerprint' <<<"$first")" "$(jq -r '.plans_fingerprint' <<<"$second")"
 }
 
+@test "plans-revision-scan fails closed on a nested plan directory" {
+  local root="${BATS_TEST_TMPDIR}/repo"
+  write_scan_fixture "$root"
+  mkdir -p "$root/.implementation-plans/plans/alpha/nested"
+  printf 'rounds: []\n' >"$root/.implementation-plans/plans/alpha/nested/queue-rounds.yaml"
+
+  run --separate-stderr cog plans-revision-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
+
+  assert_failure
+  [[ $stderr == *"nested plan directory detected"* ]]
+  [[ $stderr == *"plans/alpha/nested/queue-rounds.yaml"* ]]
+}
+
 @test "plans-revision-scan --help dispatches" {
   run cog plans-revision-scan --help
 

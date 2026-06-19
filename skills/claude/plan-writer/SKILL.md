@@ -252,7 +252,11 @@ State the executor profile and EF up front (from Phase 1a): `Executor: $EXECUTOR
 Use the grade as a sizing signal, not a format selector or round cap. Apply the two-layer model:
 
 - **Layer 1** — split by domain/scope into one or more flat sibling plan directories under `plans/`,
-  sharing a slug prefix and wired with top-level `depends_on` for ordering.
+  wired with top-level `depends_on` for ordering. **Plan directories are always direct children of
+  `plans/` (`plans/<slug>/`) — never nest a plan directory inside another, and never create
+  subdirectories inside a plan directory.** Relationships and execution order are expressed **only**
+  through `depends_on` in the queue files, never through the filesystem. A "shared slug prefix" is a
+  naming convention (e.g. `auth-backend`, `auth-frontend`), not a parent directory.
 - **Layer 2** — for each directory, use the adjusted grade as a sizing signal only, then split into
   uncapped, scope-driven rounds.
 
@@ -286,10 +290,12 @@ The helper-owned bootstrap covers:
 
 ### 6b — Plan the Layer 1 directories and Layer 2 rounds
 
-Decide whether the work is one plan directory or multiple flat sibling directories. Once the Layer 1
-split is known, run the Phase 1b collision check for **every** planned sibling directory
-(`$PLANS_DIR/<sibling-slug>/`), not just the base `$SLUG` — do not silently overwrite any existing
-non-empty sibling directory. For each directory, apply the round-splitting rules from
+Decide whether the work is one plan directory or multiple flat sibling directories. Every plan
+directory is a direct child of `$PLANS_DIR` (`$PLANS_DIR/<slug>/`) — never nested under another plan
+directory and never containing plan subdirectories; ordering between siblings lives only in
+`depends_on`. Once the Layer 1 split is known, run the Phase 1b collision check for **every** planned
+sibling directory (`$PLANS_DIR/<sibling-slug>/`), not just the base `$SLUG` — do not silently
+overwrite any existing non-empty sibling directory. For each directory, apply the round-splitting rules from
 `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` and assign each
 implementation step to an uncapped, scope-driven round. Verify no circular dependencies between
 rounds or sibling directories. Use `cog plan-slug` to validate every round topic slug; the helper
@@ -463,6 +469,11 @@ Normal interactive `/plan-writer` use ignores coordinator mode.
 ## Guardrails
 
 - This skill only WRITES the plan output. It does not implement anything.
+- **Flat layout is a hard constraint.** Every plan directory is a direct child of
+  `.implementation-plans/plans/` (`plans/<slug>/`). Never nest a plan directory inside another and
+  never create subdirectories within a plan directory; relationships and order live only in
+  `depends_on`. `cog plan-init`, `cog plans-revision-scan`, and `cog plan-queue-runner-resolve-plan`
+  fail closed on any nested plan.
 - Do not modify any existing files in the repository (only write to `.implementation-plans/`; in
   coordinator mode, write only to the given scratch `<output-path>`).
 - Never overwrite `.implementation-plans/README.md` or rewrite existing entries in

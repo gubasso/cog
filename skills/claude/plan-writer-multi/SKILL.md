@@ -262,7 +262,10 @@ to `.implementation-plans/`.
   collision check — do not silently overwrite. The helper owns `[a-z0-9-]`, max-length, and
   the reserved-name set owned by `cog plan-slug`; the coordinator owns collision judgment.
 - Classify the final grade (axes ÷ EF) as a sizing signal. Select one or more flat sibling plan
-  directories via Layer 1, then split each directory into uncapped rounds via Layer 2. Once the
+  directories via Layer 1, then split each directory into uncapped rounds via Layer 2. **Plan
+  directories are always direct children of `plans/` (`plans/<slug>/`) — never nested under another
+  plan directory and never containing plan subdirectories; ordering between siblings lives only in
+  `depends_on`** (a shared slug prefix is a naming convention, not a parent directory). Once the
   Layer 1 split is known, run the Phase 1b collision check for **every** sibling directory it will
   register (`$PLANS_DIR/<sibling-slug>/`), not just the base slug — do not silently overwrite any
   existing non-empty sibling directory.
@@ -329,6 +332,10 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
 - Inline coordinator: only this skill talks to the user; the two workers are non-interactive.
 - Only this skill writes to `.implementation-plans/`; the workers are read-only w.r.t. the repo and
   emit drafts to scratch paths only.
+- **Flat layout is a hard constraint.** Every plan directory is a direct child of
+  `.implementation-plans/plans/` (`plans/<slug>/`) — never nested and never containing plan
+  subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog plans-revision-scan`,
+  and `cog plan-queue-runner-resolve-plan` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
 - Codex calls go through `cog codex-runner run-exec` with `--profile medium`, read-only
   native/fallback sandboxing, `< /dev/null`, stderr→log, and Bash timeout `600000`, in the

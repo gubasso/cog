@@ -22,6 +22,8 @@ In this mode:
    never under `.implementation-plans/`):
    - One or more structured directory-plan drafts inline: each directory's `README.md` body, each
      round file (its `<topic>` slug + body), and the inner `queue-rounds.yaml` split.
+   - Plan directories are always **flat siblings** under `plans/` (`plans/<slug>/`) — never nested
+     and never with plan subdirectories; express ordering only through `depends_on`.
    - When Layer 1 produces multiple sibling directories, include proposed top-level
      `queue-plans.yaml` entries and `depends_on` wiring.
    - Do NOT create directories — emit everything in the one output file for the coordinator to

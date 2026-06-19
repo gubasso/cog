@@ -37,6 +37,30 @@ setup() {
   jq -e '.queue_path | endswith(".implementation-plans/queue-plans.yaml")' "$out" >/dev/null
 }
 
+@test "cog plan-init fails closed on a nested plan directory" {
+  local repo="${BATS_TEST_TMPDIR}/repo"
+  mkdir -p "${repo}/.implementation-plans/plans/parent/child"
+  printf 'rounds: []\n' >"${repo}/.implementation-plans/plans/parent/child/queue-rounds.yaml"
+
+  run cog plan-init --repo-root "$repo" --json
+
+  assert_failure
+  assert_output --partial "nested plan directory detected"
+  assert_output --partial "plans/parent/child/queue-rounds.yaml"
+}
+
+@test "cog plan-init succeeds for flat sibling plans" {
+  local repo="${BATS_TEST_TMPDIR}/repo"
+  mkdir -p "${repo}/.implementation-plans/plans/flat-a" "${repo}/.implementation-plans/plans/flat-b"
+  printf 'rounds: []\n' >"${repo}/.implementation-plans/plans/flat-a/queue-rounds.yaml"
+  printf 'rounds: []\n' >"${repo}/.implementation-plans/plans/flat-b/queue-rounds.yaml"
+
+  run cog plan-init --repo-root "$repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true' >/dev/null
+}
+
 @test "cog plan-init --help dispatches" {
   run cog plan-init --help
 

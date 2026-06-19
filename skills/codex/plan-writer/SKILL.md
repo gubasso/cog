@@ -57,7 +57,10 @@ orientation footer. In this mode:
    raw score (5–20), divide by the **EF stated in the brief**, and map the **adjusted** score to a
    grade (S/M/L/XL) per that file's grade table; never map the raw score.
 4. Generate ONE plan draft and emit it as your **final message** (no file writes):
-   - One or more sibling plan-directory drafts.
+   - One or more **flat sibling** plan-directory drafts — every plan directory is a direct child of
+     `plans/` (`plans/<slug>/`). **Never nest a plan directory inside another and never propose plan
+     subdirectories**; express all relationships and ordering through `depends_on`, never through the
+     filesystem (a shared slug prefix is a naming convention, not a parent directory).
    - For each directory, include the `README.md` body, round file bodies, and `queue-rounds.yaml`.
    - Include proposed `queue-plans.yaml` entries and `depends_on` wiring for Layer 1 sibling dirs.
    - Do NOT create directories — emit everything in the single final message for the coordinator to

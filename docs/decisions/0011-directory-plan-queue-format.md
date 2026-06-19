@@ -29,6 +29,9 @@ splits it into uncapped rounds. Queue files are named `queue-plans.yaml` at the 
 - Good: queue consumers can distinguish the repo-wide plan ledger from executable round queues.
 - Bad: existing producer, consumer, docs, tests, and live plan data must migrate away from the old
   `QUEUE.yaml` and single-file assumptions.
+- The flat-sibling layout is machine-enforced: plan directories must be direct children of `plans/`
+  (never nested). `cog plan-init`, `cog plans-revision-scan`, and `cog plan-queue-runner-resolve-plan`
+  fail closed on any nested plan; relationships and order live only in `depends_on`.
 
 ## Status
 

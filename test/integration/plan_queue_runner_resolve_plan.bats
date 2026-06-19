@@ -87,6 +87,34 @@ EOF
   [[ $stderr == *"plan target not found"* ]]
 }
 
+@test "cog plan-queue-runner-resolve-plan fails closed on a nested plan directory" {
+  local repo="${BATS_TEST_TMPDIR}/nested-repo"
+  mkdir -p "$repo/.implementation-plans/plans/good" "$repo/.implementation-plans/plans/parent/child"
+  printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
+  printf 'rounds: []\n' >"$repo/.implementation-plans/plans/parent/child/queue-rounds.yaml"
+  local queue="$repo/.implementation-plans/queue-plans.yaml"
+  write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
+
+  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
+
+  assert_failure
+  [[ $stderr == *"nested plan directory detected"* ]]
+}
+
+@test "cog plan-queue-runner-resolve-plan resolves a flat canonical plan" {
+  local repo="${BATS_TEST_TMPDIR}/flat-repo"
+  mkdir -p "$repo/.implementation-plans/plans/good"
+  printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
+  local queue="$repo/.implementation-plans/queue-plans.yaml"
+  write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
+
+  run cog plan-queue-runner-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg root "$repo" \
+    '.kind == "inner_queue" and .target_path == ($root + "/.implementation-plans/plans/good")' >/dev/null
+}
+
 @test "cog plan-queue-runner-resolve-plan fails closed for unsupported missing and duplicate items" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
 

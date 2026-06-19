@@ -54,6 +54,21 @@ cog::fn::plans_revision_queue_schema() {
   fi
 }
 
+cog::fn::plans_revision_assert_flat() {
+  local repo_root="${1:-}" abs_repo plans_dir nested
+  __cog_plans_revision_require_repo_root "$repo_root"
+  abs_repo="$(realpath "$repo_root")"
+  plans_dir="${abs_repo}/.implementation-plans/plans"
+  [[ -d $plans_dir ]] || return 0
+
+  # Plan directories are always flat siblings directly under plans/ (plans/<slug>/).
+  # An inner queue-rounds.yaml below the depth-2 sibling level signals a nested plan.
+  nested="$(find "$plans_dir" -mindepth 3 -type f -name 'queue-rounds.yaml' | LC_ALL=C sort)"
+  [[ -z $nested ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+    "nested plan directory detected" "path: ${plans_dir}" "$nested" \
+    "move each plan to a flat sibling plans/<slug>/ and wire ordering via depends_on"
+}
+
 __cog_plans_revision_queue_json() {
   local queue_path="$1" schema="$2" abs_queue
   abs_queue="$(realpath "$queue_path")"
@@ -97,6 +112,8 @@ cog::fn::plans_revision_inventory_json() {
     "main queue must use plans schema" "path: ${abs_main}" "actual schema: ${schema}" \
     "pass the root queue-plans.yaml file"
   queue_jsons+=("$(__cog_plans_revision_queue_json "$abs_main" plans)")
+
+  cog::fn::plans_revision_assert_flat "$abs_repo"
 
   plans_dir="${abs_repo}/.implementation-plans/plans"
   if [[ -d $plans_dir ]]; then
