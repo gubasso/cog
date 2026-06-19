@@ -2,10 +2,10 @@
 name: plan-queue-runner
 description: >
   Drive a plan-writer multi-round implementation plan directory to completion
-  from its QUEUE.yaml. Use when the user asks to "run the queue", "run the
+  from its queue-rounds.yaml. Use when the user asks to "run the queue", "run the
   plan queue", "execute the plan rounds", "drive the plan directory", or
   invokes "plan-queue-runner". Dispatches each queued /prex round to a fresh
-  claude-delegate subagent, verifies QUEUE.yaml reached done, commits with
+  claude-delegate subagent, verifies queue-rounds.yaml reached done, commits with
   /gc -a across every repo the round touched, and loops until complete or
   failed closed.
 argument-hint: "[-n|--dry-run] [--max <n>] <plan-dir-or-queue-path>"
@@ -17,7 +17,7 @@ allowed-tools: Bash Read Agent Skill
 
 # Plan Queue Runner
 
-Drive a plan-writer directory plan to completion from its `QUEUE.yaml`. For each runnable `todo`
+Drive a plan-writer directory plan to completion from its `queue-rounds.yaml`. For each runnable `todo`
 round, dispatch that round's exact `prompt` to a fresh `claude-delegate` subagent, verify the round
 flipped itself to `done`, commit with `/gc -a`, and continue until the queue drains or a failure
 stops the run.
@@ -35,14 +35,14 @@ one level down, rely on the same session env guarantee as the parent:
 `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` must be in force so Claude Code does not auto-background
 long-running Bash calls. `/prex` asserts that env at bootstrap; the foreground discipline still
 applies to every Codex invocation. Multi-level round completion is independently guaranteed by the
-QUEUE-status check below: after the delegate returns, this runner re-reads `QUEUE.yaml` and fails
+QUEUE-status check below: after the delegate returns, this runner re-reads `queue-rounds.yaml` and fails
 closed unless the round is `done`.
 
 ## Multi-Repo Plans
 
-A plan may write into more than one git repo: the repo holding `QUEUE.yaml` (`REPO_ROOT`, where the
+A plan may write into more than one git repo: the repo holding `queue-rounds.yaml` (`REPO_ROOT`, where the
 status flips live) plus one or more **satellite** repos the rounds implement into. Declare satellites
-in an optional top-level `repos:` list in the inner `QUEUE.yaml`, before `rounds:`:
+in an optional top-level `repos:` list in the inner `queue-rounds.yaml`, before `rounds:`:
 
 ```yaml
 repos:
@@ -56,7 +56,7 @@ rounds:
 ```
 
 When present, the clean-tree guard covers every declared repo and the commit step runs
-`/gc -a --repo <sat>...` so `/gc` commits both the `QUEUE.yaml` flip in `REPO_ROOT` and the
+`/gc -a --repo <sat>...` so `/gc` commits both the `queue-rounds.yaml` flip in `REPO_ROOT` and the
 round's artifacts in satellites. `plan-queue-runner-setup` persists satellites to `ctx.env` as
 newline-joined `REPOS`; rebuild `--repo` flags from it whenever shelling out:
 
@@ -84,29 +84,29 @@ mode than `bypassPermissions` — restart it under the intended mode after confi
 ```bash
 /plan-queue-runner .implementation-plans/plans/build-orion-nixos-config
 /plan-queue-runner --dry-run .implementation-plans/plans/build-orion-nixos-config
-/plan-queue-runner --max 1 .implementation-plans/plans/build-orion-nixos-config/QUEUE.yaml
+/plan-queue-runner --max 1 .implementation-plans/plans/build-orion-nixos-config/queue-rounds.yaml
 ```
 
 `--max N` stops after `N` successfully committed rounds in this invocation. `--dry-run` prints the
 next runnable round, all remaining `todo` rounds, and the planned `/gc -a` commit without
 dispatching any delegate.
 
-The plan directory or `QUEUE.yaml` path must not contain whitespace (arguments are tokenized by
+The plan directory or `queue-rounds.yaml` path must not contain whitespace (arguments are tokenized by
 word-splitting, matching the convention used by `/prex` and the `.implementation-plans/` layout).
 
 ## Algorithm
 
-1. Parse only `-n|--dry-run`, `--max N` or `--max=N`, and one plan directory or `QUEUE.yaml` path.
+1. Parse only `-n|--dry-run`, `--max N` or `--max=N`, and one plan directory or `queue-rounds.yaml` path.
 2. Resolve `REPO_ROOT`, normalize `QUEUE_PATH`, read optional `repos:` satellites, create `RUN_DIR`,
    and write `RUN_DIR/ctx.env` including `REPOS`.
-3. Ask `cog queue-select` to validate `QUEUE.yaml`, reject duplicate `item` values, reject
+3. Ask `cog queue-select` to validate `queue-rounds.yaml`, reject duplicate `item` values, reject
    any `doing` round, require a clean worktree across `REPO_ROOT` and every declared satellite, and
    select the first runnable `todo` round.
 4. Use the helper's JSON result as the selection source. `queue-select` is read-only and never flips
    statuses; the runner still verifies status changes after the delegate returns.
 5. Dispatch the round to a `claude-delegate` subagent via the **Agent tool** (foreground). The call
    blocks until the delegate's whole workflow finishes and returns its structured result.
-6. Re-read `QUEUE.yaml` and require that round's status to be `done`; never write the queue.
+6. Re-read `queue-rounds.yaml` and require that round's status to be `done`; never write the queue.
 7. Dispatch `/gc -a` plus `--repo` flags for satellites to a `claude-delegate` subagent the same
    way, parse the captured `COMMIT_*` line(s), then loop.
 
@@ -120,7 +120,7 @@ cog plan-queue-runner-setup "${ARGUMENTS:-}"
 ```
 
 The command parses the flags (`-n|--dry-run`, `--max N`) and the single TARGET (a plan dir or a
-`QUEUE.yaml` path), resolves the repo root, normalizes the queue path, creates the run dir, writes
+`queue-rounds.yaml` path), resolves the repo root, normalizes the queue path, creates the run dir, writes
 the load-bearing `ctx.env` (`REPO_ROOT`/`QUEUE_PATH`/`RUN_DIR`/`DRY_RUN`/`MAX_ROUNDS`/`REPOS`,
 `%q`-quoted), and runs the first `queue-select`. It emits `RUN_DIR=<path>`; it exits 2 on a
 bad/unknown flag or a missing/duplicate target, and exits 1 when outside a git repo, the queue is
@@ -180,7 +180,7 @@ echo "REPO_ROOT=$REPO_ROOT ITEM=$ITEM"
 
   This is a `/prex` round: run all of its stages (plan → review → implement → review → loop).
   Run every Codex call in the foreground; never background it. The round is complete only when the
-  plan is fully implemented and reviewed AND this round's status is flipped to `done` in QUEUE.yaml
+  plan is fully implemented and reviewed AND this round's status is flipped to `done` in queue-rounds.yaml
   per the plan's final step. Return your structured result.
   ```
 
@@ -197,7 +197,7 @@ Verify the round, by item, after the delegate returns:
 ITEM="$ITEM" yq e -r '.rounds[] | select(.item == strenv(ITEM)) | .status' "$QUEUE_PATH"
 ```
 
-The status must be exactly `done`; otherwise **fail closed** and stop. Do not edit `QUEUE.yaml`. A
+The status must be exactly `done`; otherwise **fail closed** and stop. Do not edit `queue-rounds.yaml`. A
 round that returns but is **not** `done` means the delegate did not complete the workflow (e.g. it
 reported a blocker, or `/prex` stopped before flipping the queue). This is a **hard fail** — report
 the delegate's returned summary verbatim alongside the run dir, and stop:
@@ -253,7 +253,7 @@ remaining `todo` rounds, and `stop_reason`.
 
 ## Rules
 
-- Never write `QUEUE.yaml`; no `yq -i`, no `sed -i`, and no redirect to the queue path.
+- Never write `queue-rounds.yaml`; no `yq -i`, no `sed -i`, and no redirect to the queue path.
 - Verify, do not set: after the round delegate returns, the round must already be `done`.
 - Run each round in a fresh `claude-delegate` subagent (isolated context), foreground/blocking — one
   per round. Never use `run_in_background` for a dispatch.

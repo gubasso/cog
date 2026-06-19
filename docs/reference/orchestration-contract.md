@@ -46,7 +46,8 @@ summary.
 For queue-driven work, the usual postcondition is:
 
 ```text
-QUEUE.yaml status == done
+inner queue-rounds.yaml round status == done
+top-level queue-plans.yaml plan status == done
 ```
 
 ## Depth Budget

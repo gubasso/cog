@@ -23,7 +23,7 @@ nest, and `/prex` must delegate internally (plan review, code review, review loo
 
 Chosen: **in-session foreground subagents**. A generic `claude-delegate` subagent is the reusable
 primitive; orchestrators dispatch each unit (and the `/gc` commit) to it via the Agent tool. Unit
-completion is verified deterministically (e.g. re-reading `QUEUE.yaml` for `status == done`). We
+completion is verified deterministically (e.g. re-reading `queue-rounds.yaml` for `status == done`). We
 deliberately did **not** add the backgrounding hook (architecture-only); the "never background a
 Codex call" rule stays inline in every Codex-driving skill as the prose safeguard.
 
@@ -37,4 +37,5 @@ Codex call" rule stays inline in every Codex-driving skill as the prose safeguar
 ## Status
 
 Accepted. Hook stance amended by ADR-0010 (env-first guarantee). Ported from dotfiles ADR-0001.
+Queue filename terminology amended by ADR-0011 (decisions/0011-directory-plan-queue-format.md).
 Canon: `docs-n-notes/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`.

@@ -22,7 +22,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/skills-rewrite.md
     notes: 'plan-writer, codex twin, plan-writer-multi: directory-always, uncapped, two-layer, new filenames; remove EF-sanity gate.'
   - item: consumer-and-docs
-    status: todo
+    status: done
     depends_on:
       - cog-mechanics-rename
       - skills-rewrite

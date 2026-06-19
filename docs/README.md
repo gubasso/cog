@@ -15,6 +15,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0008: Skill bodies stay probabilistic; deterministic mechanics live in cog](decisions/0008-skill-script-boundary.md)
 - [ADR-0009: Machine-facing output contract](decisions/0009-machine-facing-output-contract.md)
 - [ADR-0010: Orchestration env-first](decisions/0010-orchestration-env-first.md)
+- [ADR-0011: Directory plan queue format](decisions/0011-directory-plan-queue-format.md)
 
 ## Guides
 
