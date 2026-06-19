@@ -1,0 +1,19 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: research-shelf-cog-command
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/research-shelf-cog-command.md
+    notes: ""
+  - item: official-docs-research
+    status: todo
+    depends_on:
+      - research-shelf-cog-command
+    prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/official-docs-research.md
+    notes: ""
+  - item: best-practice-research-and-tracking
+    status: todo
+    depends_on:
+      - official-docs-research
+    prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/best-practice-research-and-tracking.md
+    notes: ""

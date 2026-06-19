@@ -1,0 +1,37 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: rename-and-cog-token-migration
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/rename-and-cog-token-migration.md
+    notes: ""
+  - item: stage-restructure-and-stage1-2-dry
+    status: todo
+    depends_on:
+      - rename-and-cog-token-migration
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage-restructure-and-stage1-2-dry.md
+    notes: ""
+  - item: stage3-implement
+    status: todo
+    depends_on:
+      - stage-restructure-and-stage1-2-dry
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage3-implement.md
+    notes: ""
+  - item: stage4-review-code-deep
+    status: todo
+    depends_on:
+      - stage3-implement
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage4-review-code-deep.md
+    notes: ""
+  - item: stage5-review-loop
+    status: todo
+    depends_on:
+      - stage4-review-code-deep
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage5-review-loop.md
+    notes: ""
+  - item: docs-tests-cleanup
+    status: todo
+    depends_on:
+      - stage5-review-loop
+    prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/docs-tests-cleanup.md
+    notes: ""

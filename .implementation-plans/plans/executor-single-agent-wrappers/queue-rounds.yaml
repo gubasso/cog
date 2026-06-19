@@ -1,0 +1,26 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: executor-cog-contracts
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-cog-contracts.md
+    notes: ""
+  - item: executor-codex-session-skill
+    status: todo
+    depends_on:
+      - executor-cog-contracts
+    prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-codex-session-skill.md
+    notes: ""
+  - item: executor-claude-skill
+    status: todo
+    depends_on:
+      - executor-cog-contracts
+    prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-claude-skill.md
+    notes: ""
+  - item: queue-integration
+    status: todo
+    depends_on:
+      - executor-codex-session-skill
+      - executor-claude-skill
+    prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/queue-integration.md
+    notes: ""

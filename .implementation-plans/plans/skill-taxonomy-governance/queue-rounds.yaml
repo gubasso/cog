@@ -1,0 +1,19 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: taxonomy-adr-and-reference
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/skill-taxonomy-governance/taxonomy-adr-and-reference.md
+    notes: ""
+  - item: skill-lint-taxonomy-rule
+    status: todo
+    depends_on:
+      - taxonomy-adr-and-reference
+    prompt: /prex -ar .implementation-plans/plans/skill-taxonomy-governance/skill-lint-taxonomy-rule.md
+    notes: ""
+  - item: inventory-and-doc-sync
+    status: todo
+    depends_on:
+      - skill-lint-taxonomy-rule
+    prompt: /prex -ar .implementation-plans/plans/skill-taxonomy-governance/inventory-and-doc-sync.md
+    notes: ""

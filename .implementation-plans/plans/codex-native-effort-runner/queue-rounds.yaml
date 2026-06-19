@@ -1,0 +1,19 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: fn-codex-native-effort
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/fn-codex-native-effort.md
+    notes: ""
+  - item: codex-runner-cli-migration
+    status: todo
+    depends_on:
+      - fn-codex-native-effort
+    prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/codex-runner-cli-migration.md
+    notes: ""
+  - item: skill-callsite-sweep
+    status: todo
+    depends_on:
+      - codex-runner-cli-migration
+    prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/skill-callsite-sweep.md
+    notes: ""

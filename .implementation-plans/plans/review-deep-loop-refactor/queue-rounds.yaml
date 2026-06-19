@@ -1,0 +1,19 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: review-code-deep-stage4-contract
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-code-deep-stage4-contract.md
+    notes: ""
+  - item: review-loop-handoff-cog-commands
+    status: todo
+    depends_on:
+      - review-code-deep-stage4-contract
+    prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-loop-handoff-cog-commands.md
+    notes: ""
+  - item: review-loop-skill-leaning
+    status: todo
+    depends_on:
+      - review-loop-handoff-cog-commands
+    prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-loop-skill-leaning.md
+    notes: ""

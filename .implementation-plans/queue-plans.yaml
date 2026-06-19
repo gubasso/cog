@@ -1,4 +1,58 @@
 plans:
+  - item: skill-taxonomy-governance
+    status: todo
+    depends_on:
+      - model-effort-policy-and-rename
+    prompt: /prex -ar @.implementation-plans/plans/skill-taxonomy-governance/
+    notes: 'M, 3 rounds, prex. Backbone: ADR + skill-contract + AGENTS/CLAUDE four-prefix taxonomy (plan-*/review-*/executor-*/runner-*); cog skill-lint skill-prefix-taxonomy rule + superseded-by grandfathering; inventory/migration notes. Governance only (no skill rename/create).'
+  - item: skill-research-shelf
+    status: todo
+    depends_on:
+      - repo-update-tracking
+      - docs-design-tracking-principle
+      - model-effort-policy-and-rename
+    prompt: /prex -ar @.implementation-plans/plans/skill-research-shelf/
+    notes: 'M, 3 rounds, prex. Tracked reusable research shelf: cog research-shelf command + dated docs/reference/research-shelf store; official Claude Code/Codex + best-practice plan/review/executor research persisted once and reused; registered in maintenance-tracking.'
+  - item: codex-native-effort-runner
+    status: todo
+    depends_on:
+      - cog-self-contained-skill-refs
+      - model-effort-policy-and-rename
+    prompt: /prex -ar @.implementation-plans/plans/codex-native-effort-runner/
+    notes: 'L, 3 rounds, prex. Drop codex --profile recipes for native --effort: fn_codex.sh + cog codex-runner + mechanical sweep of all --profile skill call sites. Layers on cog-self-contained-skill-refs (owns codex-conventions internalization); only the effort swap is new.'
+  - item: lean-plan-and-review-skills
+    status: todo
+    depends_on:
+      - skill-taxonomy-governance
+      - skill-research-shelf
+      - codex-native-effort-runner
+      - cog-self-contained-skill-refs
+    prompt: /prex -ar @.implementation-plans/plans/lean-plan-and-review-skills/
+    notes: 'L, 4 rounds, prex. Four lean plan-mode-style skills: /plan-claude (opus+xhigh, gated), /plan-codex (native effort high), /review-plan-claude, /review-plan-codex. Shared cog plan-doc/plan-review artifact mechanics; consume research shelf; retire legacy plan-reviewer.'
+  - item: review-deep-loop-refactor
+    status: todo
+    depends_on:
+      - skill-taxonomy-governance
+      - codex-native-effort-runner
+    prompt: /prex -ar @.implementation-plans/plans/review-deep-loop-refactor/
+    notes: L, 3 rounds, prex. Refactor review-code-deep (+codex twin) as canonical stage-4 review skill; move review-loop handoff JSON ({task,reviewed_plan,stage4_review,thread ids}) + child-run discovery into cog review-loop-input; lean the review-loop body.
+  - item: executor-single-agent-wrappers
+    status: todo
+    depends_on:
+      - lean-plan-and-review-skills
+      - codex-native-effort-runner
+      - skill-taxonomy-governance
+    prompt: /prex -ar @.implementation-plans/plans/executor-single-agent-wrappers/
+    notes: L, 4 rounds, prex. New /executor-claude + /executor-codex-session wrappers with the 3-stage feature (plan-* -> review-plan-* by the OTHER engine -> execute) in cog executor; usable as queue prompts; runner-queue recognizes them.
+  - item: executor-prex-refactor
+    status: todo
+    depends_on:
+      - lean-plan-and-review-skills
+      - review-deep-loop-refactor
+      - codex-native-effort-runner
+      - skill-taxonomy-governance
+    prompt: /prex -ar @.implementation-plans/plans/executor-prex-refactor/
+    notes: XL, 6 rounds, prex. Rename prex->executor-prex (migrate cog tokens + Stop-gate/artifact contracts + queue-prompt compat); per-stage sections; eliminate stage-2-through-5-details.md; DRY-wire Stage 1->/plan-codex, 2->/review-plan-claude, 4->review-code-deep, 5->review-loop+cog review-loop-input.
   - item: skills-under-skills-env-first
     status: done
     depends_on: []
