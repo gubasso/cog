@@ -39,6 +39,8 @@ source "${LIB_DIR}/functions/fn_skill.sh"
 source "${LIB_DIR}/functions/fn_refs.sh"
 # shellcheck source=../lib/functions/fn_refactor.sh
 source "${LIB_DIR}/functions/fn_refactor.sh"
+# shellcheck source=../lib/functions/fn_digest.sh
+source "${LIB_DIR}/functions/fn_digest.sh"
 # shellcheck source=../lib/functions/fn_rundir.sh
 source "${LIB_DIR}/functions/fn_rundir.sh"
 # shellcheck source=../lib/functions/fn_git.sh

@@ -36,6 +36,8 @@ this reference table.
 | `classify-project` | Classify repository shape. |
 | `claudemd-audit` | Audit CLAUDE.md deterministic signals. |
 | `codex-runner` | Run codex-session orchestration helpers. |
+| `digest-check` | Check digest frontmatter for source drift. |
+| `digest-stamp` | Stamp digest frontmatter from source files. |
 | `doctor` | Check cog runtime health and installation prerequisites. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
 | `gc-commit` | Commit with a message file and explicit pathspec. |

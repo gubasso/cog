@@ -51,6 +51,12 @@ The command list and short descriptions are sourced from command modules under
 *codex-runner*
 	Run codex-session orchestration helpers.
 
+*digest-check*
+	Check digest frontmatter for source drift.
+
+*digest-stamp*
+	Stamp digest frontmatter from source files.
+
 *doctor*
 	Check cog runtime health and installation prerequisites.
 

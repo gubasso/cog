@@ -24,6 +24,8 @@ _cog() {
     classify-project
     claudemd-audit
     codex-runner
+    digest-check
+    digest-stamp
     doctor
     gc-classify-failure
     gc-commit

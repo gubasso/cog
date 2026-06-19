@@ -15,7 +15,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/msg-machine-facing-cleanup.md
     notes: 'cog repo: remove human-UX leakage (emoji + decorative ui_human) from cmd_msg.sh/doctor/etc; keep stderr error/warn contract; update ADR-0009; fix gc skills + tests.'
   - item: digest-drift-tooling
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/digest-drift-tooling.md
     notes: 'cog repo: add cog digest-check (drift detection) + cog digest-stamp (frontmatter refresh only); prose regen stays out of cog per ADR-0008. Tests + mirrors. Final round flips plan done.'
