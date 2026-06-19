@@ -1,0 +1,38 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+# Satellite repo(s) guarded and committed alongside the plan repo (Round 1 edits the spec there):
+repos:
+  - /home/gbasso/DocsNNotes
+rounds:
+  - item: spec-rewrite
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/spec-rewrite.md
+    notes: 'Satellite repo (/home/gbasso/DocsNNotes): directory-only, two-layer model, uncapped rounds, queue rename in spec + templates.'
+  - item: cog-mechanics-rename
+    status: todo
+    depends_on:
+      - spec-rewrite
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/cog-mechanics-rename.md
+    notes: cog command filename literals + generalized error strings; reserved-slug guard. Do NOT rename this plan's own QUEUE.yaml.
+  - item: skills-rewrite
+    status: todo
+    depends_on:
+      - spec-rewrite
+      - cog-mechanics-rename
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/skills-rewrite.md
+    notes: 'plan-writer, codex twin, plan-writer-multi: directory-always, uncapped, two-layer, new filenames; remove EF-sanity gate.'
+  - item: consumer-and-docs
+    status: todo
+    depends_on:
+      - cog-mechanics-rename
+      - skills-rewrite
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/consumer-and-docs.md
+    notes: plan-queue-runner + cog docs + superseding ADR.
+  - item: tests-and-gates
+    status: todo
+    depends_on:
+      - cog-mechanics-rename
+      - skills-rewrite
+      - consumer-and-docs
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/tests-and-gates.md
+    notes: 24-ref test blast radius; stale-reference sweep; just lint + just test.

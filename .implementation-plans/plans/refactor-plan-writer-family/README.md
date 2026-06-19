@@ -1,0 +1,190 @@
+# Refactor the plan-writer / plan-writer-multi skill family
+
+> Complexity: L (override: 5 rounds) | Rounds: 5 | Generated: 2026-06-19 | Repo: /workspaces/cog |
+> Satellite repo: /home/gbasso/DocsNNotes | Executor: prex (EF 1.5)
+
+## Problem Statement
+
+The `plan-writer` skill family — Claude `plan-writer`, its read-only Codex twin, and the Claude-only
+`plan-writer-multi` coordinator — generates implementation plans under `.implementation-plans/`,
+which `/plan-queue-runner` then drives. Four capability/naming changes are needed:
+
+1. **Retire single-file plans.** Today S/M-grade plans are written as a single file
+   `plans/<slug>.md` and L/XL plans as a directory `plans/<slug>/`. **Every implementation plan must
+   now be a directory** — even a one-round plan is a directory with its own inner queue. The
+   single-file format ("Template E") is removed.
+2. **Remove the round cap.** Round count is currently bounded: the complexity grade derives the round
+   count (S/M=1, L=2–3, XL=4–8), and under the default `prex` executor the Executor Factor (1.5)
+   caps the reachable grade at **L** (the 5-axis score saturates at 20; 20 ÷ 1.5 = 13.3), so a `prex`
+   plan tops out at **3 rounds**. A plan directory may now have **as many rounds as the work needs**.
+   Round count is driven by scope/cohesion, not by the grade or the EF ceiling. Each round stays a
+   good `/prex` chunk: never so small that spinning up a `/prex` session is wasteful, never so big it
+   exceeds one Codex 600s session / one cohesive write session (~under 300 lines of plan text).
+3. **Two-layer decomposition (new model).** Layer 1 groups the requested tasks by **domain/scope**
+   into cohesive groups; each group becomes ONE implementation dir (one domain → one dir; N domains →
+   N **flat sibling** dirs under `plans/`, related via the top-level queue's `depends_on` plus a
+   shared slug prefix). Layer 2 grades the difficulty of each group (keep S/M/L/XL and the 5 scoring
+   axes) and splits it into rounds — as many as needed, **uncapped**. The grade is **retained** but
+   is now per-dir and descriptive: it informs round sizing/reasoning; it no longer selects a format
+   (everything is a dir) and no longer caps round count.
+4. **Hard queue rename.** Root `.implementation-plans/QUEUE.yaml` → `queue-plans.yaml`; inner
+   `plans/<slug>/QUEUE.yaml` → `queue-rounds.yaml`. **Hard cut** everywhere the product references
+   the filename (skills, cog commands, tests, the external spec). No dual-read shim, no automatic
+   migration of existing on-disk plans.
+
+The complexity heuristic, lifecycle spec, and templates are the **single source of truth** for the
+grade table, round rules, grade→format mapping, and templates — and they live in a **separate repo**
+(`$DOCS_NOTES_REPO` = `/home/gbasso/DocsNNotes`, under `tech/tools/claude-code/plan-rounds/`). So
+features #1–#3 are primarily edits THERE. This makes the work a **two-repo change**: the plan repo is
+`/workspaces/cog`; the satellite spec repo is `/home/gbasso/DocsNNotes`.
+
+## Strategy
+
+Split bottom-up so foundations land before consumers, in five cohesive `prex` rounds:
+
+1. **`spec-rewrite`** (satellite repo) — rewrite the three external plan-rounds references (the source
+   of truth all skills + cog README text point at): directory-only, two-layer model, uncapped rounds,
+   retire single-file/Template E, and the queue rename in the spec/templates.
+2. **`cog-mechanics-rename`** — rename the hardcoded queue filename + generalize error strings in
+   cog's deterministic mechanics; update the reserved-slug guard for the new meta stems.
+3. **`skills-rewrite`** — update the producer skills (`plan-writer`, the Codex twin,
+   `plan-writer-multi`) to the directory-always / uncapped / two-layer model and the new filenames;
+   **remove the `plan-writer-multi` EF-sanity gate** that auto-rejects 4+ prex rounds.
+4. **`consumer-and-docs`** — update the consumer `plan-queue-runner` + cog docs, and record a new
+   superseding ADR.
+5. **`tests-and-gates`** — update the 24-reference test blast radius, sweep for stale references, and
+   prove the change green via `just lint` + `just test`.
+
+This order keeps the self-referencing tooling coherent: spec → mechanics → producers → consumer/docs
+→ tests.
+
+## Rounds
+
+The authoritative order and status live in this plan's `QUEUE.yaml`. Overview:
+
+1. `spec-rewrite.md` — rewrite the external plan-rounds spec (satellite repo `/home/gbasso/DocsNNotes`).
+2. `cog-mechanics-rename.md` — rename queue filename literals + generalize error strings in cog; update the reserved-slug guard.
+3. `skills-rewrite.md` — update `plan-writer`, the Codex twin, and `plan-writer-multi` to the new model and filenames.
+4. `consumer-and-docs.md` — update `plan-queue-runner` + cog docs; record a superseding ADR.
+5. `tests-and-gates.md` — update the test blast radius; stale-reference sweep; `just lint` + `just test`.
+
+## Execution Commands
+
+```bash
+# Execute the next todo round (executor reads this plan's QUEUE.yaml, runs the first `todo` round, then stops):
+/prex -ar @.implementation-plans/plans/refactor-plan-writer-family/
+
+# Or target a specific round file directly (robust to the queue rename mid-execution — see Risks):
+/prex -ar .implementation-plans/plans/refactor-plan-writer-family/spec-rewrite.md
+```
+
+## Execution Discipline
+
+**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a
+single `/prex` session. Do not implement multiple rounds in one session.
+
+When `/prex` is pointed at this directory or this `README.md`, it MUST:
+
+1. Read this plan's `QUEUE.yaml`.
+2. Find the first round with status `todo`.
+3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
+4. End the session — a fresh `/prex` session is launched for any subsequent round.
+
+## Scaffolding vs. deliverable (READ THIS — prevents a self-rename mistake)
+
+This plan's OWN scaffolding deliberately uses the **current** convention — this plan's inner queue is
+`QUEUE.yaml` and it is registered in the existing root ledger `.implementation-plans/QUEUE.yaml` —
+because the plan runs under the **current** (pre-refactor) tooling and shares the live root ledger
+with other in-flight plans. The **deliverable** (what the rounds install) is the **new** convention
+(`queue-plans.yaml` / `queue-rounds.yaml`) in the spec, cog code, skills, docs, and tests.
+
+Therefore: when a round says "rename `QUEUE.yaml` → `queue-rounds.yaml`", it means **in the cog
+product / spec / tests** — **NOT** this plan's own `.implementation-plans/.../QUEUE.yaml`. Do NOT
+rename or move this plan's own queue/status files or the live root ledger. Per the settled hard-cut
+decision (Q4), the user migrates all live `.implementation-plans/` data manually.
+
+## Decisions & Constraints
+
+- **`Executor: prex (EF 1.5)`.**
+- **Queue filenames (settled, supersedes the orientation):** root = `queue-plans.yaml`, inner =
+  `queue-rounds.yaml`. The orientation's `queue.yaml` / `in-queue.yaml` was superseded in interview
+  Q1.
+- **Every plan is a directory.** Single-file format (Template E) is removed entirely. Even a
+  one-round plan is a directory with `README.md`, round file(s), and an inner `queue-rounds.yaml`.
+- **Rounds uncapped.** Round count is driven by scope/cohesion. The grade no longer caps rounds and
+  no longer selects a format. Remove the per-grade round ceiling and the "XL unreachable under prex /
+  recompute if 4+ rounds" mechanic from the spec.
+- **Two-layer decomposition.** Layer 1 = domain/scope split → one or more flat sibling dirs under
+  `plans/`, related via top-level `depends_on` + shared slug prefix. Layer 2 = per-dir grade + round
+  split. (Q2/Q3.)
+- **Hard cut rename (Q4):** rename everywhere the product references the filename; no dual-read shim;
+  no automatic migration of existing on-disk plans. The user manually migrates live
+  `.implementation-plans/` data and handles mid-flight execution bootstrap concerns.
+- **Multiple dirs are flat siblings** under `plans/` (no nested program/epic folder); reuse the
+  existing top-level `plans:` queue machinery — it already supports multiple entries with
+  dependencies (Q3).
+- **Skills in scope:** `skills/claude/plan-writer`, `skills/codex/plan-writer` (read-only twin),
+  `skills/claude/plan-writer-multi`, plus the coupled consumer `skills/claude/plan-queue-runner`.
+  There is NO `skills/codex/plan-writer-multi` (the multi coordinator is Claude-only).
+- **Repo conventions (CLAUDE.md / AGENTS.md):** skills keep judgment/sequencing in prose;
+  deterministic mechanics live in `cog` subcommands and `cog::fn::*` helpers (ADR 0008). Validate
+  skill edits against `docs/reference/skill-contract.md` and run `cog skill-lint` on touched
+  SKILL.md files. Pre-commit is the quality gate (`just lint` = `pre-commit run --all-files`;
+  `just test` = unit + integration). Accepted ADRs are never deleted — record the changed decision
+  with a NEW superseding ADR. Markdown fenced code blocks must declare a language. **Do not run git
+  commands.**
+- **Round-count override for THIS plan:** raw 18 ÷ EF 1.5 = 12.0 → grade **L**. The legacy L cap of 3
+  rounds is intentionally **NOT** applied — removing that cap is the work itself. 5 cohesive rounds
+  are used, each sized as a good `/prex` chunk. (Per `complexity-heuristic.md` override guidance:
+  documented here with reason.)
+
+## Rejected Alternatives
+
+- **`queue.yaml` / `in-queue.yaml` filenames (the orientation's first proposal).** Rejected in Q1 in
+  favor of `queue-plans.yaml` / `queue-rounds.yaml`, which name the schema, are self-describing, and
+  sort together.
+- **Dual-read compatibility shim / automatic migration of on-disk plans.** Rejected in Q4 — hard cut;
+  the user migrates live data manually.
+- **Nested program/epic folder for multiple plan dirs.** Rejected in Q3 — flat sibling dirs related
+  via the top-level queue's `depends_on` reuse existing machinery and avoid a new hierarchy that
+  would break the one-level `plans/<slug>/` path assumption in `plan-queue-runner` and `/prex`.
+- **Keeping single-file plans for S/M.** Rejected — every plan is a directory now; uniform structure
+  simplifies the consumer (`plan-queue-runner` always reads an inner queue) and the two-layer model.
+- **Splitting this refactor into two plan dirs by repo boundary.** Considered (it isolates the
+  satellite `repos:` cleanly and dogfoods multi-dir) but rejected: this is one cohesive refactor of
+  one subsystem; the spec change is not independently shippable; and a single 5-round dir both keeps
+  execution to one runner invocation and demonstrates the headline uncap (5 > 3). (Confirmed in the
+  Phase-8 re-interview.)
+- **Forcing this plan down to ≤3 rounds to satisfy the legacy prex cap.** Rejected — that cap is what
+  this work removes; honoring it here would contradict the brief.
+
+## Risks & Edge Cases
+
+- **Self-reference / bootstrap hazard (accepted, handled).** This plan is executed by
+  `/plan-queue-runner` + `/prex`, which read THIS plan's own queue *by filename*. Round 2 edits the
+  cog code that resolves the inner-queue filename. Mitigations: (a) this plan's own queue stays
+  `QUEUE.yaml` and is shared with the live root ledger (see "Scaffolding vs. deliverable"); (b) the
+  loop pins `QUEUE_PATH` at runner setup, so a runner already in flight keeps working after Round 2;
+  (c) if you RESTART the dir-level runner after Round 2 lands with updated cog, either run remaining
+  rounds directly with `/prex -ar <round-file>.md` (selection does not depend on the queue filename)
+  or migrate this plan's `QUEUE.yaml` yourself. The user owns live-data migration (Q4).
+- **Two repos (handled).** Round 1 edits `/home/gbasso/DocsNNotes` (satellite-repo work). This plan's
+  inner queue declares `repos: [/home/gbasso/DocsNNotes]` so `/plan-queue-runner`'s clean-tree guard
+  and `/gc -a --repo /home/gbasso/DocsNNotes` cover the satellite. Rounds 2–5 do not touch the
+  satellite; `/gc` on its clean tree is a no-op for those rounds. Keep `/home/gbasso/DocsNNotes`
+  clean at the start of every round (the startup guard requires it).
+- **Dependency order (handled).** External spec edits are foundational to skill/cog edits — Round 1
+  precedes Rounds 2–5 via `depends_on`.
+- **Reserved-slug collision (handled in Round 2).** New meta filename stems are `queue-plans` /
+  `queue-rounds`; the reserved-slug guard (currently `readme`, `queue`, `strategy`) is extended so a
+  plan slug or round topic cannot collide with the new meta files.
+- **Live on-disk plans (out of scope, noted).** The live root ledger
+  `.implementation-plans/QUEUE.yaml` and existing plans (including single-file `.md` plans like
+  `man-page-sync-precommit-hook.md`) still use the old name/format; per Q4 the user migrates these
+  manually. They are NOT edited by this plan.
+
+## Completion
+
+When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan
+(`item: refactor-plan-writer-family`) `done` in the top-level `.implementation-plans/QUEUE.yaml`.
+Nothing moves on disk.
