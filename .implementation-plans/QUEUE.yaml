@@ -35,3 +35,8 @@ plans:
       - refactor-plan-writer-family
     prompt: /prex -ar .implementation-plans/plans/man-page-sync-precommit-hook.md
     notes: 'Single-file S plan. New ''cog man-build'' command (scdoc SoT, write + --check), fail-closed on missing scdoc; pre-commit fixer hook scoped to man/cog.1(.scd); justfile man recipe delegates to the hook. Mirrors: completions, man/cog.1.scd, cli-commands.md, two help snapshots; new cmd_man_build.bats.'
+  - item: cog-self-contained-skill-refs
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/cog-self-contained-skill-refs/
+    notes: 'Make cog self-contained: ship skill-source refs in-repo (XDG), governance rule, decouple codex-conventions'
