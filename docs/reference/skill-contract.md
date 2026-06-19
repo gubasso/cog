@@ -65,6 +65,27 @@ Claude skills allow:
 The Claude allowlist above must match `cog::fn::skill::allowed_frontmatter_keys_json` and
 `test/integration/cmd_skill_lint.bats`.
 
+## Prefix taxonomy
+
+Skill names must follow [ADR-0016](../decisions/0016-skill-prefix-taxonomy.md). The prefix declares
+what a skill does:
+
+- `plan-*` emits implementation plans.
+- `review-*` reviews code against the codebase plus plan, and reviews plans before implementation.
+- `review-plan-*` is the `review-*` sub-namespace for plan-before-implementation review.
+- `executor-*` executes one plan/prompt at a time and may generate its own better internal plan
+  before executing.
+- `runner-*` orchestrates executors over a queue whose elements carry the executor-selecting prompt.
+
+Governing rule: a skill's prefix must match what it does.
+
+Future work: Round 2 will add a `skill-prefix-taxonomy` rule to `cog skill-lint` to enforce this
+contract mechanically. That rule does not exist yet.
+
+This taxonomy is related accepted skill governance alongside [ADR-0013](../decisions/0013-model-effort-policy.md)
+(model/effort policy) and [ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md) (plan-mode
+gate); those ADRs are referenced here, not changed.
+
 ## Structural Lint Checks
 
 `cog skill-lint` hard-fails these structural issues:

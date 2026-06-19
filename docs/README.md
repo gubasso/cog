@@ -20,6 +20,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0013: Model/Effort Policy](decisions/0013-model-effort-policy.md)
 - [ADR-0014: Review Implementation Plans Boundary](decisions/0014-review-implementation-plans-boundary.md)
 - [ADR-0015: Plan-emitting skills must not run in Claude plan mode](decisions/0015-plan-skills-not-in-plan-mode.md)
+- [ADR-0016: Skill Prefix Taxonomy](decisions/0016-skill-prefix-taxonomy.md)
 
 ## Guides
 

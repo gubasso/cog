@@ -36,6 +36,12 @@ See `docs/decisions/0008-skill-script-boundary.md`.
 Skill `model:`/`effort:` choices follow `docs/reference/model-effort-policy.md`. `model: sonnet` is
 forbidden; use `model: opus` + `effort: low`.
 
+Skill names must follow the prefix taxonomy in `docs/decisions/0016-skill-prefix-taxonomy.md` and
+`docs/reference/skill-contract.md` ("Prefix taxonomy"). `plan-*` emits plans; `review-*` reviews code
+or plans, with `review-plan-*` as the sub-namespace for plan-before-implementation review; `executor-*`
+executes one prompt/plan; `runner-*` orchestrates executor-selected queue items. A skill's prefix must
+match its behavior.
+
 Skills that output a plan must not run in Claude plan mode (it is read-only and blocks the plan
 writes). They carry a Phase 0 plan-mode gate marked with `<!-- cog-skill: plan-emitter -->` and
 `<!-- cog-plan-mode-gate -->`, enforced by `cog skill-lint`'s `plan-mode-gate` rule. See
