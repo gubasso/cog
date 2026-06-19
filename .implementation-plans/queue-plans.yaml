@@ -49,7 +49,7 @@ plans:
     status: todo
     depends_on: []
     prompt: /prex -ar @.implementation-plans/plans/model-effort-policy-and-rename/
-    notes: 'L, 3 rounds, prex. Independent (all artifacts under docs/). Model/effort policy SoT (never sonnet -> opus+low): web-research dated evidence in docs/reference/; model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/; never-sonnet ADR; AGENTS/CLAUDE wiring. Then atomic rename plans-revision skill + cog plans-revision-scan/verify -> review-implementation-plans, re-grade opus/low. Round 3 gated-deletes the 3 DocsNNotes model-reference files after in-cog replacements verify.'
+    notes: 'L (Round 3 XL), 3 rounds, prex. Independent (all artifacts under docs/). Model/effort policy SoT (never sonnet -> opus+low): web-research dated evidence in docs/reference/; model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/; never-sonnet ADR; AGENTS/CLAUDE wiring. Then atomic rename plans-revision skill + cog plans-revision-scan/verify -> review-implementation-plans, re-grade opus/low, PLUS expand it to review queue ordering/dependencies (model sets depends_on; script deterministically topo-sorts): new cog queue-deps-set/queue-reorder/queue-graph-check, extended verify gate, two-/gc-commit revision pass, superseding ADR (changes ADR-0012 revision-boundary contract). Round 3 gated-deletes the 3 DocsNNotes model-reference files after in-cog replacements verify.'
   - item: repo-update-tracking
     status: todo
     depends_on:

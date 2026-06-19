@@ -38,8 +38,11 @@ Three dependency-ordered rounds, foundations first.
 3. `rename-to-review-implementation-plans` applies the policy: an atomic rename of the
    `plans-revision` skill **and** its `cog plans-revision-scan` / `plans-revision-verify` commands to
    `review-implementation-plans`, re-grading the skill to `model: opus` + `effort: low`, and fixing
-   every reference — then a final gated cleanup that retires the now-superseded DocsNNotes
-   model-reference source files.
+   every reference — **and** expanding the skill to review queue execution order/dependencies (new
+   `cog queue-deps-set` / `queue-reorder` / `queue-graph-check`, a two-`/gc`-commit revision pass, and
+   a superseding ADR) — then a final gated cleanup that retires the now-superseded DocsNNotes
+   model-reference source files. This round is no longer a behavior-preserving rename; it changes the
+   revision-boundary contract.
 
 This plan is **self-contained and independent**: all model/effort material lives under `cog`'s
 Diátaxis `docs/` tree (`docs/reference/` for the policy, the TOML data, and the dated evidence;
@@ -51,7 +54,7 @@ plan and does **not** place anything in `skill-refs/`.
 
 1. `research-current-model-data.md` — deep web research → dated Claude + Codex benchmark/pricing/effort references in `docs/reference/`.
 2. `model-effort-policy-sot.md` — policy doc + two descriptive TOML data files in `docs/reference/` + the "never sonnet → opus+low" ADR + AGENTS.md/CLAUDE.md wiring.
-3. `rename-to-review-implementation-plans.md` — atomic rename of the `plans-revision` skill + `cog` commands to `review-implementation-plans`, re-graded to opus/low, all references fixed, then gated retirement of the DocsNNotes model-reference sources.
+3. `rename-to-review-implementation-plans.md` — atomic rename of the `plans-revision` skill + `cog` commands to `review-implementation-plans`, re-graded to opus/low, all references fixed; **plus** queue ordering/dependency review (new `queue-deps-set`/`queue-reorder`/`queue-graph-check`, extended verify gate, two-`/gc`-commit cadence, superseding ADR); then gated retirement of the DocsNNotes model-reference sources.
 
 ## Execution Commands
 
@@ -94,6 +97,25 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 - **`plans-revision` re-grade to `opus` + `effort: low`** is an explicit user decision (down from
   `sonnet` + `high`), and is the canonical worked example of the "never sonnet" rule. The reduced
   effort is intentional; the policy ADR documents the reasoning.
+- **Round 3 also adds queue ordering/dependency review (folded in, per user decision).** The renamed
+  skill gains a phase that reviews execution order + dependencies and adjusts **mutable**
+  (`todo`/`backlog`) items. This is a behavior change folded into the rename round rather than a
+  separate round.
+- **Ordering = judgment in the model, determinism in the script (ADR-0008).** The model expresses its
+  ordering judgment **only** by setting `depends_on` on mutable items (`cog queue-deps-set`); the
+  script then **deterministically** derives the physical order by a stable topological sort of that
+  dependency tree (`cog queue-reorder`, no agent-supplied order) and validates it (`cog
+  queue-graph-check`, existence + acyclicity). Both levers happen (deps are edited **and** the list is
+  physically reordered), but the reorder is a deterministic *consequence* of `depends_on`, not an
+  independent model choice. New guarded `cog` commands in the generic `queue-*` namespace; never
+  freehand YAML edits.
+- **Two-commit revision pass (user decision).** The revision boundary becomes two reviewed phases,
+  each committed via the `/gc` skill: (A) review plans + `/gc`, then (B) review queue + `/gc`. This
+  **changes the revision-boundary contract** in ADR-0012, so Round 3 writes a **new superseding ADR**
+  (next free number, assigned at execution) and leaves ADR-0012 in place.
+- **Verify gate extension.** `review-implementation-plans-verify` additionally pins `doing` items,
+  runs the graph check on the after-scan (fail-closed on cycle/dangling dep), and reports
+  `deps_changes`/`reordered`.
 - **DocsNNotes retirement is done by this plan (Round 3, gated):** the stale
   `$DOCS_NOTES_REPO/tech/tools/claude-code/{models-reference.md, codex-models-pricing.md,
   codex-models-comparison.md}` are deleted only after the in-cog replacements
@@ -138,6 +160,12 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
   the trade-off so a future reviewer sees it was deliberate.
 - **Premature DocsNNotes delete.** Round 3's gated cleanup skips the delete (and reports it) if the
   in-cog replacements are missing or verification is not green, so the source is never lost.
+- **Round 3 is now significantly heavier than a rename** (rename + 3 new `cog` commands + skill
+  behavior change + verify extension + superseding ADR + two-commit cadence + new/updated tests). It
+  is no longer behavior-preserving and it changes the revision-boundary contract. The round sequences
+  the new `queue-*` mechanics **before** the rename so the commands exist under their final names, and
+  keeps the rename itself grep-driven and atomic; the integration suite + `skill-lint` remain the
+  postcondition. Consider executing it as its own focused `/prex` session given the size.
 
 ## Completion
 

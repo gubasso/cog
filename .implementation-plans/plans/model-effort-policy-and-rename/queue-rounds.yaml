@@ -16,4 +16,4 @@ rounds:
     depends_on:
       - model-effort-policy-sot
     prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/rename-to-review-implementation-plans.md
-    notes: 'Atomic rename: plans-revision skill + cog plans-revision-scan/verify commands -> review-implementation-plans; re-grade skill to opus/low; fix all refs; regen completions/man/help-snapshots; skill-lint + integration tests.'
+    notes: 'Atomic rename: plans-revision skill + cog plans-revision-scan/verify commands -> review-implementation-plans; re-grade skill to opus/low; fix all refs; regen completions/man/help-snapshots; skill-lint + integration tests. PLUS queue ordering/dependency review: new cog queue-deps-set (model sets depends_on) + queue-reorder (deterministic stable topo-sort of depends_on, no agent-supplied order) + queue-graph-check (cycle/dangle validator), extend verify gate (pin doing, graph-check after-scan, report deps_changes/reordered), expand skill workflow (ordering phase, rewrite no-reorder guardrail, two-/gc-commit cadence), superseding ADR + runner-queue update, new queue_* bats. XL.'
