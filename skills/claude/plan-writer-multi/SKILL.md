@@ -15,6 +15,7 @@ allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 ---
 
 <!-- trigger-tests: "plan-writer-multi", "dual-engine plan", "plan with codex", "two plans then synthesize" -->
+<!-- cog-skill: plan-emitter -->
 
 # Plan Writer Multi
 
@@ -63,6 +64,17 @@ plan-rounds references are at `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-roun
 
 - `$ARGUMENTS` — free-text **orientation** (the angle/focus/goal) plus optional flags. Required. If
   empty, ask the user for an orientation before proceeding.
+
+## Phase 0: Plan-mode gate
+
+<!-- cog-plan-mode-gate -->
+
+Before anything else, check whether Claude Code **plan mode** is active — you are in plan mode if this
+session carries a system-reminder saying plan mode is on / that you must not make edits (`Shift+Tab`
+or `/plan`). If it is active, **STOP**: do not run setup, gather context, interview, dispatch
+workers, or write. This coordinator writes the definitive plan under `.implementation-plans/` and
+cannot run read-only. Tell the user in one line: "plan-writer-multi cannot run in plan mode; exit
+plan mode (Shift+Tab) and re-invoke." Do not call `ExitPlanMode` yourself and do not continue.
 
 ## Phase 1: Setup
 

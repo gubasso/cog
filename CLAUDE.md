@@ -7,3 +7,8 @@ docs/reference/skill-contract.md.
 Non-negotiable: skill model/effort selection follows docs/reference/model-effort-policy.md and
 docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use model: opus + effort:
 low).
+
+Non-negotiable: skills that output a plan must not run in Claude plan mode; they carry a Phase 0
+plan-mode gate (markers cog-skill: plan-emitter + cog-plan-mode-gate), enforced by cog skill-lint.
+See docs/decisions/0015-plan-skills-not-in-plan-mode.md and docs/reference/skill-contract.md
+("Plan-mode gate").

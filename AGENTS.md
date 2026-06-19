@@ -36,6 +36,11 @@ See `docs/decisions/0008-skill-script-boundary.md`.
 Skill `model:`/`effort:` choices follow `docs/reference/model-effort-policy.md`. `model: sonnet` is
 forbidden; use `model: opus` + `effort: low`.
 
+Skills that output a plan must not run in Claude plan mode (it is read-only and blocks the plan
+writes). They carry a Phase 0 plan-mode gate marked with `<!-- cog-skill: plan-emitter -->` and
+`<!-- cog-plan-mode-gate -->`, enforced by `cog skill-lint`'s `plan-mode-gate` rule. See
+`docs/reference/skill-contract.md` ("Plan-mode gate") and `docs/decisions/0015-plan-skills-not-in-plan-mode.md`.
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

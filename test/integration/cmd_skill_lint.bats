@@ -471,6 +471,37 @@ EOF
   done < <(cog::fn::skill::allowed_frontmatter_keys_json claude | jq -r '.[]')
 }
 
+@test "cog skill-lint accepts a Claude plan-emitter that carries the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
+
+  run cog skill-lint "$file"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects a Claude plan-emitter missing the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"plan-mode-gate"* ]]
+}
+
+@test "cog skill-lint exempts a Codex plan-emitter from the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/demo-skill" demo-skill codex
+  local file="${BATS_TEST_TMPDIR}/skills/codex/demo-skill/SKILL.md"
+  printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
+
+  run cog skill-lint "$file"
+
+  assert_success
+}
+
 @test "lint suppression allowlists are the single source of truth across helper and contract doc" {
   source "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh"
   local contract="${BATS_TEST_DIRNAME}/../../docs/reference/skill-contract.md"

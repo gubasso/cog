@@ -97,6 +97,21 @@ __cog_skill_lint_check_structure() {
   return "$failed"
 }
 
+__cog_skill_lint_check_plan_gate() {
+  # Plan-emitting skills write a plan to disk and must not run under Claude Code
+  # plan mode (read-only). Detection is probabilistic and lives in skill prose
+  # (the gate stanza); this structural check only verifies the stanza is present.
+  # Claude runtime only -- Codex has no Claude plan mode.
+  local file="$1" runtime failed=0
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ $runtime == claude ]] || return 0
+  if cog::fn::skill::is_plan_emitter "$file" && ! cog::fn::skill::has_plan_mode_gate "$file"; then
+    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-emitter skill missing plan-mode gate" "add a Phase 0 plan-mode gate marked with <!-- cog-plan-mode-gate -->"
+    failed=1
+  fi
+  return "$failed"
+}
+
 __cog_skill_lint_is_cog_extraction() {
   local line="$1"
   [[ $line =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\"\$\(cog[[:space:]].*\|[[:space:]]*(sed[[:space:]]+-n|cut[[:space:]]|jq[[:space:]]+-r) ]]
@@ -429,6 +444,9 @@ __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
   if ! __cog_skill_lint_check_structure "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_plan_gate "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

@@ -16,11 +16,24 @@ allowed-tools: Read Write Grep Glob WebSearch WebFetch
 ---
 
 <!-- trigger-tests: "review this plan", "validate this implementation", "check this approach", "second opinion on this plan", "here is what Codex suggested" -->
+<!-- cog-skill: plan-emitter -->
 
 # Plan Reviewer
 
 You receive a user request paired with an implementation plan from an external source. Your job is
 to produce a better, validated implementation plan ready for Claude Code execution.
+
+## Phase 0: Plan-mode gate
+
+<!-- cog-plan-mode-gate -->
+
+This applies only to **interactive** (human-invoked) runs. If you were invoked in **Orchestrator
+Invocation Contract** mode (three absolute paths — see below), skip this gate: the parent already
+passed its own. Otherwise, before reviewing, check whether Claude Code **plan mode** is active — you
+are in plan mode if this session carries a system-reminder saying plan mode is on / that you must not
+make edits (`Shift+Tab` or `/plan`). If it is active, **STOP**: this skill Writes the rewritten plan
+and cannot run read-only. Tell the user in one line to exit plan mode (`Shift+Tab`) and re-invoke; do
+not call `ExitPlanMode` yourself and do not continue.
 
 ## Input Format
 

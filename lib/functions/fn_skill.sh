@@ -76,6 +76,16 @@ cog::fn::skill::has_trigger_tests() {
   grep -qE '<!--[[:space:]]*trigger-tests:' "$file"
 }
 
+cog::fn::skill::is_plan_emitter() {
+  local file="$1"
+  grep -qE '<!--[[:space:]]*cog-skill:[[:space:]]*plan-emitter[[:space:]]*-->' "$file"
+}
+
+cog::fn::skill::has_plan_mode_gate() {
+  local file="$1"
+  grep -qE '<!--[[:space:]]*cog-plan-mode-gate[[:space:]]*-->' "$file"
+}
+
 cog::fn::skill::emoji_lines_json() {
   local file="$1" emoji_lines
   emoji_lines="$(grep -nP '[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}]' "$file" | cut -d: -f1 || true)"

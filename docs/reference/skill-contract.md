@@ -108,6 +108,31 @@ The marker suppresses only that next nonblank line and only for orchestration ch
 shell-premise findings still fail. For `orchestration-removed-codex-foreground` the suppressed next
 nonblank line may be inside a fenced code block (place the marker immediately before the fence).
 
+## Plan-mode gate
+
+Skills whose primary output is a plan document **write to disk** (plan directories under
+`.implementation-plans/`, rewritten plans, queue mutations). Claude Code's native plan mode
+(`permission_mode = "plan"`, entered via `Shift+Tab` or `/plan`) is read-only and blocks those
+writes. Such skills must not run in plan mode. See
+[ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md).
+
+Plan mode is not exposed to the Bash environment (only to hooks), so detection cannot be a `cog`
+subcommand; it stays probabilistic in skill prose. Two HTML-comment markers carry the contract:
+
+- `<!-- cog-skill: plan-emitter -->` near the frontmatter declares the skill outputs a plan.
+- `<!-- cog-plan-mode-gate -->` marks the canonical pre-flight gate stanza.
+
+The gate stanza is a **Phase 0** that runs before all other work. Canonical wording: if Claude Code
+plan mode is active (the session carries a system-reminder saying plan mode is on / that the model
+must not make edits), STOP before parsing args, researching, interviewing, or writing; tell the user
+in one line to exit plan mode (`Shift+Tab`) and re-invoke. The gate must **not** call `ExitPlanMode`
+(that presents a plan for approval — wrong semantics) and must not silently continue. Skills invoked
+only in orchestrator/forked mode word the gate to no-op there (the parent already gated).
+
+`cog skill-lint` enforces this with the `plan-mode-gate` rule: a Claude skill carrying
+`<!-- cog-skill: plan-emitter -->` that lacks `<!-- cog-plan-mode-gate -->` hard-fails. Codex skills
+are exempt — Codex has no Claude plan mode.
+
 ## Premise Lint Checks
 
 `cog skill-lint` scans `bash`, `sh`, and `shell` fences for high-signal deterministic routines:
@@ -134,6 +159,7 @@ The suppression names `allow-inline-shell` and `allow-orchestration-history` mus
 - Does every deterministic routine live behind `cog` or an existing external tool contract?
 - Is repeated command logic shared through `cog::fn::*`?
 - Does orchestration prose follow `docs/reference/orchestration-contract.md`?
+- Does every plan-emitting skill carry the `cog-plan-mode-gate` stanza (see Plan-mode gate)?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?
 - Do command surface mirrors and help snapshots stay in sync for new commands?

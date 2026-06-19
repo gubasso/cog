@@ -24,16 +24,22 @@ allowed-tools: Bash Read Write Grep Glob
 ---
 
 <!-- trigger-tests: "plan-writer", "write a plan", "capture this as a plan", "export conversation findings" -->
+<!-- cog-skill: plan-emitter -->
 
 # Plan Writer
 
-Synthesize the current conversation into an executor-aware implementation plan. Output lives under
-`.implementation-plans/plans/`: every plan is one or more directories of self-contained round files,
-each sized for one `/prex` run. The plan is designed to be executed by a fresh LLM session with ZERO
-assumptions about prior conversation.
+Synthesize the current conversation into an executor-aware implementation plan under
+`.implementation-plans/plans/` — one or more directories of self-contained round files, each sized
+for one `/prex` run and executable by a fresh LLM session with ZERO assumptions about prior
+conversation. Runs **inline** (no fork): it needs full access to the live conversation to extract
+decisions, findings, and explored code.
 
-This skill runs **inline** (no fork) because it needs full access to the current conversation
-context to extract decisions, findings, and explored code.
+<!-- cog-plan-mode-gate -->
+**Plan-mode gate (before anything else):** if Claude Code **plan mode** is active (a system-reminder
+says plan mode is on / that you must not edit; `Shift+Tab` or `/plan`), **STOP** before parsing args,
+researching, interviewing, or writing — this skill writes the plan under `.implementation-plans/` and
+cannot run read-only. Tell the user in one line to exit plan mode (`Shift+Tab`) and re-invoke; do not
+call `ExitPlanMode` yourself.
 
 ## Reference resolution
 
