@@ -7,6 +7,14 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME"
 }
 
+@test "cog doctor emits machine line on stdout only" {
+  run --separate-stderr cog doctor
+
+  assert_success
+  assert_output "DOCTOR_OK"
+  [ -z "$stderr" ]
+}
+
 @test "cog doctor --json emits structured diagnostics on stdout only" {
   run --separate-stderr cog --json doctor
 

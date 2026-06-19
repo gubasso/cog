@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-: 'desc: Emit uniform machine status lines and human messages.'
+: 'desc: Emit uniform machine status lines.'
 
 __cog_msg_ctx() {
   local c="${1//[^a-zA-Z0-9]/_}"
@@ -14,8 +14,6 @@ __cog_msg_usage() {
   cog::fn::ui_data "  ok <context> [detail...]"
   cog::fn::ui_data "  failed <context> <reason...>"
   cog::fn::ui_data "  kv <KEY> <value>"
-  cog::fn::ui_data "  stage <text...>"
-  cog::fn::ui_data "  info <text...>"
   cog::fn::ui_data "  warn <text...>"
   cog::fn::ui_data "  error <context> <text...>"
   cog::fn::ui_data "  fatal <context> <text...>"
@@ -72,14 +70,6 @@ cog::cmd::msg() {
       __cog_msg_require_arg "${2:-}" "cog msg kv <KEY> <value>"
       cog::fn::ui_data "${1}=${2}"
       ;;
-    stage)
-      __cog_msg_require_arg "${1:-}" "cog msg stage <text...>"
-      cog::fn::ui_human "▶ $*"
-      ;;
-    info)
-      __cog_msg_require_arg "${1:-}" "cog msg info <text...>"
-      cog::fn::ui_human "$*"
-      ;;
     warn)
       __cog_msg_require_arg "${1:-}" "cog msg warn <text...>"
       cog::fn::ui_warn "$*"
@@ -89,14 +79,15 @@ cog::cmd::msg() {
       local error_ctx="$1"
       shift
       __cog_msg_require_arg "${1:-}" "cog msg error <context> <text...>"
-      cog::fn::ui_human "❌ ${error_ctx}: $*"
+      cog::fn::ui_error_line "${error_ctx}: $*"
+      return "$EX_SOFTWARE"
       ;;
     fatal)
       __cog_msg_require_arg "${1:-}" "cog msg fatal <context> <text...>"
       local fatal_ctx="$1"
       shift
       __cog_msg_require_arg "${1:-}" "cog msg fatal <context> <text...>"
-      cog::fn::ui_human "❌ ${fatal_ctx}: $*"
+      cog::fn::ui_error_line "${fatal_ctx}: $*"
       exit "$EX_SOFTWARE"
       ;;
     *)

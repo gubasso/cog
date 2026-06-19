@@ -85,7 +85,7 @@ The command list and short descriptions are sourced from command modules under
 	Acquire or release a workflow run lock.
 
 *msg*
-	Emit uniform machine status lines and human messages.
+	Emit uniform machine status lines.
 
 *noop*
 	Exercise command dispatch without side effects.

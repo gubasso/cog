@@ -29,8 +29,9 @@ repository under `tech/programming/cli-design/00-architecture.md` (section "Faci
 message types").
 
 `cog` already ships `help`, `doctor`, Bash completion, and man pages. Target state adds an `init`
-surface for setup/scaffold/bootstrap. Existing human-message paths such as `cmd_msg.sh` are
-acknowledged leakage to keep scoped behind explicit human-UX behavior.
+surface for setup/scaffold/bootstrap. As of 2026-06-19 the former `cmd_msg.sh` human-message
+leakage is closed: `cog` emits machine status lines (stdout) and stderr diagnostics/warnings only,
+with no default human-UX output. The Unix stderr error/warning contract is unchanged.
 
 ## Consequences
 

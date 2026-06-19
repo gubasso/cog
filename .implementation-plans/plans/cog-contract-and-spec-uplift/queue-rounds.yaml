@@ -10,7 +10,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/cog-init-subcommand.md
     notes: 'cog repo: implement ''cog init'' DRY against doctor (extract shared prereq helper); tests + cli-commands/completion/man/help mirrors.'
   - item: msg-machine-facing-cleanup
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/msg-machine-facing-cleanup.md
     notes: 'cog repo: remove human-UX leakage (emoji + decorative ui_human) from cmd_msg.sh/doctor/etc; keep stderr error/warn contract; update ADR-0009; fix gc skills + tests.'

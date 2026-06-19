@@ -42,7 +42,29 @@ setup() {
 
   assert_failure 70
   [ -z "$output" ]
-  [ "$stderr" = "❌ build: broken" ]
+  [ "$stderr" = "build: broken" ]
+}
+
+@test "msg error writes plain stderr and exits non-zero" {
+  run --separate-stderr cog::cmd::msg error build broken
+
+  assert_failure 70
+  [ -z "$output" ]
+  [ "$stderr" = "build: broken" ]
+}
+
+@test "msg stage and info are unknown kinds" {
+  run --separate-stderr cog::cmd::msg stage working
+
+  assert_failure "$EX_USAGE"
+  [ -z "$output" ]
+  [[ $stderr == *"err.kind: BadMsgKind"* ]]
+
+  run --separate-stderr cog::cmd::msg info hello
+
+  assert_failure "$EX_USAGE"
+  [ -z "$output" ]
+  [[ $stderr == *"err.kind: BadMsgKind"* ]]
 }
 
 @test "msg kv without value is a usage error" {

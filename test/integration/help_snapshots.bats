@@ -49,7 +49,7 @@ Commands:
   init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
-  msg            Emit uniform machine status lines and human messages.
+  msg            Emit uniform machine status lines.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
@@ -128,7 +128,7 @@ Commands:
   init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
-  msg            Emit uniform machine status lines and human messages.
+  msg            Emit uniform machine status lines.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.

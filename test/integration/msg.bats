@@ -26,24 +26,26 @@ setup() {
   [ -z "$stderr" ]
 }
 
-@test "cog msg human lines use stderr only" {
-  run --separate-stderr cog msg stage working
-  assert_success
-  [ -z "$output" ]
-  [ "$stderr" = "▶ working" ]
-
-  run --separate-stderr cog msg info hello
-  assert_success
-  [ -z "$output" ]
-  [ "$stderr" = "hello" ]
-
+@test "cog msg warn and error use stderr" {
   run --separate-stderr cog msg warn careful
   assert_success
   [ -z "$output" ]
   [ "$stderr" = "Warning: careful" ]
 
   run --separate-stderr cog msg error build broken
-  assert_success
+  assert_failure 70
   [ -z "$output" ]
-  [ "$stderr" = "❌ build: broken" ]
+  [ "$stderr" = "build: broken" ]
+}
+
+@test "cog msg stage and info are unknown kinds" {
+  run --separate-stderr cog msg stage working
+  assert_failure
+  [ -z "$output" ]
+  [[ $stderr == *"err.kind: BadMsgKind"* ]]
+
+  run --separate-stderr cog msg info hello
+  assert_failure
+  [ -z "$output" ]
+  [[ $stderr == *"err.kind: BadMsgKind"* ]]
 }

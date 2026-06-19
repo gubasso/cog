@@ -27,6 +27,22 @@ setup() {
   [ "$stderr" = "hello" ]
 }
 
+@test "ui_warn writes warning diagnostics to stderr only" {
+  run --separate-stderr cog::fn::ui_warn "careful"
+
+  assert_success
+  [ -z "$output" ]
+  [ "$stderr" = "Warning: careful" ]
+}
+
+@test "ui_error_line writes plain diagnostics to stderr only" {
+  run --separate-stderr cog::fn::ui_error_line "build: broken"
+
+  assert_success
+  [ -z "$output" ]
+  [ "$stderr" = "build: broken" ]
+}
+
 @test "NO_COLOR disables color" {
   # shellcheck disable=SC2034 # Nameref arguments are read by cog::fn::ui_init.
   local -A ctx=([json]=false)

@@ -43,10 +43,8 @@ cog::cmd::doctor() {
   else
     if [[ $overall == ok ]]; then
       cog::fn::ui_data "DOCTOR_OK"
-      cog::fn::ui_human "cog doctor: ok"
     else
       cog::fn::ui_data "DOCTOR_FAILED ${hard_failure_kind:-unknown}"
-      cog::fn::ui_warn "cog doctor: ${overall}"
     fi
   fi
 
