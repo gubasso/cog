@@ -176,9 +176,7 @@ verifies the issue with `tsk show`.
 7. Write the body to a staging file.
 
    ```bash
-   _SKILL_RUNS="${XDG_STATE_HOME:-$HOME/.local/state}/claude-session/skill-runs"
-   STAGE_DIR="$_SKILL_RUNS/tsk-new-$(date -u +%Y%m%dT%H%M%S)-$$"
-   mkdir -p "$STAGE_DIR"
+   STAGE_DIR="$(cog rundir tsk-new)"
    BODY_FILE="$STAGE_DIR/body.md"
    # Write the composed body to $BODY_FILE with the Write tool before invoking the helper.
    ```

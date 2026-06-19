@@ -84,7 +84,12 @@ __cog_gc_stage_build_json() {
     root="$(cog::fn::git_root)"
   fi
   __cog_gc_stage_read_session_files session_files "$session_file"
-  mapfile -t initial_staged < <(git "${git_c[@]}" diff --staged --name-only)
+  # --no-renames: report a staged rename as its raw delete+add path pair, not a
+  # single rename-detected destination. The session-files contract lists every
+  # literal path touched (old and new), so the staged set must be the raw path
+  # set for the equality check below to hold. Without it, git collapses a
+  # rename to one destination line and a rename-heavy commit fails closed.
+  mapfile -t initial_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
 
   for staged_path in "${initial_staged[@]}"; do
     if ! __cog_gc_stage_contains "$staged_path" "${session_files[@]}"; then
@@ -95,7 +100,7 @@ __cog_gc_stage_build_json() {
     fi
   done
 
-  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --name-only)
+  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
   for session_path in "${session_files[@]}"; do
     if ! __cog_gc_stage_contains "$session_path" "${final_staged[@]}"; then
       if git "${git_c[@]}" add -- "$session_path"; then
@@ -105,7 +110,7 @@ __cog_gc_stage_build_json() {
     fi
   done
 
-  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --name-only)
+  mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
   for final_path in "${final_staged[@]}"; do
     __cog_gc_stage_contains "$final_path" "${session_files[@]}" || mismatch+=("$final_path")
   done

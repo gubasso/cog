@@ -14,9 +14,8 @@ verbatim `/prex` prompt to a fresh `claude-delegate`, verifies the round flipped
 plans, each `item/status/depends_on/prompt/notes`), executing every listed plan in order. Each plan
 entry in the migrated live data targets a plan directory prompt
 (`/prex -ar @.implementation-plans/plans/<slug>/`) whose rounds live in that directory's
-`queue-rounds.yaml`. This plan's resolver design still names the legacy-compatible forms
-`single_file`, `single_round_dir`, and `inner_queue`; that tension must be reconciled before this
-future plan executes.
+`queue-rounds.yaml`. The live data is directory-only, so the resolver classifies exactly one form —
+`inner_queue` (a directory containing `queue-rounds.yaml`) — and fails closed on anything else.
 
 A prior `/ask -wc` research pass (Claude Explore + Codex), verified against the live repo,
 established that most infrastructure already exists:
@@ -105,13 +104,11 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 - **Detection discriminates on the top-level YAML key**: `rounds:` -> inner queue (today's behavior);
   `plans:` -> main queue; both/neither -> fail closed. Detection lives in `cog`
   (`plan-queue-runner-setup`), not skill prose (ADR-0008).
-- **Per-plan form resolution** (`cog plan-queue-runner-resolve-plan`) classifies a selected plan entry
-  into `{single_file | single_round_dir | inner_queue}`, parsing both the `/prex -ar <target>` and the
-  `/prex -ar @<target>` prompt forms (the live main queue uses the `@`-prefixed directory form).
-  In the current directory-only live data, a valid plan target is a directory with
-  `queue-rounds.yaml` -> `inner_queue`; file targets and directories without `queue-rounds.yaml` fail
-  closed. The retained `single_file` / `single_round_dir` resolver-kind vocabulary is part of this
-  future plan's Feature A design and needs human reconciliation before execution.
+- **Per-plan form resolution** (`cog plan-queue-runner-resolve-plan`) resolves a selected plan entry to
+  its `inner_queue` form, parsing both the `/prex -ar <target>` and the `/prex -ar @<target>` prompt
+  forms (the live main queue uses the `@`-prefixed directory form). The live data is directory-only:
+  a valid plan target is a directory containing `queue-rounds.yaml` -> `inner_queue`; a file target or
+  a directory without `queue-rounds.yaml` fails closed. There is exactly one resolver kind.
 - **Two distinct status authorities (crisp rule):**
   - *Inner-round `done` is verify-only.* The round's own `/prex` flips its `rounds[]` status; the
     runner re-reads and requires `done` (unchanged from today).
@@ -137,10 +134,9 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
   Bash timeouts >= 600000; never a `PreToolUse` backgrounding hook; never background Codex or a long
   orchestration call.
 - **Durable postconditions at every boundary.** After each round: re-read inner queue, require
-  `rounds[item]==done`. After each plan: for `inner_queue`, re-run inner `queue-select` and require
-  `state==complete`; for `single_file`/`single_round_dir`, require the delegate's `/prex` reported
-  success (and the single round, if any, is `done`); then `cog queue-status-set --schema plans
-  --from todo --to done`, then re-read and require `plans[item]==done`. After each revision:
+  `rounds[item]==done`. After each plan (always `inner_queue`): re-run inner `queue-select` and require
+  `state==complete`; then `cog queue-status-set --schema plans --from todo --to done`, then re-read and
+  require `plans[item]==done`. After each revision:
   `cog plans-revision-verify` passes AND the worktree is clean. Resume is free: the persisted
   `plans[].status` is the durable state.
 - **`--max N` and `--dry-run`** apply at the PLAN level for a main queue (count plans, list remaining
@@ -192,11 +188,10 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 - **Setup dies on `plans:`.** `cmd_plan_queue_runner_setup.sh` runs the first `queue-select` at setup
   (line 108) — today that would die on a `plans:` queue via `queue_validate_rounds_selectable`.
   Mitigation: detect the schema in setup and thread it into the first select.
-- **Resolver prompt parsing.** The live main queue uses only the directory form `/prex -ar @<dir>/`
-  (the live data is directory-only; single-file targets no longer exist). The bare/file form
-  `/prex -ar <file>` is retained resolver vocabulary / future-design compatibility, not a current
-  live-queue fact. Mitigation: `resolve-plan` must parse both `@`-prefixed and bare targets and
-  normalize relative targets against `repo_root`.
+- **Resolver prompt parsing.** The live main queue uses only the directory form `/prex -ar @<dir>/`;
+  the data is directory-only. `resolve-plan` must still parse both the `@`-prefixed and bare directory
+  forms and normalize relative targets against `repo_root`; a bare target that resolves to a file
+  (rather than a plan directory with `queue-rounds.yaml`) fails closed.
 - **Revision auto-commit breaks the next item's clean-tree guard.** Mitigation: revision commits via
   `/gc` so the tree is clean before the next item; a no-drift cycle is a no-op (no commit); the runner
   verifies a clean worktree + `plans-revision-verify` before proceeding. Fail closed otherwise.

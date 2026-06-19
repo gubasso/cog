@@ -3,6 +3,7 @@
 
 __cog_rundir_usage() {
   cog::fn::ui_data "Usage: cog rundir <prefix> [--lock --owner-pid <pid>] [--json]"
+  cog::fn::ui_data "Usage: cog rundir --base [--json]"
 }
 
 __cog_rundir_emit_json() {
@@ -18,14 +19,18 @@ __cog_rundir_emit_json() {
 }
 
 cog::cmd::rundir() {
-  local prefix="" lock=false owner_pid="" json="${COG_UI_JSON:-false}"
-  local run_dir lock_file=""
+  local prefix="" lock=false owner_pid="" base=false json="${COG_UI_JSON:-false}"
+  local run_dir lock_file="" base_dir
 
   while (($# > 0)); do
     case "$1" in
       -h | --help)
         __cog_rundir_usage
         return 0
+        ;;
+      --base)
+        base=true
+        shift
         ;;
       --lock)
         lock=true
@@ -53,6 +58,19 @@ cog::cmd::rundir() {
         ;;
     esac
   done
+
+  if [[ $base == true ]]; then
+    [[ $lock == false && -z $owner_pid && -z $prefix ]] || cog::fn::error_raise "InvalidInput" \
+      "rundir --base takes no prefix, --lock, or --owner-pid" "" "" "run 'cog rundir --help'"
+    base_dir="$(cog::fn::rundir_base)"
+    if [[ $json == true ]]; then
+      cog::fn::json_emit '(.base | type == "string")' \
+        "$(jq -cn --arg base "$base_dir" '{base: $base}')"
+    else
+      cog::fn::ui_data "$base_dir"
+    fi
+    return 0
+  fi
 
   [[ -n $prefix ]] || cog::fn::error_raise "MissingArgument" \
     "missing run directory prefix" "usage: cog rundir <prefix>" "" "run 'cog rundir --help'"

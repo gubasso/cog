@@ -14,10 +14,10 @@ needs, with NO skill-prose or orchestration changes (those are Round 3):
    `--schema plans|rounds` parameter (default `rounds`, behavior preserved).
 2. Add `cog queue-status-set` — the ONLY authorized way to flip a `plans[].status` (e.g.
    `todo -> done`), a single-item guarded transition.
-3. Add `cog plan-queue-runner-resolve-plan` — classify a selected main-queue plan entry into
-   `{single_file | single_round_dir | inner_queue}`, parsing the `/prex -ar [@]<target>` prompt.
-   The migrated live data is directory-only and should resolve through `inner_queue`; the retained
-   legacy-compatible resolver kinds need human reconciliation before this future plan executes.
+3. Add `cog plan-queue-runner-resolve-plan` — resolve a selected main-queue plan entry to its
+   executable `inner_queue` form, parsing the `/prex -ar [@]<target>` prompt. The live data is
+   directory-only: a valid plan target is a directory containing `queue-rounds.yaml`. File targets
+   and directories without `queue-rounds.yaml` fail closed.
 4. Extend `cog plan-queue-runner-setup` to detect the queue schema and persist `QUEUE_SCHEMA`
    (+ `MAIN_QUEUE_PATH` when `plans`) so the first `queue-select` no longer dies on a `plans:` queue.
 
@@ -116,10 +116,10 @@ This is the first round — no prior rounds.
 
 - `/workspaces/cog/.implementation-plans/queue-plans.yaml` — the real main `plans:` queue (canonical schema
   fixture): entries `item/status/depends_on/prompt/notes`, statuses `backlog|todo|doing|done`. Plan
-  prompts use the directory form `/prex -ar @<dir>/` (the live data is directory-only; single-file
-  targets no longer exist). The legacy `/prex -ar <file>` form survives only as retained resolver
-  vocabulary / future design under reconciliation (see this plan's flagged resolver design), not in
-  the live queue.
+  prompts use the directory form `/prex -ar @<dir>/`; the data is directory-only, so every plan
+  target is a directory containing `queue-rounds.yaml`. The resolver parses both the `@`-prefixed and
+  bare directory forms; a bare `/prex -ar <file>` target (a file rather than a plan directory) is not
+  valid live data and fails closed.
 
 - `/workspaces/cog/lib/loader.sh` — derives `cmd_<slug>.sh` and `cog::cmd::<slug>` from the dashed
   command name (`queue-status-set` -> `cmd_queue_status_set.sh` / `cog::cmd::queue_status_set`;
@@ -198,19 +198,14 @@ Flags: `--repo-root <dir> --queue <main-queue> --item <item> (<out.json>|--json)
 1. Validate `--queue` as `plans`; load the matching `plans[]` entry (fail closed if missing/duplicate).
 2. Parse the execution target from the entry's `prompt`, supporting BOTH `/prex -ar <target>` and
    `/prex -ar @<target>` (strip a single leading `@`); normalize a relative target against `repo_root`.
-3. Classify `kind`:
-   - `inner_queue` — in the current directory-only live data, target is a directory containing
-     `queue-rounds.yaml` (resolve `inner_queue_path`; also surface any `repos:` declared by that
-     inner queue).
-   - `single_file` — retained resolver-kind vocabulary for the future Feature A design; reconcile
-     before implementation because live plans are no longer single files.
-   - `single_round_dir` — retained resolver-kind vocabulary for the future Feature A design;
-     reconcile before implementation because live plan directories now carry `queue-rounds.yaml`.
-4. Fail closed: target missing; file target in the migrated live data; directory with no
-   `queue-rounds.yaml`; prompt not a supported `/prex -ar` invocation; queue item missing.
+3. Resolve `kind`. The live data is directory-only, so there is exactly one valid kind:
+   - `inner_queue` — target is a directory containing `queue-rounds.yaml`. Resolve `inner_queue_path`
+     and surface any `repos:` the inner queue declares.
+4. Fail closed: target missing; a file target (not a directory); a directory with no
+   `queue-rounds.yaml`; prompt not a supported `/prex -ar` invocation; queue item missing/duplicate.
 
-Emit JSON `{ok, item, kind, repo_root, main_queue_path, target_path, inner_queue_path, round_file_path,
-prompt, repos}` with a self-check predicate.
+Emit JSON `{ok, item, kind, repo_root, main_queue_path, target_path, inner_queue_path, prompt, repos}`
+with a self-check predicate (`kind == "inner_queue"`).
 
 ### Step 5: Schema detection + `QUEUE_SCHEMA` in setup
 
@@ -228,10 +223,10 @@ keys are otherwise unchanged.)
 - New `test/integration/queue_status_set.bats`: happy `todo->done` on a `plans:` fixture and a
   `rounds:` fixture; failures for missing item, wrong `--from`, invalid status, duplicate item,
   missing queue.
-- New `test/integration/plan_queue_runner_resolve_plan.bats`: the retained three-kind resolver design
-  (single_file, single_round_dir, inner_queue) including the `@`-prefixed prompt form, while also
-  covering the migrated live-data rule that directory plans must carry `queue-rounds.yaml` and file
-  targets/directories without it fail closed unless the resolver design is formally re-reconciled.
+- New `test/integration/plan_queue_runner_resolve_plan.bats`: a directory plan with `queue-rounds.yaml`
+  resolves to `inner_queue` (covering both the `@`-prefixed and bare directory prompt forms and
+  surfacing any inner `repos:`); a file target, a directory without `queue-rounds.yaml`, a missing
+  target, a non-`/prex -ar` prompt, and a missing/duplicate item each fail closed.
 - Extend `test/integration/queue_select.bats`: a `--schema plans` selection case AND a regression case
   proving the default (`rounds`) path output is byte-identical (plus the additive `schema` field).
 - Extend `test/integration/plan_queue_runner_setup.bats`: `QUEUE_SCHEMA=plans` + `MAIN_QUEUE_PATH` on
@@ -256,9 +251,9 @@ per the repo's man-build workflow), and refresh help snapshots so the drift chec
       test passes.
 - [ ] `cog queue-status-set --schema plans --item <i> --from todo --to done` flips only that item and
       fails closed on missing item, wrong `--from`, invalid status, or duplicate item.
-- [ ] `cog plan-queue-runner-resolve-plan` preserves the future plan's single_file /
-      single_round_dir / inner_queue resolver vocabulary, while treating migrated live plan targets as
-      directory-only `queue-rounds.yaml` plans unless that design is formally re-reconciled.
+- [ ] `cog plan-queue-runner-resolve-plan` resolves a directory plan carrying `queue-rounds.yaml` to
+      `kind: inner_queue` (both prompt forms), and fails closed on a file target, a directory without
+      `queue-rounds.yaml`, a missing target, an unsupported prompt, or a missing/duplicate item.
 - [ ] `cog plan-queue-runner-setup` emits `QUEUE_SCHEMA` (+ `MAIN_QUEUE_PATH` for `plans`) and the
       first `queue-select` no longer dies on a `plans:` queue; a `rounds:` target is unchanged.
 - [ ] No skill prose changed this round; each new command module has its line-2 `: 'desc:'` sentinel.

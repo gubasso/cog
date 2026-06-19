@@ -78,10 +78,9 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: runner-orchestratio
 ### Step 1: Frontmatter, intro, usage, "Queue Modes"
 
 Update the description + `argument-hint` to accept either an inner `rounds:` queue OR a top-level
-`plans:` main queue (e.g. `argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir|plan-file>"`).
-The migrated live data is directory-only (`plan-dir` with `queue-rounds.yaml`); the retained
-`plan-file` / single-round vocabulary belongs to this future plan's unresolved resolver design and
-must be reconciled before implementation.
+`plans:` main queue (e.g. `argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir>"`).
+The live data is directory-only (`plan-dir` with `queue-rounds.yaml`); a `plans:` entry always
+resolves to an `inner_queue`.
 Add a "Queue Modes" section: `rounds:` -> inner mode (today's behavior); `plans:` -> main mode (select
 plans in order, drive each to completion); auto-detected via `QUEUE_SCHEMA` from setup. Add usage
 examples:
@@ -111,15 +110,10 @@ Document the INLINE loop (no new subagent layer). Per iteration:
 1. `cog queue-select --schema plans --queue "$MAIN_QUEUE_PATH" ...` to pick the next runnable `todo`
    plan; on `state: complete` finish; on `blocked` fail closed.
 2. `cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH"
-   --item "$PLAN_ITEM"` to classify the form.
-3. Execute by form:
-   - `single_file` / `single_round_dir`: dispatch the entry's verbatim `/prex` prompt to ONE fresh
-     foreground `claude-delegate` (exactly the existing per-round dispatch shape). These retained
-     resolver kinds conflict with the migrated directory-only live data and must be formally
-     reconciled before this future plan executes.
-   - `inner_queue`: rebuild `REPO_FLAGS` from the resolver's `repos`, then run the "Drive an inner
-     queue" sub-procedure against `inner_queue_path` until `state: complete`.
-4. Verify completion (form-appropriate postcondition), then flip the MAIN plan to done:
+   --item "$PLAN_ITEM"` to resolve the plan's `inner_queue` form (it fails closed otherwise).
+3. Execute the resolved `inner_queue`: rebuild `REPO_FLAGS` from the resolver's `repos`, then run the
+   "Drive an inner queue" sub-procedure against `inner_queue_path` until `state: complete`.
+4. Verify completion (inner `state: complete`), then flip the MAIN plan to done:
 
    ```bash
    cog queue-status-set --queue "$MAIN_QUEUE_PATH" --schema plans --item "$PLAN_ITEM" \
@@ -210,9 +204,8 @@ round-level semantics for an inner `rounds:` queue.
 - [ ] `/plan-queue-runner <inner plan dir>` (inner `rounds:` mode) remains supported and unchanged
       except for the added revision boundary after each committed round.
 - [ ] `/plan-queue-runner .implementation-plans/queue-plans.yaml` drives the top-level `plans:` queue inline
-      (depth 0), preserving the future resolver vocabulary `single_file` / `single_round_dir` /
-      `inner_queue` while treating migrated live data as directory-only until the resolver conflict is
-      formally reconciled.
+      (depth 0), resolving every plan entry to its `inner_queue` form and failing closed on any entry
+      that is not a directory carrying `queue-rounds.yaml`.
 - [ ] Main-plan completion is set via `cog queue-status-set --schema plans`; inner-round completion
       stays verify-only; the skill never hand-edits a queue.
 - [ ] The `plans-revision` skill runs as a foreground subagent after every committed inner round and

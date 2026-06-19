@@ -378,11 +378,12 @@ Build a `review_loop_input.json` file in `$RUN_DIR` with the following structure
 
 Read the source files and write the JSON to `$RUN_DIR/review_loop_input.json`.
 
-Before delegation, snapshot the skill-run base directory for `review-loop-*` directories so the
-child run dir can be located after the call returns:
+Before delegation, snapshot the run base directory for `review-loop-*` directories so the
+child run dir can be located after the call returns. The base is whatever `cog rundir` creates
+into — ask `cog` rather than hardcoding a path, so this never drifts when the base moves:
 
 ```bash
-_SKILL_RUNS="${XDG_STATE_HOME:-$HOME/.local/state}/claude-session/skill-runs"
+_SKILL_RUNS="$(cog rundir --base)"
 mkdir -p "$_SKILL_RUNS"
 find "$_SKILL_RUNS" -maxdepth 1 -type d -name 'review-loop-*' -printf '%p\n' 2>/dev/null | sort > "$RUN_DIR/stage5-pre-rl.snap"
 ```
@@ -408,10 +409,11 @@ Do NOT use the `Skill` tool for this call — see the stage 2 note and
 `$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md` (Dispatch vs Delegation). The
 `Agent` tool is the only mechanism that produces a real fork with a structured return.
 
-After the Agent tool call returns, locate the child run directory and validate proof of delegation:
+After the Agent tool call returns, locate the child run directory and validate proof of delegation.
+Use the same `cog rundir --base` value as the pre-snapshot so both sides scan the identical base:
 
 ```bash
-_SKILL_RUNS="${XDG_STATE_HOME:-$HOME/.local/state}/claude-session/skill-runs"
+_SKILL_RUNS="$(cog rundir --base)"
 mkdir -p "$_SKILL_RUNS"
 find "$_SKILL_RUNS" -maxdepth 1 -type d -name 'review-loop-*' -printf '%p\n' 2>/dev/null | sort > "$RUN_DIR/stage5-post-rl.snap"
 diff -u "$RUN_DIR/stage5-pre-rl.snap" "$RUN_DIR/stage5-post-rl.snap" > "$RUN_DIR/stage5-proof.diff" || true

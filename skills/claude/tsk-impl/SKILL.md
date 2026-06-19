@@ -122,9 +122,7 @@ cog tsk-snapshot --json
    it:
 
    ```bash
-   _SKILL_RUNS="${XDG_STATE_HOME:-$HOME/.local/state}/claude-session/skill-runs"
-   STAGE_DIR="$_SKILL_RUNS/tsk-impl-$(date -u +%Y%m%dT%H%M%S)-$$"
-   mkdir -p "$STAGE_DIR"
+   STAGE_DIR="$(cog rundir tsk-impl)"
    # Write the helper's .issue field to $STAGE_DIR/issue.md with the Write tool.
    ```
 

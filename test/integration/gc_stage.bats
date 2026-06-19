@@ -21,8 +21,8 @@ case "$*" in
   "rev-parse --show-toplevel")
     printf '%s\n' "$git_root"
     ;;
-  "diff --staged --name-only")
-    count="$(grep -c 'diff --staged --name-only$' "${GIT_FAKE_LOG}" 2>/dev/null || true)"
+  "diff --staged --no-renames --name-only")
+    count="$(grep -c 'diff --staged --no-renames --name-only$' "${GIT_FAKE_LOG}" 2>/dev/null || true)"
     if [ "$count" -eq 1 ]; then
       printf '%s\n' "old.txt"
     elif [ "$count" -eq 2 ]; then
@@ -66,7 +66,7 @@ EOF
   run cog gc-stage --session-files "$session" --repo-root "$repo" --json
 
   assert_success
-  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo diff --staged --name-only"
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo diff --staged --no-renames --name-only"
   assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo reset HEAD -- old.txt"
   assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo add -- session.txt"
 }
@@ -100,6 +100,36 @@ EOF
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .staged == ["session.txt"]' >/dev/null
+}
+
+@test "cog gc-stage matches a staged rename via raw delete+add paths" {
+  # Regression: git rename detection collapses delete old + add new into one
+  # destination line, which broke the literal path-set equality vs session_files
+  # (observed on a queue-rounds.yaml rename round). --no-renames must keep both
+  # the old and new path so the staged set equals the session-files set.
+  cat >"${BATS_TEST_TMPDIR}/fakebin/git" <<'EOF'
+#!/usr/bin/env bash
+[ "$1" = "-C" ] && shift 2
+printf '%s\n' "$*" >>"${GIT_FAKE_LOG}"
+case "$*" in
+  "rev-parse --show-toplevel") printf '/tmp/repo\n' ;;
+  "diff --staged --no-renames --name-only")
+    printf '%s\n%s\n' "old.txt" "new.txt"
+    ;;
+  reset\ HEAD\ --*) ;;
+  add\ --*) ;;
+  *) printf 'unexpected git args: %s\n' "$*" >&2; exit 2 ;;
+esac
+EOF
+  chmod +x "${BATS_TEST_TMPDIR}/fakebin/git"
+  local session="${BATS_TEST_TMPDIR}/session.txt"
+  printf '%s\n%s\n' old.txt new.txt >"$session"
+
+  run cog gc-stage --session-files "$session" --json
+
+  assert_success
+  printf '%s\n' "$output" \
+    | jq -e '.ok == true and (.mismatch | length == 0) and (.final_staged | sort == ["new.txt","old.txt"])' >/dev/null
 }
 
 @test "cog gc-stage --help dispatches" {
