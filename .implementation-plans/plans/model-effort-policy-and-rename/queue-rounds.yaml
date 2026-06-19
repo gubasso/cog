@@ -1,0 +1,19 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: research-current-model-data
+    status: todo
+    depends_on: []
+    prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/research-current-model-data.md
+    notes: Deep web research -> dated Claude + Codex benchmark/pricing/effort references in docs/reference/. No DocsNNotes deletes.
+  - item: model-effort-policy-sot
+    status: todo
+    depends_on:
+      - research-current-model-data
+    prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/model-effort-policy-sot.md
+    notes: 'model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/ + never-sonnet ADR + AGENTS/CLAUDE wiring. Independent of skill-refs.'
+  - item: rename-to-review-implementation-plans
+    status: todo
+    depends_on:
+      - model-effort-policy-sot
+    prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/rename-to-review-implementation-plans.md
+    notes: 'Atomic rename: plans-revision skill + cog plans-revision-scan/verify commands -> review-implementation-plans; re-grade skill to opus/low; fix all refs; regen completions/man/help-snapshots; skill-lint + integration tests.'

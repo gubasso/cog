@@ -40,3 +40,20 @@ plans:
     depends_on: []
     prompt: /prex -ar @.implementation-plans/plans/cog-self-contained-skill-refs/
     notes: 'Make cog self-contained: ship skill-source refs in-repo (XDG), governance rule, decouple codex-conventions'
+  - item: docs-design-tracking-principle
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/docs-design-tracking-principle/
+    notes: S, 1 round, prex. Add tracking-file/periodic-revalidation docs-design principle to $DOCS_NOTES_REPO docs-design shelf (general pattern). Writes outside cog. Independent.
+  - item: model-effort-policy-and-rename
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/model-effort-policy-and-rename/
+    notes: 'L, 3 rounds, prex. Independent (all artifacts under docs/). Model/effort policy SoT (never sonnet -> opus+low): web-research dated evidence in docs/reference/; model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/; never-sonnet ADR; AGENTS/CLAUDE wiring. Then atomic rename plans-revision skill + cog plans-revision-scan/verify -> review-implementation-plans, re-grade opus/low. Round 3 gated-deletes the 3 DocsNNotes model-reference files after in-cog replacements verify.'
+  - item: repo-update-tracking
+    status: todo
+    depends_on:
+      - model-effort-policy-and-rename
+      - docs-design-tracking-principle
+    prompt: /prex -ar @.implementation-plans/plans/repo-update-tracking/
+    notes: M, 2 rounds, prex. Periodic-revalidation registry (docs/reference/maintenance-tracking.yaml, descriptive YAML) + runbook, seeded with model/effort refs; new deterministic 'cog tracking-scan' command (overdue reporting, --now) + bats + completion/man + AGENTS sweep cue. Instantiates docs-design-tracking-principle; tracks model-effort-policy-and-rename outputs.
