@@ -1,4 +1,3 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
 rounds:
   - item: review-code-deep-stage4-contract
     status: todo
