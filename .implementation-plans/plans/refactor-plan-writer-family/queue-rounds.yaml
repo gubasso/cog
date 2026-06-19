@@ -1,5 +1,3 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
-# Satellite repo(s) guarded and committed alongside the plan repo (Round 1 edits the spec there):
 repos:
   - /home/gbasso/DocsNNotes
 rounds:

@@ -1,6 +1,3 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
-# Satellite repos this plan writes into besides REPO_ROOT (claude-session config lives here).
-# Only round `revert-and-assert-core` edits the satellite; later rounds leave it clean.
 repos:
   - /home/gbasso/.dotfiles
 rounds:

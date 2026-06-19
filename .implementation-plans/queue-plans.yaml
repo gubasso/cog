@@ -1,5 +1,3 @@
-# Source of truth for the .implementation-plans/ queue. Status & order live HERE, not in paths.
-# status: backlog | todo | doing | done
 plans:
   - item: skills-under-skills-env-first
     status: done

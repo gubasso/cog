@@ -1,7 +1,6 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
 rounds:
   - item: tracking-file-doc-design-principle
     status: todo
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/docs-design-tracking-principle/tracking-file-doc-design-principle.md
-    notes: 'Add tracking-file/periodic-revalidation principle to $DOCS_NOTES_REPO docs-design shelf (08-*.md) + README/AGENTS/checklist updates. Writes outside cog. Cites cog repo-update-tracking as worked example.'
+    notes: Add tracking-file/periodic-revalidation principle to $DOCS_NOTES_REPO docs-design shelf (08-*.md) + README/AGENTS/checklist updates. Writes outside cog. Cites cog repo-update-tracking as worked example.

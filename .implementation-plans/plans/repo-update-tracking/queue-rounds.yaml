@@ -1,13 +1,12 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
 rounds:
   - item: tracking-registry
     status: todo
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/repo-update-tracking/tracking-registry.md
-    notes: 'YAML tracking registry (docs/reference/maintenance-tracking.yaml) with descriptive fields + runbook (docs/guides/), seeded with the model/effort reference entries.'
+    notes: YAML tracking registry (docs/reference/maintenance-tracking.yaml) with descriptive fields + runbook (docs/guides/), seeded with the model/effort reference entries.
   - item: tracking-sweep-tooling
     status: todo
     depends_on:
       - tracking-registry
     prompt: /prex -ar .implementation-plans/plans/repo-update-tracking/tracking-sweep-tooling.md
-    notes: 'cog tracking-scan command (reports overdue entries, --now for determinism) + bats test + completion/man/cli-commands + AGENTS.md sweep cue.'
+    notes: cog tracking-scan command (reports overdue entries, --now for determinism) + bats test + completion/man/cli-commands + AGENTS.md sweep cue.

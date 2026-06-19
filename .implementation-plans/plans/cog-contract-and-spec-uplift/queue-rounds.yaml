@@ -1,4 +1,3 @@
-# Rounds for this plan, in execution order. status: backlog | todo | doing | done
 rounds:
   - item: python-cli-spec-chapters
     status: todo
