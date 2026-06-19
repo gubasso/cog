@@ -32,6 +32,7 @@ _cog() {
     gc-stage
     help
     hook-guard
+    init
     lint-codex-wrapper
     lock
     msg

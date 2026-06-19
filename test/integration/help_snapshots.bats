@@ -46,6 +46,7 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
+  init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.
@@ -124,6 +125,7 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
+  init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   msg            Emit uniform machine status lines and human messages.

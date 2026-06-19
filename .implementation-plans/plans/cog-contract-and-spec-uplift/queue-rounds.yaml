@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/python-cli-spec-chapters.md
     notes: 'docs-n-notes repo: author Python subcommand-pattern + error-handling chapters, wire into README, refresh python cli-spec AGENTS.md digest. No cog code.'
   - item: cog-init-subcommand
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/cog-contract-and-spec-uplift/cog-init-subcommand.md
     notes: 'cog repo: implement ''cog init'' DRY against doctor (extract shared prereq helper); tests + cli-commands/completion/man/help mirrors.'

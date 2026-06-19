@@ -31,6 +31,8 @@ source "${LIB_DIR}/functions/fn_log.sh"
 source "${LIB_DIR}/functions/fn_error_raise.sh"
 # shellcheck source=../lib/functions/fn_json_write.sh
 source "${LIB_DIR}/functions/fn_json_write.sh"
+# shellcheck source=../lib/functions/fn_prereq.sh
+source "${LIB_DIR}/functions/fn_prereq.sh"
 # shellcheck source=../lib/functions/fn_skill.sh
 source "${LIB_DIR}/functions/fn_skill.sh"
 # shellcheck source=../lib/functions/fn_refs.sh

@@ -75,6 +75,9 @@ The command list and short descriptions are sourced from command modules under
 *hook-guard*
 	Deterministic Stop hook decisions for active workflows.
 
+*init*
+	Initialize cog runtime directories and prerequisites.
+
 *lint-codex-wrapper*
 	Enforce Codex single-entrypoint markdown snippets.
 
