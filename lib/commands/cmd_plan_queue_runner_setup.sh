@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse plan-queue-runner arguments and create run state.'
 
-__cog_plan_queue_runner_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array")'
+__cog_plan_queue_runner_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array") and (.queue_schema=="plans" or .queue_schema=="rounds")'
 
 __cog_plan_queue_runner_setup_usage() {
   cog::fn::ui_data "Usage: cog plan-queue-runner-setup [--json] [arguments-string]"
@@ -61,10 +61,14 @@ __cog_plan_queue_runner_setup_parse() {
 }
 
 __cog_plan_queue_runner_setup_write_ctx() {
-  local ctx="$1" repo_root="$2" queue_path="$3" run_dir="$4" dry_run="$5" max_rounds="$6" repos_joined="$7"
+  local ctx="$1" repo_root="$2" queue_path="$3" queue_schema="$4" main_queue_path="$5" run_dir="$6" dry_run="$7" max_rounds="$8" repos_joined="$9"
   {
     printf 'REPO_ROOT=%q\n' "$repo_root"
     printf 'QUEUE_PATH=%q\n' "$queue_path"
+    printf 'QUEUE_SCHEMA=%q\n' "$queue_schema"
+    if [[ $queue_schema == plans ]]; then
+      printf 'MAIN_QUEUE_PATH=%q\n' "$main_queue_path"
+    fi
     printf 'RUN_DIR=%q\n' "$run_dir"
     if [[ $dry_run == true ]]; then
       printf 'DRY_RUN=%q\n' "1"
@@ -78,17 +82,26 @@ __cog_plan_queue_runner_setup_write_ctx() {
 }
 
 __cog_plan_queue_runner_setup_build_json() {
-  local raw="$1" dry_run max_rounds target repo_root queue_path run_dir queue_select_json repos_json repos_joined=""
+  local raw="$1" dry_run max_rounds target repo_root queue_path queue_schema main_queue_path="" run_dir queue_select_json repos_json repos_joined=""
   local -a repos_arr=() repo_flags=()
   __cog_plan_queue_runner_setup_parse "$raw" dry_run max_rounds target
   repo_root="$(cog::fn::git_root)"
   case "$target" in
-    */queue-rounds.yaml) queue_path="$target" ;;
+    *.yaml) queue_path="$target" ;;
     *) queue_path="${target}/queue-rounds.yaml" ;;
   esac
   [[ $queue_path == /* ]] || queue_path="${repo_root}/${queue_path}"
   [[ -f $queue_path ]] || cog::fn::error_raise "InputNotFound" \
-    "queue-rounds.yaml not found" "path: ${queue_path}" "" "check the target path"
+    "queue file not found" "path: ${queue_path}" "" "check the target path"
+  if [[ "$(yq e 'has("plans") and (has("rounds") | not)' "$queue_path")" == true ]]; then
+    queue_schema=plans
+    main_queue_path="$queue_path"
+  elif [[ "$(yq e 'has("rounds") and (has("plans") | not)' "$queue_path")" == true ]]; then
+    queue_schema=rounds
+  else
+    cog::fn::error_raise "InvalidInput" \
+      "queue file has neither/both top-level schema" "path: ${queue_path}" "expected exactly one of plans or rounds" ""
+  fi
   mapfile -t repos_arr < <(yq e -r '.repos[]?' "$queue_path" 2>/dev/null || true)
   local r
   for r in "${repos_arr[@]}"; do
@@ -99,13 +112,13 @@ __cog_plan_queue_runner_setup_build_json() {
     repos_joined="${repos_joined%$'\n'}"
   fi
   run_dir="$(cog::fn::rundir_create plan-queue-runner)"
-  __cog_plan_queue_runner_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$queue_path" "$run_dir" "$dry_run" "$max_rounds" "$repos_joined"
+  __cog_plan_queue_runner_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$queue_path" "$queue_schema" "$main_queue_path" "$run_dir" "$dry_run" "$max_rounds" "$repos_joined"
 
   if ! declare -F __cog_queue_select_build_json >/dev/null; then
     # shellcheck source=/dev/null
     source "${LIB_DIR}/commands/cmd_queue_select.sh"
   fi
-  queue_select_json="$(__cog_queue_select_build_json "$queue_path" "$repo_root" false "${repos_arr[@]}")"
+  queue_select_json="$(__cog_queue_select_build_json "$queue_schema" "$queue_path" "$repo_root" false "${repos_arr[@]}")"
   # shellcheck disable=SC2154 # Defined by cmd_queue_select.sh sourced above.
   cog::fn::json_write_fragment "${run_dir}/queue-select.json" "$__cog_queue_select_self_check" "$queue_select_json" >/dev/null
   repos_json="$(__cog_plan_queue_runner_setup_json_array "${repos_arr[@]}")"
@@ -113,12 +126,15 @@ __cog_plan_queue_runner_setup_build_json() {
   jq -n \
     --arg run_dir "$run_dir" \
     --arg queue_path "$queue_path" \
+    --arg queue_schema "$queue_schema" \
+    --arg main_queue_path "$main_queue_path" \
     --arg repo_root "$repo_root" \
     --argjson dry_run "$dry_run" \
     --arg max_rounds "$max_rounds" \
     --argjson repos "$repos_json" \
-    '{run_dir: $run_dir, queue_path: $queue_path, repo_root: $repo_root, dry_run: $dry_run,
-      max_rounds: (if $max_rounds == "" then null else $max_rounds end), repos: $repos}'
+    '{run_dir: $run_dir, queue_path: $queue_path, queue_schema: $queue_schema, repo_root: $repo_root, dry_run: $dry_run,
+      max_rounds: (if $max_rounds == "" then null else $max_rounds end), repos: $repos}
+      + (if $queue_schema == "plans" then {main_queue_path: $main_queue_path} else {} end)'
 }
 
 cog::cmd::plan_queue_runner_setup() {

@@ -28,11 +28,13 @@ EOF
   run cog plan-queue-runner-setup --json "--dry-run --max=3 plan"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.dry_run == true and .max_rounds == "3" and (.queue_path | endswith("/plan/queue-rounds.yaml"))' >/dev/null
+  printf '%s\n' "$output" | jq -e '.dry_run == true and .max_rounds == "3" and .queue_schema == "rounds" and (.queue_path | endswith("/plan/queue-rounds.yaml"))' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
+  assert_file_contains "${run_dir}/ctx.env" "QUEUE_SCHEMA=rounds"
+  assert_file_not_contains "${run_dir}/ctx.env" "MAIN_QUEUE_PATH="
   assert_file_contains "${run_dir}/ctx.env" "DRY_RUN=1"
-  jq -e '.selected.item == "next"' "${run_dir}/queue-select.json" >/dev/null
+  jq -e '.schema == "rounds" and .selected.item == "next"' "${run_dir}/queue-select.json" >/dev/null
 }
 
 @test "cog plan-queue-runner-setup persists satellite repos from queue" {
@@ -56,6 +58,53 @@ EOF
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   assert_file_contains "${run_dir}/ctx.env" "REPOS="
   assert_file_contains "${run_dir}/ctx.env" "${BATS_TEST_TMPDIR}/satellite"
+}
+
+@test "cog plan-queue-runner-setup accepts plans queue file and persists main queue context" {
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/plans/main"
+  cat >"${BATS_TEST_TMPDIR}/repo/plans/main/queue-rounds.yaml" <<'EOF'
+rounds:
+  - item: inner
+    status: todo
+    depends_on: []
+    prompt: /prex -ar inner.md
+    notes: note
+EOF
+  cat >"${BATS_TEST_TMPDIR}/repo/queue-plans.yaml" <<'EOF'
+plans:
+  - item: main
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @plans/main/
+    notes: note
+EOF
+
+  run cog plan-queue-runner-setup --json "queue-plans.yaml"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.queue_schema == "plans" and (.queue_path | endswith("/repo/queue-plans.yaml")) and (.main_queue_path | endswith("/repo/queue-plans.yaml"))' >/dev/null
+  local run_dir
+  run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
+  assert_file_contains "${run_dir}/ctx.env" "QUEUE_SCHEMA=plans"
+  assert_file_contains "${run_dir}/ctx.env" "MAIN_QUEUE_PATH="
+  jq -e '.schema == "plans" and .selected.item == "main"' "${run_dir}/queue-select.json" >/dev/null
+}
+
+@test "cog plan-queue-runner-setup rejects both or neither schema" {
+  cat >"${BATS_TEST_TMPDIR}/repo/both.yaml" <<'EOF'
+plans: []
+rounds: []
+EOF
+  run --separate-stderr cog plan-queue-runner-setup --json "both.yaml"
+  assert_failure
+  [[ $stderr == *"queue file has neither/both top-level schema"* ]]
+
+  cat >"${BATS_TEST_TMPDIR}/repo/neither.yaml" <<'EOF'
+repos: []
+EOF
+  run --separate-stderr cog plan-queue-runner-setup --json "neither.yaml"
+  assert_failure
+  [[ $stderr == *"queue file has neither/both top-level schema"* ]]
 }
 
 @test "cog plan-queue-runner-setup rejects invalid max and missing target" {

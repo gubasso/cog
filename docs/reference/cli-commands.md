@@ -52,6 +52,7 @@ this reference table.
 | `osc-probe-binary` | Resolve a binary RPM to an OBS source package. |
 | `plan-init` | Bootstrap implementation plan root files. |
 | `plan-queue-runner-parse-commit` | Parse a plan-queue-runner commit result. |
+| `plan-queue-runner-resolve-plan` | Resolve a selected main queue plan entry to its executable form. |
 | `plan-queue-runner-setup` | Parse plan-queue-runner arguments and create run state. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
@@ -64,6 +65,7 @@ this reference table.
 | `queue-append` | Append one implementation plan queue entry. |
 | `queue-bootstrap` | Create and validate an implementation plan queue. |
 | `queue-select` | Select the next runnable implementation plan round. |
+| `queue-status-set` | Set one queue item status with an expected-current-status guard. |
 | `refactor-scan-drift` | Compute byte-stable source-scan fingerprint. |
 | `refactor-scan-source` | Run deterministic source static-analysis probes. |
 | `refactor-setup` | Resolve refactor migration setup paths. |
@@ -93,6 +95,9 @@ this reference table.
 Root help is generated dynamically by `lib/functions/fn_help_generate.sh`.
 `completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command
 surface and must be kept in sync with `lib/commands/cmd_*.sh`.
+
+`cog queue-select --schema plans|rounds` selects from either queue schema; omitted `--schema`
+defaults to `rounds`.
 
 `cog preflight claude-env <out.json> [--allow-legacy-session]` asserts the Claude Code
 no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash

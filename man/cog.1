@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "cog" "1" "2026-06-18"
+.TH "cog" "1" "2026-06-19"
 .PP
 .SH NAME
 .PP
@@ -156,6 +156,11 @@ Bootstrap implementation plan root files.\&
 Parse a plan-queue-runner commit result.\&
 .PP
 .RE
+\fBplan-queue-runner-resolve-plan\fR
+.RS 4
+Resolve a selected main queue plan entry to its executable form.\&
+.PP
+.RE
 \fBplan-queue-runner-setup\fR
 .RS 4
 Parse plan-queue-runner arguments and create run state.\&
@@ -185,7 +190,10 @@ Detect pre-commit template type.\&
 .RS 4
 Run centralized orchestrator preflight checks.\&
 .PP
-\fBcog preflight claude-env <out.json> [--allow-legacy-session]\fR asserts the Claude Code no-backgrounding session env.\& Strict mode requires \fBCLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1\fR; Bash timeout env vars are recorded as diagnostics only.\&
+\fBcog preflight claude-env <out.\&json> [--allow-legacy-session]\fR asserts
+the Claude Code no-backgrounding session env.\& Strict mode requires
+\fBCLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1\fR; Bash timeout env vars are
+recorded as diagnostics only.\&
 .PP
 .RE
 \fBprex-parse-args\fR
@@ -216,6 +224,11 @@ Create and validate an implementation plan queue.\&
 \fBqueue-select\fR
 .RS 4
 Select the next runnable implementation plan round.\&
+.PP
+.RE
+\fBqueue-status-set\fR
+.RS 4
+Set one queue item status with an expected-current-status guard.\&
 .PP
 .RE
 \fBrefactor-scan-drift\fR

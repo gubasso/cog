@@ -40,6 +40,7 @@ _cog() {
     osc-probe-binary
     plan-init
     plan-queue-runner-parse-commit
+    plan-queue-runner-resolve-plan
     plan-queue-runner-setup
     plan-slug
     plan-writer-multi-setup
@@ -52,6 +53,7 @@ _cog() {
     queue-append
     queue-bootstrap
     queue-select
+    queue-status-set
     refactor-scan-drift
     refactor-scan-source
     refactor-setup

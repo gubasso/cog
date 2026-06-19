@@ -21,6 +21,23 @@ rounds:
 EOF
 }
 
+write_plans_queue() {
+  local queue="$1"
+  cat >"$queue" <<'EOF'
+plans:
+  - item: first-plan
+    status: done
+    depends_on: []
+    prompt: /prex -ar @plans/first-plan/
+    notes: note
+  - item: second-plan
+    status: todo
+    depends_on: [first-plan]
+    prompt: /prex -ar @plans/second-plan/
+    notes: note
+EOF
+}
+
 @test "cog queue-select selects next runnable round" {
   local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   write_queue "$queue"
@@ -28,7 +45,48 @@ EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.state == "selected" and .selected.item == "second"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .state == "selected" and .selected.item == "second"' >/dev/null
+}
+
+@test "cog queue-select selects next runnable plan with schema flag" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_plans_queue "$queue"
+
+  run cog queue-select --queue "$queue" --schema plans --no-clean-check --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.schema == "plans" and .state == "selected" and .selected.item == "second-plan"' >/dev/null
+}
+
+@test "cog queue-select default rounds output is unchanged except schema" {
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
+  local repo_root
+  repo_root="$(pwd -P)"
+  write_queue "$queue"
+
+  run cog queue-select --queue "$queue" --no-clean-check --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg queue "$queue" --arg repo_root "$repo_root" '
+    .schema == "rounds" and
+    (del(.schema) == {
+      ok: true,
+      queue_path: $queue,
+      repo_root: $repo_root,
+      clean_check: false,
+      state: "selected",
+      selected: {
+        item: "second",
+        status: "todo",
+        depends_on: ["first"],
+        prompt: "/prex -ar second.md",
+        notes: "note"
+      },
+      todo_remaining: ["second"],
+      blocked: [],
+      reason: null
+    })
+  ' >/dev/null
 }
 
 @test "cog queue-select reports complete blocked and doing states" {
@@ -43,7 +101,7 @@ rounds:
 EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
   assert_success
-  printf '%s\n' "$output" | jq -e '.state == "complete"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .state == "complete"' >/dev/null
 
   cat >"$queue" <<'EOF'
 rounds:
@@ -55,7 +113,7 @@ rounds:
 EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
   assert_failure
-  printf '%s\n' "$output" | jq -e '.state == "blocked" and .ok == false' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .state == "blocked" and .ok == false' >/dev/null
 
   cat >"$queue" <<'EOF'
 rounds:
@@ -92,7 +150,7 @@ EOF
   run bash -c "cd '$dirty_cwd' && cog queue-select --queue '$queue' --repo-root '$target' --json"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.clean_check == true and .state == "selected" and .selected.item == "second"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .clean_check == true and .state == "selected" and .selected.item == "second"' >/dev/null
 }
 
 @test "cog queue-select clean check rejects a dirty --repo-root" {
@@ -125,7 +183,7 @@ EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.state == "selected" and .selected.item == "first"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .state == "selected" and .selected.item == "first"' >/dev/null
 
   cat >"$queue" <<'EOF'
 repos:
@@ -168,7 +226,7 @@ EOF
   run cog queue-select --queue "$queue" --repo-root "$primary" --repo "$satellite" --no-clean-check --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.state == "selected"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.schema == "rounds" and .state == "selected"' >/dev/null
 }
 
 @test "cog queue-select --help dispatches" {

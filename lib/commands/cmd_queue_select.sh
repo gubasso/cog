@@ -1,16 +1,17 @@
 # shellcheck shell=bash
 : 'desc: Select the next runnable implementation plan round.'
 
-__cog_queue_select_self_check='(.ok|type=="boolean") and (.queue_path|type=="string") and (.clean_check|type=="boolean") and (.state == "selected" or .state == "complete" or .state == "blocked") and ((.selected == null) or (.selected.item|type=="string")) and (.todo_remaining|type=="array") and (.blocked|type=="array")'
+__cog_queue_select_self_check='(.ok|type=="boolean") and (.queue_path|type=="string") and (.clean_check|type=="boolean") and (.state == "selected" or .state == "complete" or .state == "blocked") and ((.selected == null) or (.selected.item|type=="string")) and (.todo_remaining|type=="array") and (.blocked|type=="array") and (.schema=="plans" or .schema=="rounds")'
 
 __cog_queue_select_usage() {
-  cog::fn::ui_data "Usage: cog queue-select --queue <path> [--repo-root <dir>] [--repo <dir>]... [--no-clean-check] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog queue-select --queue <path> [--schema plans|rounds] [--repo-root <dir>] [--repo <dir>]... [--no-clean-check] (<out.json>|--json)"
 }
 
 __cog_queue_select_result_json() {
-  local ok="$1" queue_path="$2" repo_root="$3" clean_check="$4" state="$5" selected="$6" todo="$7" blocked="$8" reason="$9"
+  local ok="$1" schema="$2" queue_path="$3" repo_root="$4" clean_check="$5" state="$6" selected="$7" todo="$8" blocked="$9" reason="${10}"
   jq -n \
     --argjson ok "$ok" \
+    --arg schema "$schema" \
     --arg queue_path "$queue_path" \
     --arg repo_root "$repo_root" \
     --argjson clean_check "$clean_check" \
@@ -19,17 +20,19 @@ __cog_queue_select_result_json() {
     --argjson todo_remaining "$todo" \
     --argjson blocked "$blocked" \
     --arg reason "$reason" \
-    '{ok: $ok, queue_path: $queue_path, repo_root: $repo_root, clean_check: $clean_check,
+    '{ok: $ok, schema: $schema, queue_path: $queue_path, repo_root: $repo_root, clean_check: $clean_check,
       state: $state, selected: $selected, todo_remaining: $todo_remaining, blocked: $blocked,
       reason: (if $ok then null else $reason end)}'
 }
 
 __cog_queue_select_build_json() {
-  local queue_path="$1" repo_root="$2" clean_check="$3"
-  shift 3
+  local schema="$1" queue_path="$2" repo_root="$3" clean_check="$4"
+  shift 4
   local -a extra_repos=("$@")
-  local selected_json dirty state selected todo blocked ok=true reason=""
-  cog::fn::queue_validate_rounds_selectable "$queue_path"
+  local key selected_json dirty state selected todo blocked ok=true reason=""
+  key="$(cog::fn::queue_schema_key "$schema")" || cog::fn::error_raise "InvalidInput" \
+    "invalid queue schema" "schema: ${schema}" "expected plans or rounds" ""
+  cog::fn::queue_validate_selectable "$queue_path" "$key"
 
   if [[ $clean_check == true ]]; then
     local r
@@ -37,30 +40,30 @@ __cog_queue_select_build_json() {
       # Bind the clean check to explicit repo roots (not the caller's cwd) so a
       # queue runner cannot start work against a dirty target or satellite repo.
       if ! dirty="$(git -C "$r" status --porcelain=v1 2>/dev/null)"; then
-        __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "not a verifiable git worktree: $r"
+        __cog_queue_select_result_json false "$key" "$queue_path" "$repo_root" true blocked null '[]' '[]' "not a verifiable git worktree: $r"
         return 0
       fi
       if [[ -n $dirty ]]; then
-        __cog_queue_select_result_json false "$queue_path" "$repo_root" true blocked null '[]' '[]' "dirty worktree: $r"
+        __cog_queue_select_result_json false "$key" "$queue_path" "$repo_root" true blocked null '[]' '[]' "dirty worktree: $r"
         return 0
       fi
     done
   fi
 
-  selected_json="$(cog::fn::queue_select_next_round "$queue_path")"
+  selected_json="$(cog::fn::queue_select_next_item "$queue_path" "$key")"
   state="$(jq -r '.state' <<<"$selected_json")"
   selected="$(jq -c '.selected' <<<"$selected_json")"
   todo="$(jq -c '.todo_remaining' <<<"$selected_json")"
   blocked="$(jq -c '.blocked' <<<"$selected_json")"
   if [[ $state == blocked ]]; then
     ok=false
-    reason="todo rounds remain but dependencies are not done"
+    reason="todo ${key} remain but dependencies are not done"
   fi
-  __cog_queue_select_result_json "$ok" "$queue_path" "$repo_root" "$clean_check" "$state" "$selected" "$todo" "$blocked" "$reason"
+  __cog_queue_select_result_json "$ok" "$key" "$queue_path" "$repo_root" "$clean_check" "$state" "$selected" "$todo" "$blocked" "$reason"
 }
 
 cog::cmd::queue_select() {
-  local queue_path="" repo_root="" clean_check=true mode="" out="" json
+  local schema=rounds queue_path="" repo_root="" clean_check=true mode="" out="" json
   local -a extra_repos=()
   repo_root="$(pwd -P)"
   while (($# > 0)); do
@@ -72,6 +75,12 @@ cog::cmd::queue_select() {
       --queue)
         [[ $# -ge 2 && -z $queue_path ]] || cog::fn::error_raise "MissingArgument" "missing queue path" "option: --queue" "" "run 'cog queue-select --help'"
         queue_path="$2"
+        shift 2
+        ;;
+      --schema)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing queue schema" "option: --schema" "" "run 'cog queue-select --help'"
+        schema="$(cog::fn::queue_schema_key "$2")" || cog::fn::error_raise "InvalidInput" \
+          "invalid queue schema" "schema: ${2}" "expected plans or rounds" "run 'cog queue-select --help'"
         shift 2
         ;;
       --repo-root)
@@ -110,7 +119,7 @@ cog::cmd::queue_select() {
     "run 'cog queue-select --help'"
   [[ -n $mode ]] || mode=json
 
-  json="$(__cog_queue_select_build_json "$queue_path" "$repo_root" "$clean_check" "${extra_repos[@]}")"
+  json="$(__cog_queue_select_build_json "$schema" "$queue_path" "$repo_root" "$clean_check" "${extra_repos[@]}")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_queue_select_self_check" "$json"
   else

@@ -135,14 +135,20 @@ cog::fn::queue_validate_file() {
     "duplicate queue items" "path: ${queue_path}" "$dupes" "remove duplicate items"
 }
 
-cog::fn::queue_validate_rounds_selectable() {
+cog::fn::queue_validate_selectable() {
   local queue_path="${1:-}"
-  local doing
-  cog::fn::queue_validate_file "$queue_path" rounds
-  doing="$(yq e -r '.rounds[]? | select(.status == "doing") | .item' "$queue_path")"
+  local schema="${2:-}"
+  local key doing
+  key="$(__cog_queue_key_or_die "$schema")"
+  cog::fn::queue_validate_file "$queue_path" "$key"
+  doing="$(KEY="$key" yq e -r '.[strenv(KEY)][]? | select(.status == "doing") | .item' "$queue_path")"
   [[ -z $doing ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
-    "rounds already doing" "path: ${queue_path}" "$doing" \
-    "finish or reset the active round before selecting another"
+    "${key} already doing" "path: ${queue_path}" "$doing" \
+    "finish or reset the active item before selecting another"
+}
+
+cog::fn::queue_validate_rounds_selectable() {
+  cog::fn::queue_validate_selectable "${1:-}" rounds
 }
 
 cog::fn::queue_entry_json_validate() {
@@ -259,13 +265,16 @@ cog::fn::queue_append_entry() {
     "could not replace queue file" "path: ${queue_path}" "" "check permissions"
 }
 
-cog::fn::queue_select_next_round() {
+cog::fn::queue_select_next_item() {
   __cog_queue_require_jq_yq
   local queue_path="${1:-}"
-  cog::fn::queue_validate_rounds_selectable "$queue_path"
-  yq e -o=json '.' "$queue_path" | jq -c '
-    ([.rounds[]? | select(.status == "done") | .item]) as $done
-    | ([.rounds[]? | select(.status == "todo")]) as $todo
+  local schema="${2:-}"
+  local key
+  key="$(__cog_queue_key_or_die "$schema")"
+  cog::fn::queue_validate_selectable "$queue_path" "$key"
+  yq e -o=json '.' "$queue_path" | jq -c --arg key "$key" '
+    ([.[$key][]? | select(.status == "done") | .item]) as $done
+    | ([.[$key][]? | select(.status == "todo")]) as $todo
     | ([ $todo[]? | select(all(.depends_on[]?; . as $d | ($done | index($d)))) ]) as $runnable
     | if ($runnable | length) > 0 then
         {state: "selected", selected: $runnable[0], todo_remaining: ($todo | map(.item)), blocked: []}
@@ -275,4 +284,8 @@ cog::fn::queue_select_next_round() {
         {state: "blocked", selected: null, todo_remaining: ($todo | map(.item)), blocked: ($todo | map(.item))}
       end
   '
+}
+
+cog::fn::queue_select_next_round() {
+  cog::fn::queue_select_next_item "${1:-}" rounds
 }

@@ -99,6 +99,9 @@ The command list and short descriptions are sourced from command modules under
 *plan-queue-runner-parse-commit*
 	Parse a plan-queue-runner commit result.
 
+*plan-queue-runner-resolve-plan*
+	Resolve a selected main queue plan entry to its executable form.
+
 *plan-queue-runner-setup*
 	Parse plan-queue-runner arguments and create run state.
 
@@ -139,6 +142,9 @@ The command list and short descriptions are sourced from command modules under
 
 *queue-select*
 	Select the next runnable implementation plan round.
+
+*queue-status-set*
+	Set one queue item status with an expected-current-status guard.
 
 *refactor-scan-drift*
 	Compute byte-stable source-scan fingerprint.

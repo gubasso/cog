@@ -1,7 +1,7 @@
 # Rounds for this plan, in execution order. status: backlog | todo | doing | done
 rounds:
   - item: queue-main-primitives
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/plan-queue-runner-main-revision/queue-main-primitives.md
     notes: Schema-generic selection + cog queue-status-set + plan-queue-runner-resolve-plan + setup QUEUE_SCHEMA detection. Pure cog, no skill prose.
