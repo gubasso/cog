@@ -1,0 +1,57 @@
+# Model/effort policy data - Codex.
+# SoT for codex-session / cog codex-runner model+effort.
+# Evidence: docs/reference/models-reference-codex.md (Data collected: 2026-06-19).
+schema_version = 1
+provider = "codex"
+session_default = { model = "gpt-5.5", effort = "medium" }
+subscription_auth_models = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"]
+api_only_model_suffix = "-codex"
+api_only_model_rule = """Models ending in -codex are API-only and must never be pinned for
+subscription-auth Codex. cog codex-runner and codex-session pin only gpt-5.5, gpt-5.4, or
+gpt-5.4-mini under subscription auth."""
+
+[tiers.exploration]
+model = "(session default)"
+effort = "(session default)"
+set_frontmatter = false
+use_when = """Open-ended reasoning: exploring a codebase, planning, asking or answering questions,
+reviewing design, and deciding an approach. The hard reasoning happens during the task."""
+signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
+anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
+examples = ["ask", "plan-writer", "plan-writer-multi", "plan-reviewer", "prex", "review-loop", "review-code-deep"]
+reference_docs = ["docs/reference/models-reference-codex.md"]
+rationale = """Exploration rides the Codex session default: gpt-5.5 at medium effort. Round-1
+evidence treats this as the quality default and balanced recommendation."""
+escalation = """Escalate effort only for stuck, unusually complex, or high-stakes work. High effort
+is not a routine default because it can multiply token burn."""
+
+[tiers.procedural]
+model = "gpt-5.5"
+effort = "medium"
+set_frontmatter = true
+use_when = """Executes a well-structured, detailed procedure where the hard decisions are already
+made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
+signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "executes an existing detailed plan"]
+anti_signals = ["novel design", "open-ended exploration"]
+examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "skill-builder"]
+reference_docs = ["docs/reference/models-reference-codex.md"]
+rationale = """Use gpt-5.5 at medium for procedural work. High is escalation-only, and gpt-5.4 at
+high is an anti-pattern because high effort can erase its per-token saving; reach for gpt-5.5 first."""
+escalation = """Escalate gpt-5.5 effort to high only for unusually hard procedural execution. Do
+not use gpt-5.4 at high as a default cost-saving tier."""
+
+[tiers.routine]
+model = "gpt-5.4-mini"
+effort = "medium"
+set_frontmatter = true
+use_when = """Bare execution of a simple routine where nearly all logic is deterministic and
+delegated to scripts or orchestrators; the model sequences calls and formats output."""
+signals = ["thin orchestration over cog subcommands", "no real reasoning", "fast/cheap is the priority"]
+anti_signals = ["any meaningful judgment", "multi-step design"]
+examples = ["gc", "tsk-new"]
+reference_docs = ["docs/reference/models-reference-codex.md"]
+rationale = """Use gpt-5.4-mini at medium as the chosen planning value for trivial work. NEEDS
+VERIFICATION: Round-1 evidence confirms gpt-5.4-mini pricing, credits, context, max output, and
+cutoff, but its exact effort enumeration, xhigh support, and default remain unconfirmed."""
+escalation = """If a routine starts needing judgment, promote it to gpt-5.5 at medium. Revalidate
+gpt-5.4-mini effort support before treating medium as confirmed model capability."""

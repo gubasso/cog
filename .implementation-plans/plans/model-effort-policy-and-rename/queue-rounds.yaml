@@ -6,7 +6,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/research-current-model-data.md
     notes: Deep web research -> dated Claude + Codex benchmark/pricing/effort references in docs/reference/. No DocsNNotes deletes.
   - item: model-effort-policy-sot
-    status: todo
+    status: done
     depends_on:
       - research-current-model-data
     prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/model-effort-policy-sot.md

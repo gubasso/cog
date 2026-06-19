@@ -33,6 +33,9 @@ touched `SKILL.md` files before finishing.
 
 See `docs/decisions/0008-skill-script-boundary.md`.
 
+Skill `model:`/`effort:` choices follow `docs/reference/model-effort-policy.md`. `model: sonnet` is
+forbidden; use `model: opus` + `effort: low`.
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

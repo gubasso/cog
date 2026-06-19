@@ -16,6 +16,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0009: Machine-facing output contract](decisions/0009-machine-facing-output-contract.md)
 - [ADR-0010: Orchestration env-first](decisions/0010-orchestration-env-first.md)
 - [ADR-0011: Directory plan queue format](decisions/0011-directory-plan-queue-format.md)
+- [ADR-0012: Plan queue revision boundary](decisions/0012-plan-queue-revision-boundary.md)
+- [ADR-0013: Model/Effort Policy](decisions/0013-model-effort-policy.md)
 
 ## Guides
 
@@ -28,6 +30,9 @@ This directory is organized using Diataxis zones.
 - [Install layout](reference/install-layout.md)
 - [Claude models reference](reference/models-reference-claude.md)
 - [Codex / GPT models reference](reference/models-reference-codex.md)
+- [Model/effort policy](reference/model-effort-policy.md)
+- [Claude model/effort policy data](reference/model-effort-claude.toml)
+- [Codex model/effort policy data](reference/model-effort-codex.toml)
 - [Skills](reference/skills.md)
 - [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
