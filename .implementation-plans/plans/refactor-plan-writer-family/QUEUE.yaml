@@ -36,3 +36,9 @@ rounds:
       - consumer-and-docs
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/tests-and-gates.md
     notes: 24-ref test blast radius; stale-reference sweep; just lint + just test.
+  - item: migrate-live-plans
+    status: todo
+    depends_on:
+      - tests-and-gates
+    prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md
+    notes: 'Run DIRECTLY (not the dir-runner): migrate live .implementation-plans/ to the new format (root QUEUE.yaml->queue-plans.yaml, inner QUEUE.yaml->queue-rounds.yaml, single-file plans->dirs), reconcile sibling plans (mechanical+targeted), self-migrate this plan + root ledger last. Status-preserving. Final round.'

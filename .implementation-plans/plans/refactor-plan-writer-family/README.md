@@ -1,6 +1,6 @@
 # Refactor the plan-writer / plan-writer-multi skill family
 
-> Complexity: L (override: 5 rounds) | Rounds: 5 | Generated: 2026-06-19 | Repo: /workspaces/cog |
+> Complexity: L (override: 6 rounds) | Rounds: 6 | Generated: 2026-06-19 | Repo: /workspaces/cog |
 > Satellite repo: /home/gbasso/DocsNNotes | Executor: prex (EF 1.5)
 
 ## Problem Statement
@@ -29,8 +29,9 @@ which `/plan-queue-runner` then drives. Four capability/naming changes are neede
    (everything is a dir) and no longer caps round count.
 4. **Hard queue rename.** Root `.implementation-plans/QUEUE.yaml` → `queue-plans.yaml`; inner
    `plans/<slug>/QUEUE.yaml` → `queue-rounds.yaml`. **Hard cut** everywhere the product references
-   the filename (skills, cog commands, tests, the external spec). No dual-read shim, no automatic
-   migration of existing on-disk plans.
+   the filename (skills, cog commands, tests, the external spec). No dual-read shim in the product.
+   The live on-disk `.implementation-plans/` data is **migrated by this plan's final round**
+   (`migrate-live-plans`) — after all product code is renamed — not left to a manual step.
 
 The complexity heuristic, lifecycle spec, and templates are the **single source of truth** for the
 grade table, round rules, grade→format mapping, and templates — and they live in a **separate repo**
@@ -40,7 +41,7 @@ features #1–#3 are primarily edits THERE. This makes the work a **two-repo cha
 
 ## Strategy
 
-Split bottom-up so foundations land before consumers, in five cohesive `prex` rounds:
+Split bottom-up so foundations land before consumers, in six cohesive `prex` rounds:
 
 1. **`spec-rewrite`** (satellite repo) — rewrite the three external plan-rounds references (the source
    of truth all skills + cog README text point at): directory-only, two-layer model, uncapped rounds,
@@ -54,9 +55,14 @@ Split bottom-up so foundations land before consumers, in five cohesive `prex` ro
    superseding ADR.
 5. **`tests-and-gates`** — update the 24-reference test blast radius, sweep for stale references, and
    prove the change green via `just lint` + `just test`.
+6. **`migrate-live-plans`** — with all product code now on the new convention, migrate the live
+   `.implementation-plans/` data to the new format (rename root + inner queues, convert single-file
+   plans to directories) and reconcile the sibling plans' text to the new code state. Run **directly**
+   (not the dir-runner); self-migrate this plan + the root ledger last.
 
 This order keeps the self-referencing tooling coherent: spec → mechanics → producers → consumer/docs
-→ tests.
+→ tests → live-data migration. The live migration is deliberately isolated to the final round so the
+live data stays old-format (and the in-flight runner keeps working) until every product round lands.
 
 ## Rounds
 
@@ -67,6 +73,7 @@ The authoritative order and status live in this plan's `QUEUE.yaml`. Overview:
 3. `skills-rewrite.md` — update `plan-writer`, the Codex twin, and `plan-writer-multi` to the new model and filenames.
 4. `consumer-and-docs.md` — update `plan-queue-runner` + cog docs; record a superseding ADR.
 5. `tests-and-gates.md` — update the test blast radius; stale-reference sweep; `just lint` + `just test`.
+6. `migrate-live-plans.md` — migrate the live `.implementation-plans/` data + reconcile sibling plans; run directly.
 
 ## Execution Commands
 
@@ -77,6 +84,11 @@ The authoritative order and status live in this plan's `QUEUE.yaml`. Overview:
 # Or target a specific round file directly (robust to the queue rename mid-execution — see Risks):
 /prex -ar .implementation-plans/plans/refactor-plan-writer-family/spec-rewrite.md
 ```
+
+The **final round (`migrate-live-plans`) MUST be run directly** with `/prex -ar
+.implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md` — it renames the queue
+files a directory-level `/plan-queue-runner` pins at setup, so driving it through the dir-runner would
+break the runner's post-round status read.
 
 ## Execution Discipline
 
@@ -90,6 +102,13 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
 
+Rounds 1–5 may be driven by `/plan-queue-runner` (it pins the queue path at setup and passes it
+explicitly, so it keeps working even after Round 2 renames the cog literals). **Round 6
+(`migrate-live-plans`) must instead be invoked directly** with `/prex -ar
+.implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md`, because it renames
+this plan's own inner queue and the root ledger as its final act — the files the dir-runner would
+pin. Commit it with `/gc -a` afterward (the round body runs no git).
+
 ## Scaffolding vs. deliverable (READ THIS — prevents a self-rename mistake)
 
 This plan's OWN scaffolding deliberately uses the **current** convention — this plan's inner queue is
@@ -98,10 +117,15 @@ because the plan runs under the **current** (pre-refactor) tooling and shares th
 with other in-flight plans. The **deliverable** (what the rounds install) is the **new** convention
 (`queue-plans.yaml` / `queue-rounds.yaml`) in the spec, cog code, skills, docs, and tests.
 
-Therefore: when a round says "rename `QUEUE.yaml` → `queue-rounds.yaml`", it means **in the cog
-product / spec / tests** — **NOT** this plan's own `.implementation-plans/.../QUEUE.yaml`. Do NOT
-rename or move this plan's own queue/status files or the live root ledger. Per the settled hard-cut
-decision (Q4), the user migrates all live `.implementation-plans/` data manually.
+Therefore: when **Rounds 1–5** say "rename `QUEUE.yaml` → `queue-rounds.yaml`", they mean **in the cog
+product / spec / tests** — **NOT** this plan's own `.implementation-plans/.../QUEUE.yaml` and **NOT**
+the live root ledger. Rounds 1–5 do NOT rename or move any live `.implementation-plans/` queue/status
+file; the live tree stays old-format so the in-flight runner keeps working.
+
+The **live migration is the job of Round 6 (`migrate-live-plans`)**, run last and directly: it
+migrates every live plan to the new format and, as its final act, self-migrates this plan's own queue
+(`QUEUE.yaml` → `queue-rounds.yaml`) and the root ledger (`.implementation-plans/QUEUE.yaml` →
+`queue-plans.yaml`). This supersedes the original Q4 stance that the user migrates live data manually.
 
 ## Decisions & Constraints
 
@@ -117,9 +141,10 @@ decision (Q4), the user migrates all live `.implementation-plans/` data manually
 - **Two-layer decomposition.** Layer 1 = domain/scope split → one or more flat sibling dirs under
   `plans/`, related via top-level `depends_on` + shared slug prefix. Layer 2 = per-dir grade + round
   split. (Q2/Q3.)
-- **Hard cut rename (Q4):** rename everywhere the product references the filename; no dual-read shim;
-  no automatic migration of existing on-disk plans. The user manually migrates live
-  `.implementation-plans/` data and handles mid-flight execution bootstrap concerns.
+- **Hard cut rename (Q4, revised):** rename everywhere the **product** references the filename; no
+  dual-read shim. The live `.implementation-plans/` data is migrated by the final round
+  (`migrate-live-plans`), run directly and status-preserving, after all product rounds land — it is
+  no longer a manual user step. (This revises the original Q4 stance.)
 - **Multiple dirs are flat siblings** under `plans/` (no nested program/epic folder); reuse the
   existing top-level `plans:` queue machinery — it already supports multiple entries with
   dependencies (Q3).
@@ -134,17 +159,22 @@ decision (Q4), the user migrates all live `.implementation-plans/` data manually
   with a NEW superseding ADR. Markdown fenced code blocks must declare a language. **Do not run git
   commands.**
 - **Round-count override for THIS plan:** raw 18 ÷ EF 1.5 = 12.0 → grade **L**. The legacy L cap of 3
-  rounds is intentionally **NOT** applied — removing that cap is the work itself. 5 cohesive rounds
-  are used, each sized as a good `/prex` chunk. (Per `complexity-heuristic.md` override guidance:
-  documented here with reason.)
+  rounds is intentionally **NOT** applied — removing that cap is the work itself. 6 cohesive rounds
+  are used (the five product rounds plus the live-data migration), each sized as a good `/prex` chunk;
+  6 > 3 dogfoods the headline uncap. (Per `complexity-heuristic.md` override guidance: documented here
+  with reason.)
 
 ## Rejected Alternatives
 
 - **`queue.yaml` / `in-queue.yaml` filenames (the orientation's first proposal).** Rejected in Q1 in
   favor of `queue-plans.yaml` / `queue-rounds.yaml`, which name the schema, are self-describing, and
   sort together.
-- **Dual-read compatibility shim / automatic migration of on-disk plans.** Rejected in Q4 — hard cut;
-  the user migrates live data manually.
+- **Dual-read compatibility shim in the product.** Rejected — hard cut; the product reads only the new
+  names. (A runtime shim stays rejected; the live data is instead brought forward by the one-time
+  scripted final round.)
+- **Manual user migration of live `.implementation-plans/` data (original Q4 stance).** Superseded by
+  this revision: the final round `migrate-live-plans` performs the migration deterministically, run
+  directly and status-preserving, so the repo is never left half-migrated.
 - **Nested program/epic folder for multiple plan dirs.** Rejected in Q3 — flat sibling dirs related
   via the top-level queue's `depends_on` reuse existing machinery and avoid a new hierarchy that
   would break the one-level `plans/<slug>/` path assumption in `plan-queue-runner` and `/prex`.
@@ -162,12 +192,15 @@ decision (Q4), the user migrates all live `.implementation-plans/` data manually
 
 - **Self-reference / bootstrap hazard (accepted, handled).** This plan is executed by
   `/plan-queue-runner` + `/prex`, which read THIS plan's own queue *by filename*. Round 2 edits the
-  cog code that resolves the inner-queue filename. Mitigations: (a) this plan's own queue stays
-  `QUEUE.yaml` and is shared with the live root ledger (see "Scaffolding vs. deliverable"); (b) the
-  loop pins `QUEUE_PATH` at runner setup, so a runner already in flight keeps working after Round 2;
-  (c) if you RESTART the dir-level runner after Round 2 lands with updated cog, either run remaining
-  rounds directly with `/prex -ar <round-file>.md` (selection does not depend on the queue filename)
-  or migrate this plan's `QUEUE.yaml` yourself. The user owns live-data migration (Q4).
+  cog code that resolves the inner-queue filename, and Round 6 renames the live queue files
+  themselves. Mitigations: (a) through Rounds 1–5 this plan's own queue stays `QUEUE.yaml` and the
+  live root ledger is untouched (see "Scaffolding vs. deliverable"); (b) the loop pins `QUEUE_PATH` at
+  runner setup, so a runner already in flight keeps working after Round 2; (c) if you RESTART the
+  dir-level runner after Round 2 lands with updated cog, run remaining rounds directly with `/prex -ar
+  <round-file>.md` (selection does not depend on the queue filename); (d) **Round 6 is always run
+  directly**, never via the dir-runner — it renames this plan's own queue and the root ledger as its
+  final act, so there is no pinned-path post-round read left to break. Round 6 writes its two `done`
+  flips into the already-renamed files.
 - **Two repos (handled).** Round 1 edits `/home/gbasso/DocsNNotes` (satellite-repo work). This plan's
   inner queue declares `repos: [/home/gbasso/DocsNNotes]` so `/plan-queue-runner`'s clean-tree guard
   and `/gc -a --repo /home/gbasso/DocsNNotes` cover the satellite. Rounds 2–5 do not touch the
@@ -178,13 +211,19 @@ decision (Q4), the user migrates all live `.implementation-plans/` data manually
 - **Reserved-slug collision (handled in Round 2).** New meta filename stems are `queue-plans` /
   `queue-rounds`; the reserved-slug guard (currently `readme`, `queue`, `strategy`) is extended so a
   plan slug or round topic cannot collide with the new meta files.
-- **Live on-disk plans (out of scope, noted).** The live root ledger
+- **Live on-disk plans (in scope via Round 6, status-preserving).** The live root ledger
   `.implementation-plans/QUEUE.yaml` and existing plans (including single-file `.md` plans like
-  `man-page-sync-precommit-hook.md`) still use the old name/format; per Q4 the user migrates these
-  manually. They are NOT edited by this plan.
+  `man-page-sync-precommit-hook.md`) keep the old name/format through Rounds 1–5, then Round 6
+  migrates them: rename the root + inner queues, convert the two single-file plans to directories, and
+  reconcile sibling-plan text (mechanical + targeted) to the new code state. Round 6 preserves every
+  existing round/plan status; the already-`done` `skills-under-skills-env-first` is renamed but its
+  narrative is left as history.
 
 ## Completion
 
-When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan
-(`item: refactor-plan-writer-family`) `done` in the top-level `.implementation-plans/QUEUE.yaml`.
-Nothing moves on disk.
+The plan is complete when Round 6 (`migrate-live-plans`) finishes. By then the live tree has been
+migrated, so the final bookkeeping lands in the **renamed** files: set `migrate-live-plans` `done` in
+this plan's `queue-rounds.yaml` and set this plan (`item: refactor-plan-writer-family`) `done` in the
+top-level `.implementation-plans/queue-plans.yaml`. (Rounds 1–5 each flip only their own round status
+in this plan's then-current `QUEUE.yaml`; the plan-level `done` flip is Round 6's, in the renamed
+ledger.) The only on-disk movement is the Round-6 renames.

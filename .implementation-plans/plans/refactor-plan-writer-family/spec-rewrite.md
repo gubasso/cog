@@ -1,6 +1,6 @@
 # Rewrite the external plan-rounds spec for the new model
 
-> Plan: refactor-plan-writer-family | Round: 1 of 5 | Complexity: L | Generated: 2026-06-19 |
+> Plan: refactor-plan-writer-family | Round: 1 of 6 | Complexity: L | Generated: 2026-06-19 |
 > Repo: /workspaces/cog | Executor: prex (EF 1.5)
 
 ## Context

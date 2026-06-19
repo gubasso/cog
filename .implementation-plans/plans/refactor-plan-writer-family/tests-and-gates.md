@@ -1,6 +1,6 @@
 # Update the test blast radius and run the quality gates
 
-> Plan: refactor-plan-writer-family | Round: 5 of 5 | Complexity: L | Generated: 2026-06-19 |
+> Plan: refactor-plan-writer-family | Round: 5 of 6 | Complexity: L | Generated: 2026-06-19 |
 > Repo: /workspaces/cog | Executor: prex (EF 1.5)
 
 ## Context
@@ -12,7 +12,8 @@ of truth for quality gates; this final round lands the test updates, sweeps for 
 proves the whole change green via `just lint` and `just test`.
 
 Do NOT touch any live `.implementation-plans/` data, including this plan's own `QUEUE.yaml`, except the
-required status flips (see the plan README's "Scaffolding vs. deliverable").
+required status flip for this round (see the plan README's "Scaffolding vs. deliverable"). The live
+data migration is the **next round** (`migrate-live-plans`), not this one.
 
 ## Previous Rounds
 
@@ -26,8 +27,8 @@ assert the new names and the repo must be free of stale references.
 - **IN scope:** update test files that reference `QUEUE.yaml`, fix the literal-assertion tests, run a
   stale-reference sweep across the repo, run the lint + test gates, and resolve any failures
   introduced by Rounds 1–4.
-- **OUT of scope:** live `.implementation-plans/` data (migrated manually by the user) and the
-  external satellite repo (handled in Round 1).
+- **OUT of scope:** live `.implementation-plans/` data (migrated in Round 6, `migrate-live-plans`) and
+  the external satellite repo (handled in Round 1).
 
 ## Current State
 
@@ -113,10 +114,9 @@ In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status`
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status` to `done`.
-2. All rounds are now done, so in the top-level `.implementation-plans/QUEUE.yaml` set this plan's
-   (`item: refactor-plan-writer-family`) `status` to `done`. Leave the plan directory in place —
-   nothing moves on disk.
+In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status` to `done`. Do NOT
+flip the plan-level status yet — Round 6 (`migrate-live-plans`) is still pending and owns the
+plan-level `done` flip (in the renamed `queue-plans.yaml`). Nothing moves on disk this round.
 
 ## Acceptance Criteria
 
@@ -128,9 +128,12 @@ In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status`
       remains.
 - [ ] `cog skill-lint` passes for the touched skills; `just lint` and `just test` both pass (or
       documented focused fallback for any pre-existing unrelated failure).
-- [ ] This plan's `QUEUE.yaml` shows round `tests-and-gates` as `done`.
-- [ ] The top-level `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] This plan's `QUEUE.yaml` shows round `tests-and-gates` as `done` (the plan-level `done` flip is
+      deferred to Round 6).
 
 ## Next Round
 
-This is the final round.
+`migrate-live-plans` — migrate the live `.implementation-plans/` data to the new format and reconcile
+the sibling plans. Run it directly (`/prex -ar
+.implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md`), not via the
+dir-runner.

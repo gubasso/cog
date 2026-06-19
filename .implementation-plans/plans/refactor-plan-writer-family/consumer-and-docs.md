@@ -1,6 +1,6 @@
 # Update the queue consumer, cog docs, and record a superseding ADR
 
-> Plan: refactor-plan-writer-family | Round: 4 of 5 | Complexity: L | Generated: 2026-06-19 |
+> Plan: refactor-plan-writer-family | Round: 4 of 6 | Complexity: L | Generated: 2026-06-19 |
 > Repo: /workspaces/cog | Executor: prex (EF 1.5)
 
 ## Context

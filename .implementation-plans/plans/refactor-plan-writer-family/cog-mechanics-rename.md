@@ -1,6 +1,6 @@
 # Rename queue files in cog deterministic mechanics
 
-> Plan: refactor-plan-writer-family | Round: 2 of 5 | Complexity: L | Generated: 2026-06-19 |
+> Plan: refactor-plan-writer-family | Round: 2 of 6 | Complexity: L | Generated: 2026-06-19 |
 > Repo: /workspaces/cog | Executor: prex (EF 1.5)
 
 ## Context

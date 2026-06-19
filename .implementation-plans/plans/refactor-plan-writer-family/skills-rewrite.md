@@ -1,6 +1,6 @@
 # Rewrite the plan-writer skill family for the new model
 
-> Plan: refactor-plan-writer-family | Round: 3 of 5 | Complexity: L | Generated: 2026-06-19 |
+> Plan: refactor-plan-writer-family | Round: 3 of 6 | Complexity: L | Generated: 2026-06-19 |
 > Repo: /workspaces/cog | Executor: prex (EF 1.5)
 
 ## Context
