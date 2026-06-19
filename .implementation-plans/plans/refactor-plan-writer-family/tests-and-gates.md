@@ -40,7 +40,7 @@ assert the new names and the repo must be free of stale references.
   `.implementation-plans/QUEUE.yaml` at lines ~20, 25, 37 (e.g. `grep -F "plans: []"
   "${repo}/.implementation-plans/QUEUE.yaml"` and `.queue_path | endswith(".implementation-plans/QUEUE.yaml")`).
   MUST become `queue-plans.yaml`.
-- `/workspaces/cog/test/integration/plan_queue_runner_setup.bats` — writes `repo/plan/QUEUE.yaml` and
+- `/workspaces/cog/test/integration/runner_queue_setup.bats` — writes `repo/plan/QUEUE.yaml` and
   asserts the resolved `queue_path` ends with `/plan/QUEUE.yaml` (lines ~17, 31, 40). MUST become
   `queue-rounds.yaml` (write `repo/plan/queue-rounds.yaml`; assert `endswith("/plan/queue-rounds.yaml")`).
 
@@ -70,7 +70,7 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: tests-and-gates`) `
 ### Step 1: Fix the literal-assertion integration tests
 
 - `plan_init.bats`: change every asserted root-queue path to `.implementation-plans/queue-plans.yaml`.
-- `plan_queue_runner_setup.bats`: change the written fixture and the resolved-path assertion to
+- `runner_queue_setup.bats`: change the written fixture and the resolved-path assertion to
   `queue-rounds.yaml` (e.g., write `repo/plan/queue-rounds.yaml`; assert `queue_path` ends with
   `/plan/queue-rounds.yaml`).
 
@@ -105,7 +105,7 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: tests-and-gates`) `
 
 - Run `cog skill-lint` on each skill touched in Rounds 3–4
   (`skills/claude/plan-writer/SKILL.md`, `skills/codex/plan-writer/SKILL.md`,
-  `skills/claude/plan-writer-multi/SKILL.md`, `skills/claude/plan-queue-runner/SKILL.md`).
+  `skills/claude/plan-writer-multi/SKILL.md`, `skills/claude/runner-queue/SKILL.md`).
 - Run `just lint` (pre-commit, all files) and `just test` (unit + integration). Resolve any failures
   surfaced by Rounds 1–4 (skill-lint, markdownlint MD040, bats assertions). The change is complete
   only when both are green. If a gate fails for a pre-existing, unrelated reason, capture the exact
@@ -120,7 +120,7 @@ plan-level `done` flip (in the renamed `queue-plans.yaml`). Nothing moves on dis
 
 ## Acceptance Criteria
 
-- [ ] `plan_init.bats` asserts `queue-plans.yaml`; `plan_queue_runner_setup.bats` asserts
+- [ ] `plan_init.bats` asserts `queue-plans.yaml`; `runner_queue_setup.bats` asserts
       `queue-rounds.yaml`.
 - [ ] No `QUEUE.yaml` reference remains in product code, skills, cog docs, or tests (live
       `.implementation-plans/` data and intentional history excluded).

@@ -1,10 +1,10 @@
 ---
-name: plan-queue-runner
+name: runner-queue
 description: >
   Drive either an inner rounds: implementation queue from a plan directory or
   queue-rounds.yaml, or a top-level plans: main queue, to completion. Use when
   the user asks to "run the queue", "run the plan queue", "execute the plan
-  rounds", "drive the plan directory", or invokes "plan-queue-runner".
+  rounds", "drive the plan directory", or invokes "runner-queue".
   Dispatches queued /prex rounds to fresh claude-delegate subagents, verifies
   queue status, commits with /gc -a across every repo the item touched, runs the
   plans-revision boundary, and loops until complete or failed closed.
@@ -13,9 +13,9 @@ disable-model-invocation: true
 allowed-tools: Bash Read Agent Skill
 ---
 
-<!-- trigger-tests: "plan-queue-runner", "run the queue", "run the plan queue", "execute the plan rounds", "drive the plan directory" -->
+<!-- trigger-tests: "runner-queue", "run the queue", "run the plan queue", "execute the plan rounds", "drive the plan directory" -->
 
-# Plan Queue Runner
+# Runner Queue
 
 Drive a plan-writer implementation queue to completion. This skill runs **inline** in the
 orchestrating session at depth 0. In `rounds:` mode it preserves the existing per-round behavior:
@@ -46,16 +46,16 @@ guaranteed by the queue-status check below.
   resolve each selected plan to its executable form, drive the resolved inner queue to completion,
   flip the main plan `done`, commit, revise, and loop.
 
-`cog plan-queue-runner-setup` auto-detects schema and writes `QUEUE_SCHEMA` to `RUN_DIR/ctx.env`. For
+`cog runner-queue-setup` auto-detects schema and writes `QUEUE_SCHEMA` to `RUN_DIR/ctx.env`. For
 `plans:` it also writes `MAIN_QUEUE_PATH`. A queue file with neither or both top-level schema keys
 fails closed in setup. Live data is directory-only in this round: every main plan resolves to
 `kind: "inner_queue"` backed by `<plan-dir>/queue-rounds.yaml`; any other form fails closed in
-`cog plan-queue-runner-resolve-plan`.
+`cog runner-queue-resolve-plan`.
 
 Plan directories are **flat siblings** directly under `.implementation-plans/plans/`
 (`plans/<slug>/`); ordering between plans lives only in the top-level `queue-plans.yaml` `depends_on`
 field, never in the filesystem. The runner resolves each main-plan entry to exactly one
-`plans/<slug>/` directory — `cog plan-queue-runner-resolve-plan` fails closed if a resolved target is
+`plans/<slug>/` directory — `cog runner-queue-resolve-plan` fails closed if a resolved target is
 a nested directory rather than a direct child of `plans/`.
 
 DO NOT delegate the main loop to a subagent. Main loop = depth 0; each round delegate = +1; each
@@ -80,7 +80,7 @@ rounds:
 
 When present, the clean-tree guard covers every declared repo and the commit step runs
 `/gc -a --repo <sat>...` so `/gc` commits both the queue flip in `REPO_ROOT` and artifacts in
-satellites. `plan-queue-runner-setup` and `plan-queue-runner-resolve-plan` persist satellites as
+satellites. `runner-queue-setup` and `runner-queue-resolve-plan` persist satellites as
 newline-joined `REPOS`; rebuild `--repo` flags from it whenever shelling out:
 
 ```bash
@@ -105,9 +105,9 @@ mode than `bypassPermissions`; restart it under the intended mode after confirmi
 ## Usage
 
 ```bash
-/plan-queue-runner .implementation-plans/queue-plans.yaml
-/plan-queue-runner .implementation-plans/plans/build-orion-nixos-config
-/plan-queue-runner --max 1 .implementation-plans/queue-plans.yaml
+/runner-queue .implementation-plans/queue-plans.yaml
+/runner-queue .implementation-plans/plans/build-orion-nixos-config
+/runner-queue --max 1 .implementation-plans/queue-plans.yaml
 ```
 
 In `rounds:` mode, `--max N` stops after `N` successfully committed rounds in this invocation, and
@@ -124,14 +124,14 @@ word-splitting, matching the convention used by `/prex` and the `.implementation
 ## Algorithm
 
 1. Parse only `-n|--dry-run`, `--max N` or `--max=N`, and one plan directory or queue path.
-2. Run `cog plan-queue-runner-setup "${ARGUMENTS:-}"` and capture `RUN_DIR` from its `RUN_DIR=<path>`
+2. Run `cog runner-queue-setup "${ARGUMENTS:-}"` and capture `RUN_DIR` from its `RUN_DIR=<path>`
    stdout line, then source `"$RUN_DIR/ctx.env"`. Shell variables do not persist between tool calls,
    so do this in one Bash block and re-capture `RUN_DIR` the same way in any later block that needs
    it before `ctx.env` is sourced:
 
    ```bash
-   RUN_DIR="$(cog plan-queue-runner-setup "${ARGUMENTS:-}" | sed -n 's/^RUN_DIR=//p')"
-   [ -n "$RUN_DIR" ] || { echo "ERROR: plan-queue-runner-setup did not emit RUN_DIR" >&2; exit 1; }
+   RUN_DIR="$(cog runner-queue-setup "${ARGUMENTS:-}" | sed -n 's/^RUN_DIR=//p')"
+   [ -n "$RUN_DIR" ] || { echo "ERROR: runner-queue-setup did not emit RUN_DIR" >&2; exit 1; }
    . "$RUN_DIR/ctx.env"
    echo "QUEUE_SCHEMA=$QUEUE_SCHEMA"
    ```
@@ -278,8 +278,8 @@ Parse the captured line(s) with the helper:
 
 ```bash
 . "$RUN_DIR/ctx.env"
-cog plan-queue-runner-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" || exit 1
-cog plan-queue-runner-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" --json
+cog runner-queue-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" || exit 1
+cog runner-queue-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" --json
 ```
 
 The helper scans every `COMMIT_*` line. A single legacy line with no `repo=` suffix yields one
@@ -320,7 +320,7 @@ selection JSON in the same block (do not rely on a prior assignment):
 : "${RUN_COUNT:=0}"
 PLAN_ITEM="$(jq -r '.selected.item' "$RUN_DIR/main-select-$RUN_COUNT.json")"
 SAFE_ITEM="$(printf '%s' "$PLAN_ITEM" | tr -c 'A-Za-z0-9_.-' '_')"
-cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH" \
+cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH" \
   --item "$PLAN_ITEM" "$RUN_DIR/resolve-$SAFE_ITEM.json"
 ```
 
@@ -362,7 +362,7 @@ verify-only and is owned by the round's `/prex`.
 Commit the plan's accumulated work plus the main-queue status flip with the existing foreground
 `claude-delegate` `/gc -a` pattern. Build the `--repo` flags from `INNER_REPOS` (still in
 `inner.env`) so the commit covers the selected plan's satellites; `/gc -a` always commits `REPO_ROOT`
-itself, which carries the main-queue `done` flip. Parse with `cog plan-queue-runner-parse-commit`,
+itself, which carries the main-queue `done` flip. Parse with `cog runner-queue-parse-commit`,
 run **Plans-Revision Boundary**, increment the plan-level counter, honor `--max N`, and loop. In main
 mode an inner queue may run many rounds, but the plan-level `--max` counter increments only after the
 main plan is flipped, committed, and revision completes.
@@ -384,7 +384,7 @@ cog queue-select --schema plans --queue "$MAIN_QUEUE_PATH" --repo-root "$REPO_RO
   "${REPO_FLAGS[@]}" "$RUN_DIR/main-select-dry-run.json"
 PLAN_ITEM="$(jq -r '.selected.item // empty' "$RUN_DIR/main-select-dry-run.json")"
 SAFE_ITEM="$(printf '%s' "$PLAN_ITEM" | tr -c 'A-Za-z0-9_.-' '_')"
-cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH" \
+cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH" \
   --item "$PLAN_ITEM" "$RUN_DIR/resolve-$SAFE_ITEM.json"
 ```
 

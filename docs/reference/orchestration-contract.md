@@ -52,7 +52,7 @@ top-level queue-plans.yaml plan status == done
 
 Plan directories are flat siblings, a single level under `.implementation-plans/plans/`; ordering
 between plans lives only in `queue-plans.yaml` `depends_on`, never in the filesystem. The runner and
-the revision boundary both rely on this: `cog plan-queue-runner-resolve-plan` requires each resolved
+the revision boundary both rely on this: `cog runner-queue-resolve-plan` requires each resolved
 plan to be a direct child of `plans/`, and `cog plans-revision-scan` fails closed on any nested plan.
 
 A queue runner may invoke a revision subagent as a foreground sibling boundary after a committed item.

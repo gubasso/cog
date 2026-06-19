@@ -46,48 +46,48 @@ plans:
 EOF
 }
 
-@test "cog plan-queue-runner-resolve-plan resolves @ directory and repos" {
+@test "cog runner-queue-resolve-plan resolves @ directory and repos" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar @plans/with-at/"
 
-  run cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
 
   assert_success
   printf '%s\n' "$output" | jq -e --arg root "$REPO_ROOT" \
     '.ok == true and .kind == "inner_queue" and .target_path == ($root + "/plans/with-at") and .inner_queue_path == ($root + "/plans/with-at/queue-rounds.yaml") and .repos == ["/tmp/satellite"]' >/dev/null
 }
 
-@test "cog plan-queue-runner-resolve-plan resolves bare directory and missing repos as empty array" {
+@test "cog runner-queue-resolve-plan resolves bare directory and missing repos as empty array" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar plans/no-repos/"
 
-  run cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
 
   assert_success
   printf '%s\n' "$output" | jq -e --arg root "$REPO_ROOT" \
     '.kind == "inner_queue" and .target_path == ($root + "/plans/no-repos") and .repos == []' >/dev/null
 }
 
-@test "cog plan-queue-runner-resolve-plan fails closed for bad targets" {
+@test "cog runner-queue-resolve-plan fails closed for bad targets" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
 
   write_main_queue "$queue" "/prex -ar file-target.md"
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target is not a directory"* ]]
 
   write_main_queue "$queue" "/prex -ar plans/no-queue"
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target has no queue-rounds.yaml"* ]]
 
   write_main_queue "$queue" "/prex -ar plans/missing"
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target not found"* ]]
 }
 
-@test "cog plan-queue-runner-resolve-plan fails closed on a nested plan directory" {
+@test "cog runner-queue-resolve-plan fails closed on a nested plan directory" {
   local repo="${BATS_TEST_TMPDIR}/nested-repo"
   mkdir -p "$repo/.implementation-plans/plans/good" "$repo/.implementation-plans/plans/parent/child"
   printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
@@ -95,36 +95,36 @@ EOF
   local queue="$repo/.implementation-plans/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
 
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
 
   assert_failure
   [[ $stderr == *"nested plan directory detected"* ]]
 }
 
-@test "cog plan-queue-runner-resolve-plan resolves a flat canonical plan" {
+@test "cog runner-queue-resolve-plan resolves a flat canonical plan" {
   local repo="${BATS_TEST_TMPDIR}/flat-repo"
   mkdir -p "$repo/.implementation-plans/plans/good"
   printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
   local queue="$repo/.implementation-plans/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
 
-  run cog plan-queue-runner-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
+  run cog runner-queue-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
 
   assert_success
   printf '%s\n' "$output" | jq -e --arg root "$repo" \
     '.kind == "inner_queue" and .target_path == ($root + "/.implementation-plans/plans/good")' >/dev/null
 }
 
-@test "cog plan-queue-runner-resolve-plan fails closed for unsupported missing and duplicate items" {
+@test "cog runner-queue-resolve-plan fails closed for unsupported missing and duplicate items" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
 
   write_main_queue "$queue" "/other -ar plans/bare"
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"unsupported plan prompt"* ]]
 
   write_main_queue "$queue" "/prex -ar plans/bare"
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item missing --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item missing --json
   assert_failure
   [[ $stderr == *"main queue item not found"* ]]
 
@@ -141,7 +141,7 @@ plans:
     prompt: /prex -ar plans/bare
     notes: note
 EOF
-  run --separate-stderr cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item same --json
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item same --json
   assert_failure
   [[ $stderr == *"duplicate queue items"* ]]
 }

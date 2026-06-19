@@ -70,7 +70,7 @@ Repoint these to `$(cog skill-refs path <rel>)` (rel = path under `skill-refs/`,
 - `skills/claude/prex/SKILL.md` + `skills/claude/prex/references/stage-2-through-5-details.md` —
   `skills-and-orchestration.md`, `skill-authoring/skill-script-extraction.md`,
   `orchestration/in-session-vs-headless-delegation.md`, `orchestration/` tree, and `codex-conventions.md`.
-- `skills/claude/plan-queue-runner/SKILL.md` — `orchestration/in-session-vs-headless-delegation.md`.
+- `skills/claude/runner-queue/SKILL.md` — `orchestration/in-session-vs-headless-delegation.md`.
 - `skills/codex/implementation-reviewer/SKILL.md` — `implementation-review/` tree
   (`report-template.md`, `severity-levels.md`) and `orchestration/verdict-model.md`.
 - `.claude/skills/skill-builder/SKILL.md` — generic `$DOCS_NOTES_REPO` resolution block; if it points

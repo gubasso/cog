@@ -39,9 +39,6 @@ _cog() {
     osc-preflight
     osc-probe-binary
     plan-init
-    plan-queue-runner-parse-commit
-    plan-queue-runner-resolve-plan
-    plan-queue-runner-setup
     plan-slug
     plan-writer-multi-setup
     plans-revision-scan
@@ -67,6 +64,9 @@ _cog() {
     review-scope
     review-validate-findings
     rundir
+    runner-queue-parse-commit
+    runner-queue-resolve-plan
+    runner-queue-setup
     skill-builder-scaffold
     skill-builder-validate
     skill-lint

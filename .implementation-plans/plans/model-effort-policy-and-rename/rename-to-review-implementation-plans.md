@@ -6,7 +6,7 @@
 ## Context
 
 The project-local skill `plans-revision` reconciles implementation-plan queues with repo state after
-a committed plan-queue-runner item. It is the **only** skill using `model: sonnet` (+ `effort:
+a committed runner-queue item. It is the **only** skill using `model: sonnet` (+ `effort:
 high`) — the outlier the new model/effort policy retires. This round performs the atomic rename of
 that skill **and its sibling `cog` commands** to `review-implementation-plans`, and re-grades the
 skill to `model: opus` + `effort: low` (the canonical "never sonnet → opus+low" worked example).
@@ -34,7 +34,7 @@ every occurrence rather than trusting a fixed list.
     `review-implementation-plans-scan` / `review-implementation-plans-verify`: command modules,
     handler/self-check identifiers, line-2 `desc:` sentinels, usage/help strings, and (for
     consistency) the internal `fn_plans_revision.sh` helpers.
-  - Update every reference: `plan-queue-runner/SKILL.md`, ADR-0012, `docs/reference/cli-commands.md`,
+  - Update every reference: `runner-queue/SKILL.md`, ADR-0012, `docs/reference/cli-commands.md`,
     completions, man page, integration tests, and help snapshots.
   - Regenerate completions + man + help snapshots; run `cog skill-lint` and the integration suite.
   - **Gated final cleanup:** after everything above verifies, delete the now-superseded model-
@@ -66,7 +66,7 @@ every occurrence rather than trusting a fixed list.
   (`_queue_schema`, `_inventory_json`, `_repo_fingerprint`, `_plans_fingerprint`, …). Internal; rename
   for naming consistency (file → `fn_review_implementation_plans.sh`, functions →
   `cog::fn::review_implementation_plans_*`) and update all callers in the two command modules.
-- `/workspaces/cog/skills/claude/plan-queue-runner/SKILL.md` — ~13 references to the skill name and
+- `/workspaces/cog/skills/claude/runner-queue/SKILL.md` — ~13 references to the skill name and
   the path `.claude/skills/plans-revision/SKILL.md`, plus references to `cog plans-revision-scan` /
   `-verify` (around lines 10, 56, 346–394).
 - `/workspaces/cog/docs/decisions/0012-plan-queue-revision-boundary.md` — prose references to
@@ -140,7 +140,7 @@ In its `SKILL.md`: set `name: review-implementation-plans`, `model: opus`, `effo
 
 ### Step 4: Update all consumers
 
-- `skills/claude/plan-queue-runner/SKILL.md`: every `plans-revision` skill reference → `review-
+- `skills/claude/runner-queue/SKILL.md`: every `plans-revision` skill reference → `review-
   implementation-plans`; the path `.claude/skills/plans-revision/SKILL.md` → `.claude/skills/
   review-implementation-plans/SKILL.md`; `cog plans-revision-scan/verify` → the new command names.
 - `docs/decisions/0012-plan-queue-revision-boundary.md`: update the path/command strings only.
@@ -199,7 +199,7 @@ and report it, rather than deleting.
       review-implementation-plans`, `model: opus`, `effort: low`; the old skill directory is gone.
 - [ ] `cog review-implementation-plans-scan` and `cog review-implementation-plans-verify` resolve and
       run; the old command names no longer exist; line-2 `desc:` sentinels are present and reworded.
-- [ ] `plan-queue-runner/SKILL.md`, ADR-0012, and `cli-commands.md` reference the new skill/command
+- [ ] `runner-queue/SKILL.md`, ADR-0012, and `cli-commands.md` reference the new skill/command
       names; the skill invocation path is updated.
 - [ ] Renamed bats suites pass; `skills_claude.bats` and `help_snapshots.bats` are updated and green.
 - [ ] `cog skill-lint` passes for the renamed skill; completions/man/help-snapshots regenerated.

@@ -23,7 +23,7 @@ The architecture being documented (verified facts):
   still says foreground "can spawn at any depth" — it lags the v2.1.181 release; treat 5 as the cap.
 - **Design corollary.** Chain skills cheaply via Skill-inline (0 depth); spend an Agent-subagent level
   only at true isolation boundaries; flatten beyond depth 5 via durable-queue iteration (the pattern
-  `plan-queue-runner` already embodies) — the durable-queue **trampoline** is the documented future
+  `runner-queue` already embodies) — the durable-queue **trampoline** is the documented future
   option for true unbounded composition.
 - **Env-first guarantee + delegate-and-verify.** The no-backgrounding guarantee is session env around
   `claude-session`; cog asserts it fail-closed. Every orchestration boundary verifies a durable

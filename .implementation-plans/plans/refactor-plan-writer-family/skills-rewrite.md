@@ -14,7 +14,7 @@ Round 1).
 
 Skills in scope this round: `skills/claude/plan-writer` (canonical), `skills/codex/plan-writer`
 (read-only non-interactive twin), `skills/claude/plan-writer-multi` (Claude-only coordinator). There
-is NO `skills/codex/plan-writer-multi`. The consumer `plan-queue-runner` is Round 4.
+is NO `skills/codex/plan-writer-multi`. The consumer `runner-queue` is Round 4.
 
 Do NOT rename this plan's own `queue-rounds.yaml` (see the plan README's "Scaffolding vs. deliverable"); this
 round edits **skill source** only.
@@ -22,7 +22,7 @@ round edits **skill source** only.
 ## Previous Rounds
 
 Round 1 rewrote the external spec (directory-only, two-layer, uncapped, renamed queues). Round 2
-renamed the cog mechanics: `cog plan-init` now writes `queue-plans.yaml`; `cog plan-queue-runner-setup`
+renamed the cog mechanics: `cog plan-init` now writes `queue-plans.yaml`; `cog runner-queue-setup`
 resolves `queue-rounds.yaml`; `fn_queue.sh` error strings are generic; the reserved-slug guard covers
 `queue-plans` / `queue-rounds`. The skills now point at the new spec sections and call the renamed cog
 mechanics.
@@ -34,7 +34,7 @@ mechanics.
   two-layer model, and the new queue filenames; remove single-file (Phase 6c / Template E) handling;
   **remove the `plan-writer-multi` EF-sanity gate** that auto-rejects 4+ prex rounds; run
   `cog skill-lint` on each touched SKILL.md.
-- **OUT of scope:** the consumer `plan-queue-runner` (Round 4), cog docs + ADR (Round 4), tests
+- **OUT of scope:** the consumer `runner-queue` (Round 4), cog docs + ADR (Round 4), tests
   (Round 5), any live `.implementation-plans/` data.
 
 ## Current State
@@ -169,5 +169,5 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: skills-rewrite`) `s
 
 ## Next Round
 
-Round 4 updates the consumer `plan-queue-runner` (reads the inner queue), the cog docs that mention
+Round 4 updates the consumer `runner-queue` (reads the inner queue), the cog docs that mention
 the queue postcondition, and records a superseding ADR for the format change + rename.

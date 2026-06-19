@@ -7,7 +7,7 @@
 
 The `plan-writer` skill family — Claude `plan-writer`, its read-only Codex twin, and the Claude-only
 `plan-writer-multi` coordinator — generates implementation plans under `.implementation-plans/`,
-which `/plan-queue-runner` then drives. Four capability/naming changes are needed:
+which `/runner-queue` then drives. Four capability/naming changes are needed:
 
 1. **Retire single-file plans.** Today S/M-grade plans are written as a single file
    `plans/<slug>.md` and L/XL plans as a directory `plans/<slug>/`. **Every implementation plan must
@@ -51,7 +51,7 @@ Split bottom-up so foundations land before consumers, in six cohesive `prex` rou
 3. **`skills-rewrite`** — update the producer skills (`plan-writer`, the Codex twin,
    `plan-writer-multi`) to the directory-always / uncapped / two-layer model and the new filenames;
    **remove the `plan-writer-multi` EF-sanity gate** that auto-rejects 4+ prex rounds.
-4. **`consumer-and-docs`** — update the consumer `plan-queue-runner` + cog docs, and record a new
+4. **`consumer-and-docs`** — update the consumer `runner-queue` + cog docs, and record a new
    superseding ADR.
 5. **`tests-and-gates`** — update the 24-reference test blast radius, sweep for stale references, and
    prove the change green via `just lint` + `just test`.
@@ -71,7 +71,7 @@ The authoritative order and status live in this plan's `queue-rounds.yaml`. Over
 1. `spec-rewrite.md` — rewrite the external plan-rounds spec (satellite repo `/home/gbasso/DocsNNotes`).
 2. `cog-mechanics-rename.md` — rename queue filename literals + generalize error strings in cog; update the reserved-slug guard.
 3. `skills-rewrite.md` — update `plan-writer`, the Codex twin, and `plan-writer-multi` to the new model and filenames.
-4. `consumer-and-docs.md` — update `plan-queue-runner` + cog docs; record a superseding ADR.
+4. `consumer-and-docs.md` — update `runner-queue` + cog docs; record a superseding ADR.
 5. `tests-and-gates.md` — update the test blast radius; stale-reference sweep; `just lint` + `just test`.
 6. `migrate-live-plans.md` — migrate the live `.implementation-plans/` data + reconcile sibling plans; run directly.
 
@@ -87,7 +87,7 @@ The authoritative order and status live in this plan's `queue-rounds.yaml`. Over
 
 The **final round (`migrate-live-plans`) MUST be run directly** with `/prex -ar
 .implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md` — it renames the queue
-files a directory-level `/plan-queue-runner` pins at setup, so driving it through the dir-runner would
+files a directory-level `/runner-queue` pins at setup, so driving it through the dir-runner would
 break the runner's post-round status read.
 
 ## Execution Discipline
@@ -102,7 +102,7 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
 
-Rounds 1–5 may be driven by `/plan-queue-runner` (it pins the queue path at setup and passes it
+Rounds 1–5 may be driven by `/runner-queue` (it pins the queue path at setup and passes it
 explicitly, so it keeps working even after Round 2 renames the cog literals). **Round 6
 (`migrate-live-plans`) must instead be invoked directly** with `/prex -ar
 .implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md`, because it renames
@@ -150,7 +150,7 @@ migrates every live plan to the new format and, as its final act, self-migrates 
   existing top-level `plans:` queue machinery — it already supports multiple entries with
   dependencies (Q3).
 - **Skills in scope:** `skills/claude/plan-writer`, `skills/codex/plan-writer` (read-only twin),
-  `skills/claude/plan-writer-multi`, plus the coupled consumer `skills/claude/plan-queue-runner`.
+  `skills/claude/plan-writer-multi`, plus the coupled consumer `skills/claude/runner-queue`.
   There is NO `skills/codex/plan-writer-multi` (the multi coordinator is Claude-only).
 - **Repo conventions (CLAUDE.md / AGENTS.md):** skills keep judgment/sequencing in prose;
   deterministic mechanics live in `cog` subcommands and `cog::fn::*` helpers (ADR 0008). Validate
@@ -178,9 +178,9 @@ migrates every live plan to the new format and, as its final act, self-migrates 
   directly and status-preserving, so the repo is never left half-migrated.
 - **Nested program/epic folder for multiple plan dirs.** Rejected in Q3 — flat sibling dirs related
   via the top-level queue's `depends_on` reuse existing machinery and avoid a new hierarchy that
-  would break the one-level `plans/<slug>/` path assumption in `plan-queue-runner` and `/prex`.
+  would break the one-level `plans/<slug>/` path assumption in `runner-queue` and `/prex`.
 - **Keeping single-file plans for S/M.** Rejected — every plan is a directory now; uniform structure
-  simplifies the consumer (`plan-queue-runner` always reads an inner queue) and the two-layer model.
+  simplifies the consumer (`runner-queue` always reads an inner queue) and the two-layer model.
 - **Splitting this refactor into two plan dirs by repo boundary.** Considered (it isolates the
   satellite `repos:` cleanly and dogfoods multi-dir) but rejected: this is one cohesive refactor of
   one subsystem; the spec change is not independently shippable; and a single 5-round dir both keeps
@@ -192,7 +192,7 @@ migrates every live plan to the new format and, as its final act, self-migrates 
 ## Risks & Edge Cases
 
 - **Self-reference / bootstrap hazard (accepted, handled).** This plan is executed by
-  `/plan-queue-runner` + `/prex`, which read THIS plan's own queue *by filename*. Round 2 edits the
+  `/runner-queue` + `/prex`, which read THIS plan's own queue *by filename*. Round 2 edits the
   cog code that resolves the inner-queue filename, and Round 6 renames the live queue files
   themselves. Mitigations: (a) through Rounds 1–5 this plan's own queue stays `QUEUE.yaml` and the
   live root ledger is untouched (see "Scaffolding vs. deliverable"); (b) the loop pins `QUEUE_PATH` at
@@ -203,7 +203,7 @@ migrates every live plan to the new format and, as its final act, self-migrates 
   final act, so there is no pinned-path post-round read left to break. Round 6 writes its two `done`
   flips into the already-renamed files.
 - **Two repos (handled).** Round 1 edits `/home/gbasso/DocsNNotes` (satellite-repo work). This plan's
-  inner queue declares `repos: [/home/gbasso/DocsNNotes]` so `/plan-queue-runner`'s clean-tree guard
+  inner queue declares `repos: [/home/gbasso/DocsNNotes]` so `/runner-queue`'s clean-tree guard
   and `/gc -a --repo /home/gbasso/DocsNNotes` cover the satellite. Rounds 2–5 do not touch the
   satellite; `/gc` on its clean tree is a no-op for those rounds. Keep `/home/gbasso/DocsNNotes`
   clean at the start of every round (the startup guard requires it).

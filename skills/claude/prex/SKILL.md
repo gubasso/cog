@@ -48,7 +48,7 @@ patterns, thread ID extraction, and timeout requirements.
 
 > **Execution discipline — env first, never background a Codex call.** `/prex` runs as an
 > **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
-> such as `plan-queue-runner`) or standalone in an interactive session — not, as before, "always
+> such as `runner-queue`) or standalone in an interactive session — not, as before, "always
 > headless `claude -p`". The no-backgrounding guarantee comes from the `claude-session` env layer:
 > `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` disables Claude Code auto-backgrounding for the session.
 > The `cog preflight claude-env` assertion below verifies that guarantee at bootstrap. Foreground

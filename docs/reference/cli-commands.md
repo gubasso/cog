@@ -51,9 +51,6 @@ this reference table.
 | `osc-preflight` | Detect OBS/osc session prerequisites. |
 | `osc-probe-binary` | Resolve a binary RPM to an OBS source package. |
 | `plan-init` | Bootstrap implementation plan root files. |
-| `plan-queue-runner-parse-commit` | Parse a plan-queue-runner commit result. |
-| `plan-queue-runner-resolve-plan` | Resolve a selected main queue plan entry to its executable form. |
-| `plan-queue-runner-setup` | Parse plan-queue-runner arguments and create run state. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
 | `plans-revision-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
@@ -79,6 +76,9 @@ this reference table.
 | `review-scope` | Detect changed-file review scope. |
 | `review-validate-findings` | Validate review findings JSON. |
 | `rundir` | Create a workflow run directory and optionally acquire its lock. |
+| `runner-queue-parse-commit` | Parse a runner-queue commit result. |
+| `runner-queue-resolve-plan` | Resolve a selected main queue plan entry to its executable form. |
+| `runner-queue-setup` | Parse runner-queue arguments and create run state. |
 | `skill-builder-scaffold` | Compute skill scaffold paths. |
 | `skill-builder-validate` | Validate skill-builder inputs. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
@@ -111,4 +111,4 @@ Plan directories are flat siblings, a single level under `.implementation-plans/
 (`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
 filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
 `cog plans-revision-scan` (revision inventory, via `cog::fn::plans_revision_assert_flat`), and
-`cog plan-queue-runner-resolve-plan` (a resolved target must be a direct child of `plans/`).
+`cog runner-queue-resolve-plan` (a resolved target must be a direct child of `plans/`).

@@ -96,15 +96,6 @@ The command list and short descriptions are sourced from command modules under
 *plan-init*
 	Bootstrap implementation plan root files.
 
-*plan-queue-runner-parse-commit*
-	Parse a plan-queue-runner commit result.
-
-*plan-queue-runner-resolve-plan*
-	Resolve a selected main queue plan entry to its executable form.
-
-*plan-queue-runner-setup*
-	Parse plan-queue-runner arguments and create run state.
-
 *plan-slug*
 	Derive and validate an implementation plan slug.
 
@@ -184,6 +175,15 @@ The command list and short descriptions are sourced from command modules under
 
 *rundir*
 	Create a workflow run directory and optionally acquire its lock.
+
+*runner-queue-parse-commit*
+	Parse a runner-queue commit result.
+
+*runner-queue-resolve-plan*
+	Resolve a selected main queue plan entry to its executable form.
+
+*runner-queue-setup*
+	Parse runner-queue arguments and create run state.
 
 *skill-builder-scaffold*
 	Compute skill scaffold paths.

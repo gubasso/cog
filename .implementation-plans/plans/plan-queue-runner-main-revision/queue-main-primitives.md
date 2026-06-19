@@ -14,11 +14,11 @@ needs, with NO skill-prose or orchestration changes (those are Round 3):
    `--schema plans|rounds` parameter (default `rounds`, behavior preserved).
 2. Add `cog queue-status-set` — the ONLY authorized way to flip a `plans[].status` (e.g.
    `todo -> done`), a single-item guarded transition.
-3. Add `cog plan-queue-runner-resolve-plan` — resolve a selected main-queue plan entry to its
+3. Add `cog runner-queue-resolve-plan` — resolve a selected main-queue plan entry to its
    executable `inner_queue` form, parsing the `/prex -ar [@]<target>` prompt. The live data is
    directory-only: a valid plan target is a directory containing `queue-rounds.yaml`. File targets
    and directories without `queue-rounds.yaml` fail closed.
-4. Extend `cog plan-queue-runner-setup` to detect the queue schema and persist `QUEUE_SCHEMA`
+4. Extend `cog runner-queue-setup` to detect the queue schema and persist `QUEUE_SCHEMA`
    (+ `MAIN_QUEUE_PATH` when `plans`) so the first `queue-select` no longer dies on a `plans:` queue.
 
 All work is deterministic `cog` mechanics under ADR-0008, with `bats` coverage and
@@ -39,14 +39,14 @@ This is the first round — no prior rounds.
     contract and self-check filter; add an additive `schema` field.
   - Add `cog queue-status-set --queue <path> --schema <plans|rounds> --item <item> --from <status>
     --to <status> (<out.json>|--json)`: single-item guarded flip.
-  - Add `cog plan-queue-runner-resolve-plan --repo-root <dir> --queue <main-queue> --item <item>
+  - Add `cog runner-queue-resolve-plan --repo-root <dir> --queue <main-queue> --item <item>
     (<out.json>|--json)`: classify a/b/c, fail closed on ambiguity.
-  - Extend `cog plan-queue-runner-setup` with schema detection + `QUEUE_SCHEMA` / `MAIN_QUEUE_PATH`.
+  - Extend `cog runner-queue-setup` with schema detection + `QUEUE_SCHEMA` / `MAIN_QUEUE_PATH`.
   - `bats` tests; update `docs/reference/cli-commands.md`, `completions/cog.bash`, `man/cog.1(.scd)`,
     and help snapshots.
-- OUT of scope: any `plan-queue-runner` skill prose change; the plans-revision skill/commands
+- OUT of scope: any `runner-queue` skill prose change; the plans-revision skill/commands
   (Round 2); the runner orchestration rewrite (Round 3). No change to `queue-bootstrap`/`queue-append`
-  (already dual-schema) or `cmd_plan_queue_runner_parse_commit.sh`.
+  (already dual-schema) or `cmd_runner_queue_parse_commit.sh`.
 
 ## Current State
 
@@ -96,10 +96,10 @@ This is the first round — no prior rounds.
 
   `__cog_queue_select_build_json` currently takes `(queue_path repo_root clean_check extra_repos...)`;
   it must accept a `schema` argument and forward it to the generalized helpers. Note
-  `cmd_plan_queue_runner_setup.sh:108` calls `__cog_queue_select_build_json` directly, so its
+  `cmd_runner_queue_setup.sh:108` calls `__cog_queue_select_build_json` directly, so its
   signature change must be coordinated within THIS round (setup detection is Step 5 below).
 
-- `/workspaces/cog/lib/commands/cmd_plan_queue_runner_setup.sh` — normalizes the target to a
+- `/workspaces/cog/lib/commands/cmd_runner_queue_setup.sh` — normalizes the target to a
   `queue-rounds.yaml`, writes `ctx.env`, and runs the first `queue-select`. The relevant lines:
 
   ```bash
@@ -107,11 +107,11 @@ This is the first round — no prior rounds.
     */queue-rounds.yaml) queue_path="$target" ;;
     *) queue_path="${target}/queue-rounds.yaml" ;;
   esac
-  # ctx.env keys (__cog_plan_queue_runner_setup_write_ctx, lines 63-78):
+  # ctx.env keys (__cog_runner_queue_setup_write_ctx, lines 63-78):
   #   REPO_ROOT QUEUE_PATH RUN_DIR DRY_RUN MAX_ROUNDS REPOS  (%q-quoted)
   # first select (lines 104-110): sources cmd_queue_select.sh and runs __cog_queue_select_build_json
   #   -> today runs queue_validate_rounds_selectable and WOULD FAIL on a plans: queue.
-  __cog_plan_queue_runner_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array")'
+  __cog_runner_queue_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array")'
   ```
 
 - `/workspaces/cog/.implementation-plans/queue-plans.yaml` — the real main `plans:` queue (canonical schema
@@ -123,7 +123,7 @@ This is the first round — no prior rounds.
 
 - `/workspaces/cog/lib/loader.sh` — derives `cmd_<slug>.sh` and `cog::cmd::<slug>` from the dashed
   command name (`queue-status-set` -> `cmd_queue_status_set.sh` / `cog::cmd::queue_status_set`;
-  `plan-queue-runner-resolve-plan` -> `cmd_plan_queue_runner_resolve_plan.sh`).
+  `runner-queue-resolve-plan` -> `cmd_runner_queue_resolve_plan.sh`).
 
 ### Existing Patterns
 
@@ -135,7 +135,7 @@ This is the first round — no prior rounds.
   and a `--json` / `<out.json>` toggle. Errors via `cog::fn::error_raise` / `cog::helpers::die` with
   `$EX_*` exit codes (`$EX_USAGE` 2 for bad args; data errors otherwise).
 - Tests: existing specs include `test/integration/queue_select.bats`, `test/integration/queue_append.bats`,
-  `test/integration/plan_queue_runner_setup.bats`, and unit `queue` specs. Mirror those for the new
+  `test/integration/runner_queue_setup.bats`, and unit `queue` specs. Mirror those for the new
   commands and the generalized selection.
 
 ## Implementation Steps
@@ -189,10 +189,10 @@ expected-current-status guard.'`, handler `cog::cmd::queue_status_set`). Flags:
 Exit codes: `$EX_USAGE` (2) for bad/missing args; a data-error code for missing item / status
 mismatch / invalid status; an IO-error code for write failure.
 
-### Step 4: Add `cog plan-queue-runner-resolve-plan`
+### Step 4: Add `cog runner-queue-resolve-plan`
 
-Create `lib/commands/cmd_plan_queue_runner_resolve_plan.sh` (line-2 `: 'desc: Resolve a selected main
-queue plan entry to its executable form.'`, handler `cog::cmd::plan_queue_runner_resolve_plan`).
+Create `lib/commands/cmd_runner_queue_resolve_plan.sh` (line-2 `: 'desc: Resolve a selected main
+queue plan entry to its executable form.'`, handler `cog::cmd::runner_queue_resolve_plan`).
 Flags: `--repo-root <dir> --queue <main-queue> --item <item> (<out.json>|--json)`. Behavior:
 
 1. Validate `--queue` as `plans`; load the matching `plans[]` entry (fail closed if missing/duplicate).
@@ -209,12 +209,12 @@ with a self-check predicate (`kind == "inner_queue"`).
 
 ### Step 5: Schema detection + `QUEUE_SCHEMA` in setup
 
-In `cmd_plan_queue_runner_setup.sh`: after normalizing `queue_path`, read the top-level key with `yq`
+In `cmd_runner_queue_setup.sh`: after normalizing `queue_path`, read the top-level key with `yq`
 and decide schema — `has("plans") and not has("rounds")` -> `plans`; `has("rounds") and not
 has("plans")` -> `rounds`; otherwise fail closed (`InvalidInput`). Pass the detected schema into the
 first `__cog_queue_select_build_json` (new signature from Step 2). Add `QUEUE_SCHEMA` and, when
-`plans`, `MAIN_QUEUE_PATH=$queue_path` to `__cog_plan_queue_runner_setup_write_ctx` (ctx.env) and to
-the emitted JSON; extend `__cog_plan_queue_runner_setup_self_check` with
+`plans`, `MAIN_QUEUE_PATH=$queue_path` to `__cog_runner_queue_setup_write_ctx` (ctx.env) and to
+the emitted JSON; extend `__cog_runner_queue_setup_self_check` with
 `and (.queue_schema=="plans" or .queue_schema=="rounds")`. (For a `rounds:` queue, behavior and ctx
 keys are otherwise unchanged.)
 
@@ -223,18 +223,18 @@ keys are otherwise unchanged.)
 - New `test/integration/queue_status_set.bats`: happy `todo->done` on a `plans:` fixture and a
   `rounds:` fixture; failures for missing item, wrong `--from`, invalid status, duplicate item,
   missing queue.
-- New `test/integration/plan_queue_runner_resolve_plan.bats`: a directory plan with `queue-rounds.yaml`
+- New `test/integration/runner_queue_resolve_plan.bats`: a directory plan with `queue-rounds.yaml`
   resolves to `inner_queue` (covering both the `@`-prefixed and bare directory prompt forms and
   surfacing any inner `repos:`); a file target, a directory without `queue-rounds.yaml`, a missing
   target, a non-`/prex -ar` prompt, and a missing/duplicate item each fail closed.
 - Extend `test/integration/queue_select.bats`: a `--schema plans` selection case AND a regression case
   proving the default (`rounds`) path output is byte-identical (plus the additive `schema` field).
-- Extend `test/integration/plan_queue_runner_setup.bats`: `QUEUE_SCHEMA=plans` + `MAIN_QUEUE_PATH` on
+- Extend `test/integration/runner_queue_setup.bats`: `QUEUE_SCHEMA=plans` + `MAIN_QUEUE_PATH` on
   a `plans:` fixture; `QUEUE_SCHEMA=rounds` on an inner queue; both/neither fail closed.
 
 ### Step 7: Doc / completion / man / help-snapshot drift
 
-Update `docs/reference/cli-commands.md` (rows for `queue-status-set` and `plan-queue-runner-resolve-plan`;
+Update `docs/reference/cli-commands.md` (rows for `queue-status-set` and `runner-queue-resolve-plan`;
 note the `queue-select --schema` flag), `completions/cog.bash`, `man/cog.1.scd` (regenerate `man/cog.1`
 per the repo's man-build workflow), and refresh help snapshots so the drift checks and
 `test/integration/*help*` pass.
@@ -251,10 +251,10 @@ per the repo's man-build workflow), and refresh help snapshots so the drift chec
       test passes.
 - [ ] `cog queue-status-set --schema plans --item <i> --from todo --to done` flips only that item and
       fails closed on missing item, wrong `--from`, invalid status, or duplicate item.
-- [ ] `cog plan-queue-runner-resolve-plan` resolves a directory plan carrying `queue-rounds.yaml` to
+- [ ] `cog runner-queue-resolve-plan` resolves a directory plan carrying `queue-rounds.yaml` to
       `kind: inner_queue` (both prompt forms), and fails closed on a file target, a directory without
       `queue-rounds.yaml`, a missing target, an unsupported prompt, or a missing/duplicate item.
-- [ ] `cog plan-queue-runner-setup` emits `QUEUE_SCHEMA` (+ `MAIN_QUEUE_PATH` for `plans`) and the
+- [ ] `cog runner-queue-setup` emits `QUEUE_SCHEMA` (+ `MAIN_QUEUE_PATH` for `plans`) and the
       first `queue-select` no longer dies on a `plans:` queue; a `rounds:` target is unchanged.
 - [ ] No skill prose changed this round; each new command module has its line-2 `: 'desc:'` sentinel.
 - [ ] `just lint` (pre-commit) and `just test` pass, including drift checks for

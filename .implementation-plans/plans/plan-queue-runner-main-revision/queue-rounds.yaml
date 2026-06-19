@@ -4,7 +4,7 @@ rounds:
     status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/plan-queue-runner-main-revision/queue-main-primitives.md
-    notes: Schema-generic selection + cog queue-status-set + plan-queue-runner-resolve-plan + setup QUEUE_SCHEMA detection. Pure cog, no skill prose.
+    notes: Schema-generic selection + cog queue-status-set + runner-queue-resolve-plan + setup QUEUE_SCHEMA detection. Pure cog, no skill prose.
   - item: plans-revision-mechanics
     status: done
     depends_on:
@@ -16,4 +16,4 @@ rounds:
     depends_on:
       - plans-revision-mechanics
     prompt: /prex -ar .implementation-plans/plans/plan-queue-runner-main-revision/runner-orchestration-integration.md
-    notes: 'Edit plan-queue-runner/SKILL.md once: inline main-queue loop + plans-revision boundary.'
+    notes: 'Edit runner-queue/SKILL.md once: inline main-queue loop + plans-revision boundary.'

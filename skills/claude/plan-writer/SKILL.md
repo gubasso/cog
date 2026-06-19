@@ -472,7 +472,7 @@ Normal interactive `/plan-writer` use ignores coordinator mode.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`). Never nest a plan directory inside another and
   never create subdirectories within a plan directory; relationships and order live only in
-  `depends_on`. `cog plan-init`, `cog plans-revision-scan`, and `cog plan-queue-runner-resolve-plan`
+  `depends_on`. `cog plan-init`, `cog plans-revision-scan`, and `cog runner-queue-resolve-plan`
   fail closed on any nested plan.
 - Do not modify any existing files in the repository (only write to `.implementation-plans/`; in
   coordinator mode, write only to the given scratch `<output-path>`).

@@ -2,7 +2,7 @@
 name: plans-revision
 description: >
   Reconcile implementation plans and queues with the current repository state
-  after a committed plan-queue-runner item, before selecting the next item, so
+  after a committed runner-queue item, before selecting the next item, so
   remaining plans stay coherent with implemented code. Adaptive and fail-closed.
 model: sonnet
 effort: high
@@ -16,7 +16,7 @@ disable-model-invocation: true
 # Plans Revision
 
 Reconcile all implementation-plan queues and mutable plan files with the current repository state
-after a committed plan-queue-runner item. This skill is adaptive and fail-closed: it updates remaining
+after a committed runner-queue item. This skill is adaptive and fail-closed: it updates remaining
 work when the code has made parts obsolete, appends newly discovered gaps, and stops the parent runner
 if it cannot reach a verified committed state.
 
@@ -34,7 +34,7 @@ All deterministic mechanics live in `cog`:
 - Verification: `cog plans-revision-verify --before <before.json> --after <after.json> <out.json>`.
 - Status changes: `cog queue-status-set --queue <path> --schema <plans|rounds> --item <item> --from <status> --to <status> <out.json>`.
 - New work: `cog queue-append --schema <plans|rounds> --queue <path> --item <item> --status <status> --prompt <prompt> [--depends-on csv] [--notes text] <out.json>`.
-- Commit parsing: `cog plan-queue-runner-parse-commit <gc-output-file> --json`.
+- Commit parsing: `cog runner-queue-parse-commit <gc-output-file> --json`.
 
 Never mutate a queue by direct editing. Use `queue-status-set` for guarded status flips and
 `queue-append` for new items. Direct edits are allowed only for mutable `todo` or `backlog` plan and
@@ -74,7 +74,7 @@ round prose files.
    `RESULT: NO_DRIFT`.
 
 9. If `changed` is `true`, run `/gc -a` in the foreground and capture its output in `$RUN_DIR/gc.out`.
-   Never background commit work. Parse the captured output with `cog plan-queue-runner-parse-commit`.
+   Never background commit work. Parse the captured output with `cog runner-queue-parse-commit`.
    If parsing succeeds, return `STATUS: OK` and `RESULT: REVISION_COMMIT_OK <sha>` for a single repo,
    or the parsed multi-repo commit summary when multiple repos were committed.
 

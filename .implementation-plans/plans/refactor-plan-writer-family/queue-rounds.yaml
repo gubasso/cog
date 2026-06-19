@@ -27,7 +27,7 @@ rounds:
       - cog-mechanics-rename
       - skills-rewrite
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/consumer-and-docs.md
-    notes: plan-queue-runner + cog docs + superseding ADR.
+    notes: runner-queue + cog docs + superseding ADR.
   - item: tests-and-gates
     status: done
     depends_on:

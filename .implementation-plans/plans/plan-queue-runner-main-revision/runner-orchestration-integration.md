@@ -5,7 +5,7 @@
 
 ## Context
 
-The final behavior lives in `skills/claude/plan-queue-runner/SKILL.md`. Today it drives ONE inner
+The final behavior lives in `skills/claude/runner-queue/SKILL.md`. Today it drives ONE inner
 `rounds:` queue: dispatch each `todo` round to a fresh `claude-delegate`, verify the round flipped
 itself to `done`, commit with `/gc -a`, loop. This round edits that skill ONCE to: detect the queue
 schema (from setup's `QUEUE_SCHEMA`), drive a top-level `plans:` MAIN queue inline (depth 0), resolve
@@ -17,7 +17,7 @@ is preserved.
 ## Previous Rounds
 
 Round 1 added schema-generic selection (`cog queue-select --schema`), `cog queue-status-set`,
-`cog plan-queue-runner-resolve-plan`, and `QUEUE_SCHEMA`/`MAIN_QUEUE_PATH` detection in setup.
+`cog runner-queue-resolve-plan`, and `QUEUE_SCHEMA`/`MAIN_QUEUE_PATH` detection in setup.
 Round 2 added `cog plans-revision-scan` / `cog plans-revision-verify`, the project-local
 `.claude/skills/plans-revision/SKILL.md`, and `docs/decisions/0011-plan-queue-revision-boundary.md`.
 Expected state: every deterministic primitive and the revision skill exist and are tested; only the
@@ -26,7 +26,7 @@ runner orchestration prose remains.
 ## Scope of This Round
 
 - IN scope:
-  - Refactor `skills/claude/plan-queue-runner/SKILL.md`: frontmatter description + `argument-hint`;
+  - Refactor `skills/claude/runner-queue/SKILL.md`: frontmatter description + `argument-hint`;
     a "Queue Modes" section; a schema branch after setup; the INLINE main-queue loop; per-plan form
     handling; the plan-level `done` flip via `queue-status-set`; the "Plans-Revision Boundary"
     section; updated Rules and Failure Handling; `--max`/`--dry-run` at the plan level.
@@ -34,24 +34,24 @@ runner orchestration prose remains.
   - Integration-ish `bats`/skill-lint coverage that is feasible without real Agent delegation; update
     help/snapshot/lint expectations for the touched skill.
 - OUT of scope: changing `/prex` or `/gc` semantics; adding background orchestration; new `cog`
-  commands (all landed in Rounds 1-2). No change to `cmd_plan_queue_runner_parse_commit.sh` (reused).
+  commands (all landed in Rounds 1-2). No change to `cmd_runner_queue_parse_commit.sh` (reused).
 
 ## Current State
 
 ### Key Files
 
-- `/workspaces/cog/skills/claude/plan-queue-runner/SKILL.md` — the runner. Frontmatter
+- `/workspaces/cog/skills/claude/runner-queue/SKILL.md` — the runner. Frontmatter
   `disable-model-invocation: true`, `allowed-tools: Bash Read Agent Skill`,
   `argument-hint: "[-n|--dry-run] [--max <n>] <plan-dir-or-queue-path>"`. Runs INLINE; dispatches each
   round to `claude-delegate` via the Agent tool (foreground, blocking). Today's Algorithm
-  (lines 97-112): parse -> `cog plan-queue-runner-setup` -> loop `cog queue-select` -> dispatch round
+  (lines 97-112): parse -> `cog runner-queue-setup` -> loop `cog queue-select` -> dispatch round
   -> re-read require `done` -> dispatch `/gc -a` (+ `--repo` satellites) -> parse `COMMIT_*` -> loop.
   Per-loop selection snippet (lines 133-143) and the satellite `REPO_FLAGS` rebuild (lines 63-67) are
   the integration points. Current Rules (254-267): "Never write `queue-rounds.yaml`"; "Verify, do not set";
   "use each entry's prompt verbatim"; "`/gc` is the only commit authority".
 
 - Round-1/2 surfaces this round wires together: `cog queue-select --schema`,
-  `cog plan-queue-runner-resolve-plan`, `cog queue-status-set`, `cog plans-revision-scan/verify`, and
+  `cog runner-queue-resolve-plan`, `cog queue-status-set`, `cog plans-revision-scan/verify`, and
   `.claude/skills/plans-revision/SKILL.md`. The `claude-delegate` agent (`All tools`) is the existing
   isolation primitive.
 
@@ -86,14 +86,14 @@ plans in order, drive each to completion); auto-detected via `QUEUE_SCHEMA` from
 examples:
 
 ```bash
-/plan-queue-runner .implementation-plans/queue-plans.yaml
-/plan-queue-runner .implementation-plans/plans/build-orion-nixos-config
-/plan-queue-runner --max 1 .implementation-plans/queue-plans.yaml
+/runner-queue .implementation-plans/queue-plans.yaml
+/runner-queue .implementation-plans/plans/build-orion-nixos-config
+/runner-queue --max 1 .implementation-plans/queue-plans.yaml
 ```
 
 ### Step 2: Schema branch + inner-queue sub-procedure
 
-After `cog plan-queue-runner-setup`, source `ctx.env` and branch on `QUEUE_SCHEMA`. Refactor the
+After `cog runner-queue-setup`, source `ctx.env` and branch on `QUEUE_SCHEMA`. Refactor the
 current 7-step loop into a named sub-procedure "Drive an inner queue" (unchanged dispatch/verify/`/gc`,
 PLUS the revision call from Step 4), so BOTH the `rounds:` mode and the main mode's per-plan
 `inner_queue` case reuse it. The selection snippet becomes schema-aware:
@@ -109,7 +109,7 @@ Document the INLINE loop (no new subagent layer). Per iteration:
 
 1. `cog queue-select --schema plans --queue "$MAIN_QUEUE_PATH" ...` to pick the next runnable `todo`
    plan; on `state: complete` finish; on `blocked` fail closed.
-2. `cog plan-queue-runner-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH"
+2. `cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH"
    --item "$PLAN_ITEM"` to resolve the plan's `inner_queue` form (it fails closed otherwise).
 3. Execute the resolved `inner_queue`: rebuild `REPO_FLAGS` from the resolver's `repos`, then run the
    "Drive an inner queue" sub-procedure against `inner_queue_path` until `state: complete`.
@@ -121,7 +121,7 @@ Document the INLINE loop (no new subagent layer). Per iteration:
    ```
 
 5. Commit the plan's work + the main-queue status flip with `/gc -a` (+ satellite `--repo` flags),
-   parse via `cog plan-queue-runner-parse-commit`.
+   parse via `cog runner-queue-parse-commit`.
 6. Run the plans-revision boundary (Step 4).
 7. Honor `--max N` (plan-level), then loop.
 
@@ -179,7 +179,7 @@ round-level semantics for an inner `rounds:` queue.
 
 ### Step 7: Tests, skill-lint, docs
 
-- `cog skill-lint skills/claude/plan-queue-runner/SKILL.md` (and re-confirm
+- `cog skill-lint skills/claude/runner-queue/SKILL.md` (and re-confirm
   `.claude/skills/plans-revision/SKILL.md`) pass; fix findings.
 - Update any skill-trigger/snapshot tests (e.g. `test/integration/skills_claude.bats`) for the changed
   description/triggers. Do not attempt to integration-test real Agent delegation in `bats`; the
@@ -201,9 +201,9 @@ round-level semantics for an inner `rounds:` queue.
 
 ## Acceptance Criteria
 
-- [ ] `/plan-queue-runner <inner plan dir>` (inner `rounds:` mode) remains supported and unchanged
+- [ ] `/runner-queue <inner plan dir>` (inner `rounds:` mode) remains supported and unchanged
       except for the added revision boundary after each committed round.
-- [ ] `/plan-queue-runner .implementation-plans/queue-plans.yaml` drives the top-level `plans:` queue inline
+- [ ] `/runner-queue .implementation-plans/queue-plans.yaml` drives the top-level `plans:` queue inline
       (depth 0), resolving every plan entry to its `inner_queue` form and failing closed on any entry
       that is not a directory carrying `queue-rounds.yaml`.
 - [ ] Main-plan completion is set via `cog queue-status-set --schema plans`; inner-round completion

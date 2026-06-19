@@ -5,7 +5,7 @@
 
 ## Context
 
-Feature B: after each committed plan-queue-runner item the runner must reconcile the implementation
+Feature B: after each committed runner-queue item the runner must reconcile the implementation
 plans with the actual repo state before selecting the next item. This round adds the deterministic
 `cog` mechanics and the dedicated project-local skill; wiring into the runner is Round 3.
 
@@ -24,7 +24,7 @@ helpers from Round 1 — never a parallel mutation path.
 
 Round 1 (`queue-main-primitives`) produced: schema-aware selection (`cog::fn::queue_select_next_item`
 / `queue_validate_selectable`, `cog queue-select --schema`), `cog queue-status-set` (guarded
-single-item flip), `cog plan-queue-runner-resolve-plan`, and `QUEUE_SCHEMA`/`MAIN_QUEUE_PATH`
+single-item flip), `cog runner-queue-resolve-plan`, and `QUEUE_SCHEMA`/`MAIN_QUEUE_PATH`
 detection in setup. Expected state: queues of either schema are selectable and statuses are flippable
 deterministically.
 
@@ -44,8 +44,8 @@ deterministically.
     files, commits via `/gc` (or no-ops), and verifies. Fail closed.
   - `bats` tests for the new commands; `cog skill-lint` on the new skill; a new ADR; doc/man/completion
     drift updates.
-- OUT of scope: calling plans-revision from `plan-queue-runner` and any change to
-  `plan-queue-runner/SKILL.md` (Round 3). No queue-schema change; no reordering of existing entries;
+- OUT of scope: calling plans-revision from `runner-queue` and any change to
+  `runner-queue/SKILL.md` (Round 3). No queue-schema change; no reordering of existing entries;
   no editing recorded history of `done` items.
 
 ## Current State
@@ -78,7 +78,7 @@ deterministically.
 
 - `/workspaces/cog/skills/claude/gc/SKILL.md` — `/gc` is the ONLY commit authority. Result lines:
   `COMMIT_OK <sha>` (single repo) or `COMMIT_OK <sha> repo=<root>` (multi); parsed by
-  `cog plan-queue-runner-parse-commit`, which fails closed on any `*_FAILED`. `/gc -a` stages all
+  `cog runner-queue-parse-commit`, which fails closed on any `*_FAILED`. `/gc -a` stages all
   dirty session files in declared repos; multi-repo via `--repo <dir>`; never `--no-verify`.
 
 - `/workspaces/cog/.implementation-plans/queue-plans.yaml` and `.implementation-plans/plans/*/queue-rounds.yaml` —
@@ -159,7 +159,7 @@ frontmatter (within the skill-contract allowlist):
 name: plans-revision
 description: >
   Reconcile implementation plans and queues with the current repository state
-  after a committed plan-queue-runner item, before selecting the next item, so
+  after a committed runner-queue item, before selecting the next item, so
   remaining plans stay coherent with implemented code. Adaptive and fail-closed.
 model: sonnet
 effort: high
@@ -184,7 +184,7 @@ delegates to `cog`. Skill behavior:
    "$RUN_DIR/verify.json"`.
 7. If `verify.changed == false`: confirm a clean worktree and return `STATUS: OK`, `RESULT: NO_DRIFT`.
 8. If changed: commit the plan edits via `/gc -a` (foreground; never background), parse the
-   `COMMIT_*` line via `cog plan-queue-runner-parse-commit`, and return `RESULT: REVISION_COMMIT_OK
+   `COMMIT_*` line via `cog runner-queue-parse-commit`, and return `RESULT: REVISION_COMMIT_OK
    <sha>`.
 9. Fail closed (non-OK structured result) if scan/verify fails, completed history was touched, or the
    commit fails — the parent runner will stop the whole run.
@@ -234,12 +234,12 @@ in the same change set.)
 - [ ] The skill commits via `/gc` when there is drift and no-ops (no commit) when there is none; it
       never edits recorded history of `done` items and fails closed on unrecoverable state.
 - [ ] `docs/decisions/0011-plan-queue-revision-boundary.md` is written.
-- [ ] No change to `plan-queue-runner/SKILL.md` this round.
+- [ ] No change to `runner-queue/SKILL.md` this round.
 - [ ] `just lint` and `just test` pass, including drift checks.
 - [ ] This plan's `queue-rounds.yaml` shows round `plans-revision-mechanics` as `done`.
 
 ## Next Round
 
-Round 3 (`runner-orchestration-integration`) rewrites `plan-queue-runner/SKILL.md` to drive the main
+Round 3 (`runner-orchestration-integration`) rewrites `runner-queue/SKILL.md` to drive the main
 queue inline and invoke this `plans-revision` skill as a foreground subagent after every committed
 item.

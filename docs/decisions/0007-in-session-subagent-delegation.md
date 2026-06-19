@@ -2,7 +2,7 @@
 
 ## Context and Problem Statement
 
-cog's orchestration skills (`skills/claude/plan-queue-runner`, `skills/claude/prex`) drive multi-step
+cog's orchestration skills (`skills/claude/runner-queue`, `skills/claude/prex`) drive multi-step
 agentic work. The dotfiles ancestor drove each unit by shelling out to a headless `claude -p` process
 running `/prex`. Headless mode has no event loop after the model's final turn: a backgrounded
 Bash/Codex task is killed ~5 s after the result. So a unit that backgrounded its long Codex

@@ -13,7 +13,7 @@ be applied to the cog code that hardcodes the literal filename. The queue schema
 two hardcoded callers, generalize the user-facing error strings, and extend the reserved-slug guard
 for the new meta stems. **No dual-read shim** (hard cut, Q4).
 
-**CAUTION — self-reference hazard.** This round runs via `/prex` (and possibly `/plan-queue-runner`),
+**CAUTION — self-reference hazard.** This round runs via `/prex` (and possibly `/runner-queue`),
 which read THIS plan's own live `.implementation-plans/.../queue-rounds.yaml`. Do **NOT** rename or move this
 plan's own queue/status files or the live root ledger — only edit cog's *code*. See the plan README's
 "Scaffolding vs. deliverable". The user migrates live on-disk plan data manually (Q4).
@@ -29,7 +29,7 @@ cover `queue-plans` / `queue-rounds`. The cog code must now match those filename
 
 - **IN scope:** rename the hardcoded `QUEUE.yaml` literals and generalize error strings in cog
   commands/functions, and extend the reserved-slug guard.
-- **OUT of scope:** skill prose (Round 3), the consumer `plan-queue-runner` skill + cog docs
+- **OUT of scope:** skill prose (Round 3), the consumer `runner-queue` skill + cog docs
   (Round 4), tests (Round 5), and any live `.implementation-plans/` data.
 
 ## Current State
@@ -45,7 +45,7 @@ cover `queue-plans` / `queue-rounds`. The cog code must now match those filename
   All three lines change: filenames → `queue-plans.yaml` (root) / `queue-rounds.yaml` (inner), and the
   "either a single self-contained markdown file or a directory" text → "every plan is a directory
   containing round files and an inner `queue-rounds.yaml`".
-- `/workspaces/cog/lib/commands/cmd_plan_queue_runner_setup.sh` — resolves the inner queue path.
+- `/workspaces/cog/lib/commands/cmd_runner_queue_setup.sh` — resolves the inner queue path.
   **Hardcodes** the inner filename in path resolution (lines ~86–87):
   ```text
   */QUEUE.yaml) queue_path="$target" ;;
@@ -90,7 +90,7 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: cog-mechanics-renam
 - Note: `cog::fn::queue_bootstrap_file` / `queue_validate_file` are called with `$root_queue`, so they
   follow the new path automatically.
 
-### Step 2: Rename the inner queue resolution in `cmd_plan_queue_runner_setup.sh`
+### Step 2: Rename the inner queue resolution in `cmd_runner_queue_setup.sh`
 
 - Change the path-resolution case to match `*/queue-rounds.yaml` and default to
   `"${target}/queue-rounds.yaml"`. Update the not-found error and the usage/too-many-targets hint to
@@ -124,9 +124,9 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: cog-mechanics-renam
 
 - [ ] `cog plan-init` writes `queue-plans.yaml` at the plan root and the generated README text says
       every plan is a directory (no "single self-contained markdown file" wording).
-- [ ] `cog plan-queue-runner-setup` resolves `queue-rounds.yaml` for both a bare plan-dir target and
+- [ ] `cog runner-queue-setup` resolves `queue-rounds.yaml` for both a bare plan-dir target and
       an explicit `.../queue-rounds.yaml` path.
-- [ ] No `QUEUE.yaml` literal remains in `cmd_plan_init.sh`, `cmd_plan_queue_runner_setup.sh`, or the
+- [ ] No `QUEUE.yaml` literal remains in `cmd_plan_init.sh`, `cmd_runner_queue_setup.sh`, or the
       `fn_queue.sh` error strings.
 - [ ] `cog plan-slug` rejects `queue-plans` and `queue-rounds` (plus `readme`, `queue`, `strategy`).
 - [ ] No command module's line-2 `: 'desc: ...'` sentinel was disturbed.

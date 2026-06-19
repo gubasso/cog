@@ -22,7 +22,7 @@ verify-at-each-boundary; deterministic mechanics in cog (ADR-0008).
 
 Round 1 (`revert-and-assert-core`) removed the `codex-foreground` hook end-to-end, added the
 fail-closed `cog` env preflight, fixed `prex-stop` (stage3), injected the `base.json` env, and updated
-the CORE orchestration prose (prex, plan-queue-runner, claude-delegate). Round 2
+the CORE orchestration prose (prex, runner-queue, claude-delegate). Round 2
 (`document-orchestration-contract`) recorded the contract in ADR-0009 + reference + explanation +
 AGENTS/CLAUDE guards, reconciled `skill-contract.md` / `codex-single-entrypoint.md`, and taught
 `skill-builder`. The rules now exist in prose and the contract; this round makes them mechanical and
@@ -63,7 +63,7 @@ injection, the docs themselves).
 - `/workspaces/cog/.pre-commit-config.yaml` — already runs `bin/cog skill-lint` as a local hook;
   extending the linter propagates the new rules to ALL skills via pre-commit.
 - Skill trees to sweep (inventory at execution time): `skills/claude/*` (~20, incl. prex,
-  plan-queue-runner, review-loop, ask, plan-writer-multi, plan-writer, plan-reviewer, tsk-impl,
+  runner-queue, review-loop, ask, plan-writer-multi, plan-writer, plan-reviewer, tsk-impl,
   tsk-new, gc, claudemd, pre-commit, osc-obs, suckless-patcher, test-review, review-findings,
   review-code-deep, ast-grep, refactor-migration-plan), `skills/codex/*` (~9), `.claude/skills/*`
   (skill-builder). Known remaining stale prose after Rounds 1–2:

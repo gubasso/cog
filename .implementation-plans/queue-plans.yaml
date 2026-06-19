@@ -16,7 +16,7 @@ plans:
     depends_on:
       - refactor-plan-writer-family
     prompt: /prex -ar @.implementation-plans/plans/plan-queue-runner-main-revision/
-    notes: L, 3 rounds. plan-queue-runner main-queue support (Feature A) + plans-revision boundary step (Feature B). Mechanics in cog (queue-status-set, resolve-plan, plans-revision-scan/verify); new .claude/skills/plans-revision; ADR-0011.
+    notes: L, 3 rounds. runner-queue main-queue support (Feature A) + plans-revision boundary step (Feature B). Mechanics in cog (queue-status-set, resolve-plan, plans-revision-scan/verify); new .claude/skills/plans-revision; ADR-0011.
   - item: cog-contract-and-spec-uplift
     status: todo
     depends_on:

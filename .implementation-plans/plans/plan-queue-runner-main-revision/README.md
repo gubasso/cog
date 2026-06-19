@@ -4,7 +4,7 @@
 
 ## Problem Statement
 
-`cog`'s `plan-queue-runner` skill (`skills/claude/plan-queue-runner/SKILL.md`) today drives ONE
+`cog`'s `runner-queue` skill (`skills/claude/runner-queue/SKILL.md`) today drives ONE
 plan's inner `rounds:` queue to completion: for each runnable `todo` round it dispatches the round's
 verbatim `/prex` prompt to a fresh `claude-delegate`, verifies the round flipped itself to `done` in
 `queue-rounds.yaml`, commits with `/gc -a`, and loops. Two features must be added, coherently:
@@ -43,17 +43,17 @@ implementation.
 ## Strategy
 
 Three rounds in strict dependency order, decomposed so each round is one cohesive `/prex` session and
-the orchestrator skill (`plan-queue-runner/SKILL.md`) is edited exactly ONCE:
+the orchestrator skill (`runner-queue/SKILL.md`) is edited exactly ONCE:
 
 - **Round 1 — queue-main-primitives**: pure deterministic `cog` layer for Feature A. Generalize
   selection to `--schema plans|rounds`; add `cog queue-status-set` (guarded single-item flip); add
-  `cog plan-queue-runner-resolve-plan` (classify a/b/c); extend `cog plan-queue-runner-setup` to
+  `cog runner-queue-resolve-plan` (classify a/b/c); extend `cog runner-queue-setup` to
   detect and persist `QUEUE_SCHEMA`. Tests + command-surface docs. No skill prose changes.
 - **Round 2 — plans-revision-mechanics**: pure deterministic `cog` layer for Feature B plus the new
   project-local skill. Add revision inventory + verify commands (reusing the `fn_refactor` fingerprint
   prior art) and the new `.claude/skills/plans-revision/SKILL.md`. Tests + skill-lint + ADR. No runner
   prose changes.
-- **Round 3 — runner-orchestration-integration**: edit `skills/claude/plan-queue-runner/SKILL.md`
+- **Round 3 — runner-orchestration-integration**: edit `skills/claude/runner-queue/SKILL.md`
   ONCE to drive a `plans:` main queue inline (depth 0), resolve each plan form, drive inner queues
   when needed, flip main plans `done` via `queue-status-set`, and invoke the plans-revision subagent
   after every committed item. Integration tests + skill-lint + docs.
@@ -67,7 +67,7 @@ and `QUEUE_SCHEMA` detection. Round 3 depends on both.
    schema detection.
 2. `plans-revision-mechanics.md` — revision scan/verify `cog` commands + the new `plans-revision`
    project skill.
-3. `runner-orchestration-integration.md` — rewrite `plan-queue-runner/SKILL.md` to drive the main
+3. `runner-orchestration-integration.md` — rewrite `runner-queue/SKILL.md` to drive the main
    queue and invoke revision at both committed-item boundaries.
 
 ## Execution Commands
@@ -98,13 +98,13 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
   (files 4, cross-cut 4, deps 3, novelty 3, risk 4 = 18) / 1.5 = 12 -> **L** (the maximum grade
   reachable under prex; exactly met). XL is unreachable under prex.
 - **Reuse, don't rewrite (Feature A).** The schema-generic `fn_queue.sh` helpers, `queue-bootstrap`,
-  `queue-append`, and `cmd_plan_queue_runner_parse_commit.sh` stay unchanged. Only the selection path
-  is generalized; two new commands (`queue-status-set`, `plan-queue-runner-resolve-plan`) are added;
+  `queue-append`, and `cmd_runner_queue_parse_commit.sh` stay unchanged. Only the selection path
+  is generalized; two new commands (`queue-status-set`, `runner-queue-resolve-plan`) are added;
   setup gains schema detection.
 - **Detection discriminates on the top-level YAML key**: `rounds:` -> inner queue (today's behavior);
   `plans:` -> main queue; both/neither -> fail closed. Detection lives in `cog`
-  (`plan-queue-runner-setup`), not skill prose (ADR-0008).
-- **Per-plan form resolution** (`cog plan-queue-runner-resolve-plan`) resolves a selected plan entry to
+  (`runner-queue-setup`), not skill prose (ADR-0008).
+- **Per-plan form resolution** (`cog runner-queue-resolve-plan`) resolves a selected plan entry to
   its `inner_queue` form, parsing both the `/prex -ar <target>` and the `/prex -ar @<target>` prompt
   forms (the live main queue uses the `@`-prefixed directory form). The live data is directory-only:
   a valid plan target is a directory containing `queue-rounds.yaml` -> `inner_queue`; a file target or
@@ -168,7 +168,7 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
   only commits. A dedicated `cog queue-status-set` is required.
 - **Delegate the whole main-queue loop to a subagent** — rejected. It adds a depth level for no
   isolation benefit and risks the fixed 5-level cap. The main loop stays inline (depth 0).
-- **Edit the runner skill across two rounds** — rejected. All `plan-queue-runner/SKILL.md`
+- **Edit the runner skill across two rounds** — rejected. All `runner-queue/SKILL.md`
   orchestration changes are consolidated into Round 3 so the orchestrator is rewritten once.
 - **A parallel mutation path inside the revision skill** — rejected. Revision must use the same
   `cog queue-status-set` / `cog queue-append` helpers Feature A introduces, never invent its own queue
@@ -185,7 +185,7 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
   existing single-queue path identical. Mitigation: default `--schema rounds`; keep the JSON output
   contract and self-check filter byte-identical (plus an additive `schema`); add a regression bats
   case for the unchanged rounds path.
-- **Setup dies on `plans:`.** `cmd_plan_queue_runner_setup.sh` runs the first `queue-select` at setup
+- **Setup dies on `plans:`.** `cmd_runner_queue_setup.sh` runs the first `queue-select` at setup
   (line 108) — today that would die on a `plans:` queue via `queue_validate_rounds_selectable`.
   Mitigation: detect the schema in setup and thread it into the first select.
 - **Resolver prompt parsing.** The live main queue uses only the directory form `/prex -ar @<dir>/`;

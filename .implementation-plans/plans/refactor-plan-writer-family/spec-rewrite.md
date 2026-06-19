@@ -176,5 +176,5 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: spec-rewrite`) `sta
 ## Next Round
 
 Round 2 renames the queue-filename literals in cog's deterministic mechanics (`cmd_plan_init.sh`,
-`cmd_plan_queue_runner_setup.sh`), generalizes the `fn_queue.sh` error strings, and extends the
+`cmd_runner_queue_setup.sh`), generalizes the `fn_queue.sh` error strings, and extends the
 reserved-slug guard to the new meta stems.

@@ -57,7 +57,7 @@ IN scope:
   orphaned/corrupt-lock auto-clean and PID-scoping. Extend its tests.
 - Remove the core "the hook is the guarantee" / `codex-foreground` prose and replace with the
   env-first guarantee + in-session foreground discipline in the CORE orchestration surfaces:
-  `prex/SKILL.md` (+ its `references/stage-2-through-5-details.md`), `plan-queue-runner/SKILL.md`,
+  `prex/SKILL.md` (+ its `references/stage-2-through-5-details.md`), `runner-queue/SKILL.md`,
   and `agents/claude/claude-delegate.md`.
 
 OUT of scope (later rounds): the ADR/reference/explanation docs, AGENTS/CLAUDE guards,
@@ -113,7 +113,7 @@ review-loop / ask / plan-writer-multi prose still carrying foreground/600000/rea
   creation, before Stage 1. `references/stage-2-through-5-details.md` references the `prex-stop`
   dependency (`stage4-review.md`) — keep that; remove any `codex-foreground` claim.
 
-- `/workspaces/cog/skills/claude/plan-queue-runner/SKILL.md` — ~lines 26–38 reference "prevented
+- `/workspaces/cog/skills/claude/runner-queue/SKILL.md` — ~lines 26–38 reference "prevented
   deterministically by the `cog hook-guard codex-foreground` `PreToolUse(Bash)` hook". Replace with
   the env-first guarantee; keep the nested-subagent + verify-don't-set prose.
 
@@ -211,7 +211,7 @@ artifacts. Add coverage for the new env preflight (export env vars in the test p
   `prex-stop` keeps the module; drop wording implying it gates backgrounding.
 - In `/workspaces/cog/skills/claude/prex/references/stage-2-through-5-details.md`, keep the `prex-stop`
   dependency reference; remove any `codex-foreground` claim.
-- In `/workspaces/cog/skills/claude/plan-queue-runner/SKILL.md` (~lines 26–38) and
+- In `/workspaces/cog/skills/claude/runner-queue/SKILL.md` (~lines 26–38) and
   `/workspaces/cog/agents/claude/claude-delegate.md` (~lines 30–38), replace hook claims with the
   env-first guarantee + foreground discipline. (review-loop / ask / plan-writer-multi prose is swept
   in Round 3.)
@@ -222,7 +222,7 @@ Grep `/workspaces/cog` and `/home/gbasso/.dotfiles` for `codex-foreground`, `gua
 and "hook is the guarantee"; confirm the only surviving `hook-guard` references are the `prex-stop`
 ones plus the Round-3-scoped skill prose still pending sweep. Run `just lint` and `just test`
 (pre-commit is the quality SoT). Commit via `/gc` (cog repo) and the dotfiles satellite via
-`/plan-queue-runner` / `/gc -a --repo /home/gbasso/.dotfiles` — the executor must NOT run git
+`/runner-queue` / `/gc -a --repo /home/gbasso/.dotfiles` — the executor must NOT run git
 directly.
 
 ### Final Step: Update the queue
@@ -247,7 +247,7 @@ Then restart `claude-session` before Round 2 so the new `base.json` env is in fo
 - [ ] `cmd_hook_guard.bats` (unit + integration) have no codex-foreground assertions and include the
       stage3 prex-stop case; env-preflight coverage added; `just test` passes.
 - [ ] No "the hook is the guarantee" / `codex-foreground` `PreToolUse` claim remains in `prex`
-      (SKILL.md + stage-2-through-5 reference), `plan-queue-runner`, or `claude-delegate`; replaced
+      (SKILL.md + stage-2-through-5 reference), `runner-queue`, or `claude-delegate`; replaced
       with env-first prose.
 - [ ] `just lint` passes (no MD040 violations; shellcheck clean).
 - [ ] This plan's `queue-rounds.yaml` shows round `revert-and-assert-core` as `done`.

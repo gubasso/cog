@@ -5,7 +5,7 @@
 ## Problem Statement
 
 `cog` ships Claude/Codex skills and Claude agents that orchestrate recursive, multi-step agentic
-work (`prex`, `plan-queue-runner`, `review-loop`, `ask`, `plan-writer-multi`) by delegating to
+work (`prex`, `runner-queue`, `review-loop`, `ask`, `plan-writer-multi`) by delegating to
 nested foreground subagents and by driving Codex through `cog codex-runner`. We want this — skills
 calling skills, processes under processes — to work the lean, correct way, and to revert a previous
 attempt that did not work, with no leftovers.
@@ -80,7 +80,7 @@ The authoritative order and status live in `queue-rounds.yaml`. Overview:
 1. `revert-and-assert-core.md` — Inject env into `claude-session` `base.json`; add the fail-closed
    `cog` env-preflight (advisory-now / fail-closed-for-new-sessions); remove the `codex-foreground`
    hook end-to-end (cog action, tests, base.json registration, dotfiles wrapper, require token, core
-   orchestration prose in prex/plan-queue-runner/claude-delegate); fix the `prex-stop` stage3 gap.
+   orchestration prose in prex/runner-queue/claude-delegate); fix the `prex-stop` stage3 gap.
    Multi-repo: `/workspaces/cog` + `/home/gbasso/.dotfiles`.
 2. `document-orchestration-contract.md` — ADR-0009 (supersedes ADR-0007's hook stance); reference
    doc (recursion primitives + env requirements + delegate-and-verify + depth budget; all external
@@ -104,7 +104,7 @@ The authoritative order and status live in `queue-rounds.yaml`. Overview:
 /prex -ar .implementation-plans/plans/skills-under-skills-env-first/encode-lint-and-sweep.md
 ```
 
-This plan writes into more than one repo. Run it through `/plan-queue-runner`, which guards every
+This plan writes into more than one repo. Run it through `/runner-queue`, which guards every
 declared repo's clean tree and commits each via `/gc -a --repo <sat>` — the inner `queue-rounds.yaml`
 declares `/home/gbasso/.dotfiles` as a satellite.
 
@@ -154,7 +154,7 @@ force (see the env-rollout sequencing note above).
   ADRs are never deleted (supersede instead); `just lint` / `just test` are the quality SoT
   (pre-commit).
 - **No git commands by the orchestrator.** Commits happen via `/gc`; multi-repo commits via
-  `/plan-queue-runner` (the dotfiles satellite). The executor must not run git directly.
+  `/runner-queue` (the dotfiles satellite). The executor must not run git directly.
 - **Keep the genuinely-correct architecture.** ADR-0007's in-session foreground subagents,
   `claude-delegate`, and verify-don't-set stay. This is a correction of ADR-0007's hook stance, not
   a teardown.
@@ -184,7 +184,7 @@ force (see the env-rollout sequencing note above).
   fail-closed-for-new-sessions, with an explicit restart step before Round 2. NEEDS HANDLING.
 - **Multi-repo coordination.** Changes span `/workspaces/cog` and `/home/gbasso/.dotfiles`. The
   dotfiles edits (base.json env + removing the PreToolUse registration + deleting the wrapper) must
-  land or the runtime env assertion has nothing to assert. Commit both via `/plan-queue-runner`
+  land or the runtime env assertion has nothing to assert. Commit both via `/runner-queue`
   satellites; never run git directly. NEEDS HANDLING.
 - **Stale deployed copies.** The dotfiles repo also carries parallel copies of cog skills/agents
   (`dotfiles/claude/.claude/skills/...`, `.../agents/...`) deployed to `~/.claude/skills` +

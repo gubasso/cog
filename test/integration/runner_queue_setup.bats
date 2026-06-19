@@ -24,8 +24,8 @@ rounds:
 EOF
 }
 
-@test "cog plan-queue-runner-setup writes ctx and initial queue selection" {
-  run cog plan-queue-runner-setup --json "--dry-run --max=3 plan"
+@test "cog runner-queue-setup writes ctx and initial queue selection" {
+  run cog runner-queue-setup --json "--dry-run --max=3 plan"
 
   assert_success
   printf '%s\n' "$output" | jq -e '.dry_run == true and .max_rounds == "3" and .queue_schema == "rounds" and (.queue_path | endswith("/plan/queue-rounds.yaml"))' >/dev/null
@@ -37,7 +37,7 @@ EOF
   jq -e '.schema == "rounds" and .selected.item == "next"' "${run_dir}/queue-select.json" >/dev/null
 }
 
-@test "cog plan-queue-runner-setup persists satellite repos from queue" {
+@test "cog runner-queue-setup persists satellite repos from queue" {
   mkdir -p "${BATS_TEST_TMPDIR}/satellite"
   cat >"${BATS_TEST_TMPDIR}/repo/plan/queue-rounds.yaml" <<EOF
 repos:
@@ -50,7 +50,7 @@ rounds:
     notes: note
 EOF
 
-  run cog plan-queue-runner-setup --json "plan"
+  run cog runner-queue-setup --json "plan"
 
   assert_success
   printf '%s\n' "$output" | jq -e --arg sat "${BATS_TEST_TMPDIR}/satellite" '.repos == [$sat]' >/dev/null
@@ -60,7 +60,7 @@ EOF
   assert_file_contains "${run_dir}/ctx.env" "${BATS_TEST_TMPDIR}/satellite"
 }
 
-@test "cog plan-queue-runner-setup accepts plans queue file and persists main queue context" {
+@test "cog runner-queue-setup accepts plans queue file and persists main queue context" {
   mkdir -p "${BATS_TEST_TMPDIR}/repo/plans/main"
   cat >"${BATS_TEST_TMPDIR}/repo/plans/main/queue-rounds.yaml" <<'EOF'
 rounds:
@@ -79,7 +79,7 @@ plans:
     notes: note
 EOF
 
-  run cog plan-queue-runner-setup --json "queue-plans.yaml"
+  run cog runner-queue-setup --json "queue-plans.yaml"
 
   assert_success
   printf '%s\n' "$output" | jq -e '.queue_schema == "plans" and (.queue_path | endswith("/repo/queue-plans.yaml")) and (.main_queue_path | endswith("/repo/queue-plans.yaml"))' >/dev/null
@@ -90,36 +90,36 @@ EOF
   jq -e '.schema == "plans" and .selected.item == "main"' "${run_dir}/queue-select.json" >/dev/null
 }
 
-@test "cog plan-queue-runner-setup rejects both or neither schema" {
+@test "cog runner-queue-setup rejects both or neither schema" {
   cat >"${BATS_TEST_TMPDIR}/repo/both.yaml" <<'EOF'
 plans: []
 rounds: []
 EOF
-  run --separate-stderr cog plan-queue-runner-setup --json "both.yaml"
+  run --separate-stderr cog runner-queue-setup --json "both.yaml"
   assert_failure
   [[ $stderr == *"queue file has neither/both top-level schema"* ]]
 
   cat >"${BATS_TEST_TMPDIR}/repo/neither.yaml" <<'EOF'
 repos: []
 EOF
-  run --separate-stderr cog plan-queue-runner-setup --json "neither.yaml"
+  run --separate-stderr cog runner-queue-setup --json "neither.yaml"
   assert_failure
   [[ $stderr == *"queue file has neither/both top-level schema"* ]]
 }
 
-@test "cog plan-queue-runner-setup rejects invalid max and missing target" {
-  run --separate-stderr cog plan-queue-runner-setup --json "--max 0 plan"
+@test "cog runner-queue-setup rejects invalid max and missing target" {
+  run --separate-stderr cog runner-queue-setup --json "--max 0 plan"
   assert_failure 2
   [[ $stderr == *"invalid max rounds"* ]]
 
-  run --separate-stderr cog plan-queue-runner-setup --json "--dry-run"
+  run --separate-stderr cog runner-queue-setup --json "--dry-run"
   assert_failure 2
   [[ $stderr == *"missing plan queue target"* ]]
 }
 
-@test "cog plan-queue-runner-setup --help dispatches" {
-  run cog plan-queue-runner-setup --help
+@test "cog runner-queue-setup --help dispatches" {
+  run cog runner-queue-setup --help
 
   assert_success
-  [[ $output == *"Parse plan-queue-runner"* ]]
+  [[ $output == *"Parse runner-queue"* ]]
 }

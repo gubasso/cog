@@ -126,7 +126,7 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
 - **ADR-number collision** with the unrelated self-contained plan's new ADR — mitigated by picking
   the next free number at execution (the plans are otherwise independent and may run in any order).
-- **Rename ripple is wide.** `plans-revision` appears in the skill itself, `plan-queue-runner/
+- **Rename ripple is wide.** `plans-revision` appears in the skill itself, `runner-queue/
   SKILL.md` (~13 refs), ADR-0012 prose, `cli-commands.md`, two bats suites, and help snapshots. The
   rename round greps for every occurrence rather than trusting a fixed list, and runs `cog
   skill-lint` + the integration suite as the postcondition.

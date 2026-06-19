@@ -6,7 +6,7 @@
 ## Context
 
 Rounds 1–5 land the new convention in the **product** (spec, cog mechanics, producer skills, the
-`plan-queue-runner` consumer, docs, and tests): every plan is a directory, rounds are uncapped, the
+`runner-queue` consumer, docs, and tests): every plan is a directory, rounds are uncapped, the
 two-layer decomposition is in effect, and the queue files are `queue-plans.yaml` (root) /
 `queue-rounds.yaml` (inner). Through Rounds 1–5 the **live** `.implementation-plans/` data is left in
 the OLD format on purpose, so the in-flight runner driving this plan keeps working (it pins its queue
@@ -16,14 +16,14 @@ This final round brings the live data into alignment with the now-migrated produ
 text of the sibling plans so they describe the new code state. It is **status-preserving** (no
 round/plan status is lost or changed except the two flips this round itself owns).
 
-**Run this round DIRECTLY**, not via `/plan-queue-runner`:
+**Run this round DIRECTLY**, not via `/runner-queue`:
 
 ```bash
 /prex -ar .implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md
 ```
 
 This round renames the very queue files a directory-level runner pins at setup (this plan's own inner
-queue and the root ledger), so driving it through `plan-queue-runner` would break the runner's
+queue and the root ledger), so driving it through `runner-queue` would break the runner's
 post-round status read. The plan README documents this direct-invocation path as robust to the
 rename. The round body runs **no git commands**; commit afterward with `/gc -a` (mirroring the
 dir-runner's commit step).
@@ -31,9 +31,9 @@ dir-runner's commit step).
 ## Previous Rounds
 
 Round 1 rewrote the external spec; Round 2 renamed the cog mechanics (`cmd_plan_init.sh`,
-`cmd_plan_queue_runner_setup.sh`, `fn_queue.sh`, the reserved-slug guard in `cmd_plan_slug.sh`); Round
+`cmd_runner_queue_setup.sh`, `fn_queue.sh`, the reserved-slug guard in `cmd_plan_slug.sh`); Round
 3 rewrote the producer skills (and removed the EF-sanity gate); Round 4 updated the
-`plan-queue-runner` consumer + docs + a superseding ADR; Round 5 updated the tests and proved the
+`runner-queue` consumer + docs + a superseding ADR; Round 5 updated the tests and proved the
 product green. The product now reads/writes `queue-plans.yaml` / `queue-rounds.yaml` and knows only
 directory plans. The live `.implementation-plans/` data is the last thing still on the old format.
 

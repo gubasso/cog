@@ -4,44 +4,44 @@ setup() {
   _common_setup
 }
 
-@test "cog plan-queue-runner-parse-commit extracts commit sha" {
+@test "cog runner-queue-parse-commit extracts commit sha" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "noise" "COMMIT_PUSH_OK abc1234 pushed" >"$out"
 
-  run cog plan-queue-runner-parse-commit "$out" --json
+  run cog runner-queue-parse-commit "$out" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and (.line | startswith("COMMIT_PUSH_OK"))' >/dev/null
 }
 
-@test "cog plan-queue-runner-parse-commit preserves legacy single-repo outputs" {
+@test "cog runner-queue-parse-commit preserves legacy single-repo outputs" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "COMMIT_OK abc1234" >"$out"
 
-  run cog plan-queue-runner-parse-commit "$out"
+  run cog runner-queue-parse-commit "$out"
 
   assert_success
   assert_output "COMMIT_SHA=abc1234"
 
-  run cog plan-queue-runner-parse-commit "$out" --json
+  run cog runner-queue-parse-commit "$out" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and .line == "COMMIT_OK abc1234"' >/dev/null
 }
 
-@test "cog plan-queue-runner-parse-commit emits multi-repo lines and json" {
+@test "cog runner-queue-parse-commit emits multi-repo lines and json" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' \
     "COMMIT_OK abc1234 repo=/repo/a" \
     "COMMIT_PUSH_OK def4567 repo=/repo/b" >"$out"
 
-  run cog plan-queue-runner-parse-commit "$out"
+  run cog runner-queue-parse-commit "$out"
 
   assert_success
   assert_line "COMMIT_SHA=abc1234 repo=/repo/a"
   assert_line "COMMIT_SHA=def4567 repo=/repo/b"
 
-  run cog plan-queue-runner-parse-commit "$out" --json
+  run cog runner-queue-parse-commit "$out" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
@@ -51,33 +51,33 @@ setup() {
   ' >/dev/null
 }
 
-@test "cog plan-queue-runner-parse-commit fails if any repo failed" {
+@test "cog runner-queue-parse-commit fails if any repo failed" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "COMMIT_OK abc1234 repo=/repo/a" "COMMIT_FAILED hook repo=/repo/b log=/tmp/log" >"$out"
 
-  run --separate-stderr cog plan-queue-runner-parse-commit "$out" --json
+  run --separate-stderr cog runner-queue-parse-commit "$out" --json
 
   assert_failure
   [[ $stderr == *"gc commit failed"* ]]
 }
 
-@test "cog plan-queue-runner-parse-commit rejects failures and missing lines" {
+@test "cog runner-queue-parse-commit rejects failures and missing lines" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "COMMIT_FAILED hook" >"$out"
 
-  run --separate-stderr cog plan-queue-runner-parse-commit "$out" --json
+  run --separate-stderr cog runner-queue-parse-commit "$out" --json
   assert_failure
   [[ $stderr == *"gc commit failed"* ]]
 
   printf '%s\n' "no commit" >"$out"
-  run --separate-stderr cog plan-queue-runner-parse-commit "$out" --json
+  run --separate-stderr cog runner-queue-parse-commit "$out" --json
   assert_failure
   [[ $stderr == *"missing COMMIT_* line"* ]]
 }
 
-@test "cog plan-queue-runner-parse-commit --help dispatches" {
-  run cog plan-queue-runner-parse-commit --help
+@test "cog runner-queue-parse-commit --help dispatches" {
+  run cog runner-queue-parse-commit --help
 
   assert_success
-  [[ $output == *"Parse a plan-queue-runner"* ]]
+  [[ $output == *"Parse a runner-queue"* ]]
 }

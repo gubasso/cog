@@ -303,7 +303,7 @@ entries where the domain split has ordering, and use
 If the plan's rounds implement into a **satellite git repo** other than the one holding the plan
 (for example, extracting code into a target project or writing into a SoT docs repo), add an optional
 top-level `repos:` list to the inner `queue-rounds.yaml` — one absolute path per satellite, placed
-**before** `rounds:`. `/plan-queue-runner` then guards every declared repo's clean tree and commits
+**before** `rounds:`. `/runner-queue` then guards every declared repo's clean tree and commits
 each one via `/gc -a --repo <sat>...`, so the round's artifacts are committed, not just the
 `queue-rounds.yaml` status flip.
 
@@ -335,7 +335,7 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`) — never nested and never containing plan
   subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog plans-revision-scan`,
-  and `cog plan-queue-runner-resolve-plan` fail closed on any nested plan.
+  and `cog runner-queue-resolve-plan` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
 - Codex calls go through `cog codex-runner run-exec` with `--profile medium`, read-only
   native/fallback sandboxing, `< /dev/null`, stderr→log, and Bash timeout `600000`, in the

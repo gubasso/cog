@@ -2,14 +2,14 @@
 
 ## Context and Problem Statement
 
-`plan-queue-runner` must reconcile implementation plans with repository state after committed work,
+`runner-queue` must reconcile implementation plans with repository state after committed work,
 before selecting more work. Without a revision boundary, remaining `todo` and `backlog` items can
 drift from code that has already landed, causing duplicate work or missed regressions.
 
 ## Considered Options
 
 - No revision step; rely on the next executor to notice drift.
-- Runner-owned revision logic inside `plan-queue-runner`.
+- Runner-owned revision logic inside `runner-queue`.
 - Dedicated project-local revision skill with deterministic `cog` scan, verify, and queue helpers.
 
 ## Decision Outcome

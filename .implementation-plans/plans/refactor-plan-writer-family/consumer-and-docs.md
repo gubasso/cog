@@ -5,7 +5,7 @@
 
 ## Context
 
-`plan-queue-runner` is the CONSUMER that drives a directory plan from its inner queue — it
+`runner-queue` is the CONSUMER that drives a directory plan from its inner queue — it
 reads/selects rounds by filename, so the inner rename (`QUEUE.yaml` → `queue-rounds.yaml`) breaks it
 unless updated. Several cog docs/ADRs also reference the queue postcondition by the old name. Finally,
 the format change (retire single-file) + uncapped rounds + two-layer decomposition + queue rename is a
@@ -17,14 +17,14 @@ Do NOT rename this plan's own `queue-rounds.yaml` (see the plan README's "Scaffo
 ## Previous Rounds
 
 Round 1 rewrote the external spec. Round 2 renamed the cog mechanics (incl.
-`cmd_plan_queue_runner_setup` resolving `queue-rounds.yaml` and the generalized `fn_queue.sh` error
+`cmd_runner_queue_setup` resolving `queue-rounds.yaml` and the generalized `fn_queue.sh` error
 strings). Round 3 rewrote the producer skills for the directory-always / uncapped / two-layer model
 and new filenames (and removed the `plan-writer-multi` EF-sanity gate). The consumer + docs must now
 align.
 
 ## Scope of This Round
 
-- **IN scope:** `plan-queue-runner/SKILL.md` (inner-filename reads/selects), cog docs that name the
+- **IN scope:** `runner-queue/SKILL.md` (inner-filename reads/selects), cog docs that name the
   queue postcondition, the `docs/README.md` index, and a new superseding ADR.
 - **OUT of scope:** the test blast radius (Round 5) and any live `.implementation-plans/` data.
 
@@ -32,13 +32,13 @@ align.
 
 ### Key Files
 
-- `/workspaces/cog/skills/claude/plan-queue-runner/SKILL.md` (~275 lines). Drives a directory plan
+- `/workspaces/cog/skills/claude/runner-queue/SKILL.md` (~275 lines). Drives a directory plan
   from its inner queue. References `QUEUE.yaml` throughout: the frontmatter `description`, the prose,
   the Multi-Repo `repos:` example, the Algorithm, the dry-run selection
   `yq e -r '.rounds[] | select(.status == "todo") | "- " + .item + ": " + .prompt' "$QUEUE_PATH"`, the
   verify snippets `ITEM="$ITEM" yq e -r '.rounds[] | select(.item == strenv(ITEM)) | .status'
-  "$QUEUE_PATH"`, the Usage examples (`/plan-queue-runner .../QUEUE.yaml`), and the Rules ("Never
-  write `QUEUE.yaml`", "no `yq -i` ... to the queue path"). It calls `cog plan-queue-runner-setup`,
+  "$QUEUE_PATH"`, the Usage examples (`/runner-queue .../QUEUE.yaml`), and the Rules ("Never
+  write `QUEUE.yaml`", "no `yq -i` ... to the queue path"). It calls `cog runner-queue-setup`,
   whose normalization was already updated in Round 2 to resolve `queue-rounds.yaml`. It already
   supports an optional top-level `repos:` list in the inner queue (clean-tree guard + `/gc -a --repo
   <sat>` cover every declared repo). Update all inner-queue references to `queue-rounds.yaml`.
@@ -57,8 +57,8 @@ align.
   prior decision and cross-link both directions. Use the repo's ADR format and the next number in
   sequence (inspect existing `docs/decisions/NNNN-*.md` to find the format and the next number; ADR
   0008 is `0008-skill-script-boundary.md`).
-- Skills keep judgment in prose; mechanics in cog. The `yq` selection in `plan-queue-runner` reads
-  from the path that `cog plan-queue-runner-setup` resolves — keep prose and mechanics consistent.
+- Skills keep judgment in prose; mechanics in cog. The `yq` selection in `runner-queue` reads
+  from the path that `cog runner-queue-setup` resolves — keep prose and mechanics consistent.
 - `docs/README.md` is an **index only** (no content beyond pointers).
 
 ## Implementation Steps
@@ -67,12 +67,12 @@ align.
 
 In this plan's `queue-rounds.yaml`, set this round's (`item: consumer-and-docs`) `status` to `doing`.
 
-### Step 1: Update `plan-queue-runner/SKILL.md`
+### Step 1: Update `runner-queue/SKILL.md`
 
 - Replace every inner-queue reference `QUEUE.yaml` with `queue-rounds.yaml`: the frontmatter
   `description`, the prose, the `repos:` example, the Algorithm, the `yq` dry-run + verify selections
   (`.rounds[]` selections operate on `$QUEUE_PATH`), the Usage examples, and the Rules. Confirm the
-  `cog plan-queue-runner-setup` target examples accept a bare plan dir (now resolves
+  `cog runner-queue-setup` target examples accept a bare plan dir (now resolves
   `queue-rounds.yaml`) and an explicit `.../queue-rounds.yaml` path. Keep the `repos:` satellite
   handling intact.
 - Run `cog skill-lint` on the touched SKILL.md.
@@ -102,7 +102,7 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: consumer-and-docs`)
 
 ## Acceptance Criteria
 
-- [ ] `plan-queue-runner` reads/selects rounds from `queue-rounds.yaml`; no `QUEUE.yaml` literal
+- [ ] `runner-queue` reads/selects rounds from `queue-rounds.yaml`; no `QUEUE.yaml` literal
       remains in it; `cog skill-lint` passes.
 - [ ] `docs/reference/orchestration-contract.md` and `docs/decisions/0007-*.md` reference the new
       filenames.
@@ -113,5 +113,5 @@ In this plan's `queue-rounds.yaml`, set this round's (`item: consumer-and-docs`)
 ## Next Round
 
 Round 5 updates the full test blast radius (24 references), including the literal-path assertions in
-`plan_init.bats` and `plan_queue_runner_setup.bats`, sweeps the repo for stale references, and runs
+`plan_init.bats` and `runner_queue_setup.bats`, sweeps the repo for stale references, and runs
 `just lint` + `just test`.
