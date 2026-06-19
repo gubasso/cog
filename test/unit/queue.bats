@@ -43,8 +43,8 @@ entry_json() {
 }
 
 @test "queue_bootstrap_file creates plans and rounds queues" {
-  local plans="${BATS_TEST_TMPDIR}/plans/QUEUE.yaml"
-  local rounds="${BATS_TEST_TMPDIR}/rounds/QUEUE.yaml"
+  local plans="${BATS_TEST_TMPDIR}/plans/queue-plans.yaml"
+  local rounds="${BATS_TEST_TMPDIR}/rounds/queue-rounds.yaml"
 
   cog::fn::queue_bootstrap_file "$plans" plans
   cog::fn::queue_bootstrap_file "$rounds" rounds
@@ -104,7 +104,7 @@ EOF
 }
 
 @test "queue_append_entry appends to empty helper-owned queue and rejects duplicates" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   local entry
   printf '%s\n' 'plans: []' >"$queue"
   entry="$(entry_json domain-libs-port todo)"
@@ -123,7 +123,7 @@ EOF
 }
 
 @test "queue_append_entry rejects unsupported shape and invalid json" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   printf '%s\n' 'plans: []' 'extra: []' >"$queue"
 
   run --separate-stderr cog::fn::queue_append_entry "$queue" plans "$(entry_json one todo)"
@@ -200,7 +200,7 @@ EOF
     [[ $1 != yq ]] && command -v "$1" >/dev/null 2>&1
   }
 
-  run --separate-stderr cog::fn::queue_bootstrap_file "${BATS_TEST_TMPDIR}/QUEUE.yaml" plans
+  run --separate-stderr cog::fn::queue_bootstrap_file "${BATS_TEST_TMPDIR}/queue-plans.yaml" plans
 
   assert_failure 69
   [[ $stderr == *"err.kind: MissingRequirement"* ]]

@@ -32,7 +32,7 @@ setup() {
 }
 
 @test "queue-append emits self-checked JSON" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   printf '%s\n' "rounds: []" >"$queue"
 
   run cog::cmd::queue_append --schema rounds --queue "$queue" --item one --status todo --prompt "/prex -ar one.md" --json

@@ -14,7 +14,7 @@ esac
 EOF
   chmod +x "${BATS_TEST_TMPDIR}/fakebin/git"
   export PATH="${BATS_TEST_TMPDIR}/fakebin:${PATH}"
-  cat >"${BATS_TEST_TMPDIR}/repo/plan/QUEUE.yaml" <<'EOF'
+  cat >"${BATS_TEST_TMPDIR}/repo/plan/queue-rounds.yaml" <<'EOF'
 rounds:
   - item: next
     status: todo
@@ -28,7 +28,7 @@ EOF
   run cog plan-queue-runner-setup --json "--dry-run --max=3 plan"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.dry_run == true and .max_rounds == "3" and (.queue_path | endswith("/plan/QUEUE.yaml"))' >/dev/null
+  printf '%s\n' "$output" | jq -e '.dry_run == true and .max_rounds == "3" and (.queue_path | endswith("/plan/queue-rounds.yaml"))' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   assert_file_contains "${run_dir}/ctx.env" "DRY_RUN=1"
@@ -37,7 +37,7 @@ EOF
 
 @test "cog plan-queue-runner-setup persists satellite repos from queue" {
   mkdir -p "${BATS_TEST_TMPDIR}/satellite"
-  cat >"${BATS_TEST_TMPDIR}/repo/plan/QUEUE.yaml" <<EOF
+  cat >"${BATS_TEST_TMPDIR}/repo/plan/queue-rounds.yaml" <<EOF
 repos:
   - ${BATS_TEST_TMPDIR}/satellite
 rounds:

@@ -20,7 +20,7 @@ setup() {
 }
 
 @test "queue-select build reports blocked dependencies" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   cat >"$queue" <<'EOF'
 rounds:
   - item: blocked

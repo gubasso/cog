@@ -5,8 +5,8 @@ setup() {
 }
 
 @test "cog queue-bootstrap creates plans and rounds queues" {
-  local plans="${BATS_TEST_TMPDIR}/plans/QUEUE.yaml"
-  local rounds="${BATS_TEST_TMPDIR}/rounds/QUEUE.yaml"
+  local plans="${BATS_TEST_TMPDIR}/plans/queue-plans.yaml"
+  local rounds="${BATS_TEST_TMPDIR}/rounds/queue-rounds.yaml"
 
   run cog queue-bootstrap --schema plans --queue "$plans" --json
   assert_success
@@ -20,7 +20,7 @@ setup() {
 }
 
 @test "cog queue-bootstrap is idempotent and rejects invalid schema" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   run cog queue-bootstrap --schema rounds --queue "$queue" --json
   assert_success
 

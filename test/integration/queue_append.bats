@@ -5,7 +5,7 @@ setup() {
 }
 
 @test "cog queue-append appends one entry without changing prefix" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   local prefix="${BATS_TEST_TMPDIR}/prefix.txt"
   cat >"$queue" <<'EOF'
 # queue fixture
@@ -27,7 +27,7 @@ EOF
 }
 
 @test "cog queue-append rejects duplicate items" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   printf '%s\n' "rounds: []" >"$queue"
   cog queue-append --schema rounds --queue "$queue" --item same --status todo --prompt "/prex -ar one.md" --json >/dev/null
 

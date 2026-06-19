@@ -22,7 +22,7 @@ EOF
 }
 
 @test "cog queue-select selects next runnable round" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   write_queue "$queue"
 
   run cog queue-select --queue "$queue" --no-clean-check --json
@@ -32,7 +32,7 @@ EOF
 }
 
 @test "cog queue-select reports complete blocked and doing states" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   cat >"$queue" <<'EOF'
 rounds:
   - item: first
@@ -79,7 +79,7 @@ EOF
   git -C "$target" config user.name tester
   git -C "$target" commit -q --allow-empty -m init
   # Queue file lives outside the target repo so it does not dirty the worktree.
-  local queue="${BATS_TEST_TMPDIR}/clean-QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/clean-queue-rounds.yaml"
   write_queue "$queue"
 
   # Caller's cwd: a *different*, dirty repo. If the clean check ran against cwd
@@ -100,7 +100,7 @@ EOF
   mkdir -p "$target"
   git -C "$target" init -q
   printf 'unstaged\n' >"${target}/scratch.txt"
-  local queue="${target}/QUEUE.yaml"
+  local queue="${target}/queue-rounds.yaml"
   write_queue "$queue"
 
   run cog queue-select --queue "$queue" --repo-root "$target" --json
@@ -110,7 +110,7 @@ EOF
 }
 
 @test "cog queue-select accepts absolute repos block and rejects relative entries" {
-  local queue="${BATS_TEST_TMPDIR}/QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   cat >"$queue" <<EOF
 repos:
   - ${BATS_TEST_TMPDIR}/satellite
@@ -157,7 +157,7 @@ EOF
   git -C "$primary" commit -q --allow-empty -m init
   git -C "$satellite" commit -q --allow-empty -m init
   printf 'dirty\n' >"${satellite}/dirty.txt"
-  local queue="${BATS_TEST_TMPDIR}/satellite-QUEUE.yaml"
+  local queue="${BATS_TEST_TMPDIR}/satellite-queue-rounds.yaml"
   write_queue "$queue"
 
   run cog queue-select --queue "$queue" --repo-root "$primary" --repo "$satellite" --json

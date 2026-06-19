@@ -29,7 +29,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/consumer-and-docs.md
     notes: plan-queue-runner + cog docs + superseding ADR.
   - item: tests-and-gates
-    status: todo
+    status: done
     depends_on:
       - cog-mechanics-rename
       - skills-rewrite
