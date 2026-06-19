@@ -58,6 +58,8 @@ Commands:
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  plans-revision-scan Inventory all implementation-plan queues and repo/plan fingerprints.
+  plans-revision-verify Verify a plans-revision against a before/after scan.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
@@ -131,6 +133,8 @@ Commands:
   plan-queue-runner-setup Parse plan-queue-runner arguments and create run state.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  plans-revision-scan Inventory all implementation-plan queues and repo/plan fingerprints.
+  plans-revision-verify Verify a plans-revision against a before/after scan.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.

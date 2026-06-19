@@ -44,6 +44,8 @@ _cog() {
     plan-queue-runner-setup
     plan-slug
     plan-writer-multi-setup
+    plans-revision-scan
+    plans-revision-verify
     precommit-apply-template
     precommit-detect
     preflight
