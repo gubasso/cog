@@ -16,3 +16,8 @@ plans:
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware.md
     notes: 'Make cog plan-slug stopword-aware: drop filler words before selecting up to 6 meaningful words, empty-input fallback, redesigned additive JSON (normalized/words/dropped/fallback/truncated/max_words) preserving .slug/.ok. Updates 2 test files, cli-commands.md, 3 plan-writer SKILL.md. S/M single-file, prex.'
+  - item: cog-contract-and-spec-uplift
+    status: todo
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/cog-contract-and-spec-uplift/
+    notes: L (override M->L), 4 independent rounds, prex. (1) docs-n-notes Python subcommand+error chapters & digest refresh; (2) cog init DRY w/ doctor; (3) remove human-UX leakage from cmd_msg/doctor + close ADR-0009 ack; (4) cog digest-check/digest-stamp deterministic tooling. Cross-repo (cog + DocsNNotes). Rounds order-independent.
