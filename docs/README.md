@@ -26,6 +26,8 @@ This directory is organized using Diataxis zones.
 
 - [CLI commands](reference/cli-commands.md)
 - [Install layout](reference/install-layout.md)
+- [Claude models reference](reference/models-reference-claude.md)
+- [Codex / GPT models reference](reference/models-reference-codex.md)
 - [Skills](reference/skills.md)
 - [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
