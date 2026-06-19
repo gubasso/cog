@@ -33,7 +33,8 @@ inline: gather raw context → research → INTERVIEW → build RAW BRIEF → pr
             ├──(Agent fork)── Claude plan-writer (orchestrator mode) → claude-draft.md
             └──(Bash)──────── Codex  plan-writer twin (orchestrator)  → codex-draft.md
             │
-inline: review + compare both → reconcile grade/round split (re-interview if needed)
+inline: review + compare both → reconcile Layer 1 directory split and Layer 2 round split
+        (re-interview if needed)
         → write definitive plan to .implementation-plans/ → confirm
 ```
 
@@ -239,23 +240,19 @@ with the live conversation context neither worker fully has. Review and compare 
 distilled from `plan-reviewer` and
 `$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/verdict-model.md`:
 
-- correctness, completeness vs the brief, feasibility, **round-split / decomposition quality**, risk
-  coverage, idiomatic fit to repo conventions, currency.
+- correctness, completeness vs the brief, feasibility, **Layer 1 / Layer 2 decomposition quality**,
+  risk coverage, idiomatic fit to repo conventions, currency.
 
-### EF-sanity gate (before reconciling)
+### Scope-driven decomposition check
 
-For each draft, verify its proposed grade is reachable under the brief's EF (`complexity-heuristic.md`
-§ "EF is mandatory — reachable grades per executor"). A draft proposing a grade above the EF ceiling —
-e.g., XL or 4+ rounds under prex (EF 1.5) — applied the EF incorrectly. Treat its grade as an
-EF-application error: re-grade its axes ÷ the stated EF yourself and down-weight its format choice
-before steelmanning. Do NOT surface an out-of-range grade to the user as a coin-flip. Genuine
-one-grade boundary disagreements (e.g., M vs L) still go to the normal steelman + re-interview path
-below.
+Round count is scope-driven and uncapped. Compare drafts on Layer 1 domain/scope decomposition and
+Layer 2 per-directory round decomposition. Do not reject or down-weight a draft merely because it
+proposes XL or many rounds under `prex`.
 
 Steelman **both** drafts; adopt the stronger elements of each; on any disagreement — especially the
-complexity grade or the round split — decide using the conversation context you alone hold, and
-**re-interview the user** (`AskUserQuestion`) to confirm an L/XL round split before writing. The final
-plan is yours — not a mechanical merge.
+complexity grade, directory split, or round split — decide using the conversation context you alone
+hold, and **re-interview the user** (`AskUserQuestion`) to confirm the directory and round split
+before writing. The final plan is yours — not a mechanical merge.
 
 Then **write the canonical output yourself**, following stock `plan-writer` Phases 5–6 and the shared
 `round-templates.md`. The coordinator owns final writes; both workers remain read-only with respect
@@ -263,43 +260,49 @@ to `.implementation-plans/`.
 
 - Derive the slug from the orientation through `cog plan-slug` and run the Phase 1b
   collision check — do not silently overwrite. The helper owns `[a-z0-9-]`, max-length, and
-  reserved-name validation for `readme`/`queue`/`strategy`; the coordinator owns collision judgment.
-- Classify the final grade (axes ÷ EF, then confirm it is reachable under the EF) and select the
-  format **per the grade table in `complexity-heuristic.md`** (the single source of truth for
-  grade→format): single file `…/plans/<slug>.md` (Template E) for S/M, or directory
-  `…/plans/<slug>/` (Templates A–D; C for XL) for L/XL.
-- Bootstrap `.implementation-plans/README.md` + top-level `QUEUE.yaml` through
-  `cog plan-init` and `cog queue-bootstrap`. Write the plan file(s), then register
-  the plan through `cog queue-append` (append-only, with a `prompt:` field). For directory
-  plans, bootstrap and append the inner `rounds:` queue through the same helper. Every plan/round
-  file is self-contained and carries the `Executor: <EXECUTOR> (EF <EF>)` line. For directory plans,
-  include the one-round-per-`/prex`-session execution-discipline section.
+  the reserved-name set owned by `cog plan-slug`; the coordinator owns collision judgment.
+- Classify the final grade (axes ÷ EF) as a sizing signal. Select one or more flat sibling plan
+  directories via Layer 1, then split each directory into uncapped rounds via Layer 2. Once the
+  Layer 1 split is known, run the Phase 1b collision check for **every** sibling directory it will
+  register (`$PLANS_DIR/<sibling-slug>/`), not just the base slug — do not silently overwrite any
+  existing non-empty sibling directory.
+- Bootstrap `.implementation-plans/README.md` + top-level `queue-plans.yaml` through
+  `cog plan-init` and `cog queue-bootstrap`. Write a complete plan directory for **each** Layer 1
+  sibling (its own `README.md`, optional `STRATEGY.md`, and round files), then register
+  each plan directory through `cog queue-append` (append-only, with a `prompt:` field). For each
+  sibling directory, bootstrap and append the inner `queue-rounds.yaml` through the same helper.
+  Every plan/round file is self-contained and carries the `Executor: <EXECUTOR> (EF <EF>)` line.
+  Include the one-round-per-`/prex`-session execution-discipline section.
 
 ```bash
 cog plan-slug --text "$(cat "$RUN_DIR/orientation.txt")" --json
 cog plan-init --repo-root "$REPO_ROOT" --json
-cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/QUEUE.yaml" --json
-cog queue-append --schema plans --queue "$PLAN_ROOT/QUEUE.yaml" \
+cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" --json
+cog queue-append --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" \
   --item "$QUEUE_ITEM" --status todo --depends-on "$DEPENDS_ON_CSV" \
   --prompt "$PROMPT" --notes "$NOTES" --json
 ```
 
-For directory plans:
+For each sibling directory:
 
 ```bash
-cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" --json
-cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" \
+cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
+cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
   --item "$TOPIC" --status todo --depends-on "$ROUND_DEPENDS_ON_CSV" \
   --prompt "/prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
   --notes "$ROUND_NOTES" --json
 ```
 
+Append one `queue-plans.yaml` entry per sibling directory. Use `depends_on` between top-level
+entries where the domain split has ordering, and use
+`/prex -ar @.implementation-plans/plans/<slug>/` as the top-level prompt form.
+
 If the plan's rounds implement into a **satellite git repo** other than the one holding the plan
 (for example, extracting code into a target project or writing into a SoT docs repo), add an optional
-top-level `repos:` list to the inner `QUEUE.yaml` — one absolute path per satellite, placed
+top-level `repos:` list to the inner `queue-rounds.yaml` — one absolute path per satellite, placed
 **before** `rounds:`. `/plan-queue-runner` then guards every declared repo's clean tree and commits
 each one via `/gc -a --repo <sat>...`, so the round's artifacts are committed, not just the
-`QUEUE.yaml` flip.
+`queue-rounds.yaml` status flip.
 
 When degraded (Codex unavailable), synthesis is over the Claude draft alone.
 
@@ -307,8 +310,8 @@ When degraded (Codex unavailable), synthesis is over the Claude draft alone.
 
 Report (do not dump full file contents unless asked):
 
-1. Plan path (S/M file) or directory (L/XL), file count, approx line count.
-2. Grade, output format, round count; for directories, one line per round file.
+1. Plan directory or directories, file count, approx line count.
+2. Adjusted grade, Layer 1 directory count, and Layer 2 round count per directory.
 3. The exact `/prex -ar` execution command(s) and the one-round-per-session reminder for directories.
 4. One-line **synthesis provenance**: drafted independently by Claude and Codex (or Claude-only if
    degraded), plus any notable element adopted from the Codex draft.
@@ -334,7 +337,7 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
   `--approval-policy`/`-a`.
 - Never hard-fail on Codex unavailability — degrade to a Claude-only plan with the note.
 - Do not run git commands. Do not overwrite `.implementation-plans/README.md`; append-only on
-  `QUEUE.yaml`.
+  `queue-plans.yaml`.
 - The Claude draft is required; fail closed (ask the user) if its delegation proof is missing.
 - For single-engine planning without Codex, prefer plain `/plan-writer`; `--solo` here exists for
   graceful, uniform degradation within the coordinator.

@@ -3,11 +3,11 @@ name: plan-writer
 description: >
   Codex twin of the Claude `plan-writer` skill. Single-pass generator that turns
   a self-contained context brief (or orientation) plus read-only repo research
-  into an executor-aware implementation plan, sized S/M/L/XL with the complexity
-  heuristic and the prex Executor Factor. Read-only and non-interactive; emits
-  the plan as its final message. Primarily driven by the `plan-writer-multi`
-  coordinator as the parallel second engine. Triggers: "plan-writer", "write a
-  plan", "draft an implementation plan".
+  into directory-plan drafts for the directory-only, two-layer model, using the
+  complexity heuristic and the prex Executor Factor as sizing signals. Read-only
+  and non-interactive; emits the plan as its final message. Primarily driven by
+  the `plan-writer-multi` coordinator as the parallel second engine. Triggers:
+  "plan-writer", "write a plan", "draft an implementation plan".
 ---
 
 <!-- trigger-tests: "plan-writer for this brief", "draft an implementation plan from this context", "plan-writer-multi codex worker" -->
@@ -15,9 +15,9 @@ description: >
 # Plan Writer — Codex twin
 
 Same contract as the Claude `plan-writer` skill: turn a self-contained context brief into an
-executor-aware implementation plan, sized S/M/L/XL. The plan-rounds references are shared via
-`$DOCS_NOTES_REPO`; this twin reads the same files. Canonical semantics live in the Claude twin —
-see `skills/claude/plan-writer/SKILL.md`.
+executor-aware directory-plan draft. The adjusted grade is a sizing signal for directory rounds. The
+plan-rounds references are shared via `$DOCS_NOTES_REPO`; this twin reads the same files. Canonical
+semantics live in the Claude twin — see `skills/claude/plan-writer/SKILL.md`.
 
 This twin is **read-only** and **non-interactive**: it never writes repo files, never bootstraps or
 registers `.implementation-plans/`, and never asks the user questions. It emits exactly one plan
@@ -55,14 +55,13 @@ orientation footer. In this mode:
    quote signatures/lines). Do not modify anything.
 3. Classify complexity **independently** against the five axes in `complexity-heuristic.md`. Sum the
    raw score (5–20), divide by the **EF stated in the brief**, and map the **adjusted** score to a
-   grade (S/M/L/XL) per that file's grade table. Confirm the grade is reachable under that EF
-   (`complexity-heuristic.md` § "EF is mandatory — reachable grades per executor"); never map the
-   raw score.
+   grade (S/M/L/XL) per that file's grade table; never map the raw score.
 4. Generate ONE plan draft and emit it as your **final message** (no file writes):
-   - S/M → a single-file plan body (Template E shape).
-   - L/XL → one structured document describing the directory plan inline: the `README.md` body, each
-     round file (its `<topic>` slug + body), and the inner `QUEUE.yaml` round split. Do NOT create a
-     directory — emit everything in the single final message for the coordinator to reconcile.
+   - One or more sibling plan-directory drafts.
+   - For each directory, include the `README.md` body, round file bodies, and `queue-rounds.yaml`.
+   - Include proposed `queue-plans.yaml` entries and `depends_on` wiring for Layer 1 sibling dirs.
+   - Do NOT create directories — emit everything in the single final message for the coordinator to
+     reconcile.
 5. Do NOT create `.implementation-plans/`, do NOT register a queue entry, do NOT run collision checks
    — the coordinator owns all repo writes and reconciliation.
 
@@ -77,8 +76,7 @@ follow the same steps, emitting the plan as the final message.
 - Use fenced code blocks with a language specifier for all code (markdownlint MD040; use `text` when
   no syntax applies). Quote existing code rather than citing bare line numbers.
 - Order implementation steps by dependency; each step independently verifiable.
-- Follow the templates and lifecycle exactly as defined in the shared references (Template E for S/M;
-  Templates A–D for L/XL, with `STRATEGY.md`/Template C for XL).
+- Follow the directory-plan templates and lifecycle exactly as defined in the shared references.
 
 ## Coordinator-owned helper mechanics
 
@@ -90,17 +88,17 @@ mechanics to `cog`:
 ```bash
 cog plan-slug --text "$ORIENTATION" --json
 cog plan-init --repo-root "$REPO_ROOT" --json
-cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/QUEUE.yaml" --json
-cog queue-append --schema plans --queue "$PLAN_ROOT/QUEUE.yaml" \
+cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" --json
+cog queue-append --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" \
   --item "$QUEUE_ITEM" --status todo --depends-on "$DEPENDS_ON_CSV" \
   --prompt "$PROMPT" --notes "$NOTES" --json
 ```
 
-For directory plans, the coordinator also bootstraps and appends the inner `rounds:` queue:
+The coordinator also bootstraps and appends each inner `rounds:` queue:
 
 ```bash
-cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" --json
-cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" \
+cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
+cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
   --item "$TOPIC" --status todo --depends-on "$DEPENDS_ON_CSV" \
   --prompt "/prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
   --notes "$NOTES" --json

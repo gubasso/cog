@@ -15,7 +15,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/cog-mechanics-rename.md
     notes: cog command filename literals + generalized error strings; reserved-slug guard. Do NOT rename this plan's own QUEUE.yaml.
   - item: skills-rewrite
-    status: todo
+    status: done
     depends_on:
       - spec-rewrite
       - cog-mechanics-rename

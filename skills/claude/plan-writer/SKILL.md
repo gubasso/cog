@@ -2,10 +2,10 @@
 name: plan-writer
 description: >
   Synthesize the current conversation into an executor-aware implementation plan
-  under .implementation-plans/plans/. Evaluates complexity (S/M/L/XL): S/M plans
-  are generated as a single self-contained file (plans/<slug>.md); L/XL plans
-  become a directory of self-contained rounds (plans/<slug>/), each sized for
-  one prex run and directly consumable by /prex -ar. Includes an interactive
+  under .implementation-plans/plans/. Evaluates complexity (S/M/L/XL): every
+  plan is generated as one or more plan directories under
+  `.implementation-plans/plans/`; each directory holds self-contained round
+  files sized for one `/prex -ar` run. Includes an interactive
   interview to clarify scope, alternatives, and decisions before generating.
   Use when the user says "plan-writer", "write a plan", "capture this as a plan",
   or wants to export conversation findings as actionable implementation documents.
@@ -28,9 +28,9 @@ allowed-tools: Bash Read Write Grep Glob
 # Plan Writer
 
 Synthesize the current conversation into an executor-aware implementation plan. Output lives under
-`.implementation-plans/plans/`: simple plans (S/M) are a single self-contained file; complex plans
-(L/XL) are a directory of self-contained round files, each sized for one `/prex` run. The plan is
-designed to be executed by a fresh LLM session with ZERO assumptions about prior conversation.
+`.implementation-plans/plans/`: every plan is one or more directories of self-contained round files,
+each sized for one `/prex` run. The plan is designed to be executed by a fresh LLM session with ZERO
+assumptions about prior conversation.
 
 This skill runs **inline** (no fork) because it needs full access to the current conversation
 context to extract decisions, findings, and explored code.
@@ -96,15 +96,17 @@ PLAN_ROOT="$REPO_ROOT/.implementation-plans"
 PLANS_DIR="$PLAN_ROOT/plans"
 ```
 
-The plan's output target is decided in Phase 5 by grade: a single file `$PLANS_DIR/$SLUG.md` for
-S/M, or a directory `$PLANS_DIR/$SLUG/` for L/XL.
+The slug names a plan directory under `$PLANS_DIR/$SLUG/`. Phase 5 may split the work into multiple
+flat sibling directories that share a slug prefix.
 
 ### 1b — Collision check
 
-If `$PLANS_DIR/$SLUG.md` exists, or `$PLANS_DIR/$SLUG/` exists and is non-empty, ask the user:
+If `$PLANS_DIR/$SLUG/` exists and is non-empty, ask the user:
 `[u]pdate (overwrite; rely on git/filesystem history), [a]bort, [r]ename (append suffix)?`
 
-Do not silently overwrite.
+Do not silently overwrite. When Phase 5 splits the work into multiple flat sibling directories, the
+sibling slugs are not known yet here — re-run this same collision check for every planned sibling
+directory in Phase 6b, once the Layer 1 split is decided and before any writes.
 
 ### 1c — Validate
 
@@ -124,8 +126,9 @@ Read all three reference files into context:
   executor model, lifecycle rules.
 - `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` — scoring axes,
   grade mapping, splitting rules.
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md` — templates for round
-  files, single-file plans, `README.md`, `QUEUE.yaml`, STRATEGY.md.
+- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md` — directory-plan
+  templates, round files, `README.md`, `queue-plans.yaml`, `queue-rounds.yaml`, optional
+  `STRATEGY.md`.
 
 ## Phase 2: Synthesize Conversation Context
 
@@ -244,23 +247,23 @@ State the executor profile and EF up front (from Phase 1a): `Executor: $EXECUTOR
 2. Sum to produce the **raw score** (5–20).
 3. Divide the raw score by the EF to produce the **adjusted score**.
 4. Map the **adjusted score** to grade: S / M / L / XL per the table in `complexity-heuristic.md`.
-5. Confirm the grade is **reachable** under the EF (`complexity-heuristic.md` § "EF is mandatory —
-   reachable grades per executor"); if it is not, the EF was skipped — recompute.
-6. Apply override judgment if the formula does not fit (document the reason).
-7. Determine round count based on the grade.
+5. Apply override judgment if the formula does not fit (document the reason).
 
-The grade selects the output format per the grade table in `complexity-heuristic.md` (the single
-source of truth for grade→format): S/M → single file `$PLANS_DIR/$SLUG.md` (Template E); L/XL →
-directory `$PLANS_DIR/$SLUG/` (Templates A–D; C for XL only). Never select a format directly.
+Use the grade as a sizing signal, not a format selector or round cap. Apply the two-layer model:
+
+- **Layer 1** — split by domain/scope into one or more flat sibling plan directories under `plans/`,
+  sharing a slug prefix and wired with top-level `depends_on` for ordering.
+- **Layer 2** — for each directory, use the adjusted grade as a sizing signal only, then split into
+  uncapped, scope-driven rounds.
 
 Report the classification to the user:
 
 - The grade with a one-sentence rationale.
 - Per-axis scores plus EF in brief form (e.g., "files:2 cross-cut:1 deps:2 novelty:3 risk:2 → raw 10
   ÷ EF 1.5 (prex) → 6.7 → M").
-- The output format (single file vs. directory).
-- For L/XL: the proposed round split with topic summaries for each round. Get user confirmation
-  before generating.
+- The proposed Layer 1 directory split.
+- Each directory's Layer 2 round split with topic summaries. Get user confirmation before
+  generating.
 
 ## Phase 6: Generate Output
 
@@ -271,46 +274,35 @@ and never overwrites existing ones:
 
 ```bash
 cog plan-init --repo-root "$REPO_ROOT" --json
-cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/QUEUE.yaml" --json
+cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" --json
 ```
 
 The helper-owned bootstrap covers:
 
 - `$PLAN_ROOT/README.md` — static explainer of the plan system, from Template F in
   `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
-- `$PLAN_ROOT/QUEUE.yaml` — the repo-wide ledger. If missing, create it with an empty `plans:` list
-  per Template D.
+- `$PLAN_ROOT/queue-plans.yaml` — the repo-wide ledger. If missing, create it with an empty
+  `plans:` list per Template D.
 
-### 6b — Plan the round split (L/XL only)
+### 6b — Plan the Layer 1 directories and Layer 2 rounds
 
-For S/M the plan is a single round by definition — skip to 6c.
+Decide whether the work is one plan directory or multiple flat sibling directories. Once the Layer 1
+split is known, run the Phase 1b collision check for **every** planned sibling directory
+(`$PLANS_DIR/<sibling-slug>/`), not just the base `$SLUG` — do not silently overwrite any existing
+non-empty sibling directory. For each directory, apply the round-splitting rules from
+`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` and assign each
+implementation step to an uncapped, scope-driven round. Verify no circular dependencies between
+rounds or sibling directories. Use `cog plan-slug` to validate every round topic slug; the helper
+owns charset, max-length, and the reserved-name set.
 
-For L/XL: apply the round-splitting rules from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md`. Assign each
-implementation step to a round. Verify no circular dependencies between rounds. Round topic slugs
-must not be `readme`, `queue`, or `strategy` (case-insensitive). Then skip to 6d.
+Steps 6c–6f below produce **one complete plan directory**. When Layer 1 split the work into multiple
+flat sibling directories, repeat 6c–6f for **each** sibling directory, substituting that sibling's
+slug for `$SLUG` throughout (read the per-directory steps with a per-sibling `$SLUG`). Each sibling
+must be a fully executable plan in its own right: its own `README.md`, optional `STRATEGY.md`, round
+files, and `queue-rounds.yaml`. Only after every sibling directory is written do you register them in
+6g.
 
-### 6c — Write the single-file plan (S/M only)
-
-Write `$PLANS_DIR/$SLUG.md` using Template E from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`. It merges the
-README-level record with the executable round body in one self-contained file:
-
-- Problem statement (full motivation, standalone).
-- Decisions and constraints from the interview (with reasoning). **Always include an
-  `Executor: $EXECUTOR (EF <factor>)` line.**
-- Rejected alternatives (with reasons for rejection).
-- Current state with code references (absolute paths, quoted excerpts).
-- Implementation steps in dependency order, opening with a "First Step: Mark this plan as started"
-  that sets this plan's `status` to `doing` in the top-level `$PLAN_ROOT/QUEUE.yaml`.
-- A "Final Step: Update the queue" instructing the executor to set this plan's `status` to `done`
-  in the top-level `$PLAN_ROOT/QUEUE.yaml` — single-file plans have no inner queue.
-- Acceptance criteria, independently verifiable.
-- Risks and edge cases.
-
-Then skip to 6h (registration).
-
-### 6d — Write the plan directory `README.md` (L/XL)
+### 6c — Write the plan directory `README.md`
 
 Create `$PLANS_DIR/$SLUG/` and write `$PLANS_DIR/$SLUG/README.md` using Template B from
 `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
@@ -319,8 +311,8 @@ Include:
 
 - Full problem statement.
 - Strategy summary (how the work is split and why).
-- A rounds overview that mirrors the plan's `QUEUE.yaml` (which is the source of truth for round
-  order and status — do not duplicate status into prose that can drift).
+- A rounds overview that mirrors the plan's `queue-rounds.yaml` (which is the source of truth for
+  round order and status — do not duplicate status into prose that can drift).
 - Exact execution commands (`/prex -ar` per-round or full-directory).
 - **Execution discipline section** — a prominent, clearly labeled section (not just a bullet) that
   states the following rules unambiguously:
@@ -329,14 +321,14 @@ Include:
   2. **Directory or README invocation selects one round, not all.** When the executor receives the
      plan directory (`/prex -ar @.implementation-plans/plans/<slug>/`) or the `README.md`
      (`/prex -ar .implementation-plans/plans/<slug>/README.md`), it MUST read this plan's
-     `QUEUE.yaml`, identify the first round with status `todo`, execute ONLY that single round,
+     `queue-rounds.yaml`, identify the first round with status `todo`, execute ONLY that single round,
      then stop. It does NOT proceed to the next round in the same session.
   3. **Status flips.** When starting a round, set its `status` to `doing` in the plan's
-     `QUEUE.yaml`; on completion, set it to `done`. A crashed or interrupted session thus leaves a
-     visible `doing` marker.
+     `queue-rounds.yaml`; on completion, set it to `done`. A crashed or interrupted session thus
+     leaves a visible `doing` marker.
   4. **Sequential sessions.** After completing a round (marking it `done` in the plan's
-     `QUEUE.yaml`), the executor session ends. The user launches a new `/prex` session for the
-     next round.
+     `queue-rounds.yaml`), the executor session ends. The user launches a new `/prex` session for
+     the next round.
   5. **Why:** Fresh sessions prevent context contamination between rounds, keep token usage
      predictable, and allow the user to review intermediate results before proceeding.
 - Decisions and constraints from the interview (with reasoning). **Always include a
@@ -345,18 +337,19 @@ Include:
 - Rejected alternatives (with reasons for rejection).
 - Risks and edge cases that span the full plan.
 
-### 6e — Write `STRATEGY.md` (XL only)
+### 6d — Write optional `STRATEGY.md`
 
-Write `$PLANS_DIR/$SLUG/STRATEGY.md` using Template C from
+When the external plan-rounds spec calls for a separate strategy document, write
+`$PLANS_DIR/$SLUG/STRATEGY.md` using Template C from
 `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
 
 Include: architectural overview, round dependency graph, risk mitigation approach, cross-cutting
 concerns that span multiple rounds.
 
-### 6f — Write round files (L/XL)
+### 6e — Write round files
 
 For each round, write `$PLANS_DIR/$SLUG/<topic>.md` (a kebab-case topic slug, **no number
-prefix** — round order lives in the plan's `QUEUE.yaml`) using Template A from
+prefix** — round order lives in the plan's `queue-rounds.yaml`) using Template A from
 `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
 
 Each round file must be **self-contained** per the contract in
@@ -371,18 +364,18 @@ Each round file must be **self-contained** per the contract in
 - `## Acceptance Criteria` is specific to this round and independently verifiable.
 - `## Next Round` previews what comes next (or states "Final round").
 
-### 6g — Write the plan's inner `QUEUE.yaml` (L/XL)
+### 6f — Write the plan's inner `queue-rounds.yaml`
 
-Create `$PLANS_DIR/$SLUG/QUEUE.yaml` through the helper and append one round entry at a time in
+Create `$PLANS_DIR/$SLUG/queue-rounds.yaml` through the helper and append one round entry at a time in
 execution order. Each entry still follows Template D: `item` (the round's `<topic>`),
 `status: todo`, `depends_on` (list of earlier round `<topic>`s, or `[]`),
 `prompt: /prex -ar .implementation-plans/plans/<slug>/<topic>.md`, and `notes`.
 
 ```bash
-cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" --json
+cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
 cog queue-append \
   --schema rounds \
-  --queue "$PLANS_DIR/$SLUG/QUEUE.yaml" \
+  --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
   --item "$TOPIC" \
   --status todo \
   --depends-on "$DEPENDS_ON_CSV" \
@@ -391,19 +384,21 @@ cog queue-append \
   --json
 ```
 
-### 6h — Register the plan in the top-level `QUEUE.yaml`
+### 6g — Register the plan in the top-level `queue-plans.yaml`
 
-Append an entry to `$PLAN_ROOT/QUEUE.yaml` (created in 6a if it did not exist) through the helper:
+Append an entry to `$PLAN_ROOT/queue-plans.yaml` (created in 6a if it did not exist) through the
+helper:
 
-- `item: <slug>` for a directory plan, or `item: <slug>.md` for a single-file plan.
+- `item: <slug>` always names a directory.
 - `status: todo`, `depends_on` (other plan `item`s, or `[]`), and `notes`.
-- `prompt: /prex -ar @.implementation-plans/plans/<slug>/` for a directory plan, or
-  `prompt: /prex -ar .implementation-plans/plans/<slug>.md` for a single-file plan.
+- `prompt: /prex -ar @.implementation-plans/plans/<slug>/`.
+- If Layer 1 produced multiple sibling directories, append one top-level entry per directory,
+  sharing a slug prefix and wired with `depends_on` for ordering.
 
 ```bash
 cog queue-append \
   --schema plans \
-  --queue "$PLAN_ROOT/QUEUE.yaml" \
+  --queue "$PLAN_ROOT/queue-plans.yaml" \
   --item "$QUEUE_ITEM" \
   --status todo \
   --depends-on "$DEPENDS_ON_CSV" \
@@ -428,16 +423,13 @@ operation; do not silently reorder or rewrite existing entries in this skill.
 - Write implementation steps in dependency order within each round.
 - Each step should be independently verifiable.
 - Every round file must open its implementation steps with a "First Step: Mark this round as
-  started" that sets the round's `status` to `doing` in the plan's `QUEUE.yaml`, and end with a
-  "Final Step: Update the queue" that sets it to `done`. Both steps are defined in Template A and
+  started" that sets the round's `status` to `doing` in the plan's `queue-rounds.yaml`, and end with
+  a "Final Step: Update the queue" that sets it to `done`. Both steps are defined in Template A and
   must not be omitted.
 - The **last round** must additionally instruct the executor to set this plan's `status` to `done`
-  in the top-level `.implementation-plans/QUEUE.yaml`. The plan directory stays in place — **nothing
-  is moved on disk** (there are no `01-todo`/`02-done` directories). This is defined in Template A's
-  final-round conditional and must not be omitted.
-- A single-file plan's "Final Step: Update the queue" targets the top-level
-  `.implementation-plans/QUEUE.yaml` directly (it has no inner queue). This is defined in Template E
-  and must not be omitted.
+  in the top-level `.implementation-plans/queue-plans.yaml`. The plan directory stays in place —
+  **nothing is moved on disk** (there are no `01-todo`/`02-done` directories). This is defined in
+  Template A's final-round conditional and must not be omitted.
 - Prefer concrete examples over abstract descriptions.
 - Include enough code context that the implementor can locate the exact insertion point or
   modification target.
@@ -446,18 +438,18 @@ operation; do not silently reorder or rewrite existing entries in this skill.
 
 After writing all files, report to the user:
 
-1. The absolute path to the plan file (S/M) or plan directory (L/XL).
+1. The absolute path to the plan directory or directories.
 2. File count and approximate total line count.
-3. Complexity grade, output format, and round count.
-4. For directory plans: a list of each round file with its topic (one line per round).
+3. Complexity grade and round count per directory.
+4. A list of each round file with its topic (one line per round).
 5. The exact execution commands to run:
-   - Single-file plan: `/prex -ar .implementation-plans/plans/<slug>.md`
    - Single round: `/prex -ar .implementation-plans/plans/<slug>/<topic>.md`
    - Sequential rounds: list each `/prex -ar` command in order.
    - Full directory: `/prex -ar @.implementation-plans/plans/<slug>/`
 6. A reminder that **each `/prex` invocation executes exactly one round** — even when pointing at
-   the directory or `README.md`. The executor reads the plan's `QUEUE.yaml`, picks the next `todo`
-   round, executes it, and stops. A new `/prex` session is required for each subsequent round.
+   the directory or `README.md`. The executor reads the plan's `queue-rounds.yaml`, picks the next
+   `todo` round, executes it, and stops. A new `/prex` session is required for each subsequent
+   round.
 
 Do NOT display the full contents of the generated files unless the user asks.
 
@@ -474,7 +466,7 @@ Normal interactive `/plan-writer` use ignores coordinator mode.
 - Do not modify any existing files in the repository (only write to `.implementation-plans/`; in
   coordinator mode, write only to the given scratch `<output-path>`).
 - Never overwrite `.implementation-plans/README.md` or rewrite existing entries in
-  `.implementation-plans/QUEUE.yaml` — bootstrap-if-missing and append-only, respectively.
+  `.implementation-plans/queue-plans.yaml` — bootstrap-if-missing and append-only, respectively.
 - Do not run git commands (no staging, committing, or branching).
 - Every plan file must be self-contained — no references to "the conversation", "as we discussed",
   or "see README."
