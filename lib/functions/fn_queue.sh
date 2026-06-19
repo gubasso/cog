@@ -91,25 +91,25 @@ cog::fn::queue_validate_file() {
     "missing queue path" "function: cog::fn::queue_validate_file" "" ""
   key="$(__cog_queue_key_or_die "$schema")"
   [[ -f $queue_path ]] || cog::helpers::die "$EX_NOINPUT" "InputNotFound" \
-    "QUEUE.yaml not found" "path: ${queue_path}" "" "check the queue path"
+    "queue file not found" "path: ${queue_path}" "" "check the queue path"
 
   yq e '.' "$queue_path" >/dev/null || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
-    "QUEUE.yaml does not parse" "path: ${queue_path}" "" "fix the YAML syntax"
+    "queue file does not parse" "path: ${queue_path}" "" "fix the YAML syntax"
 
   [[ "$(KEY="$key" yq e 'has(strenv(KEY)) and (.[strenv(KEY)] | tag == "!!seq")' "$queue_path")" == "true" ]] \
     || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
-      "QUEUE.yaml has invalid top-level shape" "path: ${queue_path}" \
+      "queue file has invalid top-level shape" "path: ${queue_path}" \
       "expected ${key}: []" "use a supported queue schema"
 
   if [[ "$(yq e 'has("repos")' "$queue_path")" == "true" ]]; then
     [[ "$(yq e '.repos | tag == "!!seq"' "$queue_path")" == "true" ]] \
       || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
-        "QUEUE.yaml repos: must be a sequence of absolute paths" "path: ${queue_path}" "" \
+        "queue file repos: must be a sequence of absolute paths" "path: ${queue_path}" "" \
         "use absolute satellite repo paths"
     local bad_repos
     bad_repos="$(yq e -r '.repos[]? | select((tag != "!!str") or (. == "") or ((. | test("^/")) | not))' "$queue_path")"
     [[ -z $bad_repos ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
-      "QUEUE.yaml repos: entries must be non-empty absolute paths:" "path: ${queue_path}" \
+      "queue file repos: entries must be non-empty absolute paths:" "path: ${queue_path}" \
       "$bad_repos" "use absolute satellite repo paths"
   fi
 

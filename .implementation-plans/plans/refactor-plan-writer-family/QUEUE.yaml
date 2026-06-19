@@ -9,7 +9,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/spec-rewrite.md
     notes: 'Satellite repo (/home/gbasso/DocsNNotes): directory-only, two-layer model, uncapped rounds, queue rename in spec + templates.'
   - item: cog-mechanics-rename
-    status: todo
+    status: done
     depends_on:
       - spec-rewrite
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/cog-mechanics-rename.md

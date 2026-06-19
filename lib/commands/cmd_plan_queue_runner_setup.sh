@@ -47,7 +47,7 @@ __cog_plan_queue_runner_setup_parse() {
         ;;
       *)
         [[ -z $parsed_target ]] || cog::fn::error_raise_with_exit 2 "TooManyArguments" \
-          "too many plan queue targets" "argument: $1" "" "pass exactly one plan dir or QUEUE.yaml path"
+          "too many plan queue targets" "argument: $1" "" "pass exactly one plan dir or queue-rounds.yaml path"
         parsed_target="$1"
         shift
         ;;
@@ -83,12 +83,12 @@ __cog_plan_queue_runner_setup_build_json() {
   __cog_plan_queue_runner_setup_parse "$raw" dry_run max_rounds target
   repo_root="$(cog::fn::git_root)"
   case "$target" in
-    */QUEUE.yaml) queue_path="$target" ;;
-    *) queue_path="${target}/QUEUE.yaml" ;;
+    */queue-rounds.yaml) queue_path="$target" ;;
+    *) queue_path="${target}/queue-rounds.yaml" ;;
   esac
   [[ $queue_path == /* ]] || queue_path="${repo_root}/${queue_path}"
   [[ -f $queue_path ]] || cog::fn::error_raise "InputNotFound" \
-    "QUEUE.yaml not found" "path: ${queue_path}" "" "check the target path"
+    "queue-rounds.yaml not found" "path: ${queue_path}" "" "check the target path"
   mapfile -t repos_arr < <(yq e -r '.repos[]?' "$queue_path" 2>/dev/null || true)
   local r
   for r in "${repos_arr[@]}"; do

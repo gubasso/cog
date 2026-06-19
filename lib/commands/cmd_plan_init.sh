@@ -23,11 +23,11 @@ __cog_plan_init_write_root_readme() {
     printf '%s\n' "This directory stores implementation plans generated for staged agent execution."
     printf '\n'
     # shellcheck disable=SC2016 # Literal Markdown backticks, not command substitutions.
-    printf '%s\n' '`QUEUE.yaml` is the source of truth for plan status, order, dependencies, and execution prompts.'
+    printf '%s\n' '`queue-plans.yaml` is the source of truth for plan status, order, dependencies, and execution prompts.'
     # shellcheck disable=SC2016 # Literal Markdown backticks, not command substitutions.
-    printf '%s\n' 'Plans live under `plans/` as either a single self-contained markdown file or a directory containing'
+    printf '%s\n' 'Plans live under `plans/`; every plan is a directory containing'
     # shellcheck disable=SC2016 # Literal Markdown backticks, not command substitutions.
-    printf '%s\n' 'round files and an inner `QUEUE.yaml`.'
+    printf '%s\n' 'round files and an inner `queue-rounds.yaml`.'
     printf '\n'
     printf '%s\n' "Execute one round at a time. Status lives in YAML; files and directories do not move between states."
   } >"$readme" || cog::fn::error_raise "JsonWriteFailed" \
@@ -41,7 +41,7 @@ __cog_plan_init_build_json() {
   plan_root="${repo_root}/.implementation-plans"
   plans_dir="${plan_root}/plans"
   root_readme="${plan_root}/README.md"
-  root_queue="${plan_root}/QUEUE.yaml"
+  root_queue="${plan_root}/queue-plans.yaml"
 
   if [[ ! -d $repo_root ]]; then
     ok=false

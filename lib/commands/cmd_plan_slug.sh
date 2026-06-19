@@ -35,7 +35,7 @@ __cog_plan_slug_build_json() {
       ok=false
       reason="slug is empty"
       ;;
-    readme | queue | strategy)
+    readme | strategy | queue | queue-plans | queue-rounds)
       ok=false
       reserved=true
       reason="slug is reserved"
