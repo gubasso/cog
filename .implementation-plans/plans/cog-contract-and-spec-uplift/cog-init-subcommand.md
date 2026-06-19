@@ -90,7 +90,7 @@ OUT of scope:
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: cog-init-subcommand`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: cog-init-subcommand`) `status` to `doing`.
 
 ### Step 1: Extract a shared prerequisite-check helper
 
@@ -141,7 +141,7 @@ Run `just lint` and `just test`. Resolve any completion/man/help drift the new c
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: cog-init-subcommand`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: cog-init-subcommand`) `status` to `done`.
 
 (This is not the final round — do not touch the top-level ledger.)
 
@@ -155,7 +155,7 @@ Run `just lint` and `just test`. Resolve any completion/man/help drift the new c
 - [ ] `test/unit/init.bats` passes; `just lint` and `just test` are green.
 - [ ] `cli-commands.md`, `completions/cog.bash`, `man/cog.1.scd`/`man/cog.1`, and the help snapshot all
       list `init`; no drift checks fail.
-- [ ] This plan's `QUEUE.yaml` shows round `cog-init-subcommand` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `cog-init-subcommand` as `done`.
 
 ## Next Round
 

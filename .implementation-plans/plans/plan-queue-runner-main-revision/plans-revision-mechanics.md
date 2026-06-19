@@ -81,7 +81,7 @@ deterministically.
   `cog plan-queue-runner-parse-commit`, which fails closed on any `*_FAILED`. `/gc -a` stages all
   dirty session files in declared repos; multi-repo via `--repo <dir>`; never `--no-verify`.
 
-- `/workspaces/cog/.implementation-plans/QUEUE.yaml` and `.implementation-plans/plans/*/QUEUE.yaml` —
+- `/workspaces/cog/.implementation-plans/queue-plans.yaml` and `.implementation-plans/plans/*/queue-rounds.yaml` —
   the live queues to inventory. Observed top-level keys: main -> `[plans]`; inner ->
   `[rounds]` or `[repos, rounds]`.
 
@@ -104,7 +104,7 @@ deterministically.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: plans-revision-mechanics`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: plans-revision-mechanics`) `status` to `doing`.
 
 ### Step 1: Shared revision helper `fn_plans_revision.sh`
 
@@ -221,7 +221,7 @@ in the same change set.)
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: plans-revision-mechanics`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: plans-revision-mechanics`) `status` to `done`.
 
 ## Acceptance Criteria
 
@@ -236,7 +236,7 @@ in the same change set.)
 - [ ] `docs/decisions/0011-plan-queue-revision-boundary.md` is written.
 - [ ] No change to `plan-queue-runner/SKILL.md` this round.
 - [ ] `just lint` and `just test` pass, including drift checks.
-- [ ] This plan's `QUEUE.yaml` shows round `plans-revision-mechanics` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `plans-revision-mechanics` as `done`.
 
 ## Next Round
 

@@ -37,7 +37,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/tests-and-gates.md
     notes: 24-ref test blast radius; stale-reference sweep; just lint + just test.
   - item: migrate-live-plans
-    status: todo
+    status: done
     depends_on:
       - tests-and-gates
     prompt: /prex -ar .implementation-plans/plans/refactor-plan-writer-family/migrate-live-plans.md

@@ -91,8 +91,8 @@ OUT of scope:
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`
-(`.implementation-plans/plans/cog-contract-and-spec-uplift/QUEUE.yaml`), set this round's
+In this plan's `queue-rounds.yaml`
+(`.implementation-plans/plans/cog-contract-and-spec-uplift/queue-rounds.yaml`), set this round's
 (`item: python-cli-spec-chapters`) `status` to `doing`.
 
 ### Step 1: Author `subcommand-pattern-python.md`
@@ -150,7 +150,7 @@ violations and that relative links resolve.
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: python-cli-spec-chapters`) `status` to
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: python-cli-spec-chapters`) `status` to
    `done`.
 
 (This is not the final round — do not touch the top-level ledger.)
@@ -165,7 +165,7 @@ violations and that relative links resolve.
 - [ ] The Python `AGENTS.md` frontmatter `source-files` lists the two new files, `last-synced` is
       updated, and the body indexes them.
 - [ ] docs-n-notes markdown lint passes (no MD040 violations; links resolve).
-- [ ] This plan's `QUEUE.yaml` shows round `python-cli-spec-chapters` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `python-cli-spec-chapters` as `done`.
 
 ## Next Round
 

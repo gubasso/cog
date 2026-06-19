@@ -11,7 +11,7 @@ integration test files assert the **literal product path** and MUST change. Pre-
 of truth for quality gates; this final round lands the test updates, sweeps for stale references, and
 proves the whole change green via `just lint` and `just test`.
 
-Do NOT touch any live `.implementation-plans/` data, including this plan's own `QUEUE.yaml`, except the
+Do NOT touch any live `.implementation-plans/` data, including this plan's own `queue-rounds.yaml`, except the
 required status flip for this round (see the plan README's "Scaffolding vs. deliverable"). The live
 data migration is the **next round** (`migrate-live-plans`), not this one.
 
@@ -65,7 +65,7 @@ schema each exercises):**
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: tests-and-gates`) `status` to `doing`.
 
 ### Step 1: Fix the literal-assertion integration tests
 
@@ -114,7 +114,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status`
 
 ### Final Step: Update the queue
 
-In this plan's `QUEUE.yaml`, set this round's (`item: tests-and-gates`) `status` to `done`. Do NOT
+In this plan's `queue-rounds.yaml`, set this round's (`item: tests-and-gates`) `status` to `done`. Do NOT
 flip the plan-level status yet — Round 6 (`migrate-live-plans`) is still pending and owns the
 plan-level `done` flip (in the renamed `queue-plans.yaml`). Nothing moves on disk this round.
 
@@ -128,7 +128,7 @@ plan-level `done` flip (in the renamed `queue-plans.yaml`). Nothing moves on dis
       remains.
 - [ ] `cog skill-lint` passes for the touched skills; `just lint` and `just test` both pass (or
       documented focused fallback for any pre-existing unrelated failure).
-- [ ] This plan's `QUEUE.yaml` shows round `tests-and-gates` as `done` (the plan-level `done` flip is
+- [ ] This plan's `queue-rounds.yaml` shows round `tests-and-gates` as `done` (the plan-level `done` flip is
       deferred to Round 6).
 
 ## Next Round

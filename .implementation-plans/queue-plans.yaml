@@ -7,7 +7,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/skills-under-skills-env-first/
     notes: 'Env-first no-backgrounding guarantee around claude-session; revert codex-foreground hook with no leftovers; keep+fix prex-stop; document findings (ADR-0009/reference/explanation/guards); encode skill-lint + full audit sweep. L, 3 rounds. Multi-repo: cog + /home/gbasso/.dotfiles.'
   - item: refactor-plan-writer-family
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar @.implementation-plans/plans/refactor-plan-writer-family/
     notes: 'Refactor plan-writer family: directory-only plans, uncapped rounds, two-layer decomposition, queue rename (queue-plans.yaml/queue-rounds.yaml). Two-repo (cog + DocsNNotes satellite). 6 rounds; final round migrate-live-plans migrates the live .implementation-plans/ tree to the new format + reconciles sibling plans (run directly, not the dir-runner).'
@@ -23,18 +23,18 @@ plans:
       - refactor-plan-writer-family
     prompt: /prex -ar @.implementation-plans/plans/cog-contract-and-spec-uplift/
     notes: L (override M->L), 4 independent rounds, prex. (1) docs-n-notes Python subcommand+error chapters & digest refresh; (2) cog init DRY w/ doctor; (3) remove human-UX leakage from cmd_msg/doctor + close ADR-0009 ack; (4) cog digest-check/digest-stamp deterministic tooling. Cross-repo (cog + DocsNNotes). Rounds order-independent.
-  - item: robust-plan-slug-stopword-aware.md
+  - item: robust-plan-slug-stopword-aware
     status: todo
     depends_on:
       - refactor-plan-writer-family
-    prompt: /prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware.md
-    notes: 'Make cog plan-slug stopword-aware: drop filler words before selecting up to 6 meaningful words, empty-input fallback, redesigned additive JSON (normalized/words/dropped/fallback/truncated/max_words) preserving .slug/.ok. Updates 2 test files, cli-commands.md, 3 plan-writer SKILL.md. S/M single-file, prex.'
-  - item: man-page-sync-precommit-hook.md
+    prompt: /prex -ar @.implementation-plans/plans/robust-plan-slug-stopword-aware/
+    notes: 'Make cog plan-slug stopword-aware: drop filler words before selecting up to 6 meaningful words, empty-input fallback, redesigned additive JSON (normalized/words/dropped/fallback/truncated/max_words) preserving .slug/.ok. Updates 2 test files, cli-commands.md, 3 plan-writer SKILL.md. M one-round directory plan, prex.'
+  - item: man-page-sync-precommit-hook
     status: todo
     depends_on:
       - refactor-plan-writer-family
-    prompt: /prex -ar .implementation-plans/plans/man-page-sync-precommit-hook.md
-    notes: 'Single-file S plan. New ''cog man-build'' command (scdoc SoT, write + --check), fail-closed on missing scdoc; pre-commit fixer hook scoped to man/cog.1(.scd); justfile man recipe delegates to the hook. Mirrors: completions, man/cog.1.scd, cli-commands.md, two help snapshots; new cmd_man_build.bats.'
+    prompt: /prex -ar @.implementation-plans/plans/man-page-sync-precommit-hook/
+    notes: 'Single-round S directory plan. New ''cog man-build'' command (scdoc SoT, write + --check), fail-closed on missing scdoc; pre-commit fixer hook scoped to man/cog.1(.scd); justfile man recipe delegates to the hook. Mirrors: completions, man/cog.1.scd, cli-commands.md, two help snapshots; new cmd_man_build.bats.'
   - item: cog-self-contained-skill-refs
     status: todo
     depends_on: []

@@ -109,7 +109,7 @@ sweep (Round 3); anything Round 1 owns.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: document-orchestration-contract`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: document-orchestration-contract`) `status` to
 `doing`.
 
 ### Step 1: Write the superseding ADR (0009)
@@ -170,7 +170,7 @@ Run `just lint` and `just test` until clean. Commit via `/gc`; the executor must
 
 ### Final Step: Update the queue
 
-In this plan's `QUEUE.yaml`, set this round's (`item: document-orchestration-contract`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: document-orchestration-contract`) `status` to
 `done`.
 
 ## Acceptance Criteria
@@ -188,7 +188,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: document-orchestration-con
       documents the removed `codex-foreground` recognition.
 - [ ] `.claude/skills/skill-builder/SKILL.md` teaches the new rules.
 - [ ] `just lint` and `just test` pass.
-- [ ] This plan's `QUEUE.yaml` shows round `document-orchestration-contract` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `document-orchestration-contract` as `done`.
 
 ## Next Round
 

@@ -1,7 +1,6 @@
 # Enforce man/cog.1 ↔ man/cog.1.scd Sync via a cog Command + Pre-commit Hook
 
-> Plan: man-page-sync-precommit-hook | Single-file plan | Complexity: S | Generated: 2026-06-18 |
-> Repo: /workspaces/cog
+> Plan: man-page-sync-precommit-hook | Complexity: S | Rounds: 1 | Generated: 2026-06-18 | Repo: /workspaces/cog
 
 ## Problem Statement
 
@@ -24,6 +23,28 @@ No gate catches it.
 This plan closes the gap by making one `cog` subcommand the **single source of truth** for man-page
 generation/verification, wiring it into pre-commit as the enforcing gate, and making `just man`
 delegate to that hook (matching how `just lint`/`just test` already delegate to `pre-commit run`).
+
+## Rounds
+
+The authoritative order and status live in `queue-rounds.yaml`.
+
+1. `man-page-sync-precommit-hook.md` — Implement `cog man-build`, the pre-commit fixer hook, command-surface mirrors, snapshots, and tests.
+
+## Execution Commands
+
+```bash
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
+/prex -ar @.implementation-plans/plans/man-page-sync-precommit-hook/
+
+# Or target the round file directly:
+/prex -ar .implementation-plans/plans/man-page-sync-precommit-hook/man-page-sync-precommit-hook.md
+```
+
+## Execution Discipline
+
+**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/prex` session. Do not implement multiple rounds in one session.
+
+When `/prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
 
 ## Decisions & Constraints
 
@@ -148,134 +169,6 @@ delegate to that hook (matching how `just lint`/`just test` already delegate to 
   file, pre-commit fails the commit, re-stage" workflow.
 - `test/integration/cmd_skill_lint.bats` is the pattern for a command's own integration test.
 
-## Implementation Steps
-
-### First Step: Mark this plan as started
-
-In the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml`, set this plan's
-(`item: man-page-sync-precommit-hook.md`) `status` to `doing`.
-
-### Step 1: Create the `cog man-build` command module
-
-Create `/workspaces/cog/lib/commands/cmd_man_build.sh` following the `cmd_skill_lint.sh` anatomy:
-
-- Line 1: `# shellcheck shell=bash`
-- Line 2: `: 'desc: Build or verify the generated man page from man/cog.1.scd.'`
-  (keep the summary ≤ ~60 chars so the help column stays tidy; this exact text is mirrored in
-  Steps 3 and 7).
-- Handler `cog::cmd::man_build`:
-  - `-h|--help` → print a usage block (`Usage: cog man-build [--check]`) and `return 0` (the dynamic
-    `every command has generated command help` test asserts `Usage: cog man-build` appears).
-  - Parse a single optional flag `--check` (any other arg → `error_raise "MissingArgument"`/usage,
-    matching how peers reject unknown args).
-  - Resolve sources from the app root: `local src="${LIB_DIR}/../man/cog.1.scd"` and
-    `local out="${LIB_DIR}/../man/cog.1"`. Assert `src` is readable (`InputUnreadable`/`InputNotFound`
-    → `EX_NOINPUT`).
-  - `__require scdoc` — if absent, that path raises `MissingRequirement` → `EX_UNAVAILABLE`
-    (fail-closed, per decision).
-  - Generate into a temp file (`__mktemp_dir`): `scdoc < "$src" > "$tmp/cog.1"`.
-  - **`--check` mode**: `cmp -s "$tmp/cog.1" "$out"`. On match → `return 0`. On drift → `error_raise
-    "InvalidInput" "man/cog.1 is out of sync with man/cog.1.scd" "path: man/cog.1" "" "run 'just man'
-    (or 'cog man-build') and stage man/cog.1"` (→ `EX_DATAERR`).
-  - **write mode (default)**: copy/`mv` the temp file over `$out` atomically. Emit a one-line
-    `cog::fn::ui_human "regenerated man/cog.1"` to stderr only when content changed (compare first to
-    avoid needless churn); nothing on stdout. `return 0`.
-
-### Step 2: Regenerate is deferred to Step 4
-
-(No action — Step 1 only adds the command. The man source still lacks the `man-build` entry until
-Step 3, so regenerating now would produce a page missing its own command. Order matters.)
-
-### Step 3: Add `man-build` to the command-surface mirrors
-
-Insert `man-build` in alphabetical position (**between `lock` and `msg`**) in each:
-
-1. `/workspaces/cog/completions/cog.bash` — add a bare `man-build` line in the `commands=( ... )`
-   array.
-2. `/workspaces/cog/man/cog.1.scd` — in `# COMMANDS`, add:
-
-   ```text
-   *man-build*
-   	Build or verify the generated man page from man/cog.1.scd.
-   ```
-
-   (description must equal the line-2 sentinel from Step 1 exactly — the
-   `man source lists every command` test only checks the name, but `root help contains every command
-   desc sentinel` checks the text round-trips).
-3. `/workspaces/cog/docs/reference/cli-commands.md` — add a table row:
-   `` | `man-build` | Build or verify the generated man page from man/cog.1.scd. | ``.
-
-### Step 4: Regenerate `man/cog.1` through the new command
-
-Run `bin/cog man-build` (write mode) from the repo root. This regenerates `man/cog.1` from the
-now-updated `man/cog.1.scd`, so the generated page includes its own `man-build` entry. Confirm the
-new entry is present and the scdoc header is intact.
-
-### Step 5: Add the pre-commit fixer hook
-
-In `/workspaces/cog/.pre-commit-config.yaml`, under `repo: local` `hooks:`, add:
-
-```yaml
-- id: man-build
-  name: man page regenerated from scdoc source
-  entry: bin/cog man-build
-  language: system
-  files: ^man/cog\.1(\.scd)?$
-  pass_filenames: false
-  stages: [pre-commit]
-```
-
-`pass_filenames: false` (the command finds its own paths); `files` scopes the hook to fire only when
-`man/cog.1.scd` or `man/cog.1` is staged. As a fixer, when it rewrites `man/cog.1` pre-commit fails
-the commit with "files were modified by this hook".
-
-### Step 6: Make `just man` delegate to the hook
-
-Replace the `man` recipe in `/workspaces/cog/justfile` (lines 44-50) with a delegation to the hook:
-
-```text
-man:
-	pre-commit run man-build --all-files
-```
-
-This honors "make just call this hook" and matches `just lint`/`just test`. Like `just lint`, it
-exits non-zero when it actually had to regenerate the page — expected.
-
-### Step 7: Update the hardcoded help snapshots
-
-Run `cog --help` and `cog help` and paste the exact output into the two `assert_output` blocks in
-`/workspaces/cog/test/integration/help_snapshots.bats` (the `cog --help matches generated snapshot`
-test at ~lines 23-92 and `cog help matches root help` at ~lines 94-163). The new `man-build` row
-appears between `lock` and `msg`. **Do not hand-edit padding** — copy the tool's real output so the
-column widths match.
-
-### Step 8: Add an integration test for `cog man-build`
-
-Create `/workspaces/cog/test/integration/cmd_man_build.bats` (model on
-`test/integration/cmd_skill_lint.bats`) asserting:
-
-- `cog man-build --check` succeeds on the committed tree (the man page is in sync — this is the new
-  drift gate that also runs in `just test`).
-- `cog man-build --check` fails with `EX_DATAERR` when `man/cog.1` is mutated in a temp copy / when
-  `.scd` diverges from `.1`.
-- `cog man-build` (write mode) regenerates a drifted `man/cog.1` back into sync.
-- `cog man-build --help` prints `Usage: cog man-build`.
-- (If feasible to simulate) missing `scdoc` on `PATH` yields `EX_UNAVAILABLE`.
-
-### Step 9: Run the quality gates
-
-- `just lint` (`pre-commit run --all-files`) — exercises shellcheck/shfmt on the new module, the new
-  `man-build` hook, and the markdown rules. Resolve any findings.
-- `just test` — runs the unit hook and the integration hook (help snapshots, completion/man drift,
-  and the new `cmd_man_build.bats`).
-- Validate the change against `docs/reference/skill-contract.md` (no skill files change here, but the
-  boundary rationale applies). No `SKILL.md` is touched, so `cog skill-lint` is not required.
-
-### Final Step: Update the queue
-
-In the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml`, set this plan's
-(`item: man-page-sync-precommit-hook.md`) `status` to `done`. There is no inner queue. Leave the
-plan file in place — nothing moves on disk.
 
 ## Acceptance Criteria
 
@@ -290,7 +183,7 @@ plan file in place — nothing moves on disk.
 - [ ] `justfile` `man` recipe is `pre-commit run man-build --all-files`.
 - [ ] `test/integration/cmd_man_build.bats` exists and passes.
 - [ ] `just lint` and `just test` pass.
-- [ ] The top-level `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] The top-level `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
 
 ## Risks & Edge Cases
 

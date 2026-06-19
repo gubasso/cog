@@ -113,7 +113,7 @@ KEEP everything else (`programming/`, `languages/`, `tools/{ast-grep,suckless,os
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: rewire-skills-and-cleanup`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: rewire-skills-and-cleanup`) `status` to
 `doing`.
 
 ### Step 1: Repoint migrated skill-source refs
@@ -166,9 +166,9 @@ which files were removed.
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: rewire-skills-and-cleanup`) `status` to
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: rewire-skills-and-cleanup`) `status` to
    `done`.
-2. All rounds are now done, so in the top-level `.implementation-plans/QUEUE.yaml` set this plan's
+2. All rounds are now done, so in the top-level `.implementation-plans/queue-plans.yaml` set this plan's
    (`item: cog-self-contained-skill-refs`) `status` to `done`. Leave the plan directory in place.
 
 ## Acceptance Criteria
@@ -187,8 +187,8 @@ which files were removed.
       from DocsNNotes; all general/tool refs remain; DocsNNotes is left uncommitted for the human.
 - [ ] External refs (`fn_refs.sh`, `review-refs`, tool skills, `llm-review-discipline.md`) are
       unchanged.
-- [ ] This plan's `QUEUE.yaml` shows round `rewire-skills-and-cleanup` as `done`.
-- [ ] The top-level `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `rewire-skills-and-cleanup` as `done`.
+- [ ] The top-level `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
 
 ## Next Round
 

@@ -131,7 +131,7 @@ OUT of scope (Round 3):
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: migrate-content-and-packaging`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: migrate-content-and-packaging`) `status` to
 `doing`.
 
 ### Step 1: Create the `skill-refs/` tree
@@ -216,7 +216,7 @@ skills-and-orchestration.md`. Run `just lint` (markdownlint will check the new d
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: migrate-content-and-packaging`) `status` to
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: migrate-content-and-packaging`) `status` to
    `done`.
 
 ## Acceptance Criteria
@@ -235,7 +235,7 @@ skills-and-orchestration.md`. Run `just lint` (markdownlint will check the new d
       `docs/reference/skills.md` are updated.
 - [ ] No `SKILL.md` is modified in this round; DocsNNotes is untouched. `just lint` and `just test`
       pass.
-- [ ] This plan's `QUEUE.yaml` shows round `migrate-content-and-packaging` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `migrate-content-and-packaging` as `done`.
 
 ## Next Round
 

@@ -12,7 +12,7 @@ the format change (retire single-file) + uncapped rounds + two-layer decompositi
 decision-worthy change: per AGENTS.md a changed architectural decision is recorded as a **NEW
 superseding ADR** (accepted ADRs are never deleted).
 
-Do NOT rename this plan's own `QUEUE.yaml` (see the plan README's "Scaffolding vs. deliverable").
+Do NOT rename this plan's own `queue-rounds.yaml` (see the plan README's "Scaffolding vs. deliverable").
 
 ## Previous Rounds
 
@@ -65,7 +65,7 @@ align.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: consumer-and-docs`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: consumer-and-docs`) `status` to `doing`.
 
 ### Step 1: Update `plan-queue-runner/SKILL.md`
 
@@ -98,7 +98,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: consumer-and-docs`) `statu
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: consumer-and-docs`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: consumer-and-docs`) `status` to `done`.
 
 ## Acceptance Criteria
 
@@ -108,7 +108,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: consumer-and-docs`) `statu
       filenames.
 - [ ] A new superseding ADR records the format change + uncapped rounds + two-layer model + rename and
       cross-links the prior ADR (which is NOT deleted); `docs/README.md` updated if it indexes ADRs.
-- [ ] This plan's `QUEUE.yaml` shows round `consumer-and-docs` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `consumer-and-docs` as `done`.
 
 ## Next Round
 

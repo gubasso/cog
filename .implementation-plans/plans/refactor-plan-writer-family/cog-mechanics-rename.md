@@ -14,7 +14,7 @@ two hardcoded callers, generalize the user-facing error strings, and extend the 
 for the new meta stems. **No dual-read shim** (hard cut, Q4).
 
 **CAUTION — self-reference hazard.** This round runs via `/prex` (and possibly `/plan-queue-runner`),
-which read THIS plan's own live `.implementation-plans/.../QUEUE.yaml`. Do **NOT** rename or move this
+which read THIS plan's own live `.implementation-plans/.../queue-rounds.yaml`. Do **NOT** rename or move this
 plan's own queue/status files or the live root ledger — only edit cog's *code*. See the plan README's
 "Scaffolding vs. deliverable". The user migrates live on-disk plan data manually (Q4).
 
@@ -78,7 +78,7 @@ cover `queue-plans` / `queue-rounds`. The cog code must now match those filename
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: cog-mechanics-rename`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: cog-mechanics-rename`) `status` to `doing`.
 
 ### Step 1: Rename the root queue in `cmd_plan_init.sh`
 
@@ -118,7 +118,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: cog-mechanics-rename`) `st
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: cog-mechanics-rename`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: cog-mechanics-rename`) `status` to `done`.
 
 ## Acceptance Criteria
 
@@ -130,7 +130,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: cog-mechanics-rename`) `st
       `fn_queue.sh` error strings.
 - [ ] `cog plan-slug` rejects `queue-plans` and `queue-rounds` (plus `readme`, `queue`, `strategy`).
 - [ ] No command module's line-2 `: 'desc: ...'` sentinel was disturbed.
-- [ ] This plan's `QUEUE.yaml` shows round `cog-mechanics-rename` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `cog-mechanics-rename` as `done`.
 
 ## Next Round
 

@@ -16,7 +16,7 @@ Skills in scope this round: `skills/claude/plan-writer` (canonical), `skills/cod
 (read-only non-interactive twin), `skills/claude/plan-writer-multi` (Claude-only coordinator). There
 is NO `skills/codex/plan-writer-multi`. The consumer `plan-queue-runner` is Round 4.
 
-Do NOT rename this plan's own `QUEUE.yaml` (see the plan README's "Scaffolding vs. deliverable"); this
+Do NOT rename this plan's own `queue-rounds.yaml` (see the plan README's "Scaffolding vs. deliverable"); this
 round edits **skill source** only.
 
 ## Previous Rounds
@@ -82,7 +82,7 @@ mechanics.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: skills-rewrite`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: skills-rewrite`) `status` to `doing`.
 
 ### Step 1: `plan-writer` (Claude) frontmatter + Phase 5
 
@@ -152,7 +152,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: skills-rewrite`) `status` 
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: skills-rewrite`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: skills-rewrite`) `status` to `done`.
 
 ## Acceptance Criteria
 
@@ -165,7 +165,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: skills-rewrite`) `status` 
       synthesize multiple flat sibling plan dirs with top-level `depends_on`.
 - [ ] The Codex twin can emit one or more directory-plan drafts and references the new filenames.
 - [ ] `cog skill-lint` passes on each touched SKILL.md.
-- [ ] This plan's `QUEUE.yaml` shows round `skills-rewrite` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `skills-rewrite` as `done`.
 
 ## Next Round
 

@@ -7,13 +7,16 @@
 `cog`'s `plan-queue-runner` skill (`skills/claude/plan-queue-runner/SKILL.md`) today drives ONE
 plan's inner `rounds:` queue to completion: for each runnable `todo` round it dispatches the round's
 verbatim `/prex` prompt to a fresh `claude-delegate`, verifies the round flipped itself to `done` in
-`QUEUE.yaml`, commits with `/gc -a`, and loops. Two features must be added, coherently:
+`queue-rounds.yaml`, commits with `/gc -a`, and loops. Two features must be added, coherently:
 
 **Feature A — Main-queue support.** Drive the repo-wide MAIN queue at
-`/workspaces/cog/.implementation-plans/QUEUE.yaml`, whose top-level key is `plans:` (a list of whole
+`/workspaces/cog/.implementation-plans/queue-plans.yaml`, whose top-level key is `plans:` (a list of whole
 plans, each `item/status/depends_on/prompt/notes`), executing every listed plan in order. Each plan
-entry's target may be: (a) a single plan file; (b) a directory with one round file / single-item
-inner queue; (c) a directory with a multi-round inner `QUEUE.yaml`.
+entry in the migrated live data targets a plan directory prompt
+(`/prex -ar @.implementation-plans/plans/<slug>/`) whose rounds live in that directory's
+`queue-rounds.yaml`. This plan's resolver design still names the legacy-compatible forms
+`single_file`, `single_round_dir`, and `inner_queue`; that tension must be reconciled before this
+future plan executes.
 
 A prior `/ask -wc` research pass (Claude Explore + Codex), verified against the live repo,
 established that most infrastructure already exists:
@@ -71,7 +74,7 @@ and `QUEUE_SCHEMA` detection. Round 3 depends on both.
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads QUEUE.yaml, runs the first `todo` round, then stops):
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
 /prex -ar @.implementation-plans/plans/plan-queue-runner-main-revision/
 
 # Or target a specific round file directly:
@@ -85,7 +88,7 @@ single `/prex` session. Do not implement multiple rounds in one session.
 
 When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
-1. Read this plan's `QUEUE.yaml`.
+1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
@@ -105,9 +108,10 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 - **Per-plan form resolution** (`cog plan-queue-runner-resolve-plan`) classifies a selected plan entry
   into `{single_file | single_round_dir | inner_queue}`, parsing both the `/prex -ar <target>` and the
   `/prex -ar @<target>` prompt forms (the live main queue uses the `@`-prefixed directory form).
-  Directory with `QUEUE.yaml` -> `inner_queue`; directory with exactly one round `.md` and no
-  `QUEUE.yaml` -> `single_round_dir`; single file -> `single_file`; multiple round files but no
-  `QUEUE.yaml` -> fail closed (require an explicit inner queue).
+  In the current directory-only live data, a valid plan target is a directory with
+  `queue-rounds.yaml` -> `inner_queue`; file targets and directories without `queue-rounds.yaml` fail
+  closed. The retained `single_file` / `single_round_dir` resolver-kind vocabulary is part of this
+  future plan's Feature A design and needs human reconciliation before execution.
 - **Two distinct status authorities (crisp rule):**
   - *Inner-round `done` is verify-only.* The round's own `/prex` flips its `rounds[]` status; the
     runner re-reads and requires `done` (unchanged from today).
@@ -188,9 +192,11 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 - **Setup dies on `plans:`.** `cmd_plan_queue_runner_setup.sh` runs the first `queue-select` at setup
   (line 108) — today that would die on a `plans:` queue via `queue_validate_rounds_selectable`.
   Mitigation: detect the schema in setup and thread it into the first select.
-- **Resolver prompt parsing.** The live main queue uses `/prex -ar @<dir>/` AND `/prex -ar <file>`.
-  Mitigation: `resolve-plan` must parse both `@`-prefixed and bare targets and normalize relative
-  targets against `repo_root`.
+- **Resolver prompt parsing.** The live main queue uses only the directory form `/prex -ar @<dir>/`
+  (the live data is directory-only; single-file targets no longer exist). The bare/file form
+  `/prex -ar <file>` is retained resolver vocabulary / future-design compatibility, not a current
+  live-queue fact. Mitigation: `resolve-plan` must parse both `@`-prefixed and bare targets and
+  normalize relative targets against `repo_root`.
 - **Revision auto-commit breaks the next item's clean-tree guard.** Mitigation: revision commits via
   `/gc` so the tree is clean before the next item; a no-drift cycle is a no-op (no commit); the runner
   verifies a clean worktree + `plans-revision-verify` before proceeding. Fail closed otherwise.
@@ -206,7 +212,7 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
 ## Completion
 
-When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan `done`
-in the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml` (via `cog queue-status-set
+When all rounds are done, set each round `done` in this plan's `queue-rounds.yaml` and set this plan `done`
+in the top-level `/workspaces/cog/.implementation-plans/queue-plans.yaml` (via `cog queue-status-set
 --schema plans` once the runner itself can do so, or by the executing `/prex` per its final step).
 Nothing moves on disk.

@@ -122,8 +122,8 @@ OUT of scope (later rounds):
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`
-(`.implementation-plans/plans/cog-self-contained-skill-refs/QUEUE.yaml`), set this round's
+In this plan's `queue-rounds.yaml`
+(`.implementation-plans/plans/cog-self-contained-skill-refs/queue-rounds.yaml`), set this round's
 (`item: cog-command-foundations`) `status` to `doing`.
 
 ### Step 1: Add the `cog::fn::skill_refs_root` helper
@@ -197,7 +197,7 @@ Add unit tests (in the repo's unit test tree, run by `just test`):
 
 Record completion in the queue — status lives in YAML; nothing moves on disk:
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: cog-command-foundations`) `status` to
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: cog-command-foundations`) `status` to
    `done`.
 
 ## Acceptance Criteria
@@ -216,7 +216,7 @@ Record completion in the queue — status lives in YAML; nothing moves on disk:
 - [ ] New commands appear in `completions/cog.bash` and `man/cog.1.scd`; `just lint` and `just test`
       pass.
 - [ ] `lib/functions/fn_refs.sh` and `lib/commands/cmd_review_refs.sh` are unchanged.
-- [ ] This plan's `QUEUE.yaml` shows round `cog-command-foundations` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `cog-command-foundations` as `done`.
 
 ## Next Round
 

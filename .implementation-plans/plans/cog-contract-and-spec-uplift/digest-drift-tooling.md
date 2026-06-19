@@ -90,7 +90,7 @@ OUT of scope:
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: digest-drift-tooling`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: digest-drift-tooling`) `status` to `doing`.
 
 ### Step 1: Shared digest helper
 
@@ -150,8 +150,8 @@ commands.
 
 Record completion — status lives in YAML; nothing moves on disk:
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: digest-drift-tooling`) `status` to `done`.
-2. All rounds are now done, so in the top-level `.implementation-plans/QUEUE.yaml` set this plan's
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: digest-drift-tooling`) `status` to `done`.
+2. All rounds are now done, so in the top-level `.implementation-plans/queue-plans.yaml` set this plan's
    (`item: cog-contract-and-spec-uplift`) `status` to `done`. Leave the plan directory in place.
 
 ## Acceptance Criteria
@@ -165,8 +165,8 @@ Record completion — status lives in YAML; nothing moves on disk:
       `test/unit/digest_stamp.bats` pass; `just lint` and `just test` green.
 - [ ] `cli-commands.md`, `completions/cog.bash`, `man/cog.1.scd`/`man/cog.1`, and the help snapshot all
       list both commands; no drift checks fail.
-- [ ] This plan's `QUEUE.yaml` shows round `digest-drift-tooling` as `done`, and the top-level
-      `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `digest-drift-tooling` as `done`, and the top-level
+      `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
 
 ## Next Round
 

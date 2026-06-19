@@ -52,7 +52,7 @@ DocsNNotes.
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads QUEUE.yaml, runs the first `todo` round, then stops):
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
 /prex -ar @.implementation-plans/plans/cog-self-contained-skill-refs/
 
 # Or target a specific round file directly:
@@ -66,7 +66,7 @@ a single `/prex` session. Do not implement multiple rounds in one session.
 
 When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
-1. Read this plan's `QUEUE.yaml`.
+1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
@@ -130,5 +130,5 @@ When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
 ## Completion
 
-When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan `done`
-in the top-level `.implementation-plans/QUEUE.yaml`. Nothing moves on disk.
+When all rounds are done, set each round `done` in this plan's `queue-rounds.yaml` and set this plan `done`
+in the top-level `.implementation-plans/queue-plans.yaml`. Nothing moves on disk.

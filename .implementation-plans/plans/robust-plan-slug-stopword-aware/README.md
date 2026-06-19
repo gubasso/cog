@@ -1,7 +1,6 @@
 # Robust, Stopword-Aware Plan Slug Derivation
 
-> Plan: robust-plan-slug-stopword-aware | Single-file plan | Complexity: M | Generated: 2026-06-18 |
-> Repo: /workspaces/cog
+> Plan: robust-plan-slug-stopword-aware | Complexity: M | Rounds: 1 | Generated: 2026-06-18 | Repo: /workspaces/cog
 
 ## Problem Statement
 
@@ -31,6 +30,28 @@ targets up to 6 meaningful words at a clean word boundary (never mid-word, never
 filler), falls back gracefully when an orientation is all stopwords, and returns a richer JSON
 document so a caller can see the normalized form, the words used, and the stopwords dropped — and
 thus help itself pick better wording.
+
+## Rounds
+
+The authoritative order and status live in `queue-rounds.yaml`.
+
+1. `robust-plan-slug-stopword-aware.md` — Make `cog plan-slug` stopword-aware, extend its additive JSON output, and update tests/docs/skill prose.
+
+## Execution Commands
+
+```bash
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
+/prex -ar @.implementation-plans/plans/robust-plan-slug-stopword-aware/
+
+# Or target the round file directly:
+/prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware/robust-plan-slug-stopword-aware.md
+```
+
+## Execution Discipline
+
+**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/prex` session. Do not implement multiple rounds in one session.
+
+When `/prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
 
 ## Decisions & Constraints
 
@@ -192,118 +213,6 @@ thus help itself pick better wording.
   integration tests shell out to the `cog` binary. Add new tests next to the existing ones, matching
   their style.
 
-## Implementation Steps
-
-### First Step: Mark this plan as started
-
-In the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml`, set this plan's
-(`item: robust-plan-slug-stopword-aware.md`) `status` to `doing`.
-
-### Step 1: Rewrite `__cog_plan_slug_derive` to be stopword-aware (`lib/commands/cmd_plan_slug.sh`)
-
-Replace the body of `__cog_plan_slug_derive` so that, after the existing normalization, it:
-
-1. Splits `normalized` into a `words` array (as today).
-2. Defines a curated stopword set (associative array or a space-delimited match string). Suggested
-   set: `a an and are as at be but by for from in into is it its of on or our that the then this to
-   via we with you your let lets ok just will can should shall`.
-3. Builds a `meaningful` array of words **not** in the stopword set, preserving order, and a
-   `dropped` array of the removed stopwords.
-4. If `meaningful` is empty, sets a `fallback=true` flag and uses the full `words` array instead
-   (empty-result fallback). Otherwise `fallback=false` and it uses `meaningful`.
-5. Selects up to `MAX_WORDS=6` words from the chosen array, joins them with `-`, applies the
-   `${slug:0:60}` char cap, and strips any trailing dash with `sed -E 's/-+$//'`.
-6. Sets `truncated=true` if either more than `MAX_WORDS` words were available **or** the 60-char cap
-   actually cut the string; else `truncated=false`.
-
-Because `__cog_plan_slug_derive` currently returns only the slug string on stdout (the unit test
-`assert_output "hello-world-again"` depends on this), keep that contract: `__cog_plan_slug_derive`
-still prints **only the slug** to stdout. Expose the auxiliary data (`normalized`, the
-selected-`words` list, `dropped`, `fallback`, `truncated`, `max_words`) to the caller via a
-documented mechanism that does not pollute stdout — e.g. assign them to module-scoped variables
-(`__cog_plan_slug_last_normalized`, `…_words`, `…_dropped`, `…_fallback`, `…_truncated`) that
-`__cog_plan_slug_build_json` reads immediately after calling derive. Pick whichever is cleanest in
-bash; document the chosen mechanism in a short comment. Do **not** print the extra data on stdout
-from `__cog_plan_slug_derive`.
-
-Worked example to verify against: input `enforce man page sync with a pre-commit hook as source of
-truth, just delegates to the hook` → normalized
-`enforce-man-page-sync-with-a-pre-commit-hook-as-source-of-truth-just-delegates-to-the-hook` →
-drop stopwords (`with`, `a`, `as`, `of`, `just`, `to`, `the`) → meaningful
-`enforce man page sync pre commit hook source truth delegates hook` → take first 6 →
-**`enforce-man-page-sync-pre-commit`**. `dropped` includes the removed function words; `fallback`
-false; `truncated` true.
-
-### Step 2: Extend `__cog_plan_slug_build_json` and the self-check (`lib/commands/cmd_plan_slug.sh`)
-
-1. In `__cog_plan_slug_build_json`, after calling `__cog_plan_slug_derive "$input"`, read the
-   auxiliary module variables from Step 1 and feed them into the `jq -n` assembly. Pass arrays with
-   `--argjson` (build them via `printf '%s\n' "${arr[@]}" | jq -R -s 'split("\n") | map(select(length>0))'`
-   or equivalent), and the booleans/number with `--argjson`.
-2. Keep `ok`, `input`, `slug`, `reserved`, `reason`, and `max_length: 60` exactly as today
-   (`slug` is `null` when `ok` is false). Add `normalized`, `words`, `dropped`, `fallback`,
-   `truncated`, and `max_words` to the emitted object.
-3. The reserved/empty `case "${slug,,}"` guard stays and runs on the final (post-filter) slug.
-4. Update `__cog_plan_slug_self_check` to additionally assert the new fields, e.g. append:
-   `and (.normalized|type=="string") and (.words|type=="array") and (.dropped|type=="array") and (.fallback|type=="boolean") and (.truncated|type=="boolean") and (.max_words|type=="number")`.
-   Keep `(.max_length == 60)`.
-
-Leave `cog::cmd::plan_slug()` argument parsing, emit path, and `.ok` exit status unchanged. Do not
-touch the line-2 `: 'desc: ...'` sentinel.
-
-### Step 3: Add unit tests (`test/unit/cmd_plan_slug.bats`)
-
-Keep all three existing tests. Add tests that lock in the new behavior:
-
-- Stopword filtering drops filler and keeps the subject:
-  `__cog_plan_slug_derive "enforce man page sync with a pre-commit hook"` → assert output is
-  `enforce-man-page-sync-pre-commit` (6 meaningful words; "with"/"a" removed).
-- Filler-heavy orientation:
-  `__cog_plan_slug_derive "implement the proper fix for a robust slug function"` →
-  assert output does **not** contain `-the-` or `-for-` and starts with `implement-proper-fix`.
-- Empty-result fallback: `__cog_plan_slug_build_json "the and of to"` → assert `.ok == true`,
-  `.fallback == true`, and `.slug` is a non-empty `[a-z0-9-]+` string.
-- Short slug is not padded: `__cog_plan_slug_derive "fix the bug"` → assert output `fix-bug`.
-- JSON exposes the new fields: `__cog_plan_slug_build_json "Plan artifacts and Queue items now"` →
-  assert `.words | type == "array"`, `.dropped | index("and")` is non-null, `.max_words == 6`.
-
-### Step 4: Add integration tests (`test/integration/plan_slug.bats`)
-
-Keep all existing tests. Add black-box coverage through the `cog` binary:
-
-- `cog plan-slug --text "enforce man page sync with a pre-commit hook" --json` → assert
-  `.slug == "enforce-man-page-sync-pre-commit"` and `.fallback == false`.
-- `cog plan-slug --text "the and of to" --json` → assert `.ok == true and .fallback == true` and
-  `.slug | test("^[a-z0-9-]+$")`.
-- Assert the redesigned shape validates: the command still exits 0 and the payload carries
-  `.words`, `.dropped`, `.normalized`, `.truncated`, and `.max_words == 6` (the self-check would
-  fail the emit otherwise, so this also guards the self-check update).
-
-### Step 5: Update docs and skill prose
-
-- `docs/reference/cli-commands.md` — keep the table row (the desc sentinel is unchanged). If the
-  file has room for a short per-command note, add one line noting that `plan-slug` drops common
-  stopwords and returns `normalized`/`words`/`dropped`/`fallback` alongside `slug`. Keep it
-  proportionate to the file's terse style.
-- `skills/claude/plan-writer/SKILL.md`, `skills/claude/plan-writer-multi/SKILL.md`, and
-  `skills/codex/plan-writer/SKILL.md` — update the "3–5 word" slug prose to "3–6 word" and add one
-  sentence: the helper now filters common filler words and returns the normalized form plus the
-  words it used and the stopwords it dropped, so when a slug is rejected the skill can re-word using
-  that signal. Do **not** change the `jq -r '.slug'` / `.ok` consumption — those fields are
-  preserved.
-
-### Step 6: Validate
-
-- Run `cog skill-lint` on each touched `SKILL.md` (per AGENTS.md and
-  `docs/reference/skill-contract.md`).
-- Run `just lint` (pre-commit, the source-of-truth quality gate) and `just test` (unit + integration
-  hooks). Fix any failures.
-
-### Final Step: Update the queue
-
-In the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml`, set this plan's
-(`item: robust-plan-slug-stopword-aware.md`) `status` to `done`. There is no inner queue. Leave the
-plan file in place — nothing moves on disk.
 
 ## Acceptance Criteria
 
@@ -322,7 +231,7 @@ plan file in place — nothing moves on disk.
 - [ ] The three `plan-writer` `SKILL.md` files reflect the new behavior, still read `.slug`/`.ok`,
       and pass `cog skill-lint`.
 - [ ] `just lint` and `just test` pass.
-- [ ] The top-level `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] The top-level `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
 
 ## Risks & Edge Cases
 

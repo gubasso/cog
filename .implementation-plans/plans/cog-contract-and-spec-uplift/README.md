@@ -50,7 +50,7 @@ plan automates.
 
 ## Rounds
 
-The authoritative order and status live in `QUEUE.yaml`; this list is a readable mirror.
+The authoritative order and status live in `queue-rounds.yaml`; this list is a readable mirror.
 
 1. `python-cli-spec-chapters.md` — Author Python `subcommand-pattern` + `error-handling` chapters in
    `docs-n-notes`, wire them into the README, refresh the Python `AGENTS.md` digest.
@@ -64,7 +64,7 @@ The authoritative order and status live in `QUEUE.yaml`; this list is a readable
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads QUEUE.yaml, runs the first `todo` round, then stops):
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
 /prex -ar @.implementation-plans/plans/cog-contract-and-spec-uplift/
 
 # Or target a specific round file directly (rounds are independent — any order is valid):
@@ -81,7 +81,7 @@ single `/prex` session. Do not implement multiple rounds in one session.
 
 When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
-1. Read this plan's `QUEUE.yaml`.
+1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
@@ -95,8 +95,7 @@ you may also choose the order freely — but still one round per session.
 - **Executor: prex (EF 1.5).** This sized each round individually; every round is S/M and fits one
   prex session.
 - **Grade override: M → L (directory, 4 rounds).** Per-axis: files:4 cross-cut:3 deps:2 novelty:3
-  risk:3 → raw 15 ÷ EF 1.5 → adjusted 10.0 → formula M (single file, 1 round). Overridden to a 4-round
-  directory because the items are four *independent cohesive deliverables*, not one feature. The round
+  risk:3 → raw 15 ÷ EF 1.5 → adjusted 10.0 → formula M as a descriptive grade; overridden to a 4-round directory because the items are four *independent cohesive deliverables*, not one feature. The round
   count is driven by deliverable independence, **not** complexity absorption, so the prex "recompute
   if 4+ rounds" guard (which targets over-split single features) does not apply.
 - **Round 3 closes leakage rather than gating it** (user direction): `cog` emits no human-facing
@@ -141,5 +140,5 @@ you may also choose the order freely — but still one round per session.
 
 ## Completion
 
-When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan `done`
-in the top-level `.implementation-plans/QUEUE.yaml`. Nothing moves on disk.
+When all rounds are done, set each round `done` in this plan's `queue-rounds.yaml` and set this plan `done`
+in the top-level `.implementation-plans/queue-plans.yaml`. Nothing moves on disk.

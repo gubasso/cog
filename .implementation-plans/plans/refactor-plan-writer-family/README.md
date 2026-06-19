@@ -66,7 +66,7 @@ live data stays old-format (and the in-flight runner keeps working) until every 
 
 ## Rounds
 
-The authoritative order and status live in this plan's `QUEUE.yaml`. Overview:
+The authoritative order and status live in this plan's `queue-rounds.yaml`. Overview:
 
 1. `spec-rewrite.md` — rewrite the external plan-rounds spec (satellite repo `/home/gbasso/DocsNNotes`).
 2. `cog-mechanics-rename.md` — rename queue filename literals + generalize error strings in cog; update the reserved-slug guard.
@@ -78,7 +78,7 @@ The authoritative order and status live in this plan's `QUEUE.yaml`. Overview:
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads this plan's QUEUE.yaml, runs the first `todo` round, then stops):
+# Execute the next todo round (executor reads this plan's queue-rounds.yaml, runs the first `todo` round, then stops):
 /prex -ar @.implementation-plans/plans/refactor-plan-writer-family/
 
 # Or target a specific round file directly (robust to the queue rename mid-execution — see Risks):
@@ -97,7 +97,7 @@ single `/prex` session. Do not implement multiple rounds in one session.
 
 When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
-1. Read this plan's `QUEUE.yaml`.
+1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
@@ -111,16 +111,17 @@ pin. Commit it with `/gc -a` afterward (the round body runs no git).
 
 ## Scaffolding vs. deliverable (READ THIS — prevents a self-rename mistake)
 
-This plan's OWN scaffolding deliberately uses the **current** convention — this plan's inner queue is
-`QUEUE.yaml` and it is registered in the existing root ledger `.implementation-plans/QUEUE.yaml` —
-because the plan runs under the **current** (pre-refactor) tooling and shares the live root ledger
-with other in-flight plans. The **deliverable** (what the rounds install) is the **new** convention
-(`queue-plans.yaml` / `queue-rounds.yaml`) in the spec, cog code, skills, docs, and tests.
+This plan's OWN scaffolding deliberately started on the **old** convention — through Rounds 1–5 this
+plan's inner queue was `QUEUE.yaml` and it was registered in the then-old-format root ledger
+`.implementation-plans/QUEUE.yaml` — because the plan runs under the **pre-refactor** tooling and
+shares the live root ledger with other in-flight plans. The **deliverable** (what the rounds install)
+is the **new** convention (`queue-plans.yaml` / `queue-rounds.yaml`) in the spec, cog code, skills,
+docs, and tests.
 
 Therefore: when **Rounds 1–5** say "rename `QUEUE.yaml` → `queue-rounds.yaml`", they mean **in the cog
-product / spec / tests** — **NOT** this plan's own `.implementation-plans/.../QUEUE.yaml` and **NOT**
-the live root ledger. Rounds 1–5 do NOT rename or move any live `.implementation-plans/` queue/status
-file; the live tree stays old-format so the in-flight runner keeps working.
+product / spec / tests** — **NOT** this plan's own (then) `.implementation-plans/.../QUEUE.yaml` and
+**NOT** the live root ledger. Rounds 1–5 do NOT rename or move any live `.implementation-plans/`
+queue/status file; the live tree stays old-format so the in-flight runner keeps working.
 
 The **live migration is the job of Round 6 (`migrate-live-plans`)**, run last and directly: it
 migrates every live plan to the new format and, as its final act, self-migrates this plan's own queue
@@ -212,7 +213,7 @@ migrates every live plan to the new format and, as its final act, self-migrates 
   `queue-rounds`; the reserved-slug guard (currently `readme`, `queue`, `strategy`) is extended so a
   plan slug or round topic cannot collide with the new meta files.
 - **Live on-disk plans (in scope via Round 6, status-preserving).** The live root ledger
-  `.implementation-plans/QUEUE.yaml` and existing plans (including single-file `.md` plans like
+  `.implementation-plans/queue-plans.yaml` and existing plans (including single-file `.md` plans like
   `man-page-sync-precommit-hook.md`) keep the old name/format through Rounds 1–5, then Round 6
   migrates them: rename the root + inner queues, convert the two single-file plans to directories, and
   reconcile sibling-plan text (mechanical + targeted) to the new code state. Round 6 preserves every

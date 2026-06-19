@@ -98,7 +98,7 @@ OUT of scope — **keep** the stderr error/warning contract:
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: msg-machine-facing-cleanup`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: msg-machine-facing-cleanup`) `status` to
 `doing`.
 
 ### Step 1: Audit every human-UX call site
@@ -147,7 +147,7 @@ decorative lines). Run `just lint` and `just test` until green.
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: msg-machine-facing-cleanup`) `status` to
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: msg-machine-facing-cleanup`) `status` to
    `done`.
 
 (This is not the final round — do not touch the top-level ledger.)
@@ -164,7 +164,7 @@ decorative lines). Run `just lint` and `just test` until green.
       `Accepted`.
 - [ ] gc skills still function; `cog skill-lint` passes on any touched `SKILL.md`.
 - [ ] `test/unit/msg.bats` and `test/unit/ui_print.bats` updated; `just lint` and `just test` green.
-- [ ] This plan's `QUEUE.yaml` shows round `msg-machine-facing-cleanup` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `msg-machine-facing-cleanup` as `done`.
 
 ## Next Round
 

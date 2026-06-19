@@ -47,7 +47,7 @@ runner orchestration prose remains.
   (lines 97-112): parse -> `cog plan-queue-runner-setup` -> loop `cog queue-select` -> dispatch round
   -> re-read require `done` -> dispatch `/gc -a` (+ `--repo` satellites) -> parse `COMMIT_*` -> loop.
   Per-loop selection snippet (lines 133-143) and the satellite `REPO_FLAGS` rebuild (lines 63-67) are
-  the integration points. Current Rules (254-267): "Never write `QUEUE.yaml`"; "Verify, do not set";
+  the integration points. Current Rules (254-267): "Never write `queue-rounds.yaml`"; "Verify, do not set";
   "use each entry's prompt verbatim"; "`/gc` is the only commit authority".
 
 - Round-1/2 surfaces this round wires together: `cog queue-select --schema`,
@@ -55,7 +55,7 @@ runner orchestration prose remains.
   `.claude/skills/plans-revision/SKILL.md`. The `claude-delegate` agent (`All tools`) is the existing
   isolation primitive.
 
-- `/workspaces/cog/.implementation-plans/QUEUE.yaml` — the live `plans:` main queue used as the
+- `/workspaces/cog/.implementation-plans/queue-plans.yaml` — the live `plans:` main queue used as the
   primary manual end-to-end target after this round.
 
 ### Existing Patterns
@@ -72,21 +72,24 @@ runner orchestration prose remains.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: runner-orchestration-integration`) `status` to
+In this plan's `queue-rounds.yaml`, set this round's (`item: runner-orchestration-integration`) `status` to
 `doing`.
 
 ### Step 1: Frontmatter, intro, usage, "Queue Modes"
 
 Update the description + `argument-hint` to accept either an inner `rounds:` queue OR a top-level
 `plans:` main queue (e.g. `argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir|plan-file>"`).
+The migrated live data is directory-only (`plan-dir` with `queue-rounds.yaml`); the retained
+`plan-file` / single-round vocabulary belongs to this future plan's unresolved resolver design and
+must be reconciled before implementation.
 Add a "Queue Modes" section: `rounds:` -> inner mode (today's behavior); `plans:` -> main mode (select
 plans in order, drive each to completion); auto-detected via `QUEUE_SCHEMA` from setup. Add usage
 examples:
 
 ```bash
-/plan-queue-runner .implementation-plans/QUEUE.yaml
+/plan-queue-runner .implementation-plans/queue-plans.yaml
 /plan-queue-runner .implementation-plans/plans/build-orion-nixos-config
-/plan-queue-runner --max 1 .implementation-plans/QUEUE.yaml
+/plan-queue-runner --max 1 .implementation-plans/queue-plans.yaml
 ```
 
 ### Step 2: Schema branch + inner-queue sub-procedure
@@ -111,7 +114,9 @@ Document the INLINE loop (no new subagent layer). Per iteration:
    --item "$PLAN_ITEM"` to classify the form.
 3. Execute by form:
    - `single_file` / `single_round_dir`: dispatch the entry's verbatim `/prex` prompt to ONE fresh
-     foreground `claude-delegate` (exactly the existing per-round dispatch shape).
+     foreground `claude-delegate` (exactly the existing per-round dispatch shape). These retained
+     resolver kinds conflict with the migrated directory-only live data and must be formally
+     reconciled before this future plan executes.
    - `inner_queue`: rebuild `REPO_FLAGS` from the resolver's `repos`, then run the "Drive an inner
      queue" sub-procedure against `inner_queue_path` until `state: complete`.
 4. Verify completion (form-appropriate postcondition), then flip the MAIN plan to done:
@@ -159,7 +164,7 @@ the revision subagent issues the `/gc` (see the Round-2 open choice) and keep `/
 
 ### Step 5: Update Rules + Failure Handling
 
-Narrow the absolute "Never write `QUEUE.yaml`" rule to:
+Narrow the absolute "Never write `queue-rounds.yaml`" rule to:
 
 - The skill prose never hand-edits queues (no `yq -i`, `sed -i`, or redirects).
 - Inner-round `done` remains verify-only (owned by the round's `/prex`).
@@ -189,14 +194,14 @@ round-level semantics for an inner `rounds:` queue.
   `docs/reference/orchestration-contract.md` if a one-line note about the sibling revision boundary
   clarifies the pattern; ensure `just lint` and `just test` pass.
 - Manual end-to-end smoke (document results, do not automate): a `--dry-run` against
-  `.implementation-plans/QUEUE.yaml` shows the next `todo` plan, its kind, and remaining plans.
+  `.implementation-plans/queue-plans.yaml` shows the next `todo` plan, its kind, and remaining plans.
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: runner-orchestration-integration`) `status`
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: runner-orchestration-integration`) `status`
    to `done`.
 2. All rounds are now done, so set this plan's item (`plan-queue-runner-main-revision`) to `done` in
-   the top-level `/workspaces/cog/.implementation-plans/QUEUE.yaml` (now achievable via
+   the top-level `/workspaces/cog/.implementation-plans/queue-plans.yaml` (now achievable via
    `cog queue-status-set --schema plans`, or per the executing `/prex` final step). Leave the plan
    directory in place.
 
@@ -204,8 +209,10 @@ round-level semantics for an inner `rounds:` queue.
 
 - [ ] `/plan-queue-runner <inner plan dir>` (inner `rounds:` mode) remains supported and unchanged
       except for the added revision boundary after each committed round.
-- [ ] `/plan-queue-runner .implementation-plans/QUEUE.yaml` drives the top-level `plans:` queue inline
-      (depth 0), resolving each plan to `single_file` / `single_round_dir` / `inner_queue`.
+- [ ] `/plan-queue-runner .implementation-plans/queue-plans.yaml` drives the top-level `plans:` queue inline
+      (depth 0), preserving the future resolver vocabulary `single_file` / `single_round_dir` /
+      `inner_queue` while treating migrated live data as directory-only until the resolver conflict is
+      formally reconciled.
 - [ ] Main-plan completion is set via `cog queue-status-set --schema plans`; inner-round completion
       stays verify-only; the skill never hand-edits a queue.
 - [ ] The `plans-revision` skill runs as a foreground subagent after every committed inner round and
@@ -215,8 +222,8 @@ round-level semantics for an inner `rounds:` queue.
 - [ ] `--max` / `--dry-run` operate at the plan level for a main queue.
 - [ ] `cog skill-lint` passes for the touched skills; `just lint` and `just test` pass including drift
       checks.
-- [ ] This plan's `QUEUE.yaml` shows round `runner-orchestration-integration` as `done`, and the
-      top-level `.implementation-plans/QUEUE.yaml` shows `plan-queue-runner-main-revision` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `runner-orchestration-integration` as `done`, and the
+      top-level `.implementation-plans/queue-plans.yaml` shows `plan-queue-runner-main-revision` as `done`.
 
 ## Next Round
 

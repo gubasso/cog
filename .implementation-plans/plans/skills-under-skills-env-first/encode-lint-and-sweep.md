@@ -94,7 +94,7 @@ injection, the docs themselves).
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: encode-lint-and-sweep`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: encode-lint-and-sweep`) `status` to `doing`.
 
 ### Step 1: Encode the new skill-lint rules
 
@@ -159,8 +159,8 @@ newly-flagged `cog skill-lint` violation. Commit via `/gc`; the executor must NO
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: encode-lint-and-sweep`) `status` to `done`.
-2. All rounds are now done, so in the top-level `.implementation-plans/QUEUE.yaml` set this plan's
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: encode-lint-and-sweep`) `status` to `done`.
+2. All rounds are now done, so in the top-level `.implementation-plans/queue-plans.yaml` set this plan's
    (`item: skills-under-skills-env-first`) `status` to `done`. Leave the plan directory in place.
 
 ## Acceptance Criteria
@@ -177,8 +177,8 @@ newly-flagged `cog skill-lint` violation. Commit via `/gc`; the executor must NO
 - [ ] The cross-repo `rg` sweep finds no stale leftovers (only the kept `prex-stop` references and the
       deliberate ADR/explanation history remain).
 - [ ] `just lint` and `just test` pass.
-- [ ] This plan's `QUEUE.yaml` shows round `encode-lint-and-sweep` as `done`, and the top-level
-      `.implementation-plans/QUEUE.yaml` shows this plan as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `encode-lint-and-sweep` as `done`, and the top-level
+      `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
 
 ## Next Round
 

@@ -151,7 +151,7 @@ review-loop / ask / plan-writer-multi prose still carrying foreground/600000/rea
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: revert-and-assert-core`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: revert-and-assert-core`) `status` to `doing`.
 
 ### Step 1: Inject the env into claude-session base.json (dotfiles satellite, do this first)
 
@@ -227,7 +227,7 @@ directly.
 
 ### Final Step: Update the queue
 
-In this plan's `QUEUE.yaml`, set this round's (`item: revert-and-assert-core`) `status` to `done`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: revert-and-assert-core`) `status` to `done`.
 Then restart `claude-session` before Round 2 so the new `base.json` env is in force.
 
 ## Acceptance Criteria
@@ -250,7 +250,7 @@ Then restart `claude-session` before Round 2 so the new `base.json` env is in fo
       (SKILL.md + stage-2-through-5 reference), `plan-queue-runner`, or `claude-delegate`; replaced
       with env-first prose.
 - [ ] `just lint` passes (no MD040 violations; shellcheck clean).
-- [ ] This plan's `QUEUE.yaml` shows round `revert-and-assert-core` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `revert-and-assert-core` as `done`.
 
 ## Next Round
 

@@ -36,7 +36,7 @@ This is the first round — no prior rounds.
   `AGENTS.md` / `README.md` in that folder for restated retired rules and update them.
 - **OUT of scope:** any edits in `/workspaces/cog` (cog commands, skills, tests, docs) — later rounds.
   Do NOT migrate or rename any live `.implementation-plans/` data in either repo. Do NOT rename this
-  plan's own `QUEUE.yaml` (see the plan README's "Scaffolding vs. deliverable").
+  plan's own `queue-rounds.yaml` (see the plan README's "Scaffolding vs. deliverable").
 
 ## Current State
 
@@ -80,7 +80,7 @@ This is the first round — no prior rounds.
 
 ### First Step: Mark this round as started
 
-In this plan's `QUEUE.yaml`, set this round's (`item: spec-rewrite`) `status` to `doing`.
+In this plan's `queue-rounds.yaml`, set this round's (`item: spec-rewrite`) `status` to `doing`.
 
 ### Step 1: Rewrite grade→format and remove the cap in `complexity-heuristic.md`
 
@@ -156,7 +156,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: spec-rewrite`) `status` to
 
 ### Final Step: Update the queue
 
-1. In this plan's `QUEUE.yaml`, set this round's (`item: spec-rewrite`) `status` to `done`.
+1. In this plan's `queue-rounds.yaml`, set this round's (`item: spec-rewrite`) `status` to `done`.
 
 ## Acceptance Criteria
 
@@ -171,7 +171,7 @@ In this plan's `QUEUE.yaml`, set this round's (`item: spec-rewrite`) `status` to
       `QUEUE.yaml` remains in that folder except intentionally historical notes updated to new names.
 - [ ] The reserved-slug list in the spec covers `queue-plans` and `queue-rounds`.
 - [ ] Markdown fenced blocks all declare a language.
-- [ ] This plan's `QUEUE.yaml` shows round `spec-rewrite` as `done`.
+- [ ] This plan's `queue-rounds.yaml` shows round `spec-rewrite` as `done`.
 
 ## Next Round
 

@@ -75,7 +75,7 @@ all future sessions; it must not brick the in-flight execution of this very plan
 
 ## Rounds
 
-The authoritative order and status live in `QUEUE.yaml`. Overview:
+The authoritative order and status live in `queue-rounds.yaml`. Overview:
 
 1. `revert-and-assert-core.md` — Inject env into `claude-session` `base.json`; add the fail-closed
    `cog` env-preflight (advisory-now / fail-closed-for-new-sessions); remove the `codex-foreground`
@@ -95,7 +95,7 @@ The authoritative order and status live in `QUEUE.yaml`. Overview:
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads QUEUE.yaml, runs the first `todo` round, then stops):
+# Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
 /prex -ar @.implementation-plans/plans/skills-under-skills-env-first/
 
 # Or target a specific round file directly:
@@ -105,7 +105,7 @@ The authoritative order and status live in `QUEUE.yaml`. Overview:
 ```
 
 This plan writes into more than one repo. Run it through `/plan-queue-runner`, which guards every
-declared repo's clean tree and commits each via `/gc -a --repo <sat>` — the inner `QUEUE.yaml`
+declared repo's clean tree and commits each via `/gc -a --repo <sat>` — the inner `queue-rounds.yaml`
 declares `/home/gbasso/.dotfiles` as a satellite.
 
 ## Execution Discipline
@@ -115,7 +115,7 @@ a single `/prex` session. Do not implement multiple rounds in one session.
 
 When `/prex` is pointed at this directory or this `README.md`, it MUST:
 
-1. Read this plan's `QUEUE.yaml`.
+1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
 3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
 4. End the session — a fresh `/prex` session is launched for any subsequent round.
@@ -208,5 +208,5 @@ force (see the env-rollout sequencing note above).
 
 ## Completion
 
-When all rounds are done, set each round `done` in this plan's `QUEUE.yaml` and set this plan `done`
-in the top-level `.implementation-plans/QUEUE.yaml`. Nothing moves on disk.
+When all rounds are done, set each round `done` in this plan's `queue-rounds.yaml` and set this plan `done`
+in the top-level `.implementation-plans/queue-plans.yaml`. Nothing moves on disk.
