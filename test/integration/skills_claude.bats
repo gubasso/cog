@@ -130,7 +130,7 @@ forbidden_scan_codex() {
   assert_file_contains "$file" "claude-delegate"
   assert_file_contains "$file" "cog queue-select"
   assert_file_contains "$file" "Queue Modes"
-  assert_file_contains "$file" "plans-revision"
+  assert_file_contains "$file" "review-implementation-plans"
   assert_file_contains "$file" "cog queue-status-set"
   assert_file_contains "$file" "runner-queue-resolve-plan"
   assert_file_contains "$file" "DO NOT delegate the main loop"

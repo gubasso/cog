@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-__cog_plans_revision_require_jq_yq() {
+__cog_review_implementation_plans_require_jq_yq() {
   local cmd
   for cmd in jq yq sha256sum; do
     __have "$cmd" || cog::helpers::die "$EX_UNAVAILABLE" "MissingRequirement" \
@@ -8,27 +8,27 @@ __cog_plans_revision_require_jq_yq() {
   done
 }
 
-__cog_plans_revision_require_repo_root() {
+__cog_review_implementation_plans_require_repo_root() {
   local repo_root="${1:-}"
   [[ -n $repo_root ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
-    "missing repo root" "function: plans revision" "expected <repo_root>" ""
+    "missing repo root" "function: review implementation plans" "expected <repo_root>" ""
   [[ -d $repo_root ]] || cog::helpers::die "$EX_NOINPUT" "InputNotFound" \
     "repo root not found" "path: ${repo_root}" "" "check the repo root"
 }
 
-__cog_plans_revision_require_queue_file() {
+__cog_review_implementation_plans_require_queue_file() {
   local queue_path="${1:-}"
   [[ -n $queue_path ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
-    "missing queue path" "function: plans revision" "expected <queue_path>" ""
+    "missing queue path" "function: review implementation plans" "expected <queue_path>" ""
   [[ -f $queue_path ]] || cog::helpers::die "$EX_NOINPUT" "InputNotFound" \
     "queue file not found" "path: ${queue_path}" "" "check the queue path"
 }
 
-cog::fn::plans_revision_queue_schema() {
-  __cog_plans_revision_require_jq_yq
+cog::fn::review_implementation_plans_queue_schema() {
+  __cog_review_implementation_plans_require_jq_yq
   local queue_path="${1:-}"
   local has_plans has_rounds
-  __cog_plans_revision_require_queue_file "$queue_path"
+  __cog_review_implementation_plans_require_queue_file "$queue_path"
 
   yq e '.' "$queue_path" >/dev/null || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
     "queue file does not parse" "path: ${queue_path}" "" "fix the YAML syntax"
@@ -54,9 +54,9 @@ cog::fn::plans_revision_queue_schema() {
   fi
 }
 
-cog::fn::plans_revision_assert_flat() {
+cog::fn::review_implementation_plans_assert_flat() {
   local repo_root="${1:-}" abs_repo plans_dir nested
-  __cog_plans_revision_require_repo_root "$repo_root"
+  __cog_review_implementation_plans_require_repo_root "$repo_root"
   abs_repo="$(realpath "$repo_root")"
   plans_dir="${abs_repo}/.implementation-plans/plans"
   [[ -d $plans_dir ]] || return 0
@@ -69,7 +69,7 @@ cog::fn::plans_revision_assert_flat() {
     "move each plan to a flat sibling plans/<slug>/ and wire ordering via depends_on"
 }
 
-__cog_plans_revision_queue_json() {
+__cog_review_implementation_plans_queue_json() {
   local queue_path="$1" schema="$2" abs_queue
   abs_queue="$(realpath "$queue_path")"
   cog::fn::queue_validate_file "$abs_queue" "$schema"
@@ -96,42 +96,42 @@ __cog_plans_revision_queue_json() {
     '
 }
 
-cog::fn::plans_revision_inventory_json() {
-  __cog_plans_revision_require_jq_yq
+cog::fn::review_implementation_plans_inventory_json() {
+  __cog_review_implementation_plans_require_jq_yq
   local repo_root="${1:-}" main_queue="${2:-}"
   local abs_repo abs_main plans_dir path schema
   local -a queue_jsons=()
 
-  __cog_plans_revision_require_repo_root "$repo_root"
-  __cog_plans_revision_require_queue_file "$main_queue"
+  __cog_review_implementation_plans_require_repo_root "$repo_root"
+  __cog_review_implementation_plans_require_queue_file "$main_queue"
   abs_repo="$(realpath "$repo_root")"
   abs_main="$(realpath "$main_queue")"
 
-  schema="$(cog::fn::plans_revision_queue_schema "$abs_main")"
+  schema="$(cog::fn::review_implementation_plans_queue_schema "$abs_main")"
   [[ $schema == plans ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
     "main queue must use plans schema" "path: ${abs_main}" "actual schema: ${schema}" \
     "pass the root queue-plans.yaml file"
-  queue_jsons+=("$(__cog_plans_revision_queue_json "$abs_main" plans)")
+  queue_jsons+=("$(__cog_review_implementation_plans_queue_json "$abs_main" plans)")
 
-  cog::fn::plans_revision_assert_flat "$abs_repo"
+  cog::fn::review_implementation_plans_assert_flat "$abs_repo"
 
   plans_dir="${abs_repo}/.implementation-plans/plans"
   if [[ -d $plans_dir ]]; then
     while IFS= read -r path; do
-      schema="$(cog::fn::plans_revision_queue_schema "$path")"
+      schema="$(cog::fn::review_implementation_plans_queue_schema "$path")"
       [[ $schema == rounds ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
         "inner queue must use rounds schema" "path: ${path}" "actual schema: ${schema}" \
         "queue-rounds.yaml files must contain rounds"
-      queue_jsons+=("$(__cog_plans_revision_queue_json "$path" rounds)")
+      queue_jsons+=("$(__cog_review_implementation_plans_queue_json "$path" rounds)")
     done < <(find "$plans_dir" -mindepth 2 -maxdepth 2 -type f -name 'queue-rounds.yaml' | LC_ALL=C sort)
   fi
 
   printf '%s\n' "${queue_jsons[@]}" | jq -s '{queues: .}'
 }
 
-cog::fn::plans_revision_repo_fingerprint() {
+cog::fn::review_implementation_plans_repo_fingerprint() {
   local repo_root="${1:-}" abs_repo
-  __cog_plans_revision_require_repo_root "$repo_root"
+  __cog_review_implementation_plans_require_repo_root "$repo_root"
   abs_repo="$(realpath "$repo_root")"
 
   (
@@ -145,9 +145,9 @@ cog::fn::plans_revision_repo_fingerprint() {
   ) | cog::fn::refactor_null_path_fingerprint "$abs_repo"
 }
 
-cog::fn::plans_revision_plans_fingerprint() {
+cog::fn::review_implementation_plans_plans_fingerprint() {
   local repo_root="${1:-}" abs_repo plans_dir
-  __cog_plans_revision_require_repo_root "$repo_root"
+  __cog_review_implementation_plans_require_repo_root "$repo_root"
   abs_repo="$(realpath "$repo_root")"
   plans_dir="${abs_repo}/.implementation-plans"
   [[ -d $plans_dir ]] || cog::helpers::die "$EX_NOINPUT" "InputNotFound" \

@@ -334,7 +334,7 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
   emit drafts to scratch paths only.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`) — never nested and never containing plan
-  subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog plans-revision-scan`,
+  subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog review-implementation-plans-scan`,
   and `cog runner-queue-resolve-plan` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
 - Codex calls go through `cog codex-runner run-exec` with `--profile medium`, read-only

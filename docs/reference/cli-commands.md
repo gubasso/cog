@@ -53,8 +53,6 @@ this reference table.
 | `plan-init` | Bootstrap implementation plan root files. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
-| `plans-revision-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
-| `plans-revision-verify` | Verify a plans-revision against a before/after scan. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |
@@ -63,6 +61,9 @@ this reference table.
 | `print-config` | Print resolved configuration values and their sources. |
 | `queue-append` | Append one implementation plan queue entry. |
 | `queue-bootstrap` | Create and validate an implementation plan queue. |
+| `queue-deps-set` | Replace one mutable queue item dependency list with a guarded graph check. |
+| `queue-graph-check` | Validate queue dependency graph references and cycles. |
+| `queue-reorder` | Reorder mutable queue items by stable dependency topological sort. |
 | `queue-select` | Select the next runnable implementation plan round. |
 | `queue-status-set` | Set one queue item status with an expected-current-status guard. |
 | `refactor-scan-drift` | Compute byte-stable source-scan fingerprint. |
@@ -71,6 +72,8 @@ this reference table.
 | `require` | Assert required cog subcommands are installed. |
 | `review-agents-finalize` | Finalize review reference resolution from classification data. |
 | `review-cli-signals` | Probe whether the project is a CLI from classification data. |
+| `review-implementation-plans-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
+| `review-implementation-plans-verify` | Verify a review-implementation-plans run against a before/after scan. |
 | `review-init` | Create a review run directory and resolve output paths. |
 | `review-refs` | Resolve docs-n-notes review reference files. |
 | `review-scope` | Detect changed-file review scope. |
@@ -110,5 +113,5 @@ timeout env vars are recorded as diagnostics only.
 Plan directories are flat siblings, a single level under `.implementation-plans/plans/`
 (`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
 filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
-`cog plans-revision-scan` (revision inventory, via `cog::fn::plans_revision_assert_flat`), and
+`cog review-implementation-plans-scan` (revision inventory, via `cog::fn::review_implementation_plans_assert_flat`), and
 `cog runner-queue-resolve-plan` (a resolved target must be a direct child of `plans/`).

@@ -177,6 +177,169 @@ cog::fn::queue_has_item() {
   ITEM="$item" KEY="$key" yq e -e '.[strenv(KEY)][]? | select(.item == strenv(ITEM))' "$queue_path" >/dev/null 2>&1
 }
 
+cog::fn::queue_depends_csv_json() {
+  __have jq || cog::helpers::die "$EX_UNAVAILABLE" "MissingRequirement" \
+    "required command not found" "command: jq" "" "install jq and retry"
+  local depends="${1:-}"
+  jq -cn --arg depends "$depends" '
+    if $depends == "" then
+      []
+    else
+      $depends
+      | split(",")
+      | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+      | map(select(. != ""))
+    end
+  '
+}
+
+cog::fn::queue_graph_json() {
+  __cog_queue_require_jq_yq
+  local queue_path="${1:-}"
+  local schema="${2:-}"
+  local key abs_queue
+
+  key="$(__cog_queue_key_or_die "$schema")"
+  cog::fn::queue_validate_file "$queue_path" "$key"
+  abs_queue="$(realpath "$queue_path")"
+  yq e -o=json '.' "$abs_queue" | jq -c --arg key "$key" --arg queue_path "$abs_queue" '
+    {
+      queue_path: $queue_path,
+      schema: $key,
+      items: (.[$key] // [])
+    }
+  '
+}
+
+cog::fn::queue_graph_check_items_json() {
+  __have jq || cog::helpers::die "$EX_UNAVAILABLE" "MissingRequirement" \
+    "required command not found" "command: jq" "" "install jq and retry"
+  local graph_json="${1:-}"
+  [[ -n $graph_json ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+    "missing graph JSON" "function: queue_graph_check_items_json" "" "pass a {queue_path, schema, items} object"
+  jq -n -c --argjson graph "$graph_json" '
+    def topo_result($nodes):
+      reduce range(0; (($nodes | length) + 1)) as $i (
+        {sorted: [], remaining: $nodes};
+        if (.remaining | length) == 0 then
+          .
+        else
+          (.sorted) as $sorted
+          | ([.remaining[] as $node
+            | $node
+            | select((($node.depends_on | length) == 0) or all($node.depends_on[]?; . as $dep | ($sorted | index($dep))))
+          ]) as $ready
+          | if ($ready | length) == 0 then
+              .
+            else
+              .sorted += ($ready | map(.item))
+              | .remaining = [.remaining[] as $node
+                  | $node
+                  | select((($ready | map(.item)) | index($node.item)) | not)]
+            end
+        end
+      );
+
+    ($graph.items) as $items
+    | ($items | map(.item)) as $names
+    | [ $items[]? as $item
+        | $item.depends_on[]? as $dep
+        | select(($names | index($dep)) | not)
+        | {item: $item.item, depends_on: $dep}
+      ] as $dangling
+    | (if ($dangling | length) == 0 then topo_result($items) else {sorted: [], remaining: []} end) as $topo
+    | {
+        ok: (($dangling | length) == 0 and ($topo.remaining | length) == 0),
+        queue_path: $graph.queue_path,
+        schema: $graph.schema,
+        items: $items,
+        dangling_refs: $dangling,
+        cycles: (if ($dangling | length) == 0 and ($topo.remaining | length) > 0
+          then [($topo.remaining | map(.item))]
+          else []
+          end),
+        blocked: [
+          $items[]?
+          | select(.status == "todo")
+          | ([.depends_on[]? as $dep
+              | $dep
+              | select(([$items[]? | select(.item == $dep and .status == "done")] | length) == 0)
+            ]) as $missing_done
+          | select(($missing_done | length) > 0)
+          | {item, depends_on, missing_done: $missing_done}
+        ],
+        canonical_order: $topo.sorted
+      }
+  '
+}
+
+cog::fn::queue_graph_check_json() {
+  __cog_queue_require_jq_yq
+  local queue_path="${1:-}"
+  local schema="${2:-}"
+  local graph_json
+
+  graph_json="$(cog::fn::queue_graph_json "$queue_path" "$schema")"
+  cog::fn::queue_graph_check_items_json "$graph_json"
+}
+
+cog::fn::queue_graph_assert_valid() {
+  local queue_path="${1:-}"
+  local schema="${2:-}"
+  local report
+
+  report="$(cog::fn::queue_graph_check_json "$queue_path" "$schema")"
+  jq -e '.ok == true' <<<"$report" >/dev/null || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+    "queue dependency graph is invalid" "path: ${queue_path}" "$report" \
+    "fix dangling dependencies or cycles"
+}
+
+cog::fn::queue_mutable_toposort_json() {
+  __cog_queue_require_jq_yq
+  local queue_path="${1:-}"
+  local schema="${2:-}"
+  local key
+
+  key="$(__cog_queue_key_or_die "$schema")"
+  cog::fn::queue_graph_assert_valid "$queue_path" "$key"
+  yq e -o=json '.' "$queue_path" | jq -c --arg key "$key" '
+    def topo_result($nodes):
+      reduce range(0; (($nodes | length) + 1)) as $i (
+        {sorted: [], remaining: $nodes};
+        if (.remaining | length) == 0 then
+          .
+        else
+          (.sorted) as $sorted
+          | ([.remaining[] as $node
+            | $node
+            | select((($node.mutable_depends_on | length) == 0) or all($node.mutable_depends_on[]?; . as $dep | ($sorted | index($dep))))
+          ]) as $ready
+          | if ($ready | length) == 0 then
+              .
+            else
+              .sorted += ($ready | map(.item))
+              | .remaining = [.remaining[] as $node
+                  | $node
+                  | select((($ready | map(.item)) | index($node.item)) | not)]
+            end
+        end
+      );
+
+    (.[$key] // []) as $items
+    | [$items[]? | select(.status == "todo" or .status == "backlog") | .item] as $mutable_names
+    | [$items[]?
+        | select(.status == "todo" or .status == "backlog")
+        | . + {mutable_depends_on: [.depends_on[]? as $dep | select($mutable_names | index($dep)) | $dep]}
+      ] as $mutable_items
+    | (topo_result($mutable_items)) as $topo
+    | if ($topo.remaining | length) > 0 then
+        error("mutable dependency cycle")
+      else
+        $topo.sorted
+      end
+  '
+}
+
 cog::fn::queue_assert_helper_owned_shape() {
   local queue_path="${1:-}"
   local schema="${2:-}"

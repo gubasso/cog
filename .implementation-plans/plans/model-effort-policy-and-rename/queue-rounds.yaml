@@ -12,7 +12,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/model-effort-policy-sot.md
     notes: 'model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/ + never-sonnet ADR + AGENTS/CLAUDE wiring. Independent of skill-refs.'
   - item: rename-to-review-implementation-plans
-    status: todo
+    status: done
     depends_on:
       - model-effort-policy-sot
     prompt: /prex -ar .implementation-plans/plans/model-effort-policy-and-rename/rename-to-review-implementation-plans.md

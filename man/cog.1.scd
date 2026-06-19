@@ -102,12 +102,6 @@ The command list and short descriptions are sourced from command modules under
 *plan-writer-multi-setup*
 	Parse plan-writer-multi arguments and create run state.
 
-*plans-revision-scan*
-	Inventory all implementation-plan queues and repo/plan fingerprints.
-
-*plans-revision-verify*
-	Verify a plans-revision against a before/after scan.
-
 *precommit-apply-template*
 	Apply a pre-commit template to a project.
 
@@ -137,6 +131,15 @@ The command list and short descriptions are sourced from command modules under
 *queue-bootstrap*
 	Create and validate an implementation plan queue.
 
+*queue-deps-set*
+	Replace one mutable queue item dependency list with a guarded graph check.
+
+*queue-graph-check*
+	Validate queue dependency graph references and cycles.
+
+*queue-reorder*
+	Reorder mutable queue items by stable dependency topological sort.
+
 *queue-select*
 	Select the next runnable implementation plan round.
 
@@ -160,6 +163,12 @@ The command list and short descriptions are sourced from command modules under
 
 *review-cli-signals*
 	Probe whether the project is a CLI from classification data.
+
+*review-implementation-plans-scan*
+	Inventory all implementation-plan queues and repo/plan fingerprints.
+
+*review-implementation-plans-verify*
+	Verify a review-implementation-plans run against a before/after scan.
 
 *review-init*
 	Create a review run directory and resolve output paths.

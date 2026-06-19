@@ -23,14 +23,14 @@ already implemented mutable items `done`, and append new rounds or plans for gap
 recorded history for `done` items. The runner invokes it after every committed inner round and every
 committed main plan, reconciling the main queue and all inner queues.
 
-The revision subagent runs `.claude/skills/plans-revision` as a foreground sibling boundary. It
-auto-applies allowed edits, verifies them with `cog plans-revision-verify`, and commits drift through
+The revision subagent runs `.claude/skills/review-implementation-plans` as a foreground sibling boundary. It
+auto-applies allowed edits, verifies them with `cog review-implementation-plans-verify`, and commits drift through
 `/gc` itself. No drift is a no-op. Any scan, verification, or commit failure is fail-closed and stops
 the parent runner.
 
 ## Verify Scope and Known Limitations
 
-`cog plans-revision-verify` is the deterministic gate. It mechanically enforces, fail-closed: every
+`cog review-implementation-plans-verify` is the deterministic gate. It mechanically enforces, fail-closed: every
 `done` item present in the before-scan still exists under the same `(queue_path, schema)`, is still
 `done`, and keeps its queue-YAML `prompt`, `depends_on`, and `notes` fields unchanged; and every
 after-queue re-validates. It *reports* (does not reject) mutable-item changes via `new_items` and

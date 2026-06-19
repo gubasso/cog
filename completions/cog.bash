@@ -41,8 +41,6 @@ _cog() {
     plan-init
     plan-slug
     plan-writer-multi-setup
-    plans-revision-scan
-    plans-revision-verify
     precommit-apply-template
     precommit-detect
     preflight
@@ -51,6 +49,9 @@ _cog() {
     print-config
     queue-append
     queue-bootstrap
+    queue-deps-set
+    queue-graph-check
+    queue-reorder
     queue-select
     queue-status-set
     refactor-scan-drift
@@ -59,6 +60,8 @@ _cog() {
     require
     review-agents-finalize
     review-cli-signals
+    review-implementation-plans-scan
+    review-implementation-plans-verify
     review-init
     review-refs
     review-scope
