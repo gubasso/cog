@@ -12,7 +12,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/plan-queue-runner-main-revision/plans-revision-mechanics.md
     notes: cog plans-revision-scan/verify (reuse fn_refactor fingerprint) + new .claude/skills/plans-revision skill + ADR-0011.
   - item: runner-orchestration-integration
-    status: todo
+    status: done
     depends_on:
       - plans-revision-mechanics
     prompt: /prex -ar .implementation-plans/plans/plan-queue-runner-main-revision/runner-orchestration-integration.md

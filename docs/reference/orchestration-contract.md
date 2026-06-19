@@ -50,6 +50,11 @@ inner queue-rounds.yaml round status == done
 top-level queue-plans.yaml plan status == done
 ```
 
+A queue runner may invoke a revision subagent as a foreground sibling boundary after a committed item.
+The revision subagent is a sibling of the round delegate (a +1 from the runner's depth 0), not nested
+beneath it, so the boundary stays flat against the depth cap; it spends one depth level and must
+verify a clean, committed postcondition before selecting more work.
+
 ## Depth Budget
 
 Claude Code permits a fixed maximum of five subagent levels below the main conversation. The limit

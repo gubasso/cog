@@ -129,6 +129,11 @@ forbidden_scan_codex() {
 
   assert_file_contains "$file" "claude-delegate"
   assert_file_contains "$file" "cog queue-select"
+  assert_file_contains "$file" "Queue Modes"
+  assert_file_contains "$file" "plans-revision"
+  assert_file_contains "$file" "cog queue-status-set"
+  assert_file_contains "$file" "plan-queue-runner-resolve-plan"
+  assert_file_contains "$file" "DO NOT delegate the main loop"
   assert_file_contains "$file" "repo"
   assert_file_contains "$file" "repos:"
   assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"

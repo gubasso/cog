@@ -12,7 +12,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/refactor-plan-writer-family/
     notes: 'Refactor plan-writer family: directory-only plans, uncapped rounds, two-layer decomposition, queue rename (queue-plans.yaml/queue-rounds.yaml). Two-repo (cog + DocsNNotes satellite). 6 rounds; final round migrate-live-plans migrates the live .implementation-plans/ tree to the new format + reconciles sibling plans (run directly, not the dir-runner).'
   - item: plan-queue-runner-main-revision
-    status: todo
+    status: done
     depends_on:
       - refactor-plan-writer-family
     prompt: /prex -ar @.implementation-plans/plans/plan-queue-runner-main-revision/
