@@ -139,9 +139,13 @@ for the requested access mode.
 `cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner`
 classification.
 
-`cog executor queue-prompts` prints the Round-1 queue-prompt recognition contract consumed by later
-runner-queue integration work. Top-level `runner-queue` plan entries use `-ar <target-dir>` for all
-supported executor prompts when resolving a main queue item to an inner queue.
+`cog executor queue-prompts` prints the queue-prompt recognition contract consumed by runner-queue
+integration. Its `match` object is the generic acceptance rule: any `/executor-*` prompt (matched by
+the prefix taxonomy via `cog::fn::skill::classify_prefix`, name shape `^[a-z0-9-]{1,64}$`) in
+`-ar <target-dir>` form is accepted, with `/prex` aliased to `/executor-prex`. The `prompts` array
+lists known executors as examples, not a closed allowlist; a new `executor-*` skill needs no resolver
+change. Top-level `runner-queue` plan entries use `-ar <target-dir>` when resolving a main queue item
+to an inner queue.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.

@@ -98,6 +98,12 @@ cog::fn::skill::classify_prefix() {
   esac
 }
 
+cog::fn::skill::name_in_namespace() {
+  local namespace="$1" name="$2"
+  cog::fn::skill::name_is_valid "$name" || return 1
+  [[ "$(cog::fn::skill::classify_prefix "$name")" == "$namespace" ]]
+}
+
 cog::fn::skill::superseded_by() {
   local file="$1"
   { grep -oE '<!--[[:space:]]*cog-skill:[[:space:]]*superseded-by[[:space:]]+[a-zA-Z0-9_-]+[[:space:]]*-->' "$file" || true; } \

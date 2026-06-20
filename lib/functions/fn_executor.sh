@@ -116,6 +116,12 @@ cog::fn::executor::select_reviewer_json() {
 cog::fn::executor::queue_prompts_json() {
   jq -cn '{
     schema: "cog.executor.queue-prompts.v1",
+    match: {
+      namespace: "executor",
+      target_argument: "-ar",
+      name_pattern: "^[a-z0-9-]{1,64}$",
+      aliases: { "/prex": "executor-prex" }
+    },
     prompts: [
       {
         skill: "executor-prex",
@@ -143,6 +149,13 @@ cog::fn::executor::queue_prompts_json() {
       }
     ]
   }'
+}
+
+cog::fn::executor::resolve_alias() {
+  local token="${1:-}" canonical
+  canonical="$(cog::fn::executor::queue_prompts_json \
+    | jq -r --arg t "/${token}" '.match.aliases[$t] // empty')"
+  printf '%s\n' "${canonical:-$token}"
 }
 
 cog::fn::executor::summary_self_check() {

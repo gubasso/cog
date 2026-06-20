@@ -90,6 +90,17 @@ EOF
     '.target_path == ($root + "/plans/with-at") and .inner_queue_path == ($root + "/plans/with-at/queue-rounds.yaml") and .prompt == "/executor-codex-session -ar @plans/with-at/"' >/dev/null
 }
 
+@test "cog runner-queue-resolve-plan resolves an arbitrary executor-* prompt never coded into the resolver" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_main_queue "$queue" "/executor-foo -ar @plans/with-at/"
+
+  run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg root "$REPO_ROOT" \
+    '.target_path == ($root + "/plans/with-at") and .inner_queue_path == ($root + "/plans/with-at/queue-rounds.yaml") and .prompt == "/executor-foo -ar @plans/with-at/"' >/dev/null
+}
+
 @test "cog runner-queue-resolve-plan resolves bare directory and missing repos as empty array" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar plans/no-repos/"

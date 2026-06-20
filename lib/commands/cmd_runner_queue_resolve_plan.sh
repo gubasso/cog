@@ -22,7 +22,7 @@ __cog_runner_queue_resolve_plan_entry_json() {
 
 __cog_runner_queue_resolve_plan_build_json() {
   local repo_root="$1" queue_path="$2" item="$3"
-  local entries_json entry_count entry_json prompt target target_path inner_queue_path repos_json
+  local entries_json entry_count entry_json prompt cmd target target_path inner_queue_path repos_json
 
   [[ -n $repo_root && -n $queue_path && -n $item ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
     "missing resolve-plan argument" "usage: cog runner-queue-resolve-plan --repo-root <dir> --queue <main-queue> --item <item>" "" \
@@ -45,12 +45,17 @@ __cog_runner_queue_resolve_plan_build_json() {
       ;;
   esac
 
+  # Accept any /executor-* prompt (plus the /prex alias) in -ar <target> form, matched by the
+  # prefix taxonomy rather than a hardcoded allowlist. See cog::fn::skill::classify_prefix.
   prompt="$(jq -r '.prompt' <<<"$entry_json")"
-  if [[ $prompt =~ ^/(prex|executor-prex|executor-claude|executor-codex-session)[[:space:]]+-ar[[:space:]]+(@?[^[:space:]]+)[[:space:]]*$ ]]; then
+  if [[ $prompt =~ ^/([a-z0-9-]+)[[:space:]]+-ar[[:space:]]+(@?[^[:space:]]+)[[:space:]]*$ ]]; then
+    cmd="$(cog::fn::executor::resolve_alias "${BASH_REMATCH[1]}")"
     target="${BASH_REMATCH[2]}"
+    cog::fn::skill::name_in_namespace executor "$cmd" || cog::fn::error_raise "InvalidInput" \
+      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> (or /prex) -ar [@]<target>"
   else
     cog::fn::error_raise "InvalidInput" \
-      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /prex, /executor-prex, /executor-claude, or /executor-codex-session -ar [@]<target>"
+      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> (or /prex) -ar [@]<target>"
   fi
   [[ $target == @* ]] && target="${target#@}"
   target="$(__cog_runner_queue_resolve_plan_strip_trailing_slashes "$target")"
