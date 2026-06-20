@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/rename-and-cog-token-migration.md
     notes: ""
   - item: stage-restructure-and-stage1-2-dry
-    status: todo
+    status: done
     depends_on:
       - rename-and-cog-token-migration
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage-restructure-and-stage1-2-dry.md

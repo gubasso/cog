@@ -85,8 +85,9 @@ The workflow needs:
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
    and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
-   reasoning effort come from `cog codex-runner --effort` (`medium` for stages 1 and 3; `deep` is the
-   human-judged escalation tier, used only when the user asks for it). See the "Wrapper:
+   reasoning effort come from `cog codex-runner --effort` (`high` for stage 1 planning via
+   `/plan-codex`, `medium` for stage 3 implementation; `deep` is the human-judged escalation tier,
+   used only when the user asks for it). See the "Wrapper:
    `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
    for the full API reference.
 
@@ -153,7 +154,7 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `stage1-plan.txt`
+- `stage1-plan.md`
 - `stage1-events.jsonl`
 - `stage2-reviewed-plan.md`
 - `stage3-impl-report.txt`
@@ -281,33 +282,26 @@ Steps:
 3. After this section, Stages 1-5 operate on `$RUN_DIR/task.txt` and `$RUN_DIR/request.md` exactly
    as they do in non-tsk-impl runs. No other stage needs tsk-specific logic.
 
-## Stage 1: Plan With Codex
+## Stage 1: Plan
 
-Construct a planning prompt that includes:
+Delegate planning to Codex's own `/plan-codex` skill. The parent orchestrator does **not** invoke
+`/plan-codex` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
+`$RUN_DIR/stage1-prompt.md` and passes that prompt through `cog codex-runner run-exec`.
 
-- A behavioral orientation preamble: the prompt must begin with the read-only orientation block
-  emitted by `cog codex-runner orientation read-only`. Under the unified-sandbox approach, this block
-  is the **primary behavioral control** for read-only enforcement; the CLI no longer enforces it via
-  flags.
-- The original task.
-- Relevant repo constraints and conventions.
-- The requirement to produce a numbered, reviewable plan.
-- Assumptions, ambiguities, dependencies, and risks.
+The Stage 1 prompt must tell Codex to run `/plan-codex`, save the lean plan to
+`$RUN_DIR/stage1-plan.md`, and produce a numbered, reviewable implementation plan with assumptions,
+ambiguities, dependencies, and risks. Include the original task and relevant repo constraints. The
+only permitted write during this planning stage is the plan artifact under `RUN_DIR`.
 
-Run Codex with the resume-compatible unified sandbox pattern from the reference. Read-only behavior
-is enforced by the prompt orientation block.
-
-Write the full Codex planning prompt to a file inside `RUN_DIR` first (e.g.
-`$RUN_DIR/stage1-prompt.md`), then pass it through `cog codex-runner run-exec --mode danger`.
-Do not inline multi-line prompts directly in the Bash command; follow the prompt-file rule in the
-shared orchestration doc.
+Keep the prompt-file rule: write the complete Stage 1 prompt to `RUN_DIR` first, then pass it via
+`--prompt`; never inline multi-line prompts directly in the Bash command.
 
 ```bash
 cog codex-runner run-exec \
   --mode danger \
-  --effort medium \
+  --effort high \
   --prompt "$RUN_DIR/stage1-prompt.md" \
-  --output "$RUN_DIR/stage1-plan.txt" \
+  --output "$RUN_DIR/stage1-plan.md" \
   --events "$RUN_DIR/stage1-events.jsonl" \
   --stderr "$RUN_DIR/stage1-stderr.log" \
   --thread last \
@@ -337,15 +331,40 @@ implementation pinned to its owning account. If stage 3 runs in a later Bash inv
 both from `$RUN_DIR/plan-thread-id` and `$RUN_DIR/plan-account` (or re-extract from
 `stage1-events.jsonl`) before calling `cog codex-runner run-resume`.
 
-Read `stage1-plan.txt`, summarize the result briefly for the user, and move directly to stage 2.
+Read `stage1-plan.md`, summarize the result briefly for the user, and move directly to stage 2.
 
-## Stage 2 Through Stage 5 Details
+## Stage 2: Review Plan
 
-The detailed Stage 2 plan review, Stage 3 implementation, Stage 4 implementation review, and
-Stage 5 review-loop handoff protocol lives in `references/stage-2-through-5-details.md`. Read that
-reference before starting Stage 2 and follow it exactly. Keep this `SKILL.md` as the orchestration
-entry point; the reference carries the long-form command shapes, validation checks, and fallback
-tables.
+Delegate plan review via the **Agent tool** to `/review-plan-claude`, using its three-absolute-path
+orchestrator contract:
+
+1. plan path: `$RUN_DIR/stage1-plan.md`
+2. request path: `$RUN_DIR/request.md`
+3. output path: `$RUN_DIR/stage2-reviewed-plan.md`
+
+`request.md` is the Bootstrap/Tsk-resolved task file and is created before Stage 1. The parent
+workflow owns the snapshot-pre/post proof check, `verify-proof`, lock release/reacquire, and
+approval loop. Follow `references/stage-2-review-plan.md` for the Stage 2 command shapes and
+failure handling.
+
+## Stage 3: Implement
+
+Resume the Stage 1 Codex planning thread/account and implement the reviewed plan with Codex. The
+reviewed plan supersedes Codex's original draft. Stage 3 behavior is unchanged in this round; follow
+`references/stage-3-implement.md` for command shapes, resume status handling, and fallback rules.
+
+## Stage 4: Review Implementation
+
+Delegate implementation review to `review-code-deep` via the **Agent tool**, validate proof, triage
+findings, check plan conformance, and write `stage4-review.md`. Stage 4 behavior is unchanged in
+this round; follow `references/stage-4-review-implementation.md` for command shapes and triage
+details.
+
+## Stage 5: Optional Review Loop
+
+Run the optional `review-loop` handoff only after all Stage 4 `NEEDS_DISCUSSION` items are resolved
+and the mode or task complexity calls for it. Stage 5 behavior is unchanged in this round; follow
+`references/stage-5-review-loop.md` for handoff JSON, child run-dir proof, and summary handling.
 
 ## Final Output
 
@@ -374,9 +393,10 @@ End with a concise summary covering:
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort medium` at both stage 1 and stage 3 call sites; substitute `--effort deep` only when
-  the user explicitly asks to escalate a stage (stuck/looping runs, novel design,
-  security-critical changes). Do not pass `-m`/`-c model_reasoning_effort`.
+  `--effort high` at the stage 1 `/plan-codex` planning call site and `--effort medium` at the
+  stage 3 implementation call sites; substitute `--effort deep` only when the user explicitly asks
+  to escalate a stage (stuck/looping runs, novel design, security-critical changes). Do not pass
+  `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference
   file.
 - Codex may run read-only git inspection commands needed to review the diff (`git diff`,
@@ -397,7 +417,7 @@ End with a concise summary covering:
 After each Codex call, validate the output file is non-empty:
 
 ```bash
-[ -s "$RUN_DIR/stage1-plan.txt" ] || echo "ERROR: stage1-plan.txt is empty"
+[ -s "$RUN_DIR/stage1-plan.md" ] || echo "ERROR: stage1-plan.md is empty"
 ```
 
 If the stage 3 resume call fails (non-zero exit, empty output file, bwrap error, or Bash tool
