@@ -191,6 +191,9 @@ The command list and short descriptions are sourced from command modules under
 *review-init*
 	Create a review run directory and resolve output paths.
 
+*review-loop-input*
+	Build and validate review-loop handoff input JSON.
+
 *review-refs*
 	Resolve docs-n-notes review reference files.
 

@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-code-deep-stage4-contract.md
     notes: ""
   - item: review-loop-handoff-cog-commands
-    status: todo
+    status: done
     depends_on:
       - review-code-deep-stage4-contract
     prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-loop-handoff-cog-commands.md

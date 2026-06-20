@@ -43,6 +43,8 @@ source "${LIB_DIR}/functions/fn_refactor.sh"
 source "${LIB_DIR}/functions/fn_digest.sh"
 # shellcheck source=../lib/functions/fn_rundir.sh
 source "${LIB_DIR}/functions/fn_rundir.sh"
+# shellcheck source=../lib/functions/fn_review_loop_input.sh
+source "${LIB_DIR}/functions/fn_review_loop_input.sh"
 # shellcheck source=../lib/functions/fn_git.sh
 source "${LIB_DIR}/functions/fn_git.sh"
 # shellcheck source=../lib/functions/fn_queue.sh

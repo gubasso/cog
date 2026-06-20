@@ -129,6 +129,54 @@ cog::fn::rundir_snapshot_diff() {
   diff -u "$pre" "$post" >"$out" || true
 }
 
+cog::fn::rundir_snapshot_children() {
+  local prefix="${1:-}"
+  local out="${2:-}"
+  local base="${3:-}"
+
+  __cog_rundir_require_arg "$prefix" "prefix" "cog::fn::rundir_snapshot_children"
+  __cog_rundir_require_arg "$out" "out.snap" "cog::fn::rundir_snapshot_children"
+  [[ -n $base ]] || base="$(cog::fn::rundir_base)"
+  __cog_rundir_mkdir "$base" "creating run base"
+
+  # Pin LC_ALL=C so the snapshot collation is deterministic regardless of the
+  # caller's locale; rundir_locate_child's comm depends on a stable, matching order.
+  find "$base" -maxdepth 1 -type d -name "${prefix}-*" -printf '%p\n' 2>/dev/null \
+    | LC_ALL=C sort >"$out" \
+    || cog::helpers::die "$EX_IOERR" "RunDirSnapshotWriteFailed" \
+      "could not write child run directory snapshot" "path: ${out}" "" \
+      "check output path permissions"
+}
+
+cog::fn::rundir_locate_child() {
+  local pre="${1:-}"
+  local post="${2:-}"
+  local new count
+
+  __cog_rundir_require_arg "$pre" "pre.snap" "cog::fn::rundir_locate_child"
+  __cog_rundir_require_arg "$post" "post.snap" "cog::fn::rundir_locate_child"
+  [[ -f $pre ]] || cog::fn::error_raise "InputNotFound" \
+    "pre snapshot not found" "path: ${pre}" "" "check the snapshot path"
+  [[ -f $post ]] || cog::fn::error_raise "InputNotFound" \
+    "post snapshot not found" "path: ${post}" "" "check the snapshot path"
+
+  new="$(LC_ALL=C comm -13 "$pre" "$post")"
+  count="$(printf '%s\n' "$new" | sed '/^$/d' | wc -l | tr -d '[:space:]')"
+  if [[ $count == 0 ]]; then
+    cog::fn::error_raise "InputNotFound" \
+      "no new child run directory" "pre: ${pre}, post: ${post}" \
+      "delegation produced no review-loop-* directory" "confirm the delegated call ran"
+  fi
+  if [[ $count != 1 ]]; then
+    cog::fn::error_raise "InvalidInput" \
+      "ambiguous child run directory" "found: ${count}" \
+      "multiple new review-loop-* dirs between snapshots; cannot pick deterministically" \
+      "re-run with isolated snapshots"
+  fi
+
+  printf '%s\n' "$new"
+}
+
 cog::fn::rundir_require_file() {
   local path="${1:-}"
   local label="${2:-file}"

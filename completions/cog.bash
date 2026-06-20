@@ -69,6 +69,7 @@ _cog() {
     review-implementation-plans-scan
     review-implementation-plans-verify
     review-init
+    review-loop-input
     review-refs
     review-scope
     review-validate-findings
