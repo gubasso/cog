@@ -64,7 +64,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/cog-contract-and-spec-uplift/
     notes: L (override M->L), 4 independent rounds, prex. (1) docs-n-notes Python subcommand+error chapters & digest refresh; (2) cog init DRY w/ doctor; (3) remove human-UX leakage from cmd_msg/doctor + close ADR-0009 ack; (4) cog digest-check/digest-stamp deterministic tooling. Cross-repo (cog + DocsNNotes). Rounds order-independent.
   - item: skill-research-shelf
-    status: todo
+    status: done
     depends_on:
       - repo-update-tracking
       - docs-design-tracking-principle

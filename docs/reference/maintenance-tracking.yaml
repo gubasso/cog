@@ -22,3 +22,12 @@ entries:
     references:
       - docs/reference/model-effort-policy.md
       - docs/reference/model-effort-codex.toml
+  - id: research-shelf
+    path: docs/reference/research-shelf/index.jsonl
+    last_checked: 2026-06-20
+    cadence_days: 90
+    owner: research-shelf
+    why: "Research-shelf entries capture external best-practice and product behavior that can drift over time."
+    revalidate_how: "Run cog tracking-scan, re-research overdue shelf topics from current sources, append refreshed findings with cog research-shelf record, then update this registry entry's last_checked date."
+    references:
+      - docs/reference/research-shelf/README.md
