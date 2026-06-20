@@ -63,6 +63,7 @@ internal runtime dependency.
 - Track the fixed 5-level subagent depth budget.
 - Verify a durable postcondition at every orchestration boundary.
 - Keep deterministic mechanics in `cog`.
+- When sweeping the repo, run `cog tracking-scan` and revalidate overdue references per `docs/guides/maintenance-tracking.md`.
 
 ## Test and Lint Policy
 

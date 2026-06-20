@@ -47,6 +47,8 @@ source "${LIB_DIR}/functions/fn_rundir.sh"
 source "${LIB_DIR}/functions/fn_git.sh"
 # shellcheck source=../lib/functions/fn_queue.sh
 source "${LIB_DIR}/functions/fn_queue.sh"
+# shellcheck source=../lib/functions/fn_tracking.sh
+source "${LIB_DIR}/functions/fn_tracking.sh"
 # shellcheck source=../lib/functions/fn_review_implementation_plans.sh
 source "${LIB_DIR}/functions/fn_review_implementation_plans.sh"
 # shellcheck source=../lib/functions/fn_codex.sh

@@ -98,6 +98,7 @@ this reference table.
 | `test-review-discover` | Detect test runner and test-review batch status. |
 | `test-review-lint` | Emit deterministic test-review lint signals. |
 | `test-review-manifest` | Update test-review MANIFEST.yaml. |
+| `tracking-scan` | Report tracked artifacts whose revalidation cadence is overdue. |
 | `tsk-fetch-issue` | Fetch or create a tsk issue. |
 | `tsk-snapshot` | Capture read-only git context for tsk workflows. |
 | `tsk-store-init` | Resolve and initialize the shared tsk store. |

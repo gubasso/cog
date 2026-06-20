@@ -35,7 +35,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/codex-native-effort-runner/
     notes: 'L, 3 rounds, prex. Drop codex --profile recipes for native --effort: fn_codex.sh + cog codex-runner + mechanical sweep of all --profile skill call sites. Layers on cog-self-contained-skill-refs (owns codex-conventions internalization); only the effort swap is new.'
   - item: repo-update-tracking
-    status: todo
+    status: done
     depends_on:
       - model-effort-policy-and-rename
       - docs-design-tracking-principle

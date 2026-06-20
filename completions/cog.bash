@@ -83,6 +83,7 @@ _cog() {
     test-review-discover
     test-review-lint
     test-review-manifest
+    tracking-scan
     tsk-fetch-issue
     tsk-snapshot
     tsk-store-init

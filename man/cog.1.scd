@@ -233,6 +233,9 @@ The command list and short descriptions are sourced from command modules under
 *test-review-manifest*
 	Update test-review MANIFEST.yaml.
 
+*tracking-scan*
+	Report tracked artifacts whose revalidation cadence is overdue.
+
 *tsk-fetch-issue*
 	Fetch or create a tsk issue.
 
