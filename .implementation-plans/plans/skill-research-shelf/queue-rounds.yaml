@@ -5,11 +5,11 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/research-shelf-cog-command.md
     notes: ""
   - item: official-docs-research
-    status: todo
+    status: done
     depends_on:
       - research-shelf-cog-command
     prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/official-docs-research.md
-    notes: ""
+    notes: "9 official-source shelf entries (4 Claude Code, 4 Codex, 1 divergence) recorded into docs/reference/research-shelf/index.jsonl; validate clean, lint green, review loop approved at round 4."
   - item: best-practice-research-and-tracking
     status: todo
     depends_on:
