@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-codex-session-skill.md
     notes: ""
   - item: executor-claude-skill
-    status: todo
+    status: done
     depends_on:
       - executor-cog-contracts
     prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-claude-skill.md
