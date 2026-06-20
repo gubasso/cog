@@ -17,7 +17,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/lean-plan-and-review-skills/review-plan-claude-and-review-plan-codex.md
     notes: ""
   - item: retire-plan-reviewer-and-gates
-    status: todo
+    status: done
     depends_on:
       - review-plan-claude-and-review-plan-codex
     prompt: /prex -ar .implementation-plans/plans/lean-plan-and-review-skills/retire-plan-reviewer-and-gates.md

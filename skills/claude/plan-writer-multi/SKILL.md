@@ -253,7 +253,7 @@ the Claude draft alone and remember to prepend the degradation note in Phase 9.
 
 Read both drafts (`claude-draft.md` and, if present, `codex-draft.md`). You are the **neutral judge**
 with the live conversation context neither worker fully has. Review and compare them against a rubric
-distilled from `plan-reviewer` and
+distilled from `review-plan-claude` and
 `$(cog skill-refs path orchestration/verdict-model.md)`:
 
 - correctness, completeness vs the brief, feasibility, **Layer 1 / Layer 2 decomposition quality**,

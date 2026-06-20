@@ -569,5 +569,5 @@ optimistically.
   to move deterministic shell out of a `SKILL.md` body into a versioned `agent-helper` subcommand,
   and the `msg` output/status contract parents parse.
 - ~/.dotfiles/claude/.claude/skills/prex/SKILL.md
-- ~/.dotfiles/claude/.claude/skills/plan-reviewer/SKILL.md
+- ~/.dotfiles/claude/.claude/skills/review-plan-claude/SKILL.md
 - ~/.dotfiles/claude/.claude/skills/review-loop/SKILL.md

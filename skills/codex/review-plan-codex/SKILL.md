@@ -170,6 +170,7 @@ reporting completion.
 ## Guardrails
 
 - Review one plan only; do not implement it.
-- Do not retire `plan-reviewer`; that is separate follow-up work.
+- Treat legacy `plan-reviewer` as superseded by `review-plan-claude`; do not delegate new
+  plan-review work to it.
 - Keep deterministic scaffold, write, path, and validation mechanics behind `cog plan-review`.
 - Do not run git commands.

@@ -65,9 +65,11 @@ below maps each currently shipped artifact to its taxonomy class.
 
 ### plan-*
 
+- skills/claude/plan-claude
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
 - skills/claude/refactor-migration-plan
+- skills/codex/plan-codex
 - skills/codex/plan-writer
 - skills/codex/refactor-migration-plan
 
@@ -83,7 +85,8 @@ Code-review skills:
 
 Plan-review sub-namespace (`review-plan-*`):
 
-- skills/claude/plan-reviewer
+- skills/claude/review-plan-claude
+- skills/codex/review-plan-codex
 - .claude/skills/review-implementation-plans
 
 ### executor-*
@@ -122,8 +125,7 @@ These are planned renames recorded for traceability; the renames themselves are 
 sibling plans and are out of scope here.
 
 - `prex` -> `executor-prex` (owned by the `executor-prex-refactor` plan).
-- `plan-reviewer` -> `review-plan-claude` (owned by the `lean-plan-and-review-skills` plan). Its
-  `SKILL.md` currently carries a stale `<!-- cog-skill: superseded-by review-plan-reviewer -->`
-  marker; that marker is rewritten to `review-plan-claude` when the rename lands in
-  `lean-plan-and-review-skills`. The planned target above is authoritative.
+- `plan-reviewer` is retained as a legacy compatibility shim and carries
+  `<!-- cog-skill: superseded-by review-plan-claude -->`. New plan-review work uses
+  `review-plan-claude` or `review-plan-codex`.
 - `runner-queue` already satisfies the taxonomy as a `runner-*` skill; no rename planned.

@@ -79,7 +79,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/review-deep-loop-refactor/
     notes: L, 3 rounds, prex. Refactor review-code-deep (+codex twin) as canonical stage-4 review skill; move review-loop handoff JSON ({task,reviewed_plan,stage4_review,thread ids}) + child-run discovery into cog review-loop-input; lean the review-loop body.
   - item: lean-plan-and-review-skills
-    status: todo
+    status: done
     depends_on:
       - skill-taxonomy-governance
       - skill-research-shelf
