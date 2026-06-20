@@ -63,6 +63,13 @@ plans:
       - refactor-plan-writer-family
     prompt: /prex -ar @.implementation-plans/plans/cog-contract-and-spec-uplift/
     notes: L (override M->L), 4 independent rounds, prex. (1) docs-n-notes Python subcommand+error chapters & digest refresh; (2) cog init DRY w/ doctor; (3) remove human-UX leakage from cmd_msg/doctor + close ADR-0009 ack; (4) cog digest-check/digest-stamp deterministic tooling. Cross-repo (cog + DocsNNotes). Rounds order-independent.
+  - item: review-deep-loop-refactor
+    status: todo
+    depends_on:
+      - skill-taxonomy-governance
+      - codex-native-effort-runner
+    prompt: /prex -ar @.implementation-plans/plans/review-deep-loop-refactor/
+    notes: L, 3 rounds, prex. Refactor review-code-deep (+codex twin) as canonical stage-4 review skill; move review-loop handoff JSON ({task,reviewed_plan,stage4_review,thread ids}) + child-run discovery into cog review-loop-input; lean the review-loop body.
   - item: skill-research-shelf
     status: todo
     depends_on:
@@ -71,13 +78,6 @@ plans:
       - model-effort-policy-and-rename
     prompt: /prex -ar @.implementation-plans/plans/skill-research-shelf/
     notes: 'M, 3 rounds, prex. Tracked reusable research shelf: cog research-shelf command + dated docs/reference/research-shelf store; official Claude Code/Codex + best-practice plan/review/executor research persisted once and reused; registered in maintenance-tracking.'
-  - item: review-deep-loop-refactor
-    status: todo
-    depends_on:
-      - skill-taxonomy-governance
-      - codex-native-effort-runner
-    prompt: /prex -ar @.implementation-plans/plans/review-deep-loop-refactor/
-    notes: L, 3 rounds, prex. Refactor review-code-deep (+codex twin) as canonical stage-4 review skill; move review-loop handoff JSON ({task,reviewed_plan,stage4_review,thread ids}) + child-run discovery into cog review-loop-input; lean the review-loop body.
   - item: lean-plan-and-review-skills
     status: todo
     depends_on:
