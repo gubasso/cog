@@ -53,3 +53,76 @@ or rewrite the external reference shelves into shipped skill bodies.
 
 Codex-spawning Claude skills must use the wrapper documented in
 [Codex single entrypoint](codex-single-entrypoint.md).
+
+## Taxonomy Inventory
+
+The governing skill taxonomy is defined in
+[Skill contract](skill-contract.md) ("Prefix taxonomy") and
+[ADR-0016](../decisions/0016-skill-prefix-taxonomy.md). `cog skill-lint` enforces it with the
+`skill-prefix-taxonomy` rule. The filesystem remains the inventory source of truth; the listing
+below maps each currently shipped artifact to its taxonomy class.
+
+### plan-*
+
+- skills/claude/plan-writer
+- skills/claude/plan-writer-multi
+- skills/claude/refactor-migration-plan
+- skills/codex/plan-writer
+- skills/codex/refactor-migration-plan
+
+### review-*
+
+Code-review skills:
+
+- skills/claude/review-code-deep
+- skills/claude/review-findings
+- skills/claude/review-loop
+- skills/codex/implementation-reviewer
+- skills/codex/review-code-deep
+
+Plan-review sub-namespace (`review-plan-*`):
+
+- skills/claude/plan-reviewer
+- .claude/skills/review-implementation-plans
+
+### executor-*
+
+- skills/claude/prex
+
+### runner-*
+
+- skills/claude/runner-queue
+
+### Other shipped skills and agents
+
+Utility skills outside the four governed behavioral prefixes, plus shipped agents:
+
+- skills/claude/ask
+- skills/claude/ast-grep
+- skills/claude/claudemd
+- skills/claude/gc
+- skills/claude/osc-obs
+- skills/claude/pre-commit
+- skills/claude/suckless-patcher
+- skills/claude/test-review
+- skills/claude/tsk-impl
+- skills/claude/tsk-new
+- skills/codex/ask
+- skills/codex/ast-grep
+- skills/codex/gc
+- skills/codex/suckless-patcher
+- skills/codex/test-review
+- .claude/skills/cog-skill-creator
+- agents/claude/claude-delegate.md
+
+## Taxonomy Migration Notes
+
+These are planned renames recorded for traceability; the renames themselves are owned by dependent
+sibling plans and are out of scope here.
+
+- `prex` -> `executor-prex` (owned by the `executor-prex-refactor` plan).
+- `plan-reviewer` -> `review-plan-claude` (owned by the `lean-plan-and-review-skills` plan). Its
+  `SKILL.md` currently carries a stale `<!-- cog-skill: superseded-by review-plan-reviewer -->`
+  marker; that marker is rewritten to `review-plan-claude` when the rename lands in
+  `lean-plan-and-review-skills`. The planned target above is authoritative.
+- `runner-queue` already satisfies the taxonomy as a `runner-*` skill; no rename planned.

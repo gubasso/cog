@@ -1,6 +1,6 @@
 plans:
   - item: skill-taxonomy-governance
-    status: todo
+    status: done
     depends_on:
       - model-effort-policy-and-rename
     prompt: /prex -ar @.implementation-plans/plans/skill-taxonomy-governance/

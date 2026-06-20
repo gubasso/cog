@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/skill-taxonomy-governance/skill-lint-taxonomy-rule.md
     notes: ""
   - item: inventory-and-doc-sync
-    status: todo
+    status: done
     depends_on:
       - skill-lint-taxonomy-rule
     prompt: /prex -ar .implementation-plans/plans/skill-taxonomy-governance/inventory-and-doc-sync.md
