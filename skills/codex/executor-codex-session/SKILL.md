@@ -80,10 +80,12 @@ Build a prompt file under the run directory that instructs Codex to invoke
 any assumptions, ambiguities, dependencies, and risks. Save the generated plan to
 `<run-dir>/stage1-plan.md`.
 
-Use native effort through `cog codex-runner`:
+Use native effort with the write-capable `danger` sandbox through
+`cog codex-runner`. `/plan-codex` saves its plan artifact through `cog plan-doc`,
+which a read-only sandbox blocks:
 
 ```bash
-cog codex-runner run-exec --mode native --effort high --prompt <stage1-prompt.md> --output <stage1-plan.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log>
+cog codex-runner run-exec --mode danger --effort high --prompt <stage1-prompt.md> --output <stage1-plan.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log>
 ```
 
 The Stage 2 plan input is:
@@ -123,10 +125,12 @@ under the run directory that carries only relevant session context:
 - A required final implementation report covering files changed, commands run,
   deviations, and unresolved risks.
 
-Run Codex with:
+Run Codex with the write-capable `danger` sandbox. Implementation must create and
+modify files, which the read-only `native`/`fallback`/`quick-auto` sandboxes
+block:
 
 ```bash
-cog codex-runner run-exec --mode native --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log>
+cog codex-runner run-exec --mode danger --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log>
 ```
 
 Do not send runtime instructions to read maintenance references. Include the needed

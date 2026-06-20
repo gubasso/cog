@@ -64,8 +64,12 @@ implementation, subagent work, or orchestration work. Each Codex call blocks
 until `cog codex-runner` returns. Native effort is passed with `--effort`; do
 not use legacy profile-based invocation.
 
-Stage 2 runs Codex through `cog codex-runner run-exec --mode native --effort
-high`. Stage 3 is implemented by Claude in the current session, not through
+Stage 2 runs Codex through `cog codex-runner run-exec --mode danger --effort
+high`; the write-capable `danger` sandbox is required because `/review-plan-codex`
+writes its reviewed-plan artifact through `cog plan-review`, and the read-only
+`native`/`fallback`/`quick-auto` sandboxes block that write (the run directory
+also lives outside the workspace, so only full-access `danger` can write there).
+Stage 3 is implemented by Claude in the current session, not through
 `cog codex-runner`.
 
 Stage boundaries must verify durable postconditions before advancing. An output
@@ -147,10 +151,12 @@ Build a prompt file under the run directory that instructs Codex to invoke
 The reviewer reads shared filesystem artifacts. Do not inline the full plan
 into the prompt unless recovery requires it.
 
-Run Codex in the foreground with native effort:
+Run Codex in the foreground at native effort `high` with the write-capable
+`danger` sandbox. The reviewer must write `stage2-reviewed-plan.md` through
+`cog plan-review`, so a read-only sandbox cannot be used here:
 
 ```bash
-cog codex-runner run-exec --mode native --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log>
+cog codex-runner run-exec --mode danger --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log>
 ```
 
 Treat `<run-dir>/stage2-reviewed-plan.md` as the authoritative review artifact.
