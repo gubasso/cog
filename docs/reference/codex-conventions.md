@@ -9,10 +9,10 @@ Codex runner implementation. Runtime behavior is owned by `cog`, primarily
 
 ## Source of Truth
 
-Codex invocations go through `codex-session`. Each orchestration call must pass an explicit
-`--profile`; `codex-session` does not inject one. Profile data lives outside this repository under
-the user's `codex-session` configuration, while model and effort policy for shipped skills is
-documented in [Model/effort policy](model-effort-policy.md).
+Codex invocations go through `codex-session`. `cog codex-runner` accepts an explicit
+`--effort <tier>` and constructs the native Codex reasoning-effort flag
+(`-c model_reasoning_effort=<tier>`) in `lib/functions/fn_codex.sh`. Model and effort policy for
+shipped skills is documented in [Model/effort policy](model-effort-policy.md).
 
 `cog` owns the command construction and status interpretation used by shipped skills:
 

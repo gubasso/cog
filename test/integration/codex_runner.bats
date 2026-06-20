@@ -49,32 +49,46 @@ EOF
 }
 
 @test "cog codex-runner renders native and fallback commands" {
-  run cog codex-runner run-exec --mode native --profile medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
+  run cog codex-runner run-exec --mode native --effort medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
   assert_success
   [[ $output == *"codex-session exec -c model_reasoning_effort=medium --sandbox read-only --json"* ]]
   [[ $output == *"< /dev/null"* ]]
   [[ $output == *"--output-last-message"* ]]
 
-  run cog codex-runner run-exec --mode fallback --profile medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
+  run cog codex-runner run-exec --mode fallback --effort medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
   assert_success
   [[ $output == *"sandbox_permissions"* ]]
 }
 
 @test "cog codex-runner run-exec captures output events and thread account" {
-  run cog codex-runner run-exec --mode native --profile medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium"' >/dev/null
   assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
 }
 
 @test "cog codex-runner run-resume emits resume signal" {
   export CODEX_FAKE_STDERR="warning: recovered owner"
 
-  run cog codex-runner run-resume --account acct --thread-id thread-a --profile medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume.md" --events "${BATS_TEST_TMPDIR}/resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume.err"
+  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume.md" --events "${BATS_TEST_TMPDIR}/resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume.err"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.resume_signal == "recovered-owner"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.resume_signal == "recovered-owner" and .effort == "medium"' >/dev/null
+}
+
+@test "cog codex-runner run-exec rejects legacy --profile" {
+  run --separate-stderr cog codex-runner run-exec --mode native --profile medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log"
+
+  assert_failure
+  [[ $stderr == *"invalid run-exec argument"* ]]
+}
+
+@test "cog codex-runner run-resume rejects legacy --profile" {
+  run --separate-stderr cog codex-runner run-resume --account acct --thread-id thread-a --profile medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume.md" --events "${BATS_TEST_TMPDIR}/resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume.err"
+
+  assert_failure
+  [[ $stderr == *"invalid run-resume argument"* ]]
 }
 
 @test "cog codex-runner extracts thread and classifies outputs" {

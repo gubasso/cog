@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/fn-codex-native-effort.md
     notes: ""
   - item: codex-runner-cli-migration
-    status: todo
+    status: done
     depends_on:
       - fn-codex-native-effort
     prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/codex-runner-cli-migration.md

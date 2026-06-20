@@ -4,8 +4,8 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> --profile <p> --prompt <file> --output <file> --events <file> [--stderr <file>] [--thread first|last] [--print-command]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --profile <p> --prompt <file> --output <file> --events <file> [--stderr <file>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--thread first|last] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--print-command]"
   cog::fn::ui_data "Usage: cog codex-runner extract-thread <events.jsonl> <first|last>"
   cog::fn::ui_data "Usage: cog codex-runner check-output <out> <stderr>"
   cog::fn::ui_data "Usage: cog codex-runner classify-error <exit-code> <stderr>"
@@ -22,7 +22,7 @@ __cog_codex_runner_bool_for_status() {
 }
 
 __cog_codex_runner_run_exec() {
-  local mode="" profile="" prompt="" output="" events="" stderr="" thread_selection="" print_command=false
+  local mode="" effort="" prompt="" output="" events="" stderr="" thread_selection="" print_command=false
   local command exit_code=0 output_status status thread_id="" account="" reset_eta ok json
   while (($# > 0)); do
     case "$1" in
@@ -30,8 +30,8 @@ __cog_codex_runner_run_exec() {
         mode="${2:-}"
         shift 2
         ;;
-      --profile)
-        profile="${2:-}"
+      --effort)
+        effort="${2:-}"
         shift 2
         ;;
       --prompt)
@@ -61,21 +61,21 @@ __cog_codex_runner_run_exec() {
       *) cog::fn::error_raise "InvalidInput" "invalid run-exec argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
     esac
   done
-  [[ -n $mode && -n $profile && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> --profile <p> --prompt <file> --output <file> --events <file>" "" \
+  [[ -n $mode && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
+    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> --effort <tier> --prompt <file> --output <file> --events <file>" "" \
     "run 'cog codex-runner --help'"
   if [[ $mode != danger && $mode != quick-auto && -z $stderr ]]; then
     cog::fn::error_raise "MissingArgument" "missing stderr file" "option: --stderr" "" "native and fallback modes require stderr capture"
   fi
 
-  command="$(cog::fn::codex_exec_command "$mode" "$profile" "$prompt" "$output" "$events" "$stderr")"
+  command="$(cog::fn::codex_exec_command "$mode" "$effort" "$prompt" "$output" "$events" "$stderr")"
   if [[ $print_command == true ]]; then
     cog::fn::ui_data "$command"
     return 0
   fi
 
   set +e
-  cog::fn::codex_exec_run "$mode" "$profile" "$prompt" "$output" "$events" "$stderr"
+  cog::fn::codex_exec_run "$mode" "$effort" "$prompt" "$output" "$events" "$stderr"
   exit_code=$?
   set -e
   output_status="$(cog::fn::codex_check_output "$output" "$stderr")"
@@ -93,7 +93,7 @@ __cog_codex_runner_run_exec() {
     --argjson exit_code "$exit_code" \
     --arg status "$status" \
     --arg mode "$mode" \
-    --arg profile "$profile" \
+    --arg effort "$effort" \
     --arg output_file "$output" \
     --arg events_file "$events" \
     --arg stderr_file "$stderr" \
@@ -102,14 +102,14 @@ __cog_codex_runner_run_exec() {
     --arg reset_eta "$reset_eta" \
     --arg command "$command" \
     '{action: $action, ok: $ok, exit_code: $exit_code, status: $status, mode: $mode,
-      profile: $profile, output_file: $output_file, events_file: $events_file,
+      effort: $effort, output_file: $output_file, events_file: $events_file,
       stderr_file: $stderr_file, thread_id: $thread_id, account: $account,
       reset_eta: $reset_eta, command: $command}')"
-  cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null" "$json"
+  cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null and .effort != null" "$json"
 }
 
 __cog_codex_runner_run_resume() {
-  local account="" thread_id="" profile="" prompt="" output="" events="" stderr="" print_command=false
+  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" print_command=false
   local command exit_code=0 output_status status warning_signal resume_signal reset_eta ok json
   while (($# > 0)); do
     case "$1" in
@@ -121,8 +121,8 @@ __cog_codex_runner_run_resume() {
         thread_id="${2:-}"
         shift 2
         ;;
-      --profile)
-        profile="${2:-}"
+      --effort)
+        effort="${2:-}"
         shift 2
         ;;
       --prompt)
@@ -148,16 +148,16 @@ __cog_codex_runner_run_resume() {
       *) cog::fn::error_raise "InvalidInput" "invalid run-resume argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
     esac
   done
-  [[ -n $account && -n $thread_id && -n $profile && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> --profile <p> --prompt <file> --output <file> --events <file>" "" \
+  [[ -n $account && -n $thread_id && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
+    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file>" "" \
     "run 'cog codex-runner --help'"
-  command="$(cog::fn::codex_resume_command "$account" "$profile" "$thread_id" "$prompt" "$output" "$events")"
+  command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events")"
   if [[ $print_command == true ]]; then
     cog::fn::ui_data "$command"
     return 0
   fi
   set +e
-  cog::fn::codex_resume_run "$account" "$profile" "$thread_id" "$prompt" "$output" "$events" "$stderr"
+  cog::fn::codex_resume_run "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$stderr"
   exit_code=$?
   set -e
   output_status="$(cog::fn::codex_check_output "$output" "$stderr")"
@@ -177,6 +177,7 @@ __cog_codex_runner_run_resume() {
     --argjson exit_code "$exit_code" \
     --arg status "$status" \
     --arg resume_signal "$resume_signal" \
+    --arg effort "$effort" \
     --arg account "$account" \
     --arg thread_id "$thread_id" \
     --arg output_file "$output" \
@@ -185,10 +186,10 @@ __cog_codex_runner_run_resume() {
     --arg reset_eta "$reset_eta" \
     --arg command "$command" \
     '{action: $action, ok: $ok, exit_code: $exit_code, status: $status,
-      resume_signal: $resume_signal, account: $account, thread_id: $thread_id,
+      resume_signal: $resume_signal, effort: $effort, account: $account, thread_id: $thread_id,
       output_file: $output_file, events_file: $events_file, stderr_file: $stderr_file,
       reset_eta: $reset_eta, command: $command}')"
-  cog::fn::json_emit "$__cog_codex_runner_self_check and .resume_signal != null" "$json"
+  cog::fn::json_emit "$__cog_codex_runner_self_check and .resume_signal != null and .effort != null" "$json"
 }
 
 __cog_codex_runner_extract_thread() {
