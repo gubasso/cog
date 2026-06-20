@@ -51,7 +51,7 @@ EOF
 @test "cog codex-runner renders native and fallback commands" {
   run cog codex-runner run-exec --mode native --profile medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
   assert_success
-  [[ $output == *"codex-session exec --profile medium --sandbox read-only --json"* ]]
+  [[ $output == *"codex-session exec -c model_reasoning_effort=medium --sandbox read-only --json"* ]]
   [[ $output == *"< /dev/null"* ]]
   [[ $output == *"--output-last-message"* ]]
 
@@ -65,7 +65,7 @@ EOF
 
   assert_success
   printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed"' >/dev/null
-  assert_file_contains "$CODEX_FAKE_LOG" "exec --profile medium --sandbox read-only --json"
+  assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
 }
 
 @test "cog codex-runner run-resume emits resume signal" {

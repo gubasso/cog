@@ -42,6 +42,30 @@ __cog_codex_validate_mode() {
   esac
 }
 
+__cog_codex_map_effort() {
+  local effort="${1:-}"
+
+  # Round 1 maps legacy profile names to native Codex reasoning effort as a
+  # judgment call grounded in docs/reference/model-effort-policy.md escalation
+  # guidance and the existing low-effort codex_sandbox_probe precedent.
+  case "$effort" in
+    minimal | low | medium | high)
+      printf '%s\n' "$effort"
+      ;;
+    quick)
+      printf '%s\n' low
+      ;;
+    deep)
+      printf '%s\n' high
+      ;;
+    *)
+      cog::helpers::die "$EX_USAGE" "InvalidInput" \
+        "invalid codex effort" "effort: ${effort}" \
+        "expected minimal, low, medium, high, quick, or deep" ""
+      ;;
+  esac
+}
+
 __cog_codex_read_prompt() {
   local prompt_file="$1"
   cat "$prompt_file"
@@ -49,24 +73,26 @@ __cog_codex_read_prompt() {
 
 cog::fn::codex_exec_command() {
   local mode="${1:-}"
-  local profile="${2:-}"
+  local effort="${2:-}"
   local prompt_file="${3:-}"
   local output_file="${4:-}"
   local events_file="${5:-}"
   local stderr_file="${6:-}"
+  local codex_effort
 
   __cog_codex_require_arg "$mode" "mode" "cog::fn::codex_exec_command"
   __cog_codex_validate_mode "$mode"
-  __cog_codex_require_arg "$profile" "profile" "cog::fn::codex_exec_command"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$prompt_file" "prompt_file" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_exec_command"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
 
   case "$mode" in
     native)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_command"
       cat <<EOF
-codex-session exec --profile $profile --sandbox read-only --json \\
+codex-session exec -c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
   < /dev/null \\
@@ -77,7 +103,7 @@ EOF
     fallback)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_command"
       cat <<EOF
-codex-session exec --profile $profile \\
+codex-session exec -c model_reasoning_effort=$codex_effort \\
   -c 'sandbox_permissions=["disk-full-read-access"]' --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
@@ -88,7 +114,7 @@ EOF
       ;;
     quick-auto)
       cat <<EOF
-codex-session --account auto exec --profile $profile --sandbox read-only --json \\
+codex-session --account auto exec -c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
   > "$events_file"
@@ -96,7 +122,7 @@ EOF
       ;;
     danger)
       cat <<EOF
-codex-session exec --profile $profile \\
+codex-session exec -c model_reasoning_effort=$codex_effort \\
   --dangerously-bypass-approvals-and-sandbox --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
@@ -108,21 +134,23 @@ EOF
 
 cog::fn::codex_resume_command() {
   local account="${1:-}"
-  local profile="${2:-}"
+  local effort="${2:-}"
   local thread_id="${3:-}"
   local prompt_file="${4:-}"
   local output_file="${5:-}"
   local events_file="${6:-}"
+  local codex_effort
 
   __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_command"
-  __cog_codex_require_arg "$profile" "profile" "cog::fn::codex_resume_command"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$prompt_file" "prompt_file" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_resume_command"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
 
   cat <<EOF
-codex-session --account "$account" exec --profile $profile resume "$thread_id" \\
+codex-session --account "$account" exec -c model_reasoning_effort=$codex_effort resume "$thread_id" \\
   --dangerously-bypass-approvals-and-sandbox --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
@@ -132,53 +160,55 @@ EOF
 
 cog::fn::codex_exec_run() {
   local mode="${1:-}"
-  local profile="${2:-}"
+  local effort="${2:-}"
   local prompt_file="${3:-}"
   local output_file="${4:-}"
   local events_file="${5:-}"
   local stderr_file="${6:-}"
+  local codex_effort
   local prompt
 
   __cog_codex_require_cmd codex-session
   __cog_codex_require_arg "$mode" "mode" "cog::fn::codex_exec_run"
   __cog_codex_validate_mode "$mode"
-  __cog_codex_require_arg "$profile" "profile" "cog::fn::codex_exec_run"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_exec_run"
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_exec_run"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_run"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_exec_run"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   case "$mode" in
     native)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_run"
-      codex-session exec --profile "$profile" --sandbox read-only --json \
+      codex-session exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json \
         --output-last-message "$output_file" \
         "$prompt" \
         </dev/null >"$events_file" 2>"$stderr_file"
       ;;
     fallback)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_run"
-      codex-session exec --profile "$profile" \
+      codex-session exec -c "model_reasoning_effort=$codex_effort" \
         -c 'sandbox_permissions=["disk-full-read-access"]' --json \
         --output-last-message "$output_file" \
         "$prompt" \
         </dev/null >"$events_file" 2>"$stderr_file"
       ;;
     quick-auto)
-      codex-session --account auto exec --profile "$profile" --sandbox read-only --json \
+      codex-session --account auto exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json \
         --output-last-message "$output_file" \
         "$prompt" \
         >"$events_file"
       ;;
     danger)
       if [[ -n $stderr_file ]]; then
-        codex-session exec --profile "$profile" \
+        codex-session exec -c "model_reasoning_effort=$codex_effort" \
           --dangerously-bypass-approvals-and-sandbox --json \
           --output-last-message "$output_file" \
           "$prompt" \
           </dev/null >"$events_file" 2>"$stderr_file"
       else
-        codex-session exec --profile "$profile" \
+        codex-session exec -c "model_reasoning_effort=$codex_effort" \
           --dangerously-bypass-approvals-and-sandbox --json \
           --output-last-message "$output_file" \
           "$prompt" \
@@ -206,31 +236,33 @@ cog::fn::codex_sandbox_probe() {
 
 cog::fn::codex_resume_run() {
   local account="${1:-}"
-  local profile="${2:-}"
+  local effort="${2:-}"
   local thread_id="${3:-}"
   local prompt_file="${4:-}"
   local output_file="${5:-}"
   local events_file="${6:-}"
   local stderr_file="${7:-}"
+  local codex_effort
   local prompt
 
   __cog_codex_require_cmd codex-session
   __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_run"
-  __cog_codex_require_arg "$profile" "profile" "cog::fn::codex_resume_run"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_run"
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_resume_run"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   if [[ -n $stderr_file ]]; then
-    codex-session --account "$account" exec --profile "$profile" resume "$thread_id" \
+    codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id" \
       --dangerously-bypass-approvals-and-sandbox --json \
       --output-last-message "$output_file" \
       "$prompt" \
       </dev/null >"$events_file" 2>"$stderr_file"
   else
-    codex-session --account "$account" exec --profile "$profile" resume "$thread_id" \
+    codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id" \
       --dangerously-bypass-approvals-and-sandbox --json \
       --output-last-message "$output_file" \
       "$prompt" \

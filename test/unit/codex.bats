@@ -40,7 +40,7 @@ EOF
 @test "codex_exec_command renders native fallback quick-auto and danger" {
   run cog::fn::codex_exec_command native medium prompt.md out.md events.jsonl stderr.log
   assert_success
-  [[ $output == *"codex-session exec --profile medium --sandbox read-only --json"* ]]
+  [[ $output == *"codex-session exec -c model_reasoning_effort=medium --sandbox read-only --json"* ]]
   [[ $output == *'2> "stderr.log"'* ]]
 
   run cog::fn::codex_exec_command fallback medium prompt.md out.md events.jsonl stderr.log
@@ -49,7 +49,7 @@ EOF
 
   run cog::fn::codex_exec_command quick-auto medium prompt.md out.md events.jsonl
   assert_success
-  [[ $output == *"--account auto exec --profile medium --sandbox read-only --json"* ]]
+  [[ $output == *"--account auto exec -c model_reasoning_effort=medium --sandbox read-only --json"* ]]
 
   run cog::fn::codex_exec_command danger medium prompt.md out.md events.jsonl
   assert_success
@@ -60,7 +60,7 @@ EOF
   run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl
 
   assert_success
-  [[ $output == *'codex-session --account "acct" exec --profile medium resume "thread-1"'* ]]
+  [[ $output == *'codex-session --account "acct" exec -c model_reasoning_effort=medium resume "thread-1"'* ]]
 }
 
 @test "codex_exec_run calls fake codex-session with prompt content" {
@@ -73,7 +73,7 @@ EOF
   run cog::fn::codex_exec_run native medium "$prompt" "$out" "$events" "$err"
 
   assert_success
-  assert_file_contains "$CODEX_FAKE_LOG" "exec --profile medium --sandbox read-only --json --output-last-message $out hello prompt"
+  assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json --output-last-message $out hello prompt"
   assert_file_contains "$events" "from-fake"
 }
 

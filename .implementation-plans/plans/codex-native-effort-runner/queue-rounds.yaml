@@ -1,6 +1,6 @@
 rounds:
   - item: fn-codex-native-effort
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/fn-codex-native-effort.md
     notes: ""
