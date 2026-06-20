@@ -16,6 +16,9 @@ Write `$RUN_DIR/stage4-context.md` containing, in this order:
 - The original task description (verbatim contents of `$RUN_DIR/request.md`).
 - The approved reviewed plan (verbatim contents of `$RUN_DIR/stage2-reviewed-plan.md`).
 
+The reviewed plan source is load-bearing: use `$RUN_DIR/stage2-reviewed-plan.md`, not the original
+Stage 1 plan, so `review-code-deep` can perform plan-conformance review from the approved plan.
+
 ### Step 2: Snapshot and clear prior artifacts
 
 ```bash
@@ -40,12 +43,10 @@ rm -f "$RUN_DIR/stage4-findings.json" "$RUN_DIR/stage4-proof.diff"
     1. context-path: <RUN_DIR>/stage4-context.md
     2. output-path:  <RUN_DIR>/stage4-findings.json
 
-  Run the review against the current uncommitted diff (capture both
-  `git diff` and `git diff --staged`). Produce JSON findings following the
-  schema in the shared `llm-review-discipline.md` reference, and Write them
-  verbatim to the output path. Reply with the single line `WROTE <output-path>`
-  once the file is written. Do not modify any repository files outside the
-  output path.
+  Follow that contract exactly: run in orchestrator mode, produce validated
+  JSON findings, write them verbatim to the output path, and reply with the
+  single line `WROTE <output-path>` once the file is written. Do not modify any
+  repository files outside the output path.
   ```
 
 ### Step 4: Capture proof and validate
@@ -67,6 +68,10 @@ cog codex-runner verify-proof \
 missing/empty proof diff, or findings JSON that lacks a `findings` key. Do not retry automatically.
 Report the failure and ask the user whether to retry or abort.
 
+The child reply is useful progress signal only. The durable postcondition is the proof-validated
+`$RUN_DIR/stage4-findings.json`; absence or invalidity of that artifact fails closed regardless of
+the child response text.
+
 ### Step 5: Triage findings (orchestrator only)
 
 Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the prex status vocabulary:
@@ -83,14 +88,12 @@ Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the prex sta
 For each `FIXED`, apply the change directly with Edit/Write. For `NEEDS_DISCUSSION`, pause and
 involve the user before continuing.
 
-### Step 6: Plan-conformance check
+Plan-conformance gaps arrive as ordinary `review-code-deep` findings because Step 1 includes the
+approved reviewed plan in `$RUN_DIR/stage4-context.md`. Apply the same status mapping to
+plan-conformance findings as to code-quality findings: blocking or important gaps are `FIXED` only
+when the fix is minor and obvious; otherwise they are `NEEDS_DISCUSSION`.
 
-`review-code-deep` reviews code quality; it does not know about the prex reviewed-plan structure.
-Walk each phase in `$RUN_DIR/stage2-reviewed-plan.md` and confirm it appears in the implementation
-diff. For any phase that is missing or partially implemented, append a synthetic `NEEDS_DISCUSSION`
-row to the triage table with the phase reference.
-
-### Step 7: Write `stage4-review.md`
+### Step 6: Write `stage4-review.md`
 
 Record the review summary and triage decisions in `$RUN_DIR/stage4-review.md` using the legacy prex
 status vocabulary. Downstream consumers (the `cog hook-guard executor-prex-stop` Stop-gate) depend
@@ -99,7 +102,7 @@ artifact name and format — do not rename it. Include:
 
 - One-line summary.
 - Triage table (finding → status → action).
-- Plan-conformance section (from step 6).
+- Plan-conformance findings summary, if any, sourced from `review-code-deep` findings.
 - Open `NEEDS_DISCUSSION` and `QUESTION` items, if any.
 
 After stage 4, decide whether to run stage 5:

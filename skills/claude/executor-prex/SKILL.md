@@ -359,8 +359,8 @@ resume decision table, the Resume Fallback, and the prompt-file / `600000ms` / f
 ## Stage 4: Review Implementation
 
 Delegate implementation review to `review-code-deep` via the **Agent tool**, validate proof, triage
-findings, check plan conformance, and write `stage4-review.md`. Stage 4 behavior is unchanged in
-this round; follow `references/stage-4-review-implementation.md` for command shapes and triage
+review and plan-conformance findings, and write `stage4-review.md`. Follow
+`references/stage-4-review-implementation.md` for command shapes, proof validation, and triage
 details.
 
 ## Stage 5: Optional Review Loop
