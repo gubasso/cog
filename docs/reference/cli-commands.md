@@ -77,6 +77,12 @@ this reference table.
 | `refactor-scan-source` | Run deterministic source static-analysis probes. |
 | `refactor-setup` | Resolve refactor migration setup paths. |
 | `require` | Assert required cog subcommands are installed. |
+| `research-shelf` | Store and validate dated research findings. |
+| `research-shelf init` | Create the research shelf directory and index. |
+| `research-shelf record` | Append one dated, sourced research finding. |
+| `research-shelf list` | List stored research finding IDs. |
+| `research-shelf get <id>` | Print one stored research finding. |
+| `research-shelf validate` | Validate the research shelf index and entries. |
 | `review-agents-finalize` | Finalize review reference resolution from classification data. |
 | `review-cli-signals` | Probe whether the project is a CLI from classification data. |
 | `review-implementation-plans-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |

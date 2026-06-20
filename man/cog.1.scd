@@ -173,6 +173,9 @@ The command list and short descriptions are sourced from command modules under
 *require*
 	Assert required cog subcommands are installed.
 
+*research-shelf*
+	Store and validate dated research findings.
+
 *review-agents-finalize*
 	Finalize review reference resolution from classification data.
 

@@ -63,6 +63,7 @@ _cog() {
     refactor-scan-source
     refactor-setup
     require
+    research-shelf
     review-agents-finalize
     review-cli-signals
     review-implementation-plans-scan

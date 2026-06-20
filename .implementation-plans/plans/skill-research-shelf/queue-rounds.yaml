@@ -1,6 +1,6 @@
 rounds:
   - item: research-shelf-cog-command
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/skill-research-shelf/research-shelf-cog-command.md
     notes: ""

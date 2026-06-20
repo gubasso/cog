@@ -77,6 +77,7 @@ Commands:
   refactor-scan-source Run deterministic source static-analysis probes.
   refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
+  research-shelf Store and validate dated research findings.
   review-agents-finalize Finalize review reference resolution from classification data.
   review-cli-signals Probe whether the project is a CLI from classification data.
   review-implementation-plans-scan Inventory all implementation-plan queues and repo/plan fingerprints.
@@ -160,6 +161,7 @@ Commands:
   refactor-scan-source Run deterministic source static-analysis probes.
   refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
+  research-shelf Store and validate dated research findings.
   review-agents-finalize Finalize review reference resolution from classification data.
   review-cli-signals Probe whether the project is a CLI from classification data.
   review-implementation-plans-scan Inventory all implementation-plan queues and repo/plan fingerprints.
