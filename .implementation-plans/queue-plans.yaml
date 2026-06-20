@@ -72,7 +72,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/skill-research-shelf/
     notes: 'M, 3 rounds, prex. Tracked reusable research shelf: cog research-shelf command + dated docs/reference/research-shelf store; official Claude Code/Codex + best-practice plan/review/executor research persisted once and reused; registered in maintenance-tracking.'
   - item: review-deep-loop-refactor
-    status: todo
+    status: done
     depends_on:
       - skill-taxonomy-governance
       - codex-native-effort-runner

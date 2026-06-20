@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-loop-handoff-cog-commands.md
     notes: ""
   - item: review-loop-skill-leaning
-    status: todo
+    status: done
     depends_on:
       - review-loop-handoff-cog-commands
     prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-loop-skill-leaning.md

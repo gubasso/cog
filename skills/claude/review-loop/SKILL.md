@@ -36,8 +36,17 @@ section defines the per-round input/output protocol used here.
 
 Two modes depending on `$ARGUMENTS`:
 
-**Handoff mode** — `$ARGUMENTS` points to a `review_loop_input.json` file (produced by `prex` stage
-5). Parse the JSON for:
+**Handoff mode** — `$ARGUMENTS` is the absolute path to a `review_loop_input.json` file produced by
+`prex` stage 5. Before reading it, validate the orchestrator-supplied handoff file through the
+deterministic `cog review-loop-input` surface; that command owns the handoff schema and validation
+contract.
+
+```bash
+cog review-loop-input validate --input "$ARGUMENTS"
+```
+
+Pass `--json` only when machine-readable validation output is needed. After validation, use the
+handoff fields for judgment context:
 
 - `task` — the original task description.
 - `reviewed_plan` — the approved implementation plan from stage 2.
@@ -46,8 +55,12 @@ Two modes depending on `$ARGUMENTS`:
   informational only and are not consumed by the loop. Each round invokes `review-code-deep` as a
   fresh one-shot, so no upstream session continuity is needed.
 
-All fields except `task` are optional. The review-loop still captures the live git diff
-independently — the JSON provides intent and prior-review context, not the code state.
+For loop judgment, `task`, `reviewed_plan`, and `stage4_review` are the content fields that feed
+round context; `plan_thread_id` and `impl_thread_id` are informational and may be null. The handoff
+schema and its authoritative required-field contract are owned and enforced by
+`cog review-loop-input validate`; the loop reads the fields above for judgment context only and does
+not restate that validation rule. The review-loop still captures the live git diff independently —
+the JSON provides intent and prior-review context, not the code state.
 
 **Standalone mode** — `$ARGUMENTS` is a task description or empty. Gather context from:
 
