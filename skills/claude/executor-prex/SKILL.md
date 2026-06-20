@@ -350,8 +350,11 @@ failure handling.
 ## Stage 3: Implement
 
 Resume the Stage 1 Codex planning thread/account and implement the reviewed plan with Codex. The
-reviewed plan supersedes Codex's original draft. Stage 3 behavior is unchanged in this round; follow
-`references/stage-3-implement.md` for command shapes, resume status handling, and fallback rules.
+reviewed plan supersedes Codex's original draft. Stage 3 uses native Codex effort
+(`cog codex-runner run-resume --effort medium`, no `--profile`) pinned with
+`--account "$PLAN_ACCOUNT"` and `--thread-id "$PLAN_THREAD_ID"`; branch only on the runner-emitted
+`status`/`resume_signal`. Follow `references/stage-3-implement.md` for exact command shapes, the
+resume decision table, the Resume Fallback, and the prompt-file / `600000ms` / foreground discipline.
 
 ## Stage 4: Review Implementation
 

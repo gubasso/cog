@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage-restructure-and-stage1-2-dry.md
     notes: ""
   - item: stage3-implement
-    status: todo
+    status: done
     depends_on:
       - stage-restructure-and-stage1-2-dry
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage3-implement.md
