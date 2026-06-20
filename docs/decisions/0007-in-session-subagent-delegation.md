@@ -38,4 +38,4 @@ Codex call" rule stays inline in every Codex-driving skill as the prose safeguar
 
 Accepted. Hook stance amended by ADR-0010 (env-first guarantee). Ported from dotfiles ADR-0001.
 Queue filename terminology amended by ADR-0011 (decisions/0011-directory-plan-queue-format.md).
-Canon: `docs-n-notes/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`.
+Canon: `skill-refs/orchestration/in-session-vs-headless-delegation.md`.

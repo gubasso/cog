@@ -47,9 +47,10 @@ Skill authoring and lint rules are defined in [Skill contract](skill-contract.md
 
 ## Reference Resolution
 
-Skill docs may point to docs-n-notes references and should use progressive disclosure: load the
-relevant reference only when the task needs it. This project documents cog itself; it does not copy
-or rewrite the external reference shelves into shipped skill bodies.
+Skill-source references required at runtime live in the packaged `skill-refs/` tree. Skills should
+resolve those references with `cog skill-refs path <rel>`, which checks the XDG-installed
+`$XDG_DATA_HOME/cog/skill-refs` tree first and then falls back to the repo checkout. External
+docs-n-notes references are optional enhancers only and must degrade gracefully when absent.
 
 Codex-spawning Claude skills must use the wrapper documented in
 [Codex single entrypoint](codex-single-entrypoint.md).

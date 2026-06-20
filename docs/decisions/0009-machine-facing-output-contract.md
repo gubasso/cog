@@ -27,6 +27,7 @@ This references [ADR-0006](0006-loader-based-architecture.md) and
 [ADR-0008](0008-skill-script-boundary.md). The general taxonomy lives in the `docs-n-notes`
 repository under `tech/programming/cli-design/00-architecture.md` (section "Facing category &
 message types").
+That external citation is provenance and general background, not an internal runtime dependency.
 
 `cog` already ships `help`, `doctor`, Bash completion, and man pages. Target state adds an `init`
 surface for setup/scaffold/bootstrap. As of 2026-06-19 the former `cmd_msg.sh` human-message

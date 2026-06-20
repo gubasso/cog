@@ -36,6 +36,8 @@ this reference table.
 | `classify-project` | Classify repository shape. |
 | `claudemd-audit` | Audit CLAUDE.md deterministic signals. |
 | `codex-runner` | Run codex-session orchestration helpers. |
+| `codex-runner orientation <read-only\|write>` | Print the canonical Codex prompt orientation block. |
+| `codex-runner explain-status <status>` | Explain a Codex runner status. |
 | `cog-skill-creator-scaffold` | Compute skill scaffold paths. |
 | `cog-skill-creator-validate` | Validate cog-skill-creator inputs. |
 | `digest-check` | Check digest frontmatter for source drift. |
@@ -87,6 +89,8 @@ this reference table.
 | `runner-queue-parse-commit` | Parse a runner-queue commit result. |
 | `runner-queue-resolve-plan` | Resolve a selected main queue plan entry to its executable form. |
 | `runner-queue-setup` | Parse runner-queue arguments and create run state. |
+| `skill-refs root` | Print the resolved skill-reference root. |
+| `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
 | `suckless-apply` | Check, apply, and build a suckless patch. |
 | `suckless-conflicts` | List suckless patch conflict artifacts. |
@@ -110,6 +114,17 @@ defaults to `rounds`.
 `cog preflight claude-env <out.json> [--allow-legacy-session]` asserts the Claude Code
 no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash
 timeout env vars are recorded as diagnostics only.
+
+`cog codex-runner orientation <read-only|write>` prints the canonical Codex prompt orientation block
+for the requested access mode.
+
+`cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner`
+classification.
+
+`cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
+and falling back to the repo checkout.
+
+`cog skill-refs path <rel>` prints an existing file under the resolved skill-reference root.
 
 ## Implementation plan layout
 

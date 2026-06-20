@@ -4,6 +4,10 @@ Non-negotiable: skills orchestrate probabilistic judgment; deterministic mechani
 subcommands and DRY cog::fn:: helpers. See docs/decisions/0008-skill-script-boundary.md and
 docs/reference/skill-contract.md.
 
+Non-negotiable: required runtime references ship in-repo under skill-refs/ and resolve through cog
+skill-refs; external docs are optional enhancers only. See
+docs/decisions/0017-reference-self-containment.md.
+
 Non-negotiable: skill model/effort selection follows docs/reference/model-effort-policy.md and
 docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use model: opus + effort:
 low).

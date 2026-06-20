@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/cog-self-contained-skill-refs/cog-command-foundations.md
     notes: 'Foundations: cog skill-refs resolver + codex-runner orientation/explain-status + tests + completion/man'
   - item: migrate-content-and-packaging
-    status: todo
+    status: done
     depends_on:
       - cog-command-foundations
     prompt: /prex -ar .implementation-plans/plans/cog-self-contained-skill-refs/migrate-content-and-packaging.md

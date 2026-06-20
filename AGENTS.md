@@ -47,6 +47,13 @@ writes). They carry a Phase 0 plan-mode gate marked with `<!-- cog-skill: plan-e
 `<!-- cog-plan-mode-gate -->`, enforced by `cog skill-lint`'s `plan-mode-gate` rule. See
 `docs/reference/skill-contract.md` ("Plan-mode gate") and `docs/decisions/0015-plan-skills-not-in-plan-mode.md`.
 
+## Reference Self-Containment
+
+Required runtime references ship in-repo under `skill-refs/`, install to
+`$XDG_DATA_HOME/cog/skill-refs`, and resolve through `cog skill-refs`. External docs are optional
+runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
+internal runtime dependency.
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

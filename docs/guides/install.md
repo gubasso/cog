@@ -46,6 +46,7 @@ installs the man page under `$XDG_DATA_HOME/man/man1` when available.
 
 It also copies shipped runtime content into:
 
+- `$XDG_DATA_HOME/cog/skill-refs`
 - `$HOME/.claude/skills`
 - `$HOME/.claude/agents`
 - `$HOME/.agents/skills`
