@@ -5,7 +5,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/lean-plan-and-review-skills/lean-plan-artifact-cog-commands.md
     notes: ""
   - item: plan-claude-and-plan-codex
-    status: todo
+    status: done
     depends_on:
       - lean-plan-artifact-cog-commands
     prompt: /prex -ar .implementation-plans/plans/lean-plan-and-review-skills/plan-claude-and-plan-codex.md
