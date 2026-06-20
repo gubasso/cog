@@ -1,6 +1,6 @@
 rounds:
   - item: review-code-deep-stage4-contract
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/review-deep-loop-refactor/review-code-deep-stage4-contract.md
     notes: ""

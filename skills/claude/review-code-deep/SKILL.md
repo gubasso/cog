@@ -16,7 +16,9 @@ allowed-tools: Bash, Read, Write, Grep, Glob, WebSearch, WebFetch
 
 Multi-language, multi-pass code review. Loads only the language guides and cross-cutting themes the
 current diff actually touches. Deterministic Phase-0 mechanics are delegated to `cog`; the
-review judgment remains here.
+review judgment remains here. `review-code-deep` is the canonical Stage-4 implementation-review
+surface for orchestrators such as prex; when a reviewed plan is supplied, compare the live
+implementation diff against that plan as well as generic code-quality criteria.
 
 ## Inputs
 
@@ -101,7 +103,10 @@ sorted-unique, and derived from classification. Load cross-cutting guides on dem
 
 Use the code-review process from docs-n-notes when available: Context -> High-level -> Line-by-line
 -> Summary & decision. Review for correctness, architecture, performance, security, maintainability,
-error handling, and tests. Do not restate the diff; interpret it.
+error handling, and tests. When the context supplement (`<context-path>`) includes a reviewed or
+approved plan, treat plan conformance as an explicit review dimension: read the plan as expected
+implementation intent and compare each plan phase against the live diff. Do not restate the diff;
+interpret it.
 
 ## Phase 2 — Verify Findings
 
@@ -114,6 +119,18 @@ Every finding gets the structured-record treatment:
 - Drop anything the linter or pre-commit already covers.
 
 Target false-positive rate below 20%. When in doubt, downgrade.
+
+### Plan Conformance Findings
+
+If `<context-path>` includes a reviewed plan, read it as expected implementation intent. Surface
+missing or partial plan phases as ordinary findings in the existing JSON schema; add no fields and
+no categories. Use `correctness` for missing required behavior or incomplete implementation, and
+`test` for missing required tests or validation steps. Use `blocking` when required behavior is
+entirely absent, `important` when a phase is materially incomplete, and `question` when the
+plan-to-diff mapping is ambiguous. Cite the affected implementation file and line range when
+possible. If no implementation file exists because the phase is entirely absent, cite the
+`<context-path>` line range where the reviewed plan states the requirement. Put the plan
+requirement, observed diff gap, and triage reasoning in `evidence` and `reasoning`.
 
 ## Phase 3 — Output
 
@@ -173,11 +190,13 @@ Use the file:line range in the body. Skip duplicates by file+line+headline hash.
 
 ## Orchestrator Invocation Contract
 
-When `$ARGUMENTS` is two absolute paths separated by a space, run in orchestrator mode:
+When `$ARGUMENTS` is two absolute paths separated by a space, run in orchestrator mode. This is the
+canonical Stage-4 implementation-review contract for JSON findings consumed by an orchestrator for
+triage:
 
-1. `<context-path>` — markdown supplement with task description and prior-review context. Read it,
-   but do not let it override the live diff.
-2. `<output-path>` — absolute path where the JSON findings must be written.
+1. `<context-path>` — markdown supplement with task description, prior-review context, and
+   optionally the reviewed plan. Read it, but do not let it override the live diff.
+2. `<output-path>` — absolute path where the JSON findings artifact must be written.
 
 In this mode, force JSON output, skip interactive prompts, run Phases 0-3, validate with
 `review-validate-findings`, write the JSON document verbatim to `<output-path>`, and reply:

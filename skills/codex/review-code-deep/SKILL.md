@@ -12,7 +12,10 @@ description: >
 # Review Code Deep — Codex Twin
 
 Same review contract as the Claude skill. Shared references live in `$DOCS_NOTES_REPO`; deterministic
-scope, CLI-signal, refs, and findings-validation work is delegated to `cog`.
+scope, CLI-signal, refs, and findings-validation work is delegated to `cog`. `review-code-deep` is
+the canonical Stage-4 implementation-review surface for orchestrator triage; when a reviewed plan is
+supplied, compare the live implementation diff against that plan as well as generic code-quality
+criteria.
 
 ## Inputs
 
@@ -72,14 +75,28 @@ Do not pre-load unrelated references.
 ## Phase 1 — Review
 
 Run the review process: context, high-level pass, line-by-line pass, summary and decision. Focus on
-correctness, architecture, performance, security, maintainability, error handling, and tests. Do not
-restate the diff.
+correctness, architecture, performance, security, maintainability, error handling, and tests. When
+the context supplement (`<context-path>`) includes a reviewed or approved plan, treat plan
+conformance as an explicit review dimension: read the plan as expected implementation intent and
+compare each plan phase against the live diff. Do not restate the diff.
 
 ## Phase 2 — Verify Findings
 
 Every finding must cite file:line evidence, name the failure mode, include confidence, and avoid
 issues already covered by lint or formatting. Low-confidence claims become questions. Security
 findings must have source, sink, and path.
+
+### Plan Conformance Findings
+
+If `<context-path>` includes a reviewed plan, read it as expected implementation intent. Surface
+missing or partial plan phases as ordinary findings in the existing JSON schema; add no fields and
+no categories. Use `correctness` for missing required behavior or incomplete implementation, and
+`test` for missing required tests or validation steps. Use `blocking` when required behavior is
+entirely absent, `important` when a phase is materially incomplete, and `question` when the
+plan-to-diff mapping is ambiguous. Cite the affected implementation file and line range when
+possible. If no implementation file exists because the phase is entirely absent, cite the
+`<context-path>` line range where the reviewed plan states the requirement. Put the plan
+requirement, observed diff gap, and triage reasoning in `evidence` and `reasoning`.
 
 ## Phase 3 — Output
 
@@ -129,14 +146,17 @@ by file+line+headline.
 
 ## Orchestrator Invocation Contract
 
-When the prompt opens with two absolute paths, run in orchestrator mode:
+When the prompt opens with two absolute paths, run in orchestrator mode. This is the canonical
+Stage-4 implementation-review contract for JSON findings consumed by an orchestrator for triage:
 
-1. `<context-path>` — markdown supplement. Read it, but do not let it override the live diff.
-2. `<output-marker>` — symbolic second arg for caller symmetry.
+1. `<context-path>` — markdown supplement with task description, prior-review context, and
+   optionally the reviewed plan. Read it, but do not let it override the live diff.
+2. `<output-path>` — absolute caller-side capture target for the JSON findings artifact.
 
 Force JSON output. Skip interactive prompts. Execute Phases 0-3. Validate findings with
-`review-validate-findings`. Emit the JSON document and nothing else as the final message so the
-caller can capture it.
+`review-validate-findings`. Because Codex runs read-only as a subagent, emit the validated JSON
+document and nothing else as the final message; the orchestrator captures that message and persists
+it to `<output-path>`.
 
 ## Rules And Guardrails
 
