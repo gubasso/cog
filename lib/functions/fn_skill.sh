@@ -86,6 +86,36 @@ cog::fn::skill::has_plan_mode_gate() {
   grep -qE '<!--[[:space:]]*cog-plan-mode-gate[[:space:]]*-->' "$file"
 }
 
+cog::fn::skill::classify_prefix() {
+  local name="$1"
+  case "$name" in
+    review-plan-*) printf '%s\n' review-plan ;;
+    plan-*) printf '%s\n' plan ;;
+    review-*) printf '%s\n' review ;;
+    executor-*) printf '%s\n' executor ;;
+    runner-*) printf '%s\n' runner ;;
+    *) printf '%s\n' other ;;
+  esac
+}
+
+cog::fn::skill::superseded_by() {
+  local file="$1"
+  { grep -oE '<!--[[:space:]]*cog-skill:[[:space:]]*superseded-by[[:space:]]+[a-zA-Z0-9_-]+[[:space:]]*-->' "$file" || true; } \
+    | sed -nE '1{s/.*superseded-by[[:space:]]+([a-zA-Z0-9_-]+)[[:space:]]*-->.*/\1/p;}'
+}
+
+cog::fn::skill::is_plan_reviewer_intent() {
+  local file="$1"
+  cog::fn::skill::is_plan_emitter "$file" || return 1
+  grep -qiE 'review implementation plans|review this plan|^# Plan Reviewer|^name:[[:space:]]*plan-reviewer|^name:[[:space:]]*review-plan' "$file"
+}
+
+cog::fn::skill::is_executor_intent() {
+  local file="$1"
+  grep -qE '^# Plan Review Execute' "$file" && return 0
+  grep -qF 'Codex plans' "$file" && grep -qF 'Codex implements' "$file"
+}
+
 cog::fn::skill::emoji_lines_json() {
   local file="$1" emoji_lines
   emoji_lines="$(grep -nP '[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}]' "$file" | cut -d: -f1 || true)"

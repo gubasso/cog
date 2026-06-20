@@ -79,8 +79,7 @@ what a skill does:
 
 Governing rule: a skill's prefix must match what it does.
 
-Future work: Round 2 will add a `skill-prefix-taxonomy` rule to `cog skill-lint` to enforce this
-contract mechanically. That rule does not exist yet.
+`cog skill-lint` enforces this mechanically with the `skill-prefix-taxonomy` rule.
 
 This taxonomy is related accepted skill governance alongside [ADR-0013](../decisions/0013-model-effort-policy.md)
 (model/effort policy) and [ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md) (plan-mode
@@ -96,9 +95,21 @@ gate); those ADRs are referenced here, not changed.
 - `SKILL.md` over 500 lines;
 - untagged fenced code blocks;
 - emoji characters;
-- missing `trigger-tests` comments in Claude skills.
+- missing `trigger-tests` comments in Claude skills;
+- `skill-prefix-taxonomy`: Claude skills with governed intent must use the matching taxonomy prefix:
+  plan-emitters use `plan-*`, plan-reviewers use `review-plan-*`, and executors use `executor-*`.
 
 Codex skills do not require `trigger-tests`.
+
+During an in-progress rename, a legacy skill may suppress only `skill-prefix-taxonomy` with a
+replacement marker:
+
+```text
+<!-- cog-skill: superseded-by <skill-name> -->
+```
+
+The replacement name must be a valid skill name and must carry the expected taxonomy prefix. This is
+not a general lint suppression and is not part of `allowed_lint_suppressions_json`.
 
 ## Orchestration Lint Checks
 

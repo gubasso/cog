@@ -13,6 +13,7 @@ disable-model-invocation: true
 
 <!-- trigger-tests: "review-implementation-plans", "review-implementation-plans --repo-root <dir> --main-queue <path>" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: superseded-by review-plan-implementation -->
 
 # Review Implementation Plans
 

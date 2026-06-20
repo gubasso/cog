@@ -17,6 +17,7 @@ allowed-tools: Read Write Grep Glob WebSearch WebFetch
 
 <!-- trigger-tests: "review this plan", "validate this implementation", "check this approach", "second opinion on this plan", "here is what Codex suggested" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: superseded-by review-plan-reviewer -->
 
 # Plan Reviewer
 

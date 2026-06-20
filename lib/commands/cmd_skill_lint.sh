@@ -112,6 +112,43 @@ __cog_skill_lint_check_plan_gate() {
   return "$failed"
 }
 
+__cog_skill_lint_check_prefix_taxonomy() {
+  # Prefix taxonomy is a hard-fail structural contract for Claude skills with
+  # governed declared intent. Legacy migrations may declare a correctly-prefixed
+  # replacement with <!-- cog-skill: superseded-by <name> -->.
+  local file="$1" runtime name class expected="" superseded superseded_class
+
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ $runtime == claude ]] || return 0
+
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  class="$(cog::fn::skill::classify_prefix "$name")"
+
+  if cog::fn::skill::is_plan_reviewer_intent "$file"; then
+    expected="review-plan"
+  elif cog::fn::skill::is_plan_emitter "$file"; then
+    expected="plan"
+  elif cog::fn::skill::is_executor_intent "$file"; then
+    expected="executor"
+  else
+    return 0
+  fi
+
+  [[ $class == "$expected" ]] && return 0
+
+  superseded="$(cog::fn::skill::superseded_by "$file")"
+  if [[ -n $superseded ]] && cog::fn::skill::name_is_valid "$superseded"; then
+    superseded_class="$(cog::fn::skill::classify_prefix "$superseded")"
+    [[ $superseded_class == "$expected" ]] && return 0
+  fi
+
+  __cog_skill_lint_finding \
+    "$file" 1 "skill-prefix-taxonomy" \
+    "skill intent '${expected}' does not match name prefix class '${class}'" \
+    "rename the skill to '${expected}-*' or add a valid <!-- cog-skill: superseded-by <replacement> --> marker pointing to a '${expected}-*' name during migration"
+  return 1
+}
+
 __cog_skill_lint_is_cog_extraction() {
   local line="$1"
   [[ $line =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\"\$\(cog[[:space:]].*\|[[:space:]]*(sed[[:space:]]+-n|cut[[:space:]]|jq[[:space:]]+-r) ]]
@@ -447,6 +484,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_plan_gate "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_prefix_taxonomy "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

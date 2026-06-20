@@ -9,6 +9,7 @@ argument-hint: "[--review] <source-project-path> [--target-lang=<lang>]"
 
 <!-- trigger-tests: "refactor-migration-plan", "migration plan", "rewrite plan", "refactor plan from source project" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: superseded-by plan-refactor-migration -->
 
 # `refactor-migration-plan`
 

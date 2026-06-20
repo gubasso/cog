@@ -15,6 +15,7 @@ allowed-tools: Bash Read Write Edit Agent Skill
 ---
 
 <!-- trigger-tests: "prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
+<!-- cog-skill: superseded-by executor-prex -->
 
 # Plan Review Execute
 
