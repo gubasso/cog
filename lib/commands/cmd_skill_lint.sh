@@ -126,10 +126,10 @@ __cog_skill_lint_check_prefix_taxonomy() {
 
   if cog::fn::skill::is_plan_reviewer_intent "$file"; then
     expected="review-plan"
-  elif cog::fn::skill::is_plan_emitter "$file"; then
-    expected="plan"
   elif cog::fn::skill::is_executor_intent "$file"; then
     expected="executor"
+  elif cog::fn::skill::is_plan_emitter "$file"; then
+    expected="plan"
   else
     return 0
   fi

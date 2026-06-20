@@ -38,6 +38,16 @@ EOF
   printf '%s\n' "$output" | jq -e '.tsk_id == "STORED-3"' >/dev/null
 }
 
+@test "cog executor-prex-tsk-resolve resolves explicit id" {
+  mkdir -p "${BATS_TEST_TMPDIR}/run-new"
+
+  run cog executor-prex-tsk-resolve --run-dir "${BATS_TEST_TMPDIR}/run-new" --id ISSUE-4 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.tsk_id == "ISSUE-4"' >/dev/null
+  assert_file_contains "${BATS_TEST_TMPDIR}/run-new/tsk-issue.md" "issue body for ISSUE-4"
+}
+
 @test "cog prex-tsk-resolve writes stderr on tsk show failure" {
   export TSK_SHOW_FAIL=1
 
@@ -52,4 +62,11 @@ EOF
 
   assert_success
   [[ $output == *"Resolve a tsk issue"* ]]
+}
+
+@test "cog executor-prex-tsk-resolve --help dispatches" {
+  run cog executor-prex-tsk-resolve --help
+
+  assert_success
+  [[ $output == *"executor-prex"* ]]
 }

@@ -606,6 +606,16 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
+  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\n# Plan Review Execute\n' >>"$file"
+
+  run cog skill-lint "$file"
+
+  assert_success
+}
+
 @test "cog skill-lint accepts plan-emitter legacy name with plan superseded-by" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/migration-plan" migration-plan claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/migration-plan/SKILL.md"

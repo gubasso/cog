@@ -12,6 +12,10 @@ guard_stop() {
   printf '{}' | cog hook-guard prex-stop --owner-pid "$1"
 }
 
+guard_executor_stop() {
+  printf '{}' | cog hook-guard executor-prex-stop --owner-pid "$1"
+}
+
 acquire() {
   local out
   out="$(cog rundir prex --lock --owner-pid "$1")"
@@ -49,6 +53,16 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
+@test "executor-prex-stop blocks the owning session while artifacts are incomplete" {
+  acquire "$$"
+
+  run --separate-stderr guard_executor_stop "$$"
+
+  [ "$status" -eq 2 ]
+  [[ $stderr == *'"decision":"block"'* ]]
+  rm -rf "$RUN_DIR" "$LOCK_FILE"
+}
+
 @test "prex-stop allows once all required artifacts exist" {
   acquire "$$"
   printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
@@ -57,6 +71,19 @@ acquire() {
   printf '%s\n' x >"$RUN_DIR/stage4-review.md"
 
   run guard_stop "$$"
+
+  [ "$status" -eq 0 ]
+  rm -rf "$RUN_DIR" "$LOCK_FILE"
+}
+
+@test "executor-prex-stop allows once all required artifacts exist" {
+  acquire "$$"
+  printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
+  printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
+  printf '%s\n' x >"$RUN_DIR/stage3-impl-report.txt"
+  printf '%s\n' x >"$RUN_DIR/stage4-review.md"
+
+  run guard_executor_stop "$$"
 
   [ "$status" -eq 0 ]
   rm -rf "$RUN_DIR" "$LOCK_FILE"

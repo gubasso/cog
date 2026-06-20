@@ -46,11 +46,11 @@ __cog_runner_queue_resolve_plan_build_json() {
   esac
 
   prompt="$(jq -r '.prompt' <<<"$entry_json")"
-  if [[ $prompt =~ ^/prex[[:space:]]+-ar[[:space:]]+(@?[^[:space:]]+)[[:space:]]*$ ]]; then
-    target="${BASH_REMATCH[1]}"
+  if [[ $prompt =~ ^/(prex|executor-prex)[[:space:]]+-ar[[:space:]]+(@?[^[:space:]]+)[[:space:]]*$ ]]; then
+    target="${BASH_REMATCH[2]}"
   else
     cog::fn::error_raise "InvalidInput" \
-      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /prex -ar [@]<target>"
+      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /prex or /executor-prex -ar [@]<target>"
   fi
   [[ $target == @* ]] && target="${target#@}"
   target="$(__cog_runner_queue_resolve_plan_strip_trailing_slashes "$target")"

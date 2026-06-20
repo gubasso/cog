@@ -43,6 +43,8 @@ this reference table.
 | `digest-check` | Check digest frontmatter for source drift. |
 | `digest-stamp` | Stamp digest frontmatter from source files. |
 | `doctor` | Check cog runtime health and installation prerequisites. |
+| `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
+| `executor-prex-tsk-resolve` | Resolve a tsk issue for an executor-prex run. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
 | `gc-commit` | Commit with a message file and explicit pathspec. |
 | `gc-plan` | Partition session files by owning repo and run safety scan. |
@@ -70,8 +72,8 @@ this reference table.
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |
-| `prex-parse-args` | Parse prex arguments into run state. |
-| `prex-tsk-resolve` | Resolve a tsk issue for a prex run. |
+| `prex-parse-args` | Parse prex arguments into run state (compatibility alias for executor-prex-parse-args). |
+| `prex-tsk-resolve` | Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve). |
 | `print-config` | Print resolved configuration values and their sources. |
 | `queue-append` | Append one implementation plan queue entry. |
 | `queue-bootstrap` | Create and validate an implementation plan queue. |

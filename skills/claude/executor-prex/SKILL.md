@@ -1,5 +1,5 @@
 ---
-name: prex
+name: executor-prex
 description: >
   Automated staged workflow: Codex plans, Claude reviews the plan, Codex implements,
   Claude reviews the implementation, and an optional review loop can validate the result.
@@ -14,9 +14,8 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill
 ---
 
-<!-- trigger-tests: "prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
+<!-- trigger-tests: "executor-prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
 <!-- cog-skill: plan-emitter -->
-<!-- cog-skill: superseded-by executor-prex -->
 <!-- cog-plan-mode-gate -->
 
 # Plan Review Execute
@@ -24,7 +23,7 @@ allowed-tools: Bash Read Write Edit Agent Skill
 ## Phase 0: Plan Mode Gate
 
 If Claude Code plan mode is active, STOP before parsing args, researching, delegating, or writing.
-Tell the user to exit plan mode with `Shift+Tab` and re-invoke `/prex`.
+Tell the user to exit plan mode with `Shift+Tab` and re-invoke `/executor-prex`.
 
 Run a staged dual-agent workflow inside Claude Code:
 
@@ -38,9 +37,9 @@ Stage 2 plan review and stage 5 review-loop handoff are delegated via the **Agen
 (`subagent_type: general-purpose`), not the Skill tool — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 parent workflow owns sequencing, proof checks, lock handling, and failure handling. These Agent-tool
-delegations work even when `/prex` itself runs as a subagent: Claude Code supports nested subagents
-(≥ v2.1.172), so a delegated `/prex` (e.g. under `claude-delegate`) spawns its stage 2/4/5 reviewers
-as foreground nested subagents.
+delegations work even when `/executor-prex` itself runs as a subagent: Claude Code supports nested
+subagents (≥ v2.1.172), so a delegated `/executor-prex` (e.g. under `claude-delegate`) spawns its
+stage 2/4/5 reviewers as foreground nested subagents.
 
 This skill is a **thin orchestrator**: every deterministic mechanic (run-dir + lock setup, flag
 parsing, codex-session preflight gating, tsk resolution, delegation-proof validation) is a versioned
@@ -56,7 +55,7 @@ requirements — are owned by the `cog codex-runner` surface (`run-exec`, `run-r
 `cog codex-runner orientation <read-only|write>` and interpret runner statuses with
 `cog codex-runner explain-status <status>`.
 
-> **Execution discipline — env first, never background a Codex call.** `/prex` runs as an
+> **Execution discipline — env first, never background a Codex call.** `/executor-prex` runs as an
 > **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
 > such as `runner-queue`) or standalone in an interactive session — not, as before, "always
 > headless `claude -p`". The no-backgrounding guarantee comes from the `claude-session` env layer:
@@ -101,14 +100,14 @@ workflow lock in one call:
 
 ```bash
 command -v cog >/dev/null || {
-  echo "prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
+  echo "executor-prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require hook-guard codex-runner rundir lock preflight prex-parse-args prex-tsk-resolve || {
-  echo "prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
+cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args executor-prex-tsk-resolve || {
+  echo "executor-prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog rundir prex --lock --owner-pid "$PPID"
+cog rundir executor-prex --lock --owner-pid "$PPID"
 ```
 
 This prints two result lines:
@@ -184,7 +183,7 @@ Parse the flags with one deterministic call, **after `RUN_DIR` is created** (Boo
 arguments as a single quoted argument:
 
 ```bash
-cog prex-parse-args "$RUN_DIR" "$ARGUMENTS"
+cog executor-prex-parse-args "$RUN_DIR" "$ARGUMENTS"
 ```
 
 This writes the resolved mode to `$RUN_DIR/mode`, the tsk-impl state to `$RUN_DIR/tsk-impl` (`0:`
@@ -202,13 +201,13 @@ MODE="$(cat "$RUN_DIR/mode")"
 
 Invocation examples:
 
-- `/prex refactor the foo module` — manual mode
-- `/prex -a refactor the foo module` — auto-approve
-- `/prex -ar refactor the foo module` — auto-approve + review-loop
-- `/prex -t` — resolve tsk id from active branch, use `tsk show` as the task
-- `/prex -t 20240415-120030-my-issue` — use an explicit tsk id as the task
-- `/prex -a -t 20240415-120030-my-issue` — auto-approve + tsk-sourced task
-- `/prex -ar --tsk-impl` — auto-approve + review-loop + tsk-sourced task (id via `tsk id`)
+- `/executor-prex refactor the foo module` — manual mode
+- `/executor-prex -a refactor the foo module` — auto-approve
+- `/executor-prex -ar refactor the foo module` — auto-approve + review-loop
+- `/executor-prex -t` — resolve tsk id from active branch, use `tsk show` as the task
+- `/executor-prex -t 20240415-120030-my-issue` — use an explicit tsk id as the task
+- `/executor-prex -a -t 20240415-120030-my-issue` — auto-approve + tsk-sourced task
+- `/executor-prex -ar --tsk-impl` — auto-approve + review-loop + tsk-sourced task (id via `tsk id`)
 
 ## Pre-flight: Check Codex
 
@@ -244,7 +243,7 @@ Steps:
 1. Resolve the id and fetch the issue body with one call:
 
    ```bash
-   cog prex-tsk-resolve --run-dir "$RUN_DIR" || {
+   cog executor-prex-tsk-resolve --run-dir "$RUN_DIR" || {
      cog lock release "$LOCK_FILE"
      exit 1
    }
@@ -415,4 +414,4 @@ If any other Codex call fails, or if the stage 3 fresh-`exec` fallback also fail
 
 <!-- Migrated from stock-codex to codex-session wrapper on 2026-05-23 (R5). -->
 <!-- Wave-2 thin-orchestrator rewrite on 2026-06-16 (R3): inline setup/parse/gate/proof shell -->
-<!-- moved to cog rundir/lock/prex-parse-args/prex-tsk-resolve/codex-runner gate+verify-proof. -->
+<!-- moved to cog rundir/lock/executor-prex-parse-args/executor-prex-tsk-resolve/codex-runner gate+verify-proof. -->

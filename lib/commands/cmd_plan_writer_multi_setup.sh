@@ -54,8 +54,9 @@ __cog_plan_writer_multi_setup_parse() {
         ;;
     esac
   done
+  [[ $parsed_executor != executor-prex ]] || parsed_executor=prex
   __cog_plan_writer_multi_setup_ef "$parsed_executor" >/dev/null || cog::fn::error_raise_with_exit 2 "InvalidInput" \
-    "invalid executor" "executor: ${parsed_executor}" "expected prex, single-pass, or limited" ""
+    "invalid executor" "executor: ${parsed_executor}" "expected prex, executor-prex, single-pass, or limited" ""
   [[ -n ${*:-} ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
     "orientation is required" "usage: cog plan-writer-multi-setup [--json] [arguments-string]" "" ""
   printf -v "$out_executor" '%s' "$parsed_executor"

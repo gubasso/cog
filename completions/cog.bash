@@ -29,6 +29,8 @@ _cog() {
     digest-check
     digest-stamp
     doctor
+    executor-prex-parse-args
+    executor-prex-tsk-resolve
     gc-classify-failure
     gc-commit
     gc-plan

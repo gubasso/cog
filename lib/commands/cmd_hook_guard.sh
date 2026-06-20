@@ -6,17 +6,19 @@ __cog_hook_guard_usage() {
 cog hook-guard — deterministic Stop hook decisions for active workflows
 
 USAGE
+  cog hook-guard executor-prex-stop --owner-pid <pid> # Stop
   cog hook-guard prex-stop --owner-pid <pid> # Stop
   cog hook-guard --help
 
 Reads the hook JSON payload on stdin and uses the hook deny contract:
 exit 2 + a human reason on stderr to BLOCK; exit 0 to allow.
 
-prex-stop
-  Blocks the owning session from stopping while a prex run's required artifacts
-  are missing. Auto-cleans corrupt/orphaned locks. Resolves the lock directory
-  and name from rundir_lock_dir/rundir_lock_name (the single source of truth),
-  so it can never diverge from where rundir_lock_acquire writes the lock.
+executor-prex-stop, prex-stop
+  Blocks the owning session from stopping while an executor-prex/prex run's
+  required artifacts are missing. Auto-cleans corrupt/orphaned locks. Resolves
+  the lock directory and name from rundir_lock_dir/rundir_lock_name (the single
+  source of truth), so it can never diverge from where rundir_lock_acquire
+  writes the lock.
 
 EXIT CODES
   0   allow (no block)
@@ -97,7 +99,7 @@ __cog_hook_guard_prex_stop() {
 
 cog::cmd::hook_guard() {
   case "${1:-}" in
-    prex-stop)
+    executor-prex-stop | prex-stop)
       shift
       __cog_hook_guard_prex_stop "$@"
       ;;

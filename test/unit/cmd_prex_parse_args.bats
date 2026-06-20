@@ -8,13 +8,13 @@ setup() {
   source "${LIB_DIR}/functions/fn_log.sh"
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   source "${LIB_DIR}/functions/fn_json_write.sh"
-  source "${LIB_DIR}/commands/cmd_prex_parse_args.sh"
+  source "${LIB_DIR}/commands/cmd_executor_prex_parse_args.sh"
 }
 
-@test "prex parser extracts auto review tsk id and task" {
+@test "executor-prex parser extracts auto review tsk id and task" {
   local mode impl id task
 
-  __cog_prex_parse_args_parse "-ar -t TSK-1 Fix * now" mode impl id task
+  __cog_executor_prex_parse_args_parse "-ar -t TSK-1 Fix * now" mode impl id task
 
   [ "$mode" = auto-approve-review-loop ]
   [ "$impl" = 1 ]
@@ -22,9 +22,9 @@ setup() {
   [ "$task" = "Fix * now" ]
 }
 
-@test "prex parser rejects unknown flags with exit 2" {
-  run --separate-stderr __cog_prex_parse_args_parse "--bad Task" mode impl id task
+@test "executor-prex parser rejects unknown flags with exit 2" {
+  run --separate-stderr __cog_executor_prex_parse_args_parse "--bad Task" mode impl id task
 
   assert_failure 2
-  [[ $stderr == *"unknown prex flag"* ]]
+  [[ $stderr == *"unknown executor-prex flag"* ]]
 }

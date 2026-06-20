@@ -98,6 +98,8 @@ gate); those ADRs are referenced here, not changed.
 - missing `trigger-tests` comments in Claude skills;
 - `skill-prefix-taxonomy`: Claude skills with governed intent must use the matching taxonomy prefix:
   plan-emitters use `plan-*`, plan-reviewers use `review-plan-*`, and executors use `executor-*`.
+  Executor intent takes precedence over plan-emitter status for staged executor skills that emit
+  intermediate plan artifacts.
 
 Codex skills do not require `trigger-tests`.
 

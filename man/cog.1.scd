@@ -66,6 +66,12 @@ The command list and short descriptions are sourced from command modules under
 *doctor*
 	Check cog runtime health and installation prerequisites.
 
+*executor-prex-parse-args*
+	Parse executor-prex arguments into run state.
+
+*executor-prex-tsk-resolve*
+	Resolve a tsk issue for an executor-prex run.
+
 *gc-classify-failure*
 	Classify commit or push failure logs.
 
@@ -138,10 +144,10 @@ The command list and short descriptions are sourced from command modules under
 	recorded as diagnostics only.
 
 *prex-parse-args*
-	Parse prex arguments into run state.
+	Parse prex arguments into run state (compatibility alias for executor-prex-parse-args).
 
 *prex-tsk-resolve*
-	Resolve a tsk issue for a prex run.
+	Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve).
 
 *print-config*
 	Print resolved configuration values and their sources.

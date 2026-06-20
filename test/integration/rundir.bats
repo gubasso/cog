@@ -100,6 +100,17 @@ setup() {
   [ -f "$(printf '%s\n' "$output" | jq -r '.lock_file')" ]
 }
 
+@test "cog rundir executor-prex uses the prex-active lock base" {
+  run cog rundir executor-prex --lock --owner-pid 123 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.run_dir | contains("/executor-prex-")' >/dev/null
+  local lock_file
+  lock_file="$(printf '%s\n' "$output" | jq -r '.lock_file')"
+  [[ $lock_file == "${XDG_RUNTIME_DIR}/prex-active-"* ]]
+  [ -f "$lock_file" ]
+}
+
 @test "cog rundir requires owner pid when locking" {
   run --separate-stderr cog rundir review --lock
 

@@ -91,7 +91,9 @@ Plan-review sub-namespace (`review-plan-*`):
 
 ### executor-*
 
-- skills/claude/prex
+- skills/claude/executor-prex
+- skills/claude/prex — temporary compatibility alias for `/prex`; carries
+  `<!-- cog-skill: superseded-by executor-prex -->`
 
 ### runner-*
 
@@ -121,10 +123,12 @@ Utility skills outside the four governed behavioral prefixes, plus shipped agent
 
 ## Taxonomy Migration Notes
 
-These are planned renames recorded for traceability; the renames themselves are owned by dependent
-sibling plans and are out of scope here.
+These compatibility notes record rename transitions that are still visible in shipped skill names or
+queue prompts.
 
-- `prex` -> `executor-prex` (owned by the `executor-prex-refactor` plan).
+- `prex` -> `executor-prex` has landed as the canonical executor skill. The `/prex` skill remains a
+  first-class compatibility alias during the transition, and existing `/prex` queue prompts remain
+  supported instead of being migrated in Round 1 of `executor-prex-refactor`.
 - `plan-reviewer` is retained as a legacy compatibility shim and carries
   `<!-- cog-skill: superseded-by review-plan-claude -->`. New plan-review work uses
   `review-plan-claude` or `review-plan-codex`.

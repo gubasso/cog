@@ -1,6 +1,6 @@
 rounds:
   - item: rename-and-cog-token-migration
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/rename-and-cog-token-migration.md
     notes: ""
