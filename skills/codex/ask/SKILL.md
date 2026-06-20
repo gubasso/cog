@@ -11,9 +11,9 @@ description: >
 
 Answer a question about the project. **Do not modify any files.**
 
-By default the skill answers inline in the current session using the active Codex profile/model. The
+By default the skill answers inline in the current session using the active Codex model/effort. The
 only exception is the `-f/--fast` path, which spawns a single nested
-`cog codex-runner run-exec --mode quick-auto --profile quick` call to actually run the
+`cog codex-runner run-exec --mode quick-auto --effort quick` call to actually run the
 answer on the quick (cheap) model and relays its captured `--output-last-message` output.
 
 ## Rules
@@ -29,7 +29,7 @@ answer on the quick (cheap) model and relays its captured `--output-last-message
 
 | Flag           | Short | Effect                                                                                                                                                                                                                                 |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --profile quick` and relay its answer. Without `-f`, the skill answers inline using the active profile. `-w` is preserved into the nested call. |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort quick` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` is preserved into the nested call. |
 | `--web-search` | `-w`  | Perform a complete and deep web search/research before answering, grounding the response in current upstream docs and specs.                                                                                                           |
 
 Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wf`), and must
@@ -78,7 +78,7 @@ degrade DECISION (run nested vs. answer inline) stays here, in prose.
 RUN_DIR="$(cog rundir ask-fast | sed -n 's/^RUN_DIR=//p')"
 FAST_DEGRADED=0
 cog codex-runner gate sandbox "$RUN_DIR/preflight.json" >/dev/null 2>&1 \
-  || { echo "(account health check failed — answering inline with active profile)"; FAST_DEGRADED=1; }
+  || { echo "(account health check failed — answering inline with active model/effort)"; FAST_DEGRADED=1; }
 
 if [ "$FAST_DEGRADED" -eq 0 ]; then
   # Build the nested prompt. CRITICAL: never echo `-f` back into the
@@ -86,14 +86,14 @@ if [ "$FAST_DEGRADED" -eq 0 ]; then
   cat > "$RUN_DIR/prompt.txt" <<EOF
 \$ask <-w if WEB_SEARCH else nothing> <verbatim question text>
 
-You are running under the \`quick\` Codex profile to answer this
+You are running with the \`quick\` Codex effort tier to answer this
 question read-only. Cite file paths and line numbers. Give a concise,
 direct answer.
 EOF
 
   cog codex-runner run-exec \
     --mode quick-auto \
-    --profile quick \
+    --effort quick \
     --prompt "$RUN_DIR/prompt.txt" \
     --output "$RUN_DIR/answer.txt" \
     --events "$RUN_DIR/events.jsonl" \
@@ -107,7 +107,7 @@ Set the Bash tool timeout to `600000` ms (600s) for the nested call.
 it unconditionally. `-w` is forwarded as-is when set.
 
 **Failure handling.** If `$RUN_DIR/runner.json` has a non-`ok` status or `$RUN_DIR/answer.txt` is
-empty, **degrade gracefully**: answer inline with the active profile and prepend a single line:
+empty, **degrade gracefully**: answer inline with the active model/effort and prepend a single line:
 
 ```text
 (fast-flag fallback: <short reason>)

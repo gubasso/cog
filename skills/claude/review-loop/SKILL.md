@@ -74,9 +74,9 @@ The following guardrails are inlined here as critical safety constraints:
 - Native sandbox: `--sandbox read-only --json --output-last-message`. Fallback sandbox:
   `-c 'sandbox_permissions=["disk-full-read-access"]' --json --output-last-message`. See the
   Environment Compatibility section in the shared conventions file.
-- Round 1 passes `--profile medium` — the first full-diff review gets the flagship model at the
-  quality-default effort. Rounds 2+ use `--profile low` (same model, low effort) since they are
-  continuations reviewing incremental, already-triaged fixes. Substitute `--profile deep` for a
+- Round 1 passes `--effort medium` — the first full-diff review gets the flagship model at the
+  quality-default effort. Rounds 2+ use `--effort low` (same model, low effort) since they are
+  continuations reviewing incremental, already-triaged fixes. Substitute `--effort deep` for a
   round only when the user explicitly asks to escalate (e.g. a stuck/looping review). Never pass
   `-m`/`-c` flags at the call site.
 - Never use `--approval-policy` or `-a` (not supported for `codex-session exec`).
@@ -196,18 +196,18 @@ message, captured via `--output-last-message`.
 
 ### Step 2: Invoke Codex
 
-Select the profile based on round number: round 1 passes `medium`; rounds 2+ pass `low`. Invoke
+Select the effort tier based on round number: round 1 passes `medium`; rounds 2+ pass `low`. Invoke
 Codex through `cog codex-runner run-exec`; the runner owns the exact native/fallback
 `codex-session exec` form, `< /dev/null`, direct stderr capture, output-last-message capture, and
 error classification.
 
 ```bash
-if [ "$N" -eq 1 ]; then PROFILE="medium"; else PROFILE="low"; fi
+if [ "$N" -eq 1 ]; then EFFORT="medium"; else EFFORT="low"; fi
 RUNNER_MODE="$SANDBOX_MODE"
 [ "$RUNNER_MODE" = "native" ] || RUNNER_MODE="fallback"
 cog codex-runner run-exec \
   --mode "$RUNNER_MODE" \
-  --profile "$PROFILE" \
+  --effort "$EFFORT" \
   --prompt "$RUN_DIR/round-N-prompt.txt" \
   --output "$RUN_DIR/round-N-findings.json" \
   --events "$RUN_DIR/round-N-events.jsonl" \
@@ -366,8 +366,8 @@ summary to `$RUN_DIR/summary.md` and present it to the user:
 
 - Codex never edits code; all fixes are applied by Claude Code.
 - Every round runs in read-only mode (`--sandbox read-only` native, or
-  `-c 'sandbox_permissions=["disk-full-read-access"]'` fallback). Round 1 uses `--profile
-  medium`; rounds 2+ use `--profile low`. No `codex-session exec resume`;
+  `-c 'sandbox_permissions=["disk-full-read-access"]'` fallback). Round 1 uses `--effort
+  medium`; rounds 2+ use `--effort low`. No `codex-session exec resume`;
   each round is a fresh one-shot invocation of the Codex `review-code-deep` twin in orchestrator
   mode.
 - Never use `--approval-policy` or `-a` (not supported for `codex-session exec`).

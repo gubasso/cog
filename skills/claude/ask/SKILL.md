@@ -32,7 +32,7 @@ Answer a question about the project. **Do not modify any files in the repo.**
 
 | Flag           | Short | Effect                                                                                                                                                                                                                                       |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Run the dispatched Explore agent at reduced reasoning effort (`effort: "medium"`). **Claude-side only** — never forwarded to Codex; the `-c` Codex call always runs under the `low` profile.                                                 |
+| `--fast`       | `-f`  | Run the dispatched Explore agent at reduced reasoning effort (`effort: "medium"`). **Claude-side only** — never forwarded to Codex; the `-c` Codex call always runs at `--effort low`.                                                 |
 | `--web-search` | `-w`  | Instruct the Explore agent to ground the answer in current upstream docs/specs via deep web research. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill performs the same instruction-driven web research. |
 | `--codex`      | `-c`  | Also run the Codex `ask` skill in parallel via `cog codex-runner run-exec` and synthesize a single final answer using Codex's output as cross-validation. Compatible with `-f` and `-w`.                                            |
 
@@ -97,7 +97,7 @@ prompt file. The prompt file must land on disk before Phase B starts.
 
 The prompt body opens with the explicit `$ask` skill mention so the Codex `ask` skill is loaded
 deterministically. Echo **only `-w`** if `WEB_SEARCH = true`. **Never** echo `-f` (Claude-side only
-— the `-c` Codex call always runs under the `low` profile). **Never** echo `-c`
+— the `-c` Codex call always runs at `--effort low`). **Never** echo `-c`
 (Claude-side only).
 
 ##### Step A.1 — Create RUN_DIR (Bash)
@@ -168,7 +168,7 @@ RUNNER_MODE="$SANDBOX_MODE"
 [ "$RUNNER_MODE" = "native" ] || RUNNER_MODE="fallback"
 cog codex-runner run-exec \
   --mode "$RUNNER_MODE" \
-  --profile low \
+  --effort low \
   --prompt "$RUN_DIR/codex-prompt.txt" \
   --output "$RUN_DIR/codex-ask.txt" \
   --events "$RUN_DIR/codex-events.jsonl" \

@@ -78,8 +78,8 @@ The workflow needs:
    issue when that flag is set; otherwise `$ARGUMENTS`; otherwise the current conversation context.
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
-   and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model and
-   reasoning effort come from the tier `--profile` (`medium` for stages 1 and 3; `deep` is the
+   and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
+   reasoning effort come from `cog codex-runner --effort` (`medium` for stages 1 and 3; `deep` is the
    human-judged escalation tier, used only when the user asks for it). See the "Wrapper:
    `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
    for the full API reference.
@@ -299,7 +299,7 @@ shared orchestration doc.
 ```bash
 cog codex-runner run-exec \
   --mode danger \
-  --profile medium \
+  --effort medium \
   --prompt "$RUN_DIR/stage1-prompt.md" \
   --output "$RUN_DIR/stage1-plan.txt" \
   --events "$RUN_DIR/stage1-events.jsonl" \
@@ -368,7 +368,7 @@ End with a concise summary covering:
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--profile medium` at both stage 1 and stage 3 call sites; substitute `--profile deep` only when
+  `--effort medium` at both stage 1 and stage 3 call sites; substitute `--effort deep` only when
   the user explicitly asks to escalate a stage (stuck/looping runs, novel design,
   security-critical changes). Do not pass `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference

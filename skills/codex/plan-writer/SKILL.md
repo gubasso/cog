@@ -109,7 +109,7 @@ mechanics in its draft, but final filesystem changes remain coordinator-owned.
   defaults noted in the draft.
 - **No code modification.** Read-only sandbox — use `--sandbox read-only` (or the fallback
   `-c 'sandbox_permissions=["disk-full-read-access"]'`). The plan goes to the final message only.
-- **Model / effort.** Planning is a full-effort task — the caller runs `--profile medium`. See
+- **Model / effort.** Planning is a full-effort task — the caller runs `--effort medium`. See
   the maintenance reference `docs/reference/codex-conventions.md` for the invocation pattern.
 
 ## See also

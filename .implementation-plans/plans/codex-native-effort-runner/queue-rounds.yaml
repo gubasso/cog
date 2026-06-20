@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/codex-runner-cli-migration.md
     notes: ""
   - item: skill-callsite-sweep
-    status: todo
+    status: done
     depends_on:
       - codex-runner-cli-migration
     prompt: /prex -ar .implementation-plans/plans/codex-native-effort-runner/skill-callsite-sweep.md

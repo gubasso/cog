@@ -129,7 +129,7 @@ orchestration doc.
 cog codex-runner run-resume \
   --account "$PLAN_ACCOUNT" \
   --thread-id "$PLAN_THREAD_ID" \
-  --profile medium \
+  --effort medium \
   --prompt "$RUN_DIR/stage3-prompt.md" \
   --output "$RUN_DIR/stage3-impl-report.txt" \
   --events "$RUN_DIR/stage3-events.jsonl" \
@@ -197,7 +197,7 @@ is the only disambiguator (sandbox-mismatch vs. absent/deleted), so consult
 ```bash
 cog codex-runner run-exec \
   --mode danger \
-  --profile medium \
+  --effort medium \
   --prompt "$RUN_DIR/stage3-prompt-full.md" \
   --output "$RUN_DIR/stage3-impl-report.txt" \
   --events "$RUN_DIR/stage3-events.jsonl" \

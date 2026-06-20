@@ -215,7 +215,7 @@ degrade flag is set or `--solo`.
    [ "$RUNNER_MODE" = "native" ] || RUNNER_MODE="fallback"
    cog codex-runner run-exec \
      --mode "$RUNNER_MODE" \
-     --profile medium \
+     --effort medium \
      --prompt "$RUN_DIR/codex-plan-prompt.txt" \
      --output "$RUN_DIR/codex-draft.md" \
      --events "$RUN_DIR/codex-events.jsonl" \
@@ -353,7 +353,7 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
   subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog review-implementation-plans-scan`,
   and `cog runner-queue-resolve-plan` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
-- Codex calls go through `cog codex-runner run-exec` with `--profile medium`, read-only
+- Codex calls go through `cog codex-runner run-exec` with `--effort medium`, read-only
   native/fallback sandboxing, `< /dev/null`, stderr→log, and Bash timeout `600000`, in the
   **foreground** (`run_in_background` false/omitted) — never background a Codex call; a backgrounded
   run is reaped ~5s after the turn in a headless host. Never call `codex exec` bare; never
