@@ -5,7 +5,7 @@ description: >
   queue-rounds.yaml, or a top-level plans: main queue, to completion. Use when
   the user asks to "run the queue", "run the plan queue", "execute the plan
   rounds", "drive the plan directory", or invokes "runner-queue".
-  Dispatches queued executor-prex rounds to fresh claude-delegate subagents, verifies
+  Dispatches queued executor prompts to fresh claude-delegate subagents, verifies
   queue status, commits with /gc -a across every repo the item touched, runs the
   review-implementation-plans boundary, and loops until complete or failed closed.
 argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir>"
@@ -52,11 +52,25 @@ fails closed in setup. Live data is directory-only in this round: every main pla
 `kind: "inner_queue"` backed by `<plan-dir>/queue-rounds.yaml`; any other form fails closed in
 `cog runner-queue-resolve-plan`.
 
+A `plans:` entry selects the executor through its queued `prompt:`. The resolver accepts the
+`-ar <plan-dir>` form for `/executor-prex`, `/executor-claude`, and `/executor-codex-session`
+(`/prex` stays an alias for `/executor-prex`), maps each to the plan directory's inner
+`queue-rounds.yaml`, and preserves the prompt verbatim:
+
+```yaml
+plans:
+  - item: plan-with-prex
+    prompt: /executor-prex -ar @.implementation-plans/plans/plan-with-prex/
+  - item: plan-with-claude
+    prompt: /executor-claude -ar @.implementation-plans/plans/plan-with-claude/
+  - item: plan-with-codex
+    prompt: /executor-codex-session -ar @.implementation-plans/plans/plan-with-codex/
+```
+
 Plan directories are **flat siblings** directly under `.implementation-plans/plans/`
 (`plans/<slug>/`); ordering between plans lives only in the top-level `queue-plans.yaml` `depends_on`
-field, never in the filesystem. The runner resolves each main-plan entry to exactly one
-`plans/<slug>/` directory — `cog runner-queue-resolve-plan` fails closed if a resolved target is
-a nested directory rather than a direct child of `plans/`.
+field, never in the filesystem. `cog runner-queue-resolve-plan` resolves each main-plan entry to one
+`plans/<slug>/` directory and fails closed if the resolved target is not a direct child of `plans/`.
 
 DO NOT delegate the main loop to a subagent. Main loop = depth 0; each round delegate = +1; each
 review-implementation-plans subagent = +1 sibling, not nested under the round delegate; hard cap = 5.
@@ -72,10 +86,7 @@ repos:
   - /abs/path/to/satellite-repo
 rounds:
   - item: round-one
-    status: todo
-    depends_on: []
     prompt: "/executor-prex -ar .implementation-plans/plans/<plan>/round-one.md"
-    notes: ""
 ```
 
 When present, the clean-tree guard covers every declared repo and the commit step runs
@@ -98,25 +109,22 @@ startup guard refuses a dirty worktree across every declared repo and refuses an
 `doing`.
 
 Do not weaken the trust boundary. The delegate uses the stowed skills from `$HOME/.claude/skills/`
-and the stowed `$HOME/.claude/agents/claude-delegate.md`, not unstowed repo source. If nested
-unattended `/executor-prex` ever surfaces an approval prompt, the session was started in a weaker permission
+and the stowed `$HOME/.claude/agents/claude-delegate.md`, not unstowed repo source. If a nested
+unattended executor ever surfaces an approval prompt, the session was started in a weaker permission
 mode than `bypassPermissions`; restart it under the intended mode after confirming the boundary.
 
 ## Usage
 
 ```bash
 /runner-queue .implementation-plans/queue-plans.yaml
-/runner-queue .implementation-plans/plans/build-orion-nixos-config
 /runner-queue --max 1 .implementation-plans/queue-plans.yaml
 ```
 
 In `rounds:` mode, `--max N` stops after `N` successfully committed rounds in this invocation, and
 `--dry-run` prints the next runnable round, remaining `todo` rounds, and the planned `/gc -a` commit
-without dispatching any delegate.
-
-In `plans:` mode, `--max N` counts completed main plans, not inner rounds. `--dry-run` prints the
-selected plan, resolved `kind`, resolved prompt, inner queue path, and remaining `todo` plans; it
-does not dispatch delegates, flip status, commit, or run revision.
+without dispatching any delegate. In `plans:` mode, `--max N` counts completed main plans, not inner
+rounds; `--dry-run` prints the selected plan, resolved `kind`, resolved prompt, inner queue path, and
+remaining `todo` plans, dispatching nothing and never flipping status, committing, or revising.
 
 The plan directory or queue path must not contain whitespace. Arguments are tokenized by
 word-splitting, matching the convention used by `/executor-prex` and the `.implementation-plans/`
@@ -216,10 +224,7 @@ echo "REPO_ROOT=$REPO_ROOT ITEM=$ITEM INNER_QUEUE_PATH=$INNER_QUEUE_PATH"
 
       <PROMPT>
 
-  This is an `/executor-prex` round: run all stages (plan -> review -> implement -> review -> loop).
-  Run every Codex call in the foreground; never background it. The round is complete only when the
-  plan is fully implemented and reviewed AND this round's status is flipped to `done` in
-  queue-rounds.yaml per the plan's final step. Return your structured result.
+  Run the queued prompt exactly as written; its slash command selects the executor. Run every Codex call in the foreground; never background it. The round is complete only when the plan is fully implemented and reviewed AND this round's status is flipped to `done` in queue-rounds.yaml per the plan's final step. Return your structured result.
   ```
 
 The Agent call blocks until the delegate returns. There are no `.out/.err/.status` files; the
@@ -358,7 +363,7 @@ cog queue-status-set --queue "$MAIN_QUEUE_PATH" --schema plans --item "$PLAN_ITE
 ```
 
 Main-plan `done` is always runner-owned via this exact command. Inner-round `done` remains
-verify-only and is owned by the round's `/executor-prex`.
+verify-only and is owned by the queued executor prompt.
 
 Commit the plan's accumulated work plus the main-queue status flip with the existing foreground
 `claude-delegate` `/gc -a` pattern. Build the `--repo` flags from `INNER_REPOS` (still in
@@ -371,11 +376,10 @@ main plan is flipped, committed, and revision completes.
 ## Dry Run And Max
 
 `rounds:` mode preserves current behavior: dry-run prints the selected round, remaining `todo` rounds,
-and the planned `/gc -a`; `--max N` counts successfully committed rounds.
-
-`plans:` mode dry-run runs only main selection and plan resolution. Keep the block self-contained -
-shell state does not persist, so source `ctx.env`, rebuild `REPO_FLAGS` from `REPOS`, and read
-`PLAN_ITEM`/`SAFE_ITEM` from the dry-run selection output before resolving:
+and the planned `/gc -a`; `--max N` counts successfully committed rounds. `plans:` mode dry-run runs
+only main selection and plan resolution. Keep the block self-contained — shell state does not persist,
+so source `ctx.env`, rebuild `REPO_FLAGS` from `REPOS`, and read `PLAN_ITEM`/`SAFE_ITEM` from the
+dry-run selection output before resolving:
 
 ```bash
 . "$RUN_DIR/ctx.env"
@@ -462,8 +466,7 @@ postcondition.
 - Skill prose never hand-edits queues: no `yq -i`, no `sed -i`, and no redirects to queue files.
   Writing run-scoped state files under `$RUN_DIR` (for example `inner.env`, mirroring setup's
   `ctx.env`) is not a queue edit and is allowed.
-- Inner-round `done` remains verify-only after the round delegate returns; it is owned by the
-  round's `/executor-prex`.
+- Inner-round `done` remains verify-only after the round delegate returns; it is owned by the queued executor prompt.
 - Main-plan `done` is set only by `cog queue-status-set --schema plans --from todo --to done`.
 - Revision queue mutations go only through `cog queue-status-set`, `cog queue-append`,
   `cog queue-deps-set`, and `cog queue-reorder`; graph validation goes through
@@ -476,12 +479,10 @@ postcondition.
 - Always commit with `/gc -a` plus `--repo` per satellite, building the satellite list from the inner
   queue's repos (`INNER_REPOS`), not the main-queue `REPOS`; the clean-tree guard across every
   declared repo is what makes stage-all safe.
-- Use queued prompts verbatim. Do not reconstruct executor commands; `/prex` remains a supported
-  compatibility prompt for existing queues.
+- Use queued prompts verbatim. Do not reconstruct executor commands. Canonical executor prompts are `/executor-prex`, `/executor-claude`, and `/executor-codex-session`; `/prex` is supported only as an alias for `/executor-prex`.
 - Plan directories are flat siblings under `plans/`; the resolver fails closed on a nested target.
   Do not work around it by hand-resolving a nested path.
-- Never delegate the main loop to a subagent. Never background Agent, `/executor-prex`, `/prex`,
-  `/gc`, or revision work.
+- Never delegate the main loop to a subagent. Never background Agent, queued executor prompts, `/gc`, or revision work.
 
 ## Failure Handling
 

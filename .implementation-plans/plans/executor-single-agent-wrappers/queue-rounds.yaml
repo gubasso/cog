@@ -17,7 +17,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-claude-skill.md
     notes: ""
   - item: queue-integration
-    status: todo
+    status: done
     depends_on:
       - executor-codex-session-skill
       - executor-claude-skill

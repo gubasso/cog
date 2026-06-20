@@ -68,6 +68,28 @@ EOF
     '.target_path == ($root + "/plans/with-at") and .prompt == "/executor-prex -ar @plans/with-at/"' >/dev/null
 }
 
+@test "cog runner-queue-resolve-plan resolves executor-claude @ directory and preserves prompt" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_main_queue "$queue" "/executor-claude -ar @plans/with-at/"
+
+  run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg root "$REPO_ROOT" \
+    '.target_path == ($root + "/plans/with-at") and .inner_queue_path == ($root + "/plans/with-at/queue-rounds.yaml") and .prompt == "/executor-claude -ar @plans/with-at/"' >/dev/null
+}
+
+@test "cog runner-queue-resolve-plan resolves executor-codex-session @ directory and preserves prompt" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_main_queue "$queue" "/executor-codex-session -ar @plans/with-at/"
+
+  run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg root "$REPO_ROOT" \
+    '.target_path == ($root + "/plans/with-at") and .inner_queue_path == ($root + "/plans/with-at/queue-rounds.yaml") and .prompt == "/executor-codex-session -ar @plans/with-at/"' >/dev/null
+}
+
 @test "cog runner-queue-resolve-plan resolves bare directory and missing repos as empty array" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   write_main_queue "$queue" "/prex -ar plans/no-repos/"
@@ -130,6 +152,16 @@ EOF
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
 
   write_main_queue "$queue" "/other -ar plans/bare"
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  assert_failure
+  [[ $stderr == *"unsupported plan prompt"* ]]
+
+  write_main_queue "$queue" "/executor-claude plans/foo/round.md"
+  run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
+  assert_failure
+  [[ $stderr == *"unsupported plan prompt"* ]]
+
+  write_main_queue "$queue" '/executor-codex-session "some prompt text"'
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"unsupported plan prompt"* ]]

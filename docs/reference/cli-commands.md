@@ -140,7 +140,8 @@ for the requested access mode.
 classification.
 
 `cog executor queue-prompts` prints the Round-1 queue-prompt recognition contract consumed by later
-runner-queue integration work.
+runner-queue integration work. Top-level `runner-queue` plan entries use `-ar <target-dir>` for all
+supported executor prompts when resolving a main queue item to an inner queue.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.
@@ -154,3 +155,20 @@ Plan directories are flat siblings, a single level under `.implementation-plans/
 filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
 `cog review-implementation-plans-scan` (revision inventory, via `cog::fn::review_implementation_plans_assert_flat`), and
 `cog runner-queue-resolve-plan` (a resolved target must be a direct child of `plans/`).
+
+Top-level plan queue entries may select different executors while still targeting flat sibling plan
+directories:
+
+```yaml
+plans:
+  - item: alpha
+    status: todo
+    depends_on: []
+    prompt: /executor-claude -ar @.implementation-plans/plans/alpha/
+    notes: ""
+  - item: beta
+    status: todo
+    depends_on: [alpha]
+    prompt: /executor-codex-session -ar @.implementation-plans/plans/beta/
+    notes: ""
+```

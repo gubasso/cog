@@ -91,7 +91,9 @@ Plan-review sub-namespace (`review-plan-*`):
 
 ### executor-*
 
+- skills/claude/executor-claude
 - skills/claude/executor-prex
+- skills/codex/executor-codex-session
 - skills/claude/prex — temporary compatibility alias for `/prex`; carries
   `<!-- cog-skill: superseded-by executor-prex -->`
 

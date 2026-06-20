@@ -90,6 +90,8 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.queue-prompts.v1" and (.prompts | length) == 3' >/dev/null
+  printf '%s\n' "$output" | jq -e \
+    '[.prompts[].slash] as $s | ($s | index("/executor-prex")) and ($s | index("/executor-claude")) and ($s | index("/executor-codex-session"))' >/dev/null
 }
 
 @test "cog executor summary writes file-first and emits pure JSON in --json mode" {
