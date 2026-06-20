@@ -1,6 +1,6 @@
 rounds:
   - item: lean-plan-artifact-cog-commands
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/lean-plan-and-review-skills/lean-plan-artifact-cog-commands.md
     notes: ""

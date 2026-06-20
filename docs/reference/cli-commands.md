@@ -57,7 +57,14 @@ this reference table.
 | `noop` | Exercise command dispatch without side effects. |
 | `osc-preflight` | Detect OBS/osc session prerequisites. |
 | `osc-probe-binary` | Resolve a binary RPM to an OBS source package. |
+| `plan-doc` | Write and validate lean plan artifacts. |
+| `plan-doc save` | Write one lean plan artifact. |
+| `plan-doc validate` | Validate one lean plan artifact. |
 | `plan-init` | Bootstrap implementation plan root files. |
+| `plan-review` | Write and validate annotated plan review artifacts. |
+| `plan-review save` | Write one annotated plan review artifact. |
+| `plan-review orchestrator` | Write a review artifact from absolute orchestrator input paths. |
+| `plan-review validate` | Validate one annotated plan review artifact. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |

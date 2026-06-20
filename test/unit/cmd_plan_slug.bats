@@ -8,6 +8,7 @@ setup() {
   source "${LIB_DIR}/functions/fn_log.sh"
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   source "${LIB_DIR}/functions/fn_json_write.sh"
+  source "${LIB_DIR}/functions/fn_plan_slug.sh"
   source "${LIB_DIR}/commands/cmd_plan_slug.sh"
 }
 

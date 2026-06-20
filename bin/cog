@@ -51,6 +51,14 @@ source "${LIB_DIR}/functions/fn_git.sh"
 source "${LIB_DIR}/functions/fn_queue.sh"
 # shellcheck source=../lib/functions/fn_research.sh
 source "${LIB_DIR}/functions/fn_research.sh"
+# shellcheck source=../lib/functions/fn_plan_slug.sh
+source "${LIB_DIR}/functions/fn_plan_slug.sh"
+# shellcheck source=../lib/functions/fn_plan_artifact.sh
+source "${LIB_DIR}/functions/fn_plan_artifact.sh"
+# shellcheck source=../lib/functions/fn_plan_doc.sh
+source "${LIB_DIR}/functions/fn_plan_doc.sh"
+# shellcheck source=../lib/functions/fn_plan_review.sh
+source "${LIB_DIR}/functions/fn_plan_review.sh"
 # shellcheck source=../lib/functions/fn_tracking.sh
 source "${LIB_DIR}/functions/fn_tracking.sh"
 # shellcheck source=../lib/functions/fn_review_implementation_plans.sh

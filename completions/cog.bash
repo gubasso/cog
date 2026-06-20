@@ -43,7 +43,9 @@ _cog() {
     noop
     osc-preflight
     osc-probe-binary
+    plan-doc
     plan-init
+    plan-review
     plan-slug
     plan-writer-multi-setup
     precommit-apply-template

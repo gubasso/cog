@@ -57,7 +57,9 @@ Commands:
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
+  plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
+  plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
   precommit-apply-template Apply a pre-commit template to a project.
@@ -142,7 +144,9 @@ Commands:
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
+  plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
+  plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
   precommit-apply-template Apply a pre-commit template to a project.
