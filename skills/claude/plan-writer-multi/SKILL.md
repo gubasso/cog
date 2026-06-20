@@ -47,18 +47,22 @@ inline: review + compare both → reconcile Layer 1 directory split and Layer 2 
     mode)". Always use the absolute `$HOME/.claude/...` path.
   - Codex: `codex-session exec` with a prompt opening with the `$plan-writer` mention.
 - **Never use the `Skill` tool** for these — nested `Skill` calls inline the child and stall the
-  orchestrator. See `$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md`
+  orchestrator. See `$(cog skill-refs path skills-and-orchestration.md)`
   (§Dispatch vs Delegation).
 - Orchestration plumbing (proof-of-delegation, sandbox detection, parallel dispatch, graceful
   degradation) mirrors `ask` (Step 2b) and `prex`; for this extraction round it stays prose and is
   explicitly deferred to Round 12 `lib/codex.sh`. The contracts live in
-  `$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/orchestration-patterns.md`.
-- Read `$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md` before any Codex command.
+  `$(cog skill-refs path orchestration/orchestration-patterns.md)`.
+- Prepend the read-only orientation preamble from `cog codex-runner orientation read-only` to every
+  Codex planning prompt; it is the primary behavioral control for read-only enforcement. Branch on
+  the runner's structured status and `cog codex-runner explain-status <status>` for quota/error
+  handling.
 
 ## Reference resolution
 
-`DOCS_NOTES="${DOCS_NOTES_REPO:-}"`. If unset, warn and continue (degraded sizing). When set, the
-plan-rounds references are at `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/`.
+The plan-rounds references ship with `cog` and resolve in-repo (or from the XDG deploy) via
+`cog skill-refs path plan-rounds/<file>.md`; the resolver always succeeds, so no graceful-degrade
+fallback is needed for these references.
 
 ## Inputs
 
@@ -91,9 +95,9 @@ orientation verbatim to `$RUN_DIR/orientation.txt`. It emits `RUN_DIR=`, `EXECUT
 or an empty orientation (surface that error to the user).
 
 Shell state does not persist between Bash calls — substitute the literal `RUN_DIR`/`EXECUTOR`/`EF`
-values into later commands, and read the orientation from `$RUN_DIR/orientation.txt`. When
-`$DOCS_NOTES_REPO` is set, read the three plan-rounds references (`plan-lifecycle.md`,
-`complexity-heuristic.md`, `round-templates.md`) now — the synthesis in Phase 8 needs them.
+values into later commands, and read the orientation from `$RUN_DIR/orientation.txt`. Read the three
+plan-rounds references now via `cog skill-refs path plan-rounds/<file>.md` (`plan-lifecycle.md`,
+`complexity-heuristic.md`, `round-templates.md`) — the synthesis in Phase 8 needs them.
 
 ## Phases 2–4: Gather context, research, interview (inline)
 
@@ -250,7 +254,7 @@ the Claude draft alone and remember to prepend the degradation note in Phase 9.
 Read both drafts (`claude-draft.md` and, if present, `codex-draft.md`). You are the **neutral judge**
 with the live conversation context neither worker fully has. Review and compare them against a rubric
 distilled from `plan-reviewer` and
-`$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/verdict-model.md`:
+`$(cog skill-refs path orchestration/verdict-model.md)`:
 
 - correctness, completeness vs the brief, feasibility, **Layer 1 / Layer 2 decomposition quality**,
   risk coverage, idiomatic fit to repo conventions, currency.

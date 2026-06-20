@@ -43,13 +43,10 @@ call `ExitPlanMode` yourself.
 
 ## Reference resolution
 
-Shared references live in `$DOCS_NOTES_REPO`. Resolve at skill start:
-
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-
-If `$DOCS_NOTES_REPO` is unset, the skill warns and continues without plan-rounds references.
-
-References resolve to `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/`.
+The plan-rounds references ship with `cog` and resolve in-repo (or from the XDG deploy) via
+`cog skill-refs path <rel>`. Resolve each at the point of use, e.g.
+`$(cog skill-refs path plan-rounds/round-templates.md)`. The resolver always succeeds, so no
+graceful-degrade fallback is needed for these references.
 
 ## Inputs
 
@@ -128,11 +125,11 @@ this as `legacy_plan_dir`; the judgment and user-facing explanation stay in this
 
 Read all three reference files into context:
 
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/plan-lifecycle.md` — directory structure,
+- `$(cog skill-refs path plan-rounds/plan-lifecycle.md)` — directory structure,
   executor model, lifecycle rules.
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` — scoring axes,
+- `$(cog skill-refs path plan-rounds/complexity-heuristic.md)` — scoring axes,
   grade mapping, splitting rules.
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md` — directory-plan
+- `$(cog skill-refs path plan-rounds/round-templates.md)` — directory-plan
   templates, round files, `README.md`, `queue-plans.yaml`, `queue-rounds.yaml`, optional
   `STRATEGY.md`.
 
@@ -245,7 +242,7 @@ and ask for a final "ready to generate?" confirmation before proceeding to Phase
 
 Using the synthesized context, research findings, and interview answers, evaluate the implementation
 against the five scoring axes defined in
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md`.
+`$(cog skill-refs path plan-rounds/complexity-heuristic.md)`.
 
 State the executor profile and EF up front (from Phase 1a): `Executor: $EXECUTOR (EF = <factor>)`.
 
@@ -290,7 +287,7 @@ cog queue-bootstrap --schema plans --queue "$PLAN_ROOT/queue-plans.yaml" --json
 The helper-owned bootstrap covers:
 
 - `$PLAN_ROOT/README.md` — static explainer of the plan system, from Template F in
-  `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
+  `$(cog skill-refs path plan-rounds/round-templates.md)`.
 - `$PLAN_ROOT/queue-plans.yaml` — the repo-wide ledger. If missing, create it with an empty
   `plans:` list per Template D.
 
@@ -302,7 +299,7 @@ directory and never containing plan subdirectories; ordering between siblings li
 `depends_on`. Once the Layer 1 split is known, run the Phase 1b collision check for **every** planned
 sibling directory (`$PLANS_DIR/<sibling-slug>/`), not just the base `$SLUG` — do not silently
 overwrite any existing non-empty sibling directory. For each directory, apply the round-splitting rules from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` and assign each
+`$(cog skill-refs path plan-rounds/complexity-heuristic.md)` and assign each
 implementation step to an uncapped, scope-driven round. Verify no circular dependencies between
 rounds or sibling directories. Use `cog plan-slug` to validate every round topic slug; the helper
 owns charset, max-length, and the reserved-name set.
@@ -317,7 +314,7 @@ files, and `queue-rounds.yaml`. Only after every sibling directory is written do
 ### 6c — Write the plan directory `README.md`
 
 Create `$PLANS_DIR/$SLUG/` and write `$PLANS_DIR/$SLUG/README.md` using Template B from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
+`$(cog skill-refs path plan-rounds/round-templates.md)`.
 
 Include:
 
@@ -353,7 +350,7 @@ Include:
 
 When the external plan-rounds spec calls for a separate strategy document, write
 `$PLANS_DIR/$SLUG/STRATEGY.md` using Template C from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
+`$(cog skill-refs path plan-rounds/round-templates.md)`.
 
 Include: architectural overview, round dependency graph, risk mitigation approach, cross-cutting
 concerns that span multiple rounds.
@@ -362,10 +359,10 @@ concerns that span multiple rounds.
 
 For each round, write `$PLANS_DIR/$SLUG/<topic>.md` (a kebab-case topic slug, **no number
 prefix** — round order lives in the plan's `queue-rounds.yaml`) using Template A from
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md`.
+`$(cog skill-refs path plan-rounds/round-templates.md)`.
 
 Each round file must be **self-contained** per the contract in
-`$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/plan-lifecycle.md`:
+`$(cog skill-refs path plan-rounds/plan-lifecycle.md)`:
 
 - The `## Context` section repeats the problem statement compactly (10–20 lines). No "see README" or
   "as discussed" references.

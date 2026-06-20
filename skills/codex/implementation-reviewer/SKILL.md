@@ -13,18 +13,12 @@ description: >
 
 ## Reference resolution
 
-Shared references live in `$DOCS_NOTES_REPO` (the docs-n-notes repository). Resolve at skill start:
+The implementation-review references ship with `cog` and resolve in-repo (or from the XDG deploy)
+via `cog skill-refs path <rel>`; the resolver always succeeds, so no graceful-degrade fallback is
+needed. Throughout this skill, `REFS/<file>` means `$(cog skill-refs path implementation-review/<file>)`:
 
-```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-[ -z "$DOCS_NOTES" ] && {
-  echo "implementation-reviewer: \$DOCS_NOTES_REPO not set." >&2
-  echo "implementation-reviewer: continuing without domain-specific references." >&2
-}
-```
-
-If `$DOCS_NOTES_REPO` is unset, the skill continues but degrades: implementation-review references
-at `$DOCS_NOTES_REPO/tech/tools/claude-code/implementation-review/` are unavailable.
+- `REFS/report-template.md` → `$(cog skill-refs path implementation-review/report-template.md)`
+- `REFS/severity-levels.md` → `$(cog skill-refs path implementation-review/severity-levels.md)`
 
 # Implementation Reviewer
 
@@ -42,7 +36,7 @@ implementation. You are not a rubber stamp. Assume nothing is correct until you 
 - The output report uses structured Markdown. Read `REFS/report-template.md` for the exact format.
 - Severity levels are defined in `REFS/severity-levels.md` — read it before writing the report.
 - The verdict enum and finding categories follow the shared model in
-  `$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/verdict-model.md`.
+  `$(cog skill-refs path orchestration/verdict-model.md)`.
 
 ## Workflow
 

@@ -25,10 +25,10 @@ Each round is independent — there is no `codex-session exec resume`. The per-r
 context file carries intent and prior-round triage forward so the reviewer does not re-raise
 resolved issues.
 
-Read
-[`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md)
-before running any Codex command. That file is the source of truth for CLI invocation patterns and
-timeout requirements. The Codex twin of `review-code-deep` lives at
+Prepend the read-only orientation preamble from `cog codex-runner orientation read-only` to every
+Codex review prompt; it is the primary behavioral control for read-only enforcement. CLI invocation
+patterns and timeout requirements are owned by the `cog codex-runner run-exec` surface used below.
+The Codex twin of `review-code-deep` lives at
 `codex-session/.agents/skills/review-code-deep/SKILL.md` — its "Orchestrator Invocation Contract"
 section defines the per-round input/output protocol used here.
 
@@ -63,8 +63,8 @@ focused clarifying question before starting round 1.
 
 ## Codex CLI Reference
 
-The source of truth for Codex invocation is
-[`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md).
+Codex invocation mechanics are owned by the `cog codex-runner` surface (`run-exec`, `gate`,
+`orientation`, `explain-status`); the maintenance reference is `docs/reference/codex-conventions.md`.
 The following guardrails are inlined here as critical safety constraints:
 
 - Every round invokes the Codex `review-code-deep` twin one-shot via
@@ -338,8 +338,8 @@ wait until the earliest-available time before retrying (or let the user decide).
 also that exit 75 may arrive with a still-valid review JSON in the
 `--output-last-message` file when the _previous_ account completed the review before the
 next rotation 429'd; check that file before discarding the round. (Quota thresholds are
-soft penalty knees as of 2026-06-02; see `codex-conventions.md` → "Quota knees &
-out-of-quota errors".)
+soft penalty knees as of 2026-06-02; run `cog codex-runner explain-status <status>` for the
+quota/error interpretation.)
 
 ## User Intervention
 

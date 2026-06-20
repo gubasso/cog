@@ -11,7 +11,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/cog-self-contained-skill-refs/migrate-content-and-packaging.md
     notes: Create skill-refs/ tree, codex-conventions->docs/, install.sh XDG deploy, governance ADR+rules
   - item: rewire-skills-and-cleanup
-    status: todo
+    status: done
     depends_on:
       - migrate-content-and-packaging
     prompt: /prex -ar .implementation-plans/plans/cog-self-contained-skill-refs/rewire-skills-and-cleanup.md

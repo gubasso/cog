@@ -8,7 +8,7 @@ Do NOT use the `Skill` tool for this delegation. `Skill` loads a skill's body in
 current conversation and does not produce a real fork, which causes the orchestrator to confuse
 itself with the child's completion message and stop mid-workflow. The `Agent` tool with
 `subagent_type: general-purpose` is the only reliable fork mechanism for nested delegation; see
-`$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md` (Dispatch vs Delegation).
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
 
 Pass file paths in the prompt, not inlined file contents: the subagent shares the filesystem and can
 read the run-dir artifacts directly. The `plan-reviewer` skill body evaluates against correctness,
@@ -107,8 +107,7 @@ cog lock acquire "$RUN_DIR" --owner-pid "$PPID"
 
 Build an implementation prompt containing:
 
-- The write orientation block from
-  [`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md).
+- The write orientation block emitted by `cog codex-runner orientation write`.
 - The statement: `The reviewed plan below supersedes your earlier draft. Implement it exactly.`
 - The reviewed plan verbatim.
 - An instruction to implement phases in order.
@@ -183,7 +182,7 @@ is the only disambiguator (sandbox-mismatch vs. absent/deleted), so consult
    the inlined sections as: (a) write orientation block, (b) reviewed plan, (c) original request,
    (d) repo constraints, (e) implementation instructions. The orientation block must appear FIRST so
    it gates everything that follows:
-   - The write orientation block from `codex-conventions.md`.
+   - The write orientation block from `cog codex-runner orientation write`.
    - The full content of `$RUN_DIR/stage2-reviewed-plan.md` (inlined, not referenced).
    - The full content of `$RUN_DIR/request.md` (inlined, not referenced).
    - Relevant repo constraints and conventions from `CLAUDE.md`.
@@ -237,7 +236,7 @@ This mirrors the stage 2 delegation to `plan-reviewer` — same snapshot/proof p
 fail-closed contract.
 
 Do NOT use the `Skill` tool for this delegation. See the stage 2 note and
-`$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md` (Dispatch vs Delegation).
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
 
 ### Step 1: Build the review context
 
@@ -406,7 +405,7 @@ find "$_SKILL_RUNS" -maxdepth 1 -type d -name 'review-loop-*' -printf '%p\n' 2>/
   ```
 
 Do NOT use the `Skill` tool for this call — see the stage 2 note and
-`$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md` (Dispatch vs Delegation). The
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 `Agent` tool is the only mechanism that produces a real fork with a structured return.
 
 After the Agent tool call returns, locate the child run directory and validate proof of delegation.

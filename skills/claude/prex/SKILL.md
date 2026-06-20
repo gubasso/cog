@@ -29,7 +29,7 @@ Run a staged dual-agent workflow inside Claude Code:
 
 Stage 2 plan review and stage 5 review-loop handoff are delegated via the **Agent tool**
 (`subagent_type: general-purpose`), not the Skill tool — see
-`$DOCS_NOTES_REPO/tech/tools/claude-code/skills-and-orchestration.md` (Dispatch vs Delegation). The
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 parent workflow owns sequencing, proof checks, lock handling, and failure handling. These Agent-tool
 delegations work even when `/prex` itself runs as a subagent: Claude Code supports nested subagents
 (≥ v2.1.172), so a delegated `/prex` (e.g. under `claude-delegate`) spawns its stage 2/4/5 reviewers
@@ -39,13 +39,15 @@ This skill is a **thin orchestrator**: every deterministic mechanic (run-dir + l
 parsing, codex-session preflight gating, tsk resolution, delegation-proof validation) is a versioned
 `cog` subcommand that emits parseable result lines; this body owns only the sequencing and
 the judgment. See
-[`$DOCS_NOTES_REPO/tech/tools/claude-code/skill-authoring/skill-script-extraction.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/skill-authoring/skill-script-extraction.md)
+`$(cog skill-refs path skill-authoring/skill-script-extraction.md)`
 for the extraction rule and the output/status contract.
 
-Read
-[`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md)
-before running any Codex command. Treat that file as the source of truth for CLI invocation
-patterns, thread ID extraction, and timeout requirements.
+Codex invocation mechanics — CLI invocation patterns, thread ID extraction, and timeout
+requirements — are owned by the `cog codex-runner` surface (`run-exec`, `run-resume`, `gate`,
+`orientation`, `explain-status`) used throughout this skill; the maintenance reference is
+`docs/reference/codex-conventions.md`. Obtain Codex behavioral preambles from
+`cog codex-runner orientation <read-only|write>` and interpret runner statuses with
+`cog codex-runner explain-status <status>`.
 
 > **Execution discipline — env first, never background a Codex call.** `/prex` runs as an
 > **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
@@ -60,11 +62,12 @@ patterns, thread ID extraction, and timeout requirements.
 > a reason to background. A genuine overrun surfaces deterministically as a `timeout-124`/`sigterm`
 > status with partial logs; handle it via the Resume Fallback, not by detaching. Details are recorded
 > in
-> [`$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/in-session-vs-headless-delegation.md).
+> `$(cog skill-refs path orchestration/in-session-vs-headless-delegation.md)`.
 
 Orchestration patterns shared with `review-loop` (proof-of- delegation, lock management, review-loop
 handoff, verdict model) are documented in
-[`$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/orchestration/).
+`$(cog skill-refs path orchestration/<file>.md)` (e.g. `orchestration-patterns.md`,
+`verdict-model.md`).
 This skill is the reference implementation; the shared docs describe the contracts.
 
 ## Inputs
@@ -78,8 +81,7 @@ The workflow needs:
    and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model and
    reasoning effort come from the tier `--profile` (`medium` for stages 1 and 3; `deep` is the
    human-judged escalation tier, used only when the user asks for it). See the "Wrapper:
-   `codex-session`" section in
-   [`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md)
+   `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
    for the full API reference.
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
@@ -277,10 +279,10 @@ Steps:
 
 Construct a planning prompt that includes:
 
-- A behavioral orientation preamble: the prompt must begin with the read-only orientation block from
-  [`$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`](file:///$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md).
-  Under the unified-sandbox approach, this block is the **primary behavioral control** for read-only
-  enforcement; the CLI no longer enforces it via flags.
+- A behavioral orientation preamble: the prompt must begin with the read-only orientation block
+  emitted by `cog codex-runner orientation read-only`. Under the unified-sandbox approach, this block
+  is the **primary behavioral control** for read-only enforcement; the CLI no longer enforces it via
+  flags.
 - The original task.
 - Relevant repo constraints and conventions.
 - The requirement to produce a numbered, reviewable plan.

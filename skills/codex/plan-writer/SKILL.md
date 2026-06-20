@@ -25,23 +25,15 @@ draft as its **final message**, for the caller to capture via `--output-last-mes
 
 ## Reference resolution
 
-Shared references live in `$DOCS_NOTES_REPO` (the docs-n-notes repository). Resolve at skill start:
+The plan-rounds references ship with `cog` and resolve in-repo (or from the XDG deploy) via
+`cog skill-refs path <rel>`; the resolver always succeeds, so no graceful-degrade fallback is needed.
+Read all three plan-rounds references before sizing or generating:
 
-```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-[ -z "$DOCS_NOTES" ] && {
-  echo "plan-writer: \$DOCS_NOTES_REPO not set." >&2
-  echo "plan-writer: continuing without plan-rounds references (degraded sizing)." >&2
-}
-```
-
-When set, read all three plan-rounds references before sizing or generating:
-
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/plan-lifecycle.md` — directory structure,
+- `$(cog skill-refs path plan-rounds/plan-lifecycle.md)` — directory structure,
   executor model, self-contained round contract.
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/complexity-heuristic.md` — the five scoring
+- `$(cog skill-refs path plan-rounds/complexity-heuristic.md)` — the five scoring
   axes, the Executor Factor, the grade mapping, and round-splitting rules.
-- `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/round-templates.md` — Templates A–F.
+- `$(cog skill-refs path plan-rounds/round-templates.md)` — Templates A–F.
 
 ## Orchestrator Invocation Contract
 
@@ -118,10 +110,10 @@ mechanics in its draft, but final filesystem changes remain coordinator-owned.
 - **No code modification.** Read-only sandbox — use `--sandbox read-only` (or the fallback
   `-c 'sandbox_permissions=["disk-full-read-access"]'`). The plan goes to the final message only.
 - **Model / effort.** Planning is a full-effort task — the caller runs `--profile medium`. See
-  `$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md` for the invocation pattern.
+  the maintenance reference `docs/reference/codex-conventions.md` for the invocation pattern.
 
 ## See also
 
 - Claude twin (canon): `skills/claude/plan-writer/SKILL.md`.
-- Plan-rounds references: `$DOCS_NOTES_REPO/tech/tools/claude-code/plan-rounds/`.
-- Codex invocation conventions: `$DOCS_NOTES_REPO/tech/tools/claude-code/codex-conventions.md`.
+- Plan-rounds references: `$(cog skill-refs path plan-rounds/<file>.md)`.
+- Codex invocation conventions: maintenance reference `docs/reference/codex-conventions.md`.
