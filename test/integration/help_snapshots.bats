@@ -38,6 +38,8 @@ Commands:
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
+  cog-skill-creator-scaffold Compute skill scaffold paths.
+  cog-skill-creator-validate Validate cog-skill-creator inputs.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
@@ -87,8 +89,6 @@ Commands:
   runner-queue-parse-commit Parse a runner-queue commit result.
   runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
   runner-queue-setup Parse runner-queue arguments and create run state.
-  skill-builder-scaffold Compute skill scaffold paths.
-  skill-builder-validate Validate skill-builder inputs.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
@@ -119,6 +119,8 @@ Commands:
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
+  cog-skill-creator-scaffold Compute skill scaffold paths.
+  cog-skill-creator-validate Validate cog-skill-creator inputs.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
@@ -168,8 +170,6 @@ Commands:
   runner-queue-parse-commit Parse a runner-queue commit result.
   runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
   runner-queue-setup Parse runner-queue arguments and create run state.
-  skill-builder-scaffold Compute skill scaffold paths.
-  skill-builder-validate Validate skill-builder inputs.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.

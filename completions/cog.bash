@@ -24,6 +24,8 @@ _cog() {
     classify-project
     claudemd-audit
     codex-runner
+    cog-skill-creator-scaffold
+    cog-skill-creator-validate
     digest-check
     digest-stamp
     doctor
@@ -73,8 +75,6 @@ _cog() {
     runner-queue-parse-commit
     runner-queue-resolve-plan
     runner-queue-setup
-    skill-builder-scaffold
-    skill-builder-validate
     skill-lint
     suckless-apply
     suckless-conflicts

@@ -10,8 +10,8 @@ setup() {
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$RUN_DIR" "${BATS_TEST_TMPDIR}/repo/skills/claude" "${BATS_TEST_TMPDIR}/repo/skills/codex"
 }
 
-@test "cog skill-builder-scaffold emits codex project paths" {
-  run cog skill-builder-scaffold --name demo-skill --runtime codex --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --companion references/guide.md --json
+@test "cog cog-skill-creator-scaffold emits codex project paths" {
+  run cog cog-skill-creator-scaffold --name demo-skill --runtime codex --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --companion references/guide.md --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.runtime == "codex" and .dest_dir == "'"${BATS_TEST_TMPDIR}"'/repo/skills/codex/demo-skill" and (.files | length == 2)' >/dev/null
@@ -20,15 +20,15 @@ setup() {
   [[ $output != *"/workspaces/.dotfiles"* ]]
 }
 
-@test "cog skill-builder-scaffold rejects unsafe companions" {
-  run --separate-stderr cog skill-builder-scaffold --name demo-skill --companion ../bad --json
+@test "cog cog-skill-creator-scaffold rejects unsafe companions" {
+  run --separate-stderr cog cog-skill-creator-scaffold --name demo-skill --companion ../bad --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .reason == "unsafe companion path"' >/dev/null
 }
 
-@test "cog skill-builder-scaffold --help dispatches" {
-  run cog skill-builder-scaffold --help
+@test "cog cog-skill-creator-scaffold --help dispatches" {
+  run cog cog-skill-creator-scaffold --help
 
   assert_success
   [[ $output == *"Compute skill scaffold paths"* ]]

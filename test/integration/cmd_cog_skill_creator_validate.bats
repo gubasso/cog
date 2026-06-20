@@ -10,8 +10,8 @@ setup() {
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$RUN_DIR" "${BATS_TEST_TMPDIR}/repo/skills/claude/demo-skill"
 }
 
-@test "cog skill-builder-validate reports cog skill collisions only" {
-  run --separate-stderr cog skill-builder-validate --name demo-skill --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
+@test "cog cog-skill-creator-validate reports cog skill collisions only" {
+  run --separate-stderr cog cog-skill-creator-validate --name demo-skill --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and (.collisions[0] | contains("/skills/claude/demo-skill"))' >/dev/null
@@ -19,27 +19,27 @@ setup() {
   [[ $output != *".claude/skills"* ]]
 }
 
-@test "cog skill-builder-validate detects personal codex skill collisions" {
+@test "cog cog-skill-creator-validate detects personal codex skill collisions" {
   export COG_SKILLS_HOME="${BATS_TEST_TMPDIR}/skillshome"
   mkdir -p "${COG_SKILLS_HOME}/codex/demo-skill"
 
-  run --separate-stderr cog skill-builder-validate --name demo-skill --scope personal --run-dir "$RUN_DIR" --json
+  run --separate-stderr cog cog-skill-creator-validate --name demo-skill --scope personal --run-dir "$RUN_DIR" --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and (.collisions[] | contains("/codex/demo-skill"))' >/dev/null
 }
 
-@test "cog skill-builder-validate rejects reserved names in build mode" {
-  run --separate-stderr cog skill-builder-validate --name claude --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
+@test "cog cog-skill-creator-validate rejects reserved names in build mode" {
+  run --separate-stderr cog cog-skill-creator-validate --name claude --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .valid_name == false' >/dev/null
 
-  run --separate-stderr cog skill-builder-validate --name anthropic --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
+  run --separate-stderr cog cog-skill-creator-validate --name anthropic --scope project --project-root "${BATS_TEST_TMPDIR}/repo" --json
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .valid_name == false' >/dev/null
 }
 
-@test "cog skill-builder-validate validates draft files" {
+@test "cog cog-skill-creator-validate validates draft files" {
   cat >"${BATS_TEST_TMPDIR}/SKILL.md" <<'EOF'
 ---
 name: demo-skill
@@ -53,15 +53,15 @@ ok
 ```
 EOF
 
-  run cog skill-builder-validate --draft "${BATS_TEST_TMPDIR}/SKILL.md" --json
+  run cog cog-skill-creator-validate --draft "${BATS_TEST_TMPDIR}/SKILL.md" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .mode == "draft"' >/dev/null
 }
 
-@test "cog skill-builder-validate --help dispatches" {
-  run cog skill-builder-validate --help
+@test "cog cog-skill-creator-validate --help dispatches" {
+  run cog cog-skill-creator-validate --help
 
   assert_success
-  [[ $output == *"Validate skill-builder inputs"* ]]
+  [[ $output == *"Validate cog-skill-creator inputs"* ]]
 }

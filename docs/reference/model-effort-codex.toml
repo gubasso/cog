@@ -33,7 +33,7 @@ use_when = """Executes a well-structured, detailed procedure where the hard deci
 made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
 signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "executes an existing detailed plan"]
 anti_signals = ["novel design", "open-ended exploration"]
-examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "skill-builder"]
+examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """Use gpt-5.5 at medium for procedural work. High is escalation-only, and gpt-5.4 at
 high is an anti-pattern because high effort can erase its per-token saving; reach for gpt-5.5 first."""

@@ -69,8 +69,8 @@ forbidden_scan_codex() {
   done
 }
 
-@test "project-local skill-builder has valid frontmatter" {
-  assert_markdown_frontmatter "$repo_root/.claude/skills/skill-builder/SKILL.md"
+@test "project-local cog-skill-creator has valid frontmatter" {
+  assert_markdown_frontmatter "$repo_root/.claude/skills/cog-skill-creator/SKILL.md"
 }
 
 @test "all Codex skills have valid frontmatter" {

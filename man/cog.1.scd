@@ -51,6 +51,12 @@ The command list and short descriptions are sourced from command modules under
 *codex-runner*
 	Run codex-session orchestration helpers.
 
+*cog-skill-creator-scaffold*
+	Compute skill scaffold paths.
+
+*cog-skill-creator-validate*
+	Validate cog-skill-creator inputs.
+
 *digest-check*
 	Check digest frontmatter for source drift.
 
@@ -202,12 +208,6 @@ The command list and short descriptions are sourced from command modules under
 
 *runner-queue-setup*
 	Parse runner-queue arguments and create run state.
-
-*skill-builder-scaffold*
-	Compute skill scaffold paths.
-
-*skill-builder-validate*
-	Validate skill-builder inputs.
 
 *skill-lint*
 	Lint SKILL.md files against the skill/script boundary.

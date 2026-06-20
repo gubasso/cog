@@ -37,7 +37,7 @@ both systems.
 The repo-local authoring skill lives under:
 
 ```text
-.claude/skills/skill-builder/SKILL.md
+.claude/skills/cog-skill-creator/SKILL.md
 ```
 
 This skill is for maintaining this repository's shipped skill trees. It is not copied by

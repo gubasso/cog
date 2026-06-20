@@ -15,7 +15,7 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing design, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "plan-reviewer", "prex", "review-loop", "review-code-deep"]
+examples = ["ask", "plan-writer", "plan-writer-multi", "plan-reviewer", "prex", "review-loop", "review-code-deep", "cog-skill-creator"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Exploration and planning should ride the session default so genuinely open work keeps
 the strongest default model and effort budget. Pinning frontmatter would cap that work."""
@@ -30,7 +30,7 @@ use_when = """Executes a well-structured, detailed procedure where the hard deci
 made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
 signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "executes an existing detailed plan"]
 anti_signals = ["novel design", "open-ended exploration"]
-examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "skill-builder"]
+examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Opus at low effort is the canonical never-sonnet replacement tier: use the stronger
 model at reduced effort instead of selecting Sonnet."""
