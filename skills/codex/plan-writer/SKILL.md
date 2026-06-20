@@ -4,7 +4,7 @@ description: >
   Codex twin of the Claude `plan-writer` skill. Single-pass generator that turns
   a self-contained context brief (or orientation) plus read-only repo research
   into directory-plan drafts for the directory-only, two-layer model, using the
-  complexity heuristic and the prex Executor Factor as sizing signals. Read-only
+  complexity heuristic and the executor-prex Executor Factor as sizing signals. Read-only
   and non-interactive; emits the plan as its final message. Primarily driven by
   the `plan-writer-multi` coordinator as the parallel second engine. Triggers:
   "plan-writer", "write a plan", "draft an implementation plan".

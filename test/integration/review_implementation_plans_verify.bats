@@ -12,7 +12,7 @@ plans:
   - item: alpha
     status: todo
     depends_on: []
-    prompt: /prex -ar @.implementation-plans/plans/alpha/
+    prompt: /executor-prex -ar @.implementation-plans/plans/alpha/
     notes: note
 EOF
   cat >"$root/.implementation-plans/plans/alpha/queue-rounds.yaml" <<'EOF'
@@ -20,24 +20,24 @@ rounds:
   - item: extra
     status: done
     depends_on: []
-    prompt: /prex -ar extra.md
+    prompt: /executor-prex -ar extra.md
     notes: note
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
   - item: active
     status: doing
     depends_on:
       - first
-    prompt: /prex -ar active.md
+    prompt: /executor-prex -ar active.md
     notes: note
   - item: second
     status: todo
     depends_on:
       - first
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: note
 EOF
   printf '%s\n' '# Alpha' >"$root/.implementation-plans/plans/alpha/README.md"
@@ -97,7 +97,7 @@ verify_fixture() {
   local after="${BATS_TEST_TMPDIR}/after.json"
   write_verify_fixture "$root"
   scan_fixture "$root" "$before"
-  cog queue-append --schema rounds --queue "$root/.implementation-plans/plans/alpha/queue-rounds.yaml" --item third --status todo --prompt "/prex -ar third.md" --json >/dev/null
+  cog queue-append --schema rounds --queue "$root/.implementation-plans/plans/alpha/queue-rounds.yaml" --item third --status todo --prompt "/executor-prex -ar third.md" --json >/dev/null
   scan_fixture "$root" "$after"
 
   run verify_fixture "$before" "$after"
@@ -116,7 +116,7 @@ verify_fixture() {
     queue="$root/.implementation-plans/plans/alpha/queue-rounds.yaml"
     scan_fixture "$root" "$before"
     case "$field" in
-      prompt) yq e -i '(.rounds[] | select(.item == "first") | .prompt) = "/prex -ar changed.md"' "$queue" ;;
+      prompt) yq e -i '(.rounds[] | select(.item == "first") | .prompt) = "/executor-prex -ar changed.md"' "$queue" ;;
       depends_on) yq e -i '(.rounds[] | select(.item == "first") | .depends_on) = ["extra"]' "$queue" ;;
       notes) yq e -i '(.rounds[] | select(.item == "first") | .notes) = "changed"' "$queue" ;;
       status) yq e -i '(.rounds[] | select(.item == "first") | .status) = "todo"' "$queue" ;;
@@ -140,7 +140,7 @@ verify_fixture() {
     queue="$root/.implementation-plans/plans/alpha/queue-rounds.yaml"
     scan_fixture "$root" "$before"
     case "$field" in
-      prompt) yq e -i '(.rounds[] | select(.item == "active") | .prompt) = "/prex -ar changed.md"' "$queue" ;;
+      prompt) yq e -i '(.rounds[] | select(.item == "active") | .prompt) = "/executor-prex -ar changed.md"' "$queue" ;;
       depends_on) yq e -i '(.rounds[] | select(.item == "active") | .depends_on) = []' "$queue" ;;
       notes) yq e -i '(.rounds[] | select(.item == "active") | .notes) = "changed"' "$queue" ;;
       status) yq e -i '(.rounds[] | select(.item == "active") | .status) = "todo"' "$queue" ;;
@@ -218,7 +218,7 @@ verify_fixture() {
   local queue
   write_verify_fixture "$root"
   queue="$root/.implementation-plans/plans/alpha/queue-rounds.yaml"
-  cog queue-append --schema rounds --queue "$queue" --item third --status todo --prompt "/prex -ar third.md" --depends-on second --json >/dev/null
+  cog queue-append --schema rounds --queue "$queue" --item third --status todo --prompt "/executor-prex -ar third.md" --depends-on second --json >/dev/null
   scan_fixture "$root" "$before"
   yq e -i '.rounds = [.rounds[0], .rounds[1], .rounds[2], .rounds[4], .rounds[3]]' "$queue"
   scan_fixture "$root" "$after"

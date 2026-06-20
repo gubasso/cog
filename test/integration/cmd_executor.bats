@@ -93,7 +93,7 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '[.prompts[].slash] as $s | ($s | index("/executor-prex")) and ($s | index("/executor-claude")) and ($s | index("/executor-codex-session"))' >/dev/null
   printf '%s\n' "$output" | jq -e \
-    '.match.namespace == "executor" and .match.target_argument == "-ar" and .match.aliases["/prex"] == "executor-prex"' >/dev/null
+    '.match.namespace == "executor" and .match.target_argument == "-ar" and (.match.aliases | length) == 0' >/dev/null
 }
 
 @test "cog executor summary writes file-first and emits pure JSON in --json mode" {

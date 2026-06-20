@@ -107,7 +107,7 @@ setup() {
   printf '%s\n' "$output" | jq -e '.run_dir | contains("/executor-prex-")' >/dev/null
   local lock_file
   lock_file="$(printf '%s\n' "$output" | jq -r '.lock_file')"
-  [[ $lock_file == "${XDG_RUNTIME_DIR}/prex-active-"* ]]
+  [[ $lock_file == "${XDG_RUNTIME_DIR}/executor-prex-active-"* ]]
   [ -f "$lock_file" ]
 }
 

@@ -22,7 +22,7 @@ entry_json() {
   jq -cn \
     --arg item "$1" \
     --arg status "${2:-todo}" \
-    --arg prompt "/prex -ar plan.md" \
+    --arg prompt "/executor-prex -ar plan.md" \
     --arg notes "note" \
     '{item: $item, status: $status, depends_on: [], prompt: $prompt, notes: $notes}'
 }
@@ -91,12 +91,12 @@ plans:
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar one.md
+    prompt: /executor-prex -ar one.md
     notes: note
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar two.md
+    prompt: /executor-prex -ar two.md
     notes: note
 EOF
   run --separate-stderr cog::fn::queue_validate_file "$dupes" plans
@@ -142,12 +142,12 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
   - item: second
     status: todo
     depends_on: [first]
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: note
 EOF
   run cog::fn::queue_select_next_round "$queue"
@@ -159,7 +159,7 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
 EOF
   run cog::fn::queue_select_next_round "$queue"
@@ -171,7 +171,7 @@ rounds:
   - item: blocked
     status: todo
     depends_on: [missing]
-    prompt: /prex -ar blocked.md
+    prompt: /executor-prex -ar blocked.md
     notes: note
 EOF
   run cog::fn::queue_select_next_round "$queue"
@@ -186,7 +186,7 @@ rounds:
   - item: active
     status: doing
     depends_on: []
-    prompt: /prex -ar active.md
+    prompt: /executor-prex -ar active.md
     notes: note
 EOF
   run --separate-stderr cog::fn::queue_validate_rounds_selectable "$queue"

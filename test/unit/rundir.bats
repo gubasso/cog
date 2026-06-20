@@ -21,10 +21,10 @@ setup() {
 }
 
 @test "rundir_create creates prefixed run directory" {
-  run cog::fn::rundir_create prex
+  run cog::fn::rundir_create executor-prex
 
   assert_success
-  [[ $output == "${XDG_STATE_HOME}/cog/runs/prex-"* ]]
+  [[ $output == "${XDG_STATE_HOME}/cog/runs/executor-prex-"* ]]
   [ -d "$output" ]
 }
 
@@ -36,24 +36,24 @@ setup() {
   [ ! -e "${BATS_TEST_TMPDIR}/run/events.jsonl" ]
 }
 
-@test "rundir_lock_name emits the prex lock prefix" {
+@test "rundir_lock_name emits the executor-prex lock prefix" {
   run cog::fn::rundir_lock_name
 
   assert_success
-  assert_output "prex-active"
+  assert_output "executor-prex-active"
 }
 
 @test "rundir_lock_path defaults to the lock-name source of truth" {
-  local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
+  local run_dir="${BATS_TEST_TMPDIR}/run-executor-prex-123"
 
   run cog::fn::rundir_lock_path "$run_dir"
 
   assert_success
-  assert_output "${XDG_RUNTIME_DIR}/prex-active-123.lock"
+  assert_output "${XDG_RUNTIME_DIR}/executor-prex-active-123.lock"
 }
 
 @test "rundir_lock_path accepts an explicit lock name override" {
-  local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
+  local run_dir="${BATS_TEST_TMPDIR}/run-executor-prex-123"
 
   run cog::fn::rundir_lock_path "$run_dir" alternate
 
@@ -62,7 +62,7 @@ setup() {
 }
 
 @test "rundir lock acquire is atomic and release removes lock" {
-  local run_dir="${BATS_TEST_TMPDIR}/run-prex-123"
+  local run_dir="${BATS_TEST_TMPDIR}/run-executor-prex-123"
   mkdir -p "$run_dir"
 
   run cog::fn::rundir_lock_acquire "$run_dir" "$$"

@@ -28,7 +28,7 @@ rounds:
   - item: blocked
     status: todo
     depends_on: [missing]
-    prompt: /prex -ar blocked.md
+    prompt: /executor-prex -ar blocked.md
     notes: note
 EOF
 

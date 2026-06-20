@@ -9,7 +9,7 @@ __cog_plan_writer_multi_setup_usage() {
 
 __cog_plan_writer_multi_setup_ef() {
   case "$1" in
-    prex) printf '%s\n' "1.5" ;;
+    executor-prex) printf '%s\n' "1.5" ;;
     single-pass) printf '%s\n' "1.0" ;;
     limited) printf '%s\n' "0.8" ;;
     *) return 1 ;;
@@ -19,7 +19,7 @@ __cog_plan_writer_multi_setup_ef() {
 __cog_plan_writer_multi_setup_parse() {
   local raw="$1"
   local out_executor="$2" out_solo="$3" out_orientation="$4"
-  local parsed_executor=prex parsed_solo=false
+  local parsed_executor=executor-prex parsed_solo=false
   set -f
   # shellcheck disable=SC2086
   set -- $raw
@@ -54,9 +54,8 @@ __cog_plan_writer_multi_setup_parse() {
         ;;
     esac
   done
-  [[ $parsed_executor != executor-prex ]] || parsed_executor=prex
   __cog_plan_writer_multi_setup_ef "$parsed_executor" >/dev/null || cog::fn::error_raise_with_exit 2 "InvalidInput" \
-    "invalid executor" "executor: ${parsed_executor}" "expected prex, executor-prex, single-pass, or limited" ""
+    "invalid executor" "executor: ${parsed_executor}" "expected executor-prex, single-pass, or limited" ""
   [[ -n ${*:-} ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
     "orientation is required" "usage: cog plan-writer-multi-setup [--json] [arguments-string]" "" ""
   printf -v "$out_executor" '%s' "$parsed_executor"

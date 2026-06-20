@@ -7,14 +7,13 @@ cog hook-guard — deterministic Stop hook decisions for active workflows
 
 USAGE
   cog hook-guard executor-prex-stop --owner-pid <pid> # Stop
-  cog hook-guard prex-stop --owner-pid <pid> # Stop
   cog hook-guard --help
 
 Reads the hook JSON payload on stdin and uses the hook deny contract:
 exit 2 + a human reason on stderr to BLOCK; exit 0 to allow.
 
-executor-prex-stop, prex-stop
-  Blocks the owning session from stopping while an executor-prex/prex run's
+executor-prex-stop
+  Blocks the owning session from stopping while an executor-prex run's
   required artifacts are missing. Auto-cleans corrupt/orphaned locks. Resolves
   the lock directory and name from rundir_lock_dir/rundir_lock_name (the single
   source of truth), so it can never diverge from where rundir_lock_acquire
@@ -27,7 +26,7 @@ EXIT CODES
 EOF
 }
 
-__cog_hook_guard_prex_stop() {
+__cog_hook_guard_executor_prex_stop() {
   local owner_pid=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -89,7 +88,7 @@ __cog_hook_guard_prex_stop() {
   if ((${#all_missing[@]} > 0)); then
     local joined
     joined="$(IFS='; ' && printf '%s' "${all_missing[*]}")"
-    printf '{"decision":"block","reason":"prex workflow active in this session — %s. DO NOT delete the lock file; it belongs to this session'\''s running workflow."}' \
+    printf '{"decision":"block","reason":"executor-prex workflow active in this session — %s. DO NOT delete the lock file; it belongs to this session'\''s running workflow."}' \
       "$joined" >&2
     exit 2
   fi
@@ -99,9 +98,9 @@ __cog_hook_guard_prex_stop() {
 
 cog::cmd::hook_guard() {
   case "${1:-}" in
-    executor-prex-stop | prex-stop)
+    executor-prex-stop)
       shift
-      __cog_hook_guard_prex_stop "$@"
+      __cog_hook_guard_executor_prex_stop "$@"
       ;;
     -h | --help)
       __cog_hook_guard_usage

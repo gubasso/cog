@@ -17,7 +17,7 @@ allowed-tools: Bash, Read, Write, Grep, Glob, WebSearch, WebFetch
 Multi-language, multi-pass code review. Loads only the language guides and cross-cutting themes the
 current diff actually touches. Deterministic Phase-0 mechanics are delegated to `cog`; the
 review judgment remains here. `review-code-deep` is the canonical Stage-4 implementation-review
-surface for orchestrators such as prex; when a reviewed plan is supplied, compare the live
+surface for orchestrators such as executor-prex; when a reviewed plan is supplied, compare the live
 implementation diff against that plan as well as generic code-quality criteria.
 
 ## Inputs

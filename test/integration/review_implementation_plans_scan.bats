@@ -12,7 +12,7 @@ plans:
   - item: alpha
     status: todo
     depends_on: []
-    prompt: /prex -ar @.implementation-plans/plans/alpha/
+    prompt: /executor-prex -ar @.implementation-plans/plans/alpha/
     notes: note
 EOF
   cat >"$root/.implementation-plans/plans/alpha/queue-rounds.yaml" <<'EOF'
@@ -22,24 +22,24 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
   - item: second
     status: doing
     depends_on:
       - first
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: note
   - item: third
     status: todo
     depends_on:
       - first
-    prompt: /prex -ar third.md
+    prompt: /executor-prex -ar third.md
     notes: note
   - item: fourth
     status: backlog
     depends_on: []
-    prompt: /prex -ar fourth.md
+    prompt: /executor-prex -ar fourth.md
     notes: note
 EOF
   printf '%s\n' '# Alpha' >"$root/.implementation-plans/plans/alpha/README.md"

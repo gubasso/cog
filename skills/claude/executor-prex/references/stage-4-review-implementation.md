@@ -12,7 +12,7 @@ Do NOT use the `Skill` tool for this delegation. See the stage 2 note and
 
 Write `$RUN_DIR/stage4-context.md` containing, in this order:
 
-- A one-line orchestrator note: `prex stage 4 — produce JSON findings for orchestrator triage.`
+- A one-line orchestrator note: `executor-prex stage 4 — produce JSON findings for orchestrator triage.`
 - The original task description (verbatim contents of `$RUN_DIR/request.md`).
 - The approved reviewed plan (verbatim contents of `$RUN_DIR/stage2-reviewed-plan.md`).
 
@@ -74,9 +74,9 @@ the child response text.
 
 ### Step 5: Triage findings (orchestrator only)
 
-Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the prex status vocabulary:
+Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the executor-prex status vocabulary:
 
-| `review-code-deep` finding                                | prex status                             |
+| `review-code-deep` finding                                | executor-prex status                    |
 | --------------------------------------------------------- | --------------------------------------- |
 | `severity: blocking` or `important`, `confidence: high`   | `FIXED` if the fix is minor and obvious |
 | `severity: blocking` or `important`, complex / unclear    | `NEEDS_DISCUSSION`                      |
@@ -95,7 +95,7 @@ when the fix is minor and obvious; otherwise they are `NEEDS_DISCUSSION`.
 
 ### Step 6: Write `stage4-review.md`
 
-Record the review summary and triage decisions in `$RUN_DIR/stage4-review.md` using the legacy prex
+Record the review summary and triage decisions in `$RUN_DIR/stage4-review.md` using the executor-prex
 status vocabulary. Downstream consumers (the `cog hook-guard executor-prex-stop` Stop-gate) depend
 on this
 artifact name and format — do not rename it. Include:

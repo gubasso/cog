@@ -44,7 +44,7 @@ rm -f "$RUN_DIR/stage2-proof.diff" "$RUN_DIR/stage2-reviewed-plan.md"
   2. request-path: <RUN_DIR>/request.md
   3. output-path: <RUN_DIR>/stage2-reviewed-plan.md
 
-  The request path is the Bootstrap/Tsk-resolved task file created before
+  The request path is the Bootstrap task file created before
   Stage 1. Follow review-plan-claude's Orchestrator Invocation Contract:
   review the plan, let review-plan-claude call cog plan-review orchestrator
   for scaffold/write/validate mechanics, and write the final reviewed plan

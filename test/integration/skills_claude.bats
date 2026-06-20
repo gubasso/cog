@@ -51,7 +51,6 @@ forbidden_scan_codex() {
     plan-writer
     plan-writer-multi
     pre-commit
-    prex
     refactor-migration-plan
     review-code-deep
     review-findings
@@ -59,8 +58,6 @@ forbidden_scan_codex() {
     runner-queue
     suckless-patcher
     test-review
-    tsk-impl
-    tsk-new
   )
   local skill
 

@@ -33,8 +33,6 @@ require_tool() {
   assert_success
   run git -C "$tmpdir" -c user.name="Cog Live Test" -c user.email="cog-live@example.invalid" commit -m "initial"
   assert_success
-  run bash -c 'cd "$1" && "$2/bin/cog" tsk-snapshot --json' _ "$tmpdir" "${BATS_TEST_DIRNAME}/../.."
-  assert_success
 }
 
 @test "gh boundary is available" {

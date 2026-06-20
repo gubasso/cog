@@ -111,11 +111,6 @@ Manage shared executor run contracts and stage artifacts.\&
 Parse executor-prex arguments into run state.\&
 .PP
 .RE
-\fBexecutor-prex-tsk-resolve\fR
-.RS 4
-Resolve a tsk issue for an executor-prex run.\&
-.PP
-.RE
 \fBgc-classify-failure\fR
 .RS 4
 Classify commit or push failure logs.\&
@@ -229,16 +224,6 @@ Run centralized orchestrator preflight checks.\&
 the Claude Code no-backgrounding session env.\& Strict mode requires
 \fBCLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1\fR; Bash timeout env vars are
 recorded as diagnostics only.\&
-.PP
-.RE
-\fBprex-parse-args\fR
-.RS 4
-Parse prex arguments into run state (compatibility alias for executor-prex-parse-args).\&
-.PP
-.RE
-\fBprex-tsk-resolve\fR
-.RS 4
-Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve).\&
 .PP
 .RE
 \fBprint-config\fR
@@ -414,21 +399,6 @@ Update test-review MANIFEST.\&yaml.\&
 \fBtracking-scan\fR
 .RS 4
 Report tracked artifacts whose revalidation cadence is overdue.\&
-.PP
-.RE
-\fBtsk-fetch-issue\fR
-.RS 4
-Fetch or create a tsk issue.\&
-.PP
-.RE
-\fBtsk-snapshot\fR
-.RS 4
-Capture read-only git context for tsk workflows.\&
-.PP
-.RE
-\fBtsk-store-init\fR
-.RS 4
-Resolve and initialize the shared tsk store.\&
 .PP
 .RE
 .SH FILES

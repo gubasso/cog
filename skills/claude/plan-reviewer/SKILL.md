@@ -166,7 +166,7 @@ Your output plan must be:
 
 ## Orchestrator Invocation Contract
 
-When invoked from a parent orchestrator (e.g. `prex` stage 2), `$ARGUMENTS` will be three absolute
+When invoked from a parent orchestrator (e.g. `executor-prex` stage 2), `$ARGUMENTS` will be three absolute
 paths separated by spaces:
 
 1. `<plan-path>` — the external plan to review (e.g. `stage1-plan.txt`).

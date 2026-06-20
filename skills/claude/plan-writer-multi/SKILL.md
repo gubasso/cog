@@ -7,9 +7,9 @@ description: >
   .implementation-plans/. Use when the user says "plan-writer-multi", "dual-engine
   plan", "plan with codex", "two plans then synthesize", or wants a second
   independent engine cross-checking the plan. Optional flags:
-  --executor <prex|single-pass|limited> (shared executor sizing, default prex) and
+  --executor <executor-prex|single-pass|limited> (shared executor sizing, default executor-prex) and
   --solo (skip Codex; Claude-only).
-argument-hint: "[--executor <prex|single-pass|limited>] [--solo] <orientation/focus/goal>"
+argument-hint: "[--executor <executor-prex|single-pass|limited>] [--solo] <orientation/focus/goal>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 ---
@@ -50,7 +50,7 @@ inline: review + compare both → reconcile Layer 1 directory split and Layer 2 
   orchestrator. See `$(cog skill-refs path skills-and-orchestration.md)`
   (§Dispatch vs Delegation).
 - Orchestration plumbing (proof-of-delegation, sandbox detection, parallel dispatch, graceful
-  degradation) mirrors `ask` (Step 2b) and `prex`; for this extraction round it stays prose and is
+  degradation) mirrors `ask` (Step 2b) and `executor-prex`; for this extraction round it stays prose and is
   explicitly deferred to Round 12 `lib/codex.sh`. The contracts live in
   `$(cog skill-refs path orchestration/orchestration-patterns.md)`.
 - Prepend the read-only orientation preamble from `cog codex-runner orientation read-only` to every
@@ -88,7 +88,7 @@ Parse flags deterministically, then create the run directory. Substitute the lit
 cog plan-writer-multi-setup "$ARGUMENTS"
 ```
 
-The command parses the flags (`--executor <prex|single-pass|limited>`, `--solo`), validates them,
+The command parses the flags (`--executor <executor-prex|single-pass|limited>`, `--solo`), validates them,
 maps the executor to its effort factor, creates the run dir, resolves the repo root, and writes the
 orientation verbatim to `$RUN_DIR/orientation.txt`. It emits `RUN_DIR=`, `EXECUTOR=`, `EF=`, `SOLO=`,
 `REPO_ROOT=`, and `ORIENTATION_FILE=` lines, and exits 2 on a bad/unknown flag, an invalid executor,
@@ -263,7 +263,7 @@ distilled from `review-plan-claude` and
 
 Round count is scope-driven and uncapped. Compare drafts on Layer 1 domain/scope decomposition and
 Layer 2 per-directory round decomposition. Do not reject or down-weight a draft merely because it
-proposes XL or many rounds under `prex`.
+proposes XL or many rounds under `executor-prex`.
 
 Steelman **both** drafts; adopt the stronger elements of each; on any disagreement — especially the
 complexity grade, directory split, or round split — decide using the conversation context you alone

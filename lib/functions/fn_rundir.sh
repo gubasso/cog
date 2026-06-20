@@ -49,7 +49,7 @@ cog::fn::rundir_lock_dir() {
 }
 
 cog::fn::rundir_lock_name() {
-  printf '%s\n' "prex-active"
+  printf '%s\n' "executor-prex-active"
 }
 
 cog::fn::rundir_lock_path() {

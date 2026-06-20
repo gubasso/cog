@@ -11,12 +11,12 @@ plans:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar @plans/first/
+    prompt: /executor-prex -ar @plans/first/
     notes: note
   - item: second
     status: todo
     depends_on: [first]
-    prompt: /prex -ar @plans/second/
+    prompt: /executor-prex -ar @plans/second/
     notes: note
 EOF
 }
@@ -28,12 +28,12 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
   - item: second
     status: todo
     depends_on: [first]
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: note
 EOF
 }
@@ -48,7 +48,7 @@ EOF
   printf '%s\n' "$output" | jq -e '.ok == true and .schema == "plans" and .item == "second" and .status_before == "todo" and .status_after == "done" and .changed == true' >/dev/null
   yq e -e '.plans | length == 2' "$queue" >/dev/null
   yq e -e '.plans[0].status == "done" and .plans[1].status == "done"' "$queue" >/dev/null
-  yq e -e '.plans[0].prompt == "/prex -ar @plans/first/" and .plans[1].prompt == "/prex -ar @plans/second/"' "$queue" >/dev/null
+  yq e -e '.plans[0].prompt == "/executor-prex -ar @plans/first/" and .plans[1].prompt == "/executor-prex -ar @plans/second/"' "$queue" >/dev/null
 }
 
 @test "cog queue-status-set flips one rounds item" {
@@ -90,12 +90,12 @@ plans:
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar @plans/same/
+    prompt: /executor-prex -ar @plans/same/
     notes: note
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar @plans/same-again/
+    prompt: /executor-prex -ar @plans/same-again/
     notes: note
 EOF
   run --separate-stderr cog queue-status-set --queue "$queue" --schema plans --item same --from todo --to "done" --json

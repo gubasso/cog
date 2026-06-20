@@ -9,27 +9,23 @@ setup() {
 }
 
 guard_stop() {
-  printf '{}' | cog hook-guard prex-stop --owner-pid "$1"
-}
-
-guard_executor_stop() {
   printf '{}' | cog hook-guard executor-prex-stop --owner-pid "$1"
 }
 
 acquire() {
   local out
-  out="$(cog rundir prex --lock --owner-pid "$1")"
+  out="$(cog rundir executor-prex --lock --owner-pid "$1")"
   RUN_DIR="$(sed -n 's/^RUN_DIR=//p' <<<"$out")"
   LOCK_FILE="$(sed -n 's/^LOCK_FILE=//p' <<<"$out")"
 }
 
-@test "prex-stop allows when there are no locks" {
+@test "executor-prex-stop allows when there are no locks" {
   run guard_stop 999999
 
   [ "$status" -eq 0 ]
 }
 
-@test "prex-stop writes and looks for the lock in the same dir with XDG_RUNTIME_DIR unset" {
+@test "executor-prex-stop writes and looks for the lock in the same dir with XDG_RUNTIME_DIR unset" {
   local expected_dir
   acquire "$$"
   expected_dir="$(env -u XDG_RUNTIME_DIR XDG_STATE_HOME="$XDG_STATE_HOME" bash -c '
@@ -43,7 +39,7 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "prex-stop blocks the owning session while artifacts are incomplete" {
+@test "executor-prex-stop blocks the owning session while artifacts are incomplete" {
   acquire "$$"
 
   run --separate-stderr guard_stop "$$"
@@ -53,17 +49,7 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "executor-prex-stop blocks the owning session while artifacts are incomplete" {
-  acquire "$$"
-
-  run --separate-stderr guard_executor_stop "$$"
-
-  [ "$status" -eq 2 ]
-  [[ $stderr == *'"decision":"block"'* ]]
-  rm -rf "$RUN_DIR" "$LOCK_FILE"
-}
-
-@test "prex-stop allows once all required artifacts exist" {
+@test "executor-prex-stop allows once all required artifacts exist" {
   acquire "$$"
   printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
   printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
@@ -76,20 +62,7 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "executor-prex-stop allows once all required artifacts exist" {
-  acquire "$$"
-  printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
-  printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
-  printf '%s\n' x >"$RUN_DIR/stage3-impl-report.txt"
-  printf '%s\n' x >"$RUN_DIR/stage4-review.md"
-
-  run guard_executor_stop "$$"
-
-  [ "$status" -eq 0 ]
-  rm -rf "$RUN_DIR" "$LOCK_FILE"
-}
-
-@test "prex-stop blocks when stage3 artifact is missing" {
+@test "executor-prex-stop blocks when stage3 artifact is missing" {
   acquire "$$"
   printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
   printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
@@ -102,7 +75,7 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "prex-stop does not block a session that does not own the lock" {
+@test "executor-prex-stop does not block a session that does not own the lock" {
   acquire "$$"
 
   run guard_stop 424242
@@ -111,7 +84,7 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "prex-stop auto-cleans an orphaned lock (dead owner)" {
+@test "executor-prex-stop auto-cleans an orphaned lock (dead owner)" {
   acquire "$$"
   printf '%s\n%s\n' "$RUN_DIR" "999999" >"$LOCK_FILE"
 
@@ -122,7 +95,7 @@ acquire() {
   rm -rf "$RUN_DIR"
 }
 
-@test "prex-stop auto-cleans a lock whose run dir was deleted" {
+@test "executor-prex-stop auto-cleans a lock whose run dir was deleted" {
   acquire "$$"
   rm -rf "$RUN_DIR"
 

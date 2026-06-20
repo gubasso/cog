@@ -120,16 +120,16 @@ cog::fn::executor::queue_prompts_json() {
       namespace: "executor",
       target_argument: "-ar",
       name_pattern: "^[a-z0-9-]{1,64}$",
-      aliases: { "/prex": "executor-prex" }
+      aliases: {}
     },
     prompts: [
       {
         skill: "executor-prex",
         slash: "/executor-prex",
-        aliases: ["/prex"],
+        aliases: [],
         accepts: ["-ar <target>"],
         target_argument: "-ar",
-        stage_model: "prex"
+        stage_model: "executor-prex"
       },
       {
         skill: "executor-claude",

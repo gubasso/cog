@@ -10,15 +10,15 @@ description: >
   Use when the user says "plan-writer", "write a plan", "capture this as a plan",
   or wants to export conversation findings as actionable implementation documents.
 
-  Optional flag: --executor <prex|single-pass|limited> overrides the default
-  executor assumption used to size rounds. The default is `prex` — assumes the
+  Optional flag: --executor <executor-prex|single-pass|limited> overrides the default
+  executor assumption used to size rounds. The default is `executor-prex` — assumes the
   `/executor-prex` pipeline (Codex plan → Claude review → Codex implement → Claude
   review-loop with fixes), which absorbs in-round risk and produces fewer,
   larger, more cohesive rounds (Executor Factor 1.5). `single-pass` assumes one
   capable model with no review gate; raw complexity stands (EF 1.0). `limited`
   assumes a weaker model or tighter context and produces smaller, safer rounds
   (EF 0.8). Most users should not need to set this flag.
-argument-hint: "[--executor <prex|single-pass|limited>] <orientation/focus/goal>"
+argument-hint: "[--executor <executor-prex|single-pass|limited>] <orientation/focus/goal>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob
 ---
@@ -63,16 +63,16 @@ Parse `$ARGUMENTS` for the optional `--executor` flag before deriving the slug. 
 strictly:
 
 - If `$ARGUMENTS` begins with `--executor <value>` or `--executor=<value>`, consume the flag and the
-  value. The value must be exactly one of `prex`, `single-pass`, `limited` — case-sensitive, no
-  other forms accepted (e.g., `prex-foo` is invalid).
+  value. The value must be exactly one of `executor-prex`, `single-pass`, `limited` — case-sensitive, no
+  other forms accepted (e.g., `executor-prex-foo` is invalid).
 - If the flag is present but the value is missing (`--executor` alone, `--executor=` with empty RHS,
   or `--executor` followed by another flag), report
-  `error: --executor requires a value (one of prex|single-pass|limited)` and stop.
+  `error: --executor requires a value (one of executor-prex|single-pass|limited)` and stop.
 - If the value is not in the allowed set, report
-  `error: invalid --executor value '<value>' (must be prex|single-pass|limited)` and stop.
+  `error: invalid --executor value '<value>' (must be executor-prex|single-pass|limited)` and stop.
 - An argument that starts with `--executor` but is neither `--executor` exactly, `--executor=...`,
   nor followed by a value (e.g., `--executor-foo`) is invalid; report the error and stop.
-- If the flag is absent, default `EXECUTOR=prex`.
+- If the flag is absent, default `EXECUTOR=executor-prex`.
 - The text after the flag (with surrounding whitespace trimmed) is the **orientation**. If it is
   empty, report `error: orientation is required (got: empty after --executor parsing)` and stop.
 
@@ -80,7 +80,7 @@ Map `EXECUTOR` to the Executor Factor (EF) used in Phase 5:
 
 | EXECUTOR      | EF  |
 | ------------- | --- |
-| `prex`        | 1.5 |
+| `executor-prex`        | 1.5 |
 | `single-pass` | 1.0 |
 | `limited`     | 0.8 |
 
@@ -267,7 +267,7 @@ Report the classification to the user:
 
 - The grade with a one-sentence rationale.
 - Per-axis scores plus EF in brief form (e.g., "files:2 cross-cut:1 deps:2 novelty:3 risk:2 → raw 10
-  ÷ EF 1.5 (prex) → 6.7 → M").
+  ÷ EF 1.5 (executor-prex) → 6.7 → M").
 - The proposed Layer 1 directory split.
 - Each directory's Layer 2 round split with topic summaries. Get user confirmation before
   generating.
@@ -322,7 +322,7 @@ Include:
 - Strategy summary (how the work is split and why).
 - A rounds overview that mirrors the plan's `queue-rounds.yaml` (which is the source of truth for
   round order and status — do not duplicate status into prose that can drift).
-- Exact execution commands (`/executor-prex -ar` per-round or full-directory; `/prex` remains a
+- Exact execution commands (`/executor-prex -ar` per-round or full-directory; `/executor-prex` remains a
   supported compatibility form for existing queues).
 - **Execution discipline section** — a prominent, clearly labeled section (not just a bullet) that
   states the following rules unambiguously:

@@ -18,18 +18,18 @@ Evaluate the implementation surface along each axis (score 1–4):
 ## Executor profile
 
 The grade thresholds below are calibrated against an **Executor Factor (EF)** that reflects what the
-round-runner can absorb in one session. The default executor is `prex`, which runs four model passes
+round-runner can absorb in one session. The default executor is `executor-prex`, which runs four model passes
 per round (Codex plan → Claude review → Codex implement → Claude review-loop with fixes). Because
-the review-loop catches and fixes mid-round, a `prex` round can absorb meaningfully more raw
+the review-loop catches and fixes mid-round, a `executor-prex` round can absorb meaningfully more raw
 complexity than a single-shot model.
 
 | Executor profile | EF  | When it applies                                                           |
 | ---------------- | --- | ------------------------------------------------------------------------- |
-| `prex` (default) | 1.5 | Codex plan + Codex implement + Claude review-loop. Default for this repo. |
+| `executor-prex` (default) | 1.5 | Codex plan + Codex implement + Claude review-loop. Default for this repo. |
 | `single-pass`    | 1.0 | One capable model, no in-round review gate. Raw score stands.             |
 | `limited`        | 0.8 | Weaker model or constrained context. Bumps complexity up.                 |
 
-See `plan-lifecycle.md` § "Executor capacity model" for the prex pipeline details.
+See `plan-lifecycle.md` § "Executor capacity model" for the executor-prex pipeline details.
 
 ## Grade mapping
 
@@ -48,7 +48,7 @@ Round count is ultimately set by the Layer-2 round-splitting rules and is **unca
 a descriptive difficulty signal, not a round ceiling or a format selector.
 
 The adjusted-score thresholds are exactly the historical raw thresholds (5–7 / 8–11 / 12–15 / 16+),
-so a `single-pass` executor (EF=1.0) recovers the old behavior precisely. Under `prex` (EF=1.5) a
+so a `single-pass` executor (EF=1.0) recovers the old behavior precisely. Under `executor-prex` (EF=1.5) a
 borderline raw 8 → adjusted 5.33 → S (was M), borderline raw 12 → adjusted 8.0 → M (was L), and raw
 20 → adjusted 13.33 → L (was XL): borderline tasks demote one grade, which is the intended effect of
 the in-round review-loop. Under `limited` (EF=0.8) the same boundaries promote borderline tasks by
@@ -66,13 +66,13 @@ grade does not cap rounds):
 
 | Executor (EF)       | Max adjusted | Grades the arithmetic yields |
 | ------------------- | ------------ | ---------------------------- |
-| `prex` (1.5)        | 13.3         | S / M / L                    |
+| `executor-prex` (1.5)        | 13.3         | S / M / L                    |
 | `single-pass` (1.0) | 20.0         | S / M / L / XL               |
 | `limited` (0.8)     | 25.0         | S / M / L / XL               |
 
 The EF maps complexity to a descriptive per-dir grade. Round count is then chosen independently by
 the Layer-2 round-splitting rules and is uncapped. Under any executor, more rounds are valid when
-the work needs them; the hard ceiling is per-round `/prex` capacity (one Codex 600s session), not
+the work needs them; the hard ceiling is per-round `/executor-prex` capacity (one Codex 600s session), not
 total round count or grade.
 
 ## Two-layer decomposition
@@ -111,8 +111,8 @@ the affected round files as appropriate.
 ## Round-splitting rules
 
 Layer 2 uses these rules to split a plan dir into rounds. Round count is uncapped, but each round
-must be a good `/prex` chunk: one cohesive unit of work, usually under 300 lines of plan text,
-completable in one Codex 600s session, and never so small that a `/prex` session is wasteful. Apply
+must be a good `/executor-prex` chunk: one cohesive unit of work, usually under 300 lines of plan text,
+completable in one Codex 600s session, and never so small that a `/executor-prex` session is wasteful. Apply
 these rules in priority order:
 
 1. **Module/subsystem boundaries** — group changes by the module they touch. Changes to the auth
@@ -126,7 +126,7 @@ these rules in priority order:
 
 4. **Cohesion over file count** — each round should deliver one coherent user-visible feature or one
    architectural layer. File count is incidental; mechanically-coupled changes belong together
-   regardless of count. When the executor is `prex`, prefer fewer, larger, cohesive rounds — the
+   regardless of count. When the executor is `executor-prex`, prefer fewer, larger, cohesive rounds — the
    in-round review-loop already de-risks size. When the executor is `limited`, prefer smaller
    rounds. The hard ceiling in all cases is work completable in one Codex 600s session.
 
@@ -146,5 +146,5 @@ After classification, report to the user:
 
 - The grade (S/M/L/XL) with a one-sentence rationale.
 - The per-axis scores plus the executor factor (brief, not a full table — e.g., "files:2 cross-cut:1
-  deps:2 novelty:3 risk:2 → raw 10 ÷ EF 1.5 (prex) → 6.7 → M").
+  deps:2 novelty:3 risk:2 → raw 10 ÷ EF 1.5 (executor-prex) → 6.7 → M").
 - For L/XL: the proposed round split with topic summaries. Get user confirmation before generating.

@@ -2,7 +2,7 @@
 name: claude-delegate
 description: >
   Run ONE delegated Claude execution to completion in an isolated context and return a structured
-  result. The task is a slash-command/skill invocation (e.g. `/prex -ar <plan>.md`, `/gc -y -a`), a
+  result. The task is a slash-command/skill invocation (e.g. `/executor-prex -ar <plan>.md`, `/gc -y -a`), a
   skill name plus arguments, or a freeform instruction. Use this whenever an orchestrator needs a
   fresh, full Claude run — especially one that must itself spawn subagents — instead of shelling out
   to a headless `claude -p` process. Foreground, blocking, runs to the task's own completion.
@@ -16,7 +16,7 @@ completion in this isolated context, then return a structured result. Your final
 machine-read result the orchestrator parses — not a human-facing chat reply.
 
 `tools` is intentionally unset: you inherit the full tool set (including `Agent` and `Skill`), so a
-delegated workflow such as `/prex` can run _and_ spawn its own review subagents. Claude Code supports
+delegated workflow such as `/executor-prex` can run _and_ spawn its own review subagents. Claude Code supports
 nested subagents (≥ v2.1.172); foreground subagent calls block until they return, so the whole chain
 is synchronous. Subagent nesting still spends the fixed depth budget: five levels below the main
 conversation. CLAUDE.md and project rules are loaded in your context — honor them, including any
@@ -24,8 +24,8 @@ staging discipline for protected paths.
 
 ## How to run the task
 
-1. **Identify the task** from your prompt. If it names a slash-command or skill (e.g. `/prex …`,
-   `/gc …`), invoke that skill and follow its `SKILL.md` in full. For `/prex`, run every stage it
+1. **Identify the task** from your prompt. If it names a slash-command or skill (e.g. `/executor-prex …`,
+   `/gc …`), invoke that skill and follow its `SKILL.md` in full. For `/executor-prex`, run every stage it
    defines (plan → review → implement → review → optional loop); it will spawn its own review
    subagents, which is expected and allowed. If the task is freeform, just do it.
 2. **Run everything in the FOREGROUND.** The session env must have
@@ -33,7 +33,7 @@ staging discipline for protected paths.
    auto-background long-running Bash calls. Never set `run_in_background` on a long Bash/Codex call;
    use a Bash-tool `timeout` of `600000ms` and let the call block until it exits. There is **no**
    out-of-band re-invocation here — a backgrounded long task is silently reaped when the turn ends,
-   so backgrounding loses work. When you run a multi-stage skill (e.g. `/prex`), this applies to
+   so backgrounding loses work. When you run a multi-stage skill (e.g. `/executor-prex`), this applies to
    **each** of its individual Codex Bash calls, not just the skill as a whole. If a step genuinely
    cannot finish within the foreground budget, report it as a blocker; **never detach**.
 3. **Run to the task's own completion criteria — do not stop early.** For a queued implementation

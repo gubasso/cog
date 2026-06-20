@@ -32,7 +32,7 @@ guardrails so the rule does not overshoot:
    → status classification, severity → label mapping, file scaffolding, flag parsing, jq/yq parsing,
    proof validation). Keep the _decision_ (wait-vs-escalate, resume-vs-fresh, re-verify-a-finding)
    as prose. Keep the seam clean.
-2. **Keep genuinely trivial one-liners inline.** `command -v tsk`, a single `git rev-parse`, a
+2. **Keep genuinely trivial one-liners inline.** `command -v jq`, a single `git rev-parse`, a
    single `jq -r '.field'`. Wrapping these costs more than it saves.
 3. **Coarse, not micro.** A _few_ subcommands per stage, each doing a meaningful unit and emitting
    **one JSON object** the orchestrator reads a handful of fields from — never a cloud of
@@ -47,8 +47,6 @@ guardrails so the rule does not overshoot:
 | Chunk                                                                             | Verdict                                | Reason                                             |
 | --------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------- |
 | 30-line preflight gate parsing `preflight codex` and exiting on unhealthy session | **Extract** (`codex-runner gate`)      | Deterministic; repeated; fails closed legibly.     |
-| `tsk id` resolve + `tsk show` fetch + copy to request file                        | **Extract** (`prex-tsk-resolve`)       | The resolve+fetch is mechanical…                   |
-| …deciding whether the fetched issue is "thin" vs "well-specified"                 | **Keep prose**                         | …but the classification is judgment.               |
 | `jq -r '.thread_id'` after an extract                                             | **Keep inline**                        | Trivial single read.                               |
 | Resume-fallback reaction table; finding → status triage; plan-conformance check   | **Keep prose**                         | Reads deterministic inputs but encodes a decision. |
 | RUN_DIR + N output-path scaffolding                                               | **Extract** (`rundir` / `review-init`) | Pure scaffolding, identical every run.             |
@@ -181,8 +179,7 @@ flag matrix for any parser. The **highest-risk** subcommands get adversarial fix
 
 - `codex-runner verify-proof` — missing-artifact, empty-diff, malformed-JSON proof fixtures.
 - `codex-runner gate` — unhealthy and missing-session fixtures.
-- `prex-parse-args` — the full flag matrix including the no-glob-expansion case.
-- `prex-tsk-resolve` — no-id and failed-fetch fail-closed cases.
+- `executor-prex-parse-args` — the full flag matrix including the no-glob-expansion case.
 
 `_tests/*.bats` are not wired into pre-commit; run them explicitly with
 `bats _tests/agent_helper_*.bats`.
@@ -196,7 +193,7 @@ Do not extract or do the following:
 - **Judgment tables.** A table that reads deterministic inputs but encodes a _decision_
   (resume-fallback reaction, finding → status triage, plan-conformance) stays prose.
 - **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely
-  multi-line parsers (prex, plan-writer-multi, plan-queue-runner) earn a subcommand.
+  multi-line parsers (executor-prex, plan-writer-multi, plan-queue-runner) earn a subcommand.
 - **Micro-helper clouds.** Several subcommands stitched with `jq` between each call. Make it coarse:
   one subcommand, one JSON object.
 - **Hand-rolled `agent-helper` resolve/fallback blocks.** Bare call + `require`; never a stale

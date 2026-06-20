@@ -1,7 +1,7 @@
 # In-session subagent delegation vs headless `claude -p`
 
 Decision record + canon for how orchestrating skills run a fresh, full Claude execution (a delegated
-unit of work that may itself spawn subagents — e.g. `/prex`, which delegates plan review, code
+unit of work that may itself spawn subagents — e.g. `/executor-prex`, which delegates plan review, code
 review, and a review loop).
 
 ## Decision
@@ -20,7 +20,7 @@ landed partially, review stages never ran, the unit silently stayed incomplete, 
 still exited `0`. A prose "never background" mandate is advisory and was overridden on large units.
 
 The `claude -p` host existed only because subagents historically could not spawn subagents, and a
-unit like `/prex` must delegate internally. That constraint is gone.
+unit like `/executor-prex` must delegate internally. That constraint is gone.
 
 ## What changed
 
@@ -59,7 +59,7 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and
   in-session/forked subagent). Run it in the foreground (`run_in_background` false/omitted, Bash
   timeout `600000ms`, blocks until exit). Backgrounding breaks synchronous result classification and
   risks reaping. A unit that cannot finish in the foreground budget is a planning error (split it),
-  never a reason to detach. This rule lives inline in every Codex-driving skill (`prex`,
+  never a reason to detach. This rule lives inline in every Codex-driving skill (`executor-prex`,
   `review-loop`, `plan-writer-multi`, `ask`); the runtime behavior is owned by `cog codex-runner`,
   and the maintenance-time canon is `docs/reference/codex-conventions.md` (a maintenance-only doc,
   not a runtime-loaded reference).
@@ -72,7 +72,7 @@ We initially shipped this as prose-only (architecture-only), reasoning that fore
 the orchestrator's deterministic completion check (re-reading `QUEUE.yaml` for `status == done`)
 made the reaping failure unlikely. That proved insufficient: under in-session delegation a delegate
 can still background its **own** Codex Bash call one level down and end its turn, getting the child
-SIGTERM-reaped (observed 2026-06-17, `plan-queue-runner` → `claude-delegate` → `prex` stage 3). The
+SIGTERM-reaped (observed 2026-06-17, `plan-queue-runner` → `claude-delegate` → `executor-prex` stage 3). The
 "option-2" guard is now **implemented** as a `PreToolUse(Bash)` hook —
 `agent-helper hook-guard codex-foreground` — which fires inside subagents too (confirmed: PreToolUse
 runs for subagent tool calls, carrying `agent_id`) and blocks any Codex call that is backgrounded or
@@ -85,4 +85,4 @@ shared by the producer and the now-thin Stop-gate hook, so the two can no longer
 
 Accepted / Implemented (2026-06-17). Enacted in dotfiles by
 `claude/.claude/agents/claude-delegate.md`, `claude/.claude/skills/plan-queue-runner/SKILL.md`, and
-`claude/.claude/skills/prex/SKILL.md`. Mirrored as ADR-0001 in the dotfiles and `cog` repos.
+`claude/.claude/skills/executor-prex/SKILL.md`. Mirrored as ADR-0001 in the dotfiles and `cog` repos.

@@ -11,12 +11,12 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
   - item: second
     status: todo
     depends_on: [first]
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: note
 EOF
 }
@@ -28,12 +28,12 @@ plans:
   - item: first-plan
     status: done
     depends_on: []
-    prompt: /prex -ar @plans/first-plan/
+    prompt: /executor-prex -ar @plans/first-plan/
     notes: note
   - item: second-plan
     status: todo
     depends_on: [first-plan]
-    prompt: /prex -ar @plans/second-plan/
+    prompt: /executor-prex -ar @plans/second-plan/
     notes: note
 EOF
 }
@@ -79,7 +79,7 @@ EOF
         item: "second",
         status: "todo",
         depends_on: ["first"],
-        prompt: "/prex -ar second.md",
+        prompt: "/executor-prex -ar second.md",
         notes: "note"
       },
       todo_remaining: ["second"],
@@ -96,7 +96,7 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
 EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
@@ -108,7 +108,7 @@ rounds:
   - item: blocked
     status: todo
     depends_on: [missing]
-    prompt: /prex -ar blocked.md
+    prompt: /executor-prex -ar blocked.md
     notes: note
 EOF
   run cog queue-select --queue "$queue" --no-clean-check --json
@@ -120,7 +120,7 @@ rounds:
   - item: active
     status: doing
     depends_on: []
-    prompt: /prex -ar active.md
+    prompt: /executor-prex -ar active.md
     notes: note
 EOF
   run --separate-stderr cog queue-select --queue "$queue" --no-clean-check --json
@@ -176,7 +176,7 @@ rounds:
   - item: first
     status: todo
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
 EOF
 
@@ -192,7 +192,7 @@ rounds:
   - item: first
     status: todo
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
 EOF
 

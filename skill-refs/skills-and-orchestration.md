@@ -12,8 +12,8 @@ workflows, or reviewing whether a skill composition pattern is valid in this rep
 
 ## The Problem
 
-One level of delegation works reliably here: `prex` can invoke another skill and complete its own
-workflow. Two-level composition drifts: `orchestrator -> prex -> review-loop` depends on nested
+One level of delegation works reliably here: `executor-prex` can invoke another skill and complete its own
+workflow. Two-level composition drifts: `orchestrator -> executor-prex -> review-loop` depends on nested
 control returning cleanly, and that is the failure mode captured in `anthropics/claude-code#17351`.
 The practical symptom is that a nested `Skill(...)` call may fall through to the main session
 instead of resuming the invoking skill, leaving continuation to a non-deterministic parent decision.
@@ -123,14 +123,14 @@ Additional repo-specific notes:
 
    - subagent_type: general-purpose
    - description: <one short label>
-   - prompt: | Read claude/.claude/skills/prex/SKILL.md and follow it. Treat everything below "ARGS:"
+   - prompt: | Read claude/.claude/skills/executor-prex/SKILL.md and follow it. Treat everything below "ARGS:"
      as your $ARGUMENTS. ARGS: -ar $ARGUMENTS
    ```
 
    The Skill-tool form is reserved for command-shim dispatch at the top of a conversation.
 
 4. **Orchestrators are explicit and rare.** Skills that sequence multiple sub-skills, such as
-   `prex`, should be `disable-model-invocation: true` and run only on direct user intent. This keeps
+   `executor-prex`, should be `disable-model-invocation: true` and run only on direct user intent. This keeps
    opportunistic description matches from accidentally launching a multi-stage workflow.
 
 5. **Commands are shims.** Files in `.claude/commands/*.md` contain no workflow logic. Their only
@@ -148,7 +148,7 @@ Additional repo-specific notes:
    permitted even with `disable-model-invocation: true` on the target. Skill-tool dispatch from a
    shim into a non-forking orchestrator that _also_ has `disable-model-invocation: true` fails with:
    `Skill <name> cannot be used with Skill tool due to disable-model-invocation`. Such orchestrators
-   (`prex`) must be invoked directly by the user — see **Invocation Patterns** below.
+   (`executor-prex`) must be invoked directly by the user — see **Invocation Patterns** below.
 
    ```bash
    [ -s "$NEW_RUN_DIR/stage2-reviewed-plan.md" ] || {
@@ -172,8 +172,8 @@ Two superficially similar things must use different tools:
 
 | Pattern                                                   | Tool    | When to use                                                                                                                                                                                                          | Example                                                                                |
 | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Dispatch** — same conversation, expand a name to a body | `Skill` | Command-shim → skill expansion at the top of a conversation. The `Skill` tool inlines the target's body into the current context; nothing is forked. There is no "return" to manage because the parent never paused. | `/prear` command shim → `Skill(prex)`                                                  |
-| **Delegation** — isolated work, structured return         | `Agent` | Anywhere a parent skill needs another skill's body to run in its own context and return a single reply. The `Agent` tool produces a real fork at the transport layer; the parent only sees the child's final reply.  | `prex` stage 2 → `Agent(general-purpose, "read plan-reviewer/SKILL.md and follow it")` |
+| **Dispatch** — same conversation, expand a name to a body | `Skill` | Command-shim → skill expansion at the top of a conversation. The `Skill` tool inlines the target's body into the current context; nothing is forked. There is no "return" to manage because the parent never paused. | `/prear` command shim → `Skill(executor-prex)`                                                  |
+| **Delegation** — isolated work, structured return         | `Agent` | Anywhere a parent skill needs another skill's body to run in its own context and return a single reply. The `Agent` tool produces a real fork at the transport layer; the parent only sees the child's final reply.  | `executor-prex` stage 2 → `Agent(general-purpose, "read plan-reviewer/SKILL.md and follow it")` |
 
 The single load-bearing rule: **never use the `Skill` tool from inside another skill's body for
 delegation**. Nested `Skill` calls reproduce the `anthropics/claude-code#17351` failure mode — the
@@ -193,7 +193,7 @@ where the orchestrator was invoked — not the dotfiles repo. A relative path on
 user happens to be running the orchestrator from inside `~/.dotfiles`, and silently fails with a
 misleading "skill file does not exist" error from every other repo. `$HOME/.claude/skills/` is the
 stow-symlinked tree the Claude Code harness already indexes, so it is guaranteed present whenever
-the skill is dispatchable at all. This rule applies to every delegation site across `prex` and any
+the skill is dispatchable at all. This rule applies to every delegation site across `executor-prex` and any
 future orchestrator.
 
 Command shims under `claude/.claude/commands/*.md` are the **only** legitimate use of the `Skill`
@@ -208,7 +208,7 @@ the correct lane depends on (a) whether the target skill has `disable-model-invo
 
 | Lane                                | How                                                                                                                                                          | Works when                                                                                                                                                                                             | Loses                                                                                                                                                                                                                         |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Direct user invocation**          | User types `/skill-name <args>` at the prompt                                                                                                                | Always — even with `disable-model-invocation: true`. The flag blocks automatic description-match loading and Skill-tool dispatch, but an explicit user slash command is a user action and bypasses it. | Nothing. This is the canonical lane for `prex`.                                                                                                                                                                               |
+| **Direct user invocation**          | User types `/skill-name <args>` at the prompt                                                                                                                | Always — even with `disable-model-invocation: true`. The flag blocks automatic description-match loading and Skill-tool dispatch, but an explicit user slash command is a user action and bypasses it. | Nothing. This is the canonical lane for `executor-prex`.                                                                                                                                                                               |
 | **Skill-tool dispatch from a shim** | A command file in `.claude/commands/*.md` whose body calls the Skill tool                                                                                    | Target declares `context: fork` + `agent:`. The harness forks a real subagent on dispatch, which is permitted even with `disable-model-invocation: true` on the target.                                | Cannot reach non-forking skills. Attempting to dispatch a target that has `disable-model-invocation: true` and no fork declaration fails with: `Skill <name> cannot be used with Skill tool due to disable-model-invocation`. |
 | **Agent-tool delegation**           | Parent skill body invokes the Agent tool with `subagent_type: general-purpose` and a prompt telling the subagent to read the target skill file and follow it | Always — `disable-model-invocation` does not apply to Agent-tool prompts, because the subagent loads the skill _body_ via `Read`, not via the Skill tool.                                              | Interactive gates. A subagent cannot pause and prompt the user mid-run. Suitable for auto-approve or fully-background flows; unsuitable for manual-approval workflows.                                                        |
 
@@ -220,7 +220,7 @@ the correct lane depends on (a) whether the target skill has `disable-model-invo
    indirection we could think of; all failed with the same error message.
 
 2. **Command shim bodies are injected as literal prompt text and are NOT recursively re-parsed for
-   nested slash commands.** A shim body of `/prex -ar $ARGUMENTS` arrives at the model as prose, not
+   nested slash commands.** A shim body of `/executor-prex -ar $ARGUMENTS` arrives at the model as prose, not
    as an executed slash command. The model _might_ try to honor it as an instruction, but nothing in
    the harness intercepts the string and re-dispatches it as a command. Chain-expansion through
    shims is not a mechanism. This is why the `/pre`, `/prea`, `/prear` shims (which used to inject a
@@ -242,16 +242,16 @@ body contains a deterministic Bash parser that resolves the flag to a mode file 
 
 | Orchestrator | Flags                                | Modes                                                          |
 | ------------ | ------------------------------------ | -------------------------------------------------------------- |
-| `prex`       | `-a`/`--auto`, `-ar`/`--auto-review` | `manual` (default), `auto-approve`, `auto-approve-review-loop` |
+| `executor-prex`       | `-a`/`--auto`, `-ar`/`--auto-review` | `manual` (default), `auto-approve`, `auto-approve-review-loop` |
 
 ### Deleted shims (April 2026)
 
 The following command shims were deleted as part of the flag-parsing refactor. All of them tried to
 dispatch a `disable-model-invocation: true` orchestrator via the Skill tool and hit the error above:
 
-- `claude/.claude/commands/pre.md` → use `/prex <task>`
-- `claude/.claude/commands/prea.md` → use `/prex -a <task>`
-- `claude/.claude/commands/prear.md` → use `/prex -ar <task>`
+- `claude/.claude/commands/pre.md` → use `/executor-prex <task>`
+- `claude/.claude/commands/prea.md` → use `/executor-prex -a <task>`
+- `claude/.claude/commands/prear.md` → use `/executor-prex -ar <task>`
 
 See the Claude Code Invocation Cheatsheet (optional external DocsNNotes reference) for the one-page
 user-facing reference.
@@ -294,19 +294,19 @@ Create a run directory and write the task to `$RUN_DIR/request.md`.
 Before delegation, snapshot the current proof surface:
 
 ```bash
-find /tmp -maxdepth 1 -type d -name 'prex-*' -printf '%p\n' | sort > "$RUN_DIR/pre-dirs.snap"
+find /tmp -maxdepth 1 -type d -name 'executor-prex-*' -printf '%p\n' | sort > "$RUN_DIR/pre-dirs.snap"
 ```
 
 Invoke the Agent tool now (not the Skill tool — see Dispatch vs Delegation):
 
 - `subagent_type`: `general-purpose`
-- `description`: `delegate to prex`
+- `description`: `delegate to executor-prex`
 - `prompt`:
 
   ```text
-  Read the skill file at claude/.claude/skills/prex/SKILL.md and
+  Read the skill file at claude/.claude/skills/executor-prex/SKILL.md and
   follow it end-to-end. Treat everything below "ARGS:" as `$ARGUMENTS`.
-  Return a one-line reply containing the absolute prex run dir.
+  Return a one-line reply containing the absolute executor-prex run dir.
 
   ARGS:
   -a <orchestrator's task description>
@@ -315,7 +315,7 @@ Invoke the Agent tool now (not the Skill tool — see Dispatch vs Delegation):
 Immediately after the tool returns, capture the after snapshot:
 
 ```bash
-find /tmp -maxdepth 1 -type d -name 'prex-*' -printf '%p\n' | sort > "$RUN_DIR/post-dirs.snap"
+find /tmp -maxdepth 1 -type d -name 'executor-prex-*' -printf '%p\n' | sort > "$RUN_DIR/post-dirs.snap"
 NEW_RUN_DIR="$(comm -13 "$RUN_DIR/pre-dirs.snap" "$RUN_DIR/post-dirs.snap" | tail -1)"
 [ -n "$NEW_RUN_DIR" ] || { echo "ERROR: no delegated run dir found"; exit 1; }
 ```
@@ -425,7 +425,7 @@ description: "plan/review/execute + auto-approve + review-loop"
 argument-hint: "<task description>"
 ---
 
-Invoke the Skill tool with `skill: "prex"` and args:
+Invoke the Skill tool with `skill: "executor-prex"` and args:
 
 ```text
 -ar $ARGUMENTS
@@ -462,7 +462,7 @@ The rule is enforced by a project-local `PreToolUse` hook
 (`.claude/hooks/block-claude-dir-edits.sh`, wired in `.claude/settings.local.json`) that blocks
 `Edit`/`Write`/`NotebookEdit` against protected paths. The hook accepts any
 `/tmp/**/staging/claude/.claude/**` path, so staging works uniformly from both Claude Code and Codex
-during `prex` stage 3.
+during `executor-prex` stage 3.
 
 Direct-write exception:
 
@@ -555,7 +555,7 @@ optimistically.
 - **Fallback:** If explicit callers are also blocked in practice, move the explicit-only behavior to
   naming and command-shim policy while leaving the skill tool-callable.
 
-### Does a forked subagent inherit the parent's workflow lock (`$XDG_RUNTIME_DIR/prex-active-*`)?
+### Does a forked subagent inherit the parent's workflow lock (`$XDG_RUNTIME_DIR/executor-prex-active-*`)?
 
 - **Current belief:** Do not assume lock inheritance or shared enforcement semantics across forks.
 - **How to verify:** Acquire a known lock in the parent, run a forked skill that inspects the lock
@@ -568,6 +568,6 @@ optimistically.
 - [`skill-authoring/skill-script-extraction.md`](skill-authoring/skill-script-extraction.md) — when
   to move deterministic shell out of a `SKILL.md` body into a versioned `agent-helper` subcommand,
   and the `msg` output/status contract parents parse.
-- ~/.dotfiles/claude/.claude/skills/prex/SKILL.md
+- ~/.dotfiles/claude/.claude/skills/executor-prex/SKILL.md
 - ~/.dotfiles/claude/.claude/skills/review-plan-claude/SKILL.md
 - ~/.dotfiles/claude/.claude/skills/review-loop/SKILL.md

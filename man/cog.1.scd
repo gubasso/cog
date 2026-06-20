@@ -72,9 +72,6 @@ The command list and short descriptions are sourced from command modules under
 *executor-prex-parse-args*
 	Parse executor-prex arguments into run state.
 
-*executor-prex-tsk-resolve*
-	Resolve a tsk issue for an executor-prex run.
-
 *gc-classify-failure*
 	Classify commit or push failure logs.
 
@@ -145,12 +142,6 @@ The command list and short descriptions are sourced from command modules under
 	the Claude Code no-backgrounding session env. Strict mode requires
 	*CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1*; Bash timeout env vars are
 	recorded as diagnostics only.
-
-*prex-parse-args*
-	Parse prex arguments into run state (compatibility alias for executor-prex-parse-args).
-
-*prex-tsk-resolve*
-	Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve).
 
 *print-config*
 	Print resolved configuration values and their sources.
@@ -256,15 +247,6 @@ The command list and short descriptions are sourced from command modules under
 
 *tracking-scan*
 	Report tracked artifacts whose revalidation cadence is overdue.
-
-*tsk-fetch-issue*
-	Fetch or create a tsk issue.
-
-*tsk-snapshot*
-	Capture read-only git context for tsk workflows.
-
-*tsk-store-init*
-	Resolve and initialize the shared tsk store.
 
 # FILES
 

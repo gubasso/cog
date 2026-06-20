@@ -75,7 +75,7 @@ When `/executor-prex` is pointed at this directory or this `README.md`, it MUST:
 
 ## Decisions & Constraints
 
-- **Executor: prex (EF 1.5).** Rounds are deliberately heavy — each is sized to use the full
+- **Executor: executor-prex (EF 1.5).** Rounds are deliberately heavy — each is sized to use the full
   potential of a `/executor-prex` run (Codex plan → Claude review → Codex implement → Claude
   review-loop). Small-scope rounds are intentionally avoided per the requester's directive.
 - **Skill name `review-plan-implementation-plans`** (under the `review-plan-*` taxonomy
@@ -112,7 +112,7 @@ When `/executor-prex` is pointed at this directory or this `README.md`, it MUST:
   `done`/`doing` and cog-only mutation, enforced by `verify`.
 - **The command-family rename is a broad mechanical sweep** (modules, handlers, helpers, tests,
   completions, man, cli-commands, skill + runner-queue tokens). Mitigation: Round 1 contains the
-  whole sweep and leaves the repo coherent; precedent exists (the recent `prex → executor-prex`
+  whole sweep and leaves the repo coherent; precedent exists (the recent `executor-prex → executor-prex`
   migration).
 - **Transient breakage between rounds.** Mitigation: each round leaves a coherent, lint-clean,
   test-green state; the rename and all its consumers land together in Round 1.

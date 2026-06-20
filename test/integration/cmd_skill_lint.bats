@@ -586,8 +586,8 @@ EOF
 }
 
 @test "cog skill-lint rejects executor intent not named executor-star" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/prex" prex claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/prex/SKILL.md"
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/legacy-exec" legacy-exec claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/legacy-exec/SKILL.md"
   printf '\n# Plan Review Execute\n' >>"$file"
 
   run --separate-stderr cog skill-lint "$file"
@@ -597,8 +597,8 @@ EOF
 }
 
 @test "cog skill-lint accepts executor intent with executor superseded-by" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/prex" prex claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/prex/SKILL.md"
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/legacy-exec" legacy-exec claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/legacy-exec/SKILL.md"
   printf '\n<!-- cog-skill: superseded-by executor-prex -->\n# Plan Review Execute\n' >>"$file"
 
   run cog skill-lint "$file"

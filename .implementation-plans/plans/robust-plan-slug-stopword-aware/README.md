@@ -41,22 +41,22 @@ The authoritative order and status live in `queue-rounds.yaml`.
 
 ```bash
 # Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
-/prex -ar @.implementation-plans/plans/robust-plan-slug-stopword-aware/
+/executor-prex -ar @.implementation-plans/plans/robust-plan-slug-stopword-aware/
 
 # Or target the round file directly:
-/prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware/robust-plan-slug-stopword-aware.md
+/executor-prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware/robust-plan-slug-stopword-aware.md
 ```
 
 ## Execution Discipline
 
-**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/prex` session. Do not implement multiple rounds in one session.
+**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/executor-prex` session. Do not implement multiple rounds in one session.
 
-When `/prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
+When `/executor-prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
 
 ## Decisions & Constraints
 
-- **Executor: prex (EF 1.5).** This is a single, cohesive helper change with co-located tests and
-  doc/skill prose updates — one prex run handles it.
+- **Executor: executor-prex (EF 1.5).** This is a single, cohesive helper change with co-located tests and
+  doc/skill prose updates — one executor-prex run handles it.
 - **Stopword filtering is the core fix.** Drop a curated, conservative set of English function words
   *before* selecting slug words, so meaningful words fill the slug. The list is intentionally small
   and limited to genuine filler ("a an and are as at be but by for from in into is it its of on or

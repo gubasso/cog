@@ -23,18 +23,18 @@ setup() {
   [ "$orientation" = "Do work" ]
 }
 
-@test "plan-writer-multi parser normalizes executor-prex" {
+@test "plan-writer-multi parser accepts executor-prex" {
   local executor solo orientation
 
   __cog_plan_writer_multi_setup_parse "--executor executor-prex Do work" executor solo orientation
 
-  [ "$executor" = prex ]
+  [ "$executor" = executor-prex ]
   [ "$solo" = false ]
   [ "$orientation" = "Do work" ]
 }
 
 @test "plan-writer-multi effort factor helper validates executors" {
-  run __cog_plan_writer_multi_setup_ef prex
+  run __cog_plan_writer_multi_setup_ef executor-prex
   assert_success
   assert_output "1.5"
 

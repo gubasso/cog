@@ -45,17 +45,17 @@ __cog_runner_queue_resolve_plan_build_json() {
       ;;
   esac
 
-  # Accept any /executor-* prompt (plus the /prex alias) in -ar <target> form, matched by the
+  # Accept any /executor-* prompt in -ar <target> form, matched by the
   # prefix taxonomy rather than a hardcoded allowlist. See cog::fn::skill::classify_prefix.
   prompt="$(jq -r '.prompt' <<<"$entry_json")"
   if [[ $prompt =~ ^/([a-z0-9-]+)[[:space:]]+-ar[[:space:]]+(@?[^[:space:]]+)[[:space:]]*$ ]]; then
     cmd="$(cog::fn::executor::resolve_alias "${BASH_REMATCH[1]}")"
     target="${BASH_REMATCH[2]}"
     cog::fn::skill::name_in_namespace executor "$cmd" || cog::fn::error_raise "InvalidInput" \
-      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> (or /prex) -ar [@]<target>"
+      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> -ar [@]<target>"
   else
     cog::fn::error_raise "InvalidInput" \
-      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> (or /prex) -ar [@]<target>"
+      "unsupported plan prompt" "item: ${item}" "prompt: ${prompt}" "expected /<executor-*> -ar [@]<target>"
   fi
   [[ $target == @* ]] && target="${target#@}"
   target="$(__cog_runner_queue_resolve_plan_strip_trailing_slashes "$target")"

@@ -17,10 +17,6 @@ setup() {
 }
 
 guard_stop_direct() {
-  printf '{}' | cog::cmd::hook_guard prex-stop --owner-pid "$1"
-}
-
-guard_executor_stop_direct() {
   printf '{}' | cog::cmd::hook_guard executor-prex-stop --owner-pid "$1"
 }
 
@@ -30,8 +26,8 @@ guard_executor_stop_direct() {
   assert_failure 1
 }
 
-@test "hook_guard prex-stop rejects unknown option with hook usage status" {
-  run --separate-stderr cog::cmd::hook_guard prex-stop --bogus
+@test "hook_guard executor-prex-stop rejects unknown option with hook usage status" {
+  run --separate-stderr cog::cmd::hook_guard executor-prex-stop --bogus
 
   assert_failure 1
 }
@@ -40,13 +36,12 @@ guard_executor_stop_direct() {
   run cog::cmd::hook_guard --help
 
   assert_success
-  [[ $output == *"prex-stop"* ]]
   [[ $output == *"executor-prex-stop"* ]]
   [[ $output != *"codex-foreground"* ]]
 }
 
-@test "hook_guard prex-stop returns hook block status directly" {
-  local run_dir="${BATS_TEST_TMPDIR}/prex-123"
+@test "hook_guard executor-prex-stop returns hook block status directly" {
+  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-123"
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
@@ -58,21 +53,8 @@ guard_executor_stop_direct() {
   rm -rf "$run_dir" "$lock_file"
 }
 
-@test "hook_guard executor-prex-stop returns hook block status directly" {
-  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-123"
-  local lock_file
-  mkdir -p "$run_dir"
-  lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
-
-  run --separate-stderr guard_executor_stop_direct "$$"
-
-  assert_failure 2
-  [[ $stderr == *'"decision":"block"'* ]]
-  rm -rf "$run_dir" "$lock_file"
-}
-
-@test "hook_guard prex-stop blocks when stage3 artifact is missing" {
-  local run_dir="${BATS_TEST_TMPDIR}/prex-stage3-missing"
+@test "hook_guard executor-prex-stop blocks when stage3 artifact is missing" {
+  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-stage3-missing"
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
@@ -87,8 +69,8 @@ guard_executor_stop_direct() {
   rm -rf "$run_dir" "$lock_file"
 }
 
-@test "hook_guard prex-stop allows when all required artifacts exist" {
-  local run_dir="${BATS_TEST_TMPDIR}/prex-complete"
+@test "hook_guard executor-prex-stop allows when all required artifacts exist" {
+  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-complete"
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"

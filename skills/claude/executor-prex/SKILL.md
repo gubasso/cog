@@ -6,10 +6,8 @@ description: >
   Use this when the user wants a dual-agent plan-review-execute flow, asks to have
   Codex plan and implement while Claude validates, or refers to a staged adversarial
   workflow between Claude Code and Codex. Accepts CLI-style flags: `-a`/`--auto`
-  for auto-approve, `-ar`/`--auto-review` for auto-approve + review-loop, and
-  `-t`/`--tsk-impl [id]` to source the task from a tsk issue (`tsk show <id>`,
-  resolving the id from the active branch via `tsk id` if omitted).
-argument-hint: "[-a|-ar] [-t [id]] <task description>"
+  for auto-approve and `-ar`/`--auto-review` for auto-approve + review-loop.
+argument-hint: "[-a|-ar] <task description>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill
 ---
@@ -42,7 +40,7 @@ subagents (≥ v2.1.172), so a delegated `/executor-prex` (e.g. under `claude-de
 stage 2/4/5 reviewers as foreground nested subagents.
 
 This skill is a **thin orchestrator**: every deterministic mechanic (run-dir + lock setup, flag
-parsing, codex-session preflight gating, tsk resolution, delegation-proof validation) is a versioned
+parsing, codex-session preflight gating, delegation-proof validation) is a versioned
 `cog` subcommand that emits parseable result lines; this body owns only the sequencing and
 the judgment. See
 `$(cog skill-refs path skill-authoring/skill-script-extraction.md)`
@@ -80,8 +78,8 @@ This skill is the reference implementation; the shared docs describe the contrac
 
 The workflow needs:
 
-1. A task description. Sources, in order of precedence: the resolved body of the `-t`/`--tsk-impl`
-   issue when that flag is set; otherwise `$ARGUMENTS`; otherwise the current conversation context.
+1. A task description. Sources, in order of precedence: `$ARGUMENTS`; otherwise the current
+   conversation context.
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
    and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
@@ -104,7 +102,7 @@ command -v cog >/dev/null || {
   echo "executor-prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args executor-prex-tsk-resolve || {
+cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args || {
   echo "executor-prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
@@ -176,9 +174,6 @@ Mode is selected via CLI-style flags on `$ARGUMENTS`. Supported modes:
 | `auto-approve`             | `-a`, `--auto`         | Display the complete reviewed plan, then proceed without waiting | User decides / auto-trigger heuristic                                   |
 | `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete reviewed plan, then proceed without waiting | Always run after stage 4 once all `NEEDS_DISCUSSION` items are resolved |
 
-`-t`/`--tsk-impl [id]` is an orthogonal input-source flag and may be combined with any mode above.
-See **Tsk-Impl Source** below.
-
 Parse the flags with one deterministic call, **after `RUN_DIR` is created** (Bootstrap above) and
 **before any other workflow step**. Substitute the literal `$RUN_DIR` path and pass the raw
 arguments as a single quoted argument:
@@ -187,9 +182,8 @@ arguments as a single quoted argument:
 cog executor-prex-parse-args "$RUN_DIR" "$ARGUMENTS"
 ```
 
-This writes the resolved mode to `$RUN_DIR/mode`, the tsk-impl state to `$RUN_DIR/tsk-impl` (`0:`
-when disabled, `1:<id-or-empty>` when enabled), and the stripped task description to
-`$RUN_DIR/task.txt`. It prints `MODE=`, `TSK_IMPL=`, and `TSK_ID=` for immediate use, and **exits 2
+This writes the resolved mode to `$RUN_DIR/mode` and the stripped task description to
+`$RUN_DIR/task.txt`. It prints `MODE=` for immediate use, and **exits 2
 on an unrecognized flag** (fail closed). The task text is word-split without glob expansion, so a
 description containing `*` or `[...]` is preserved verbatim.
 
@@ -205,10 +199,6 @@ Invocation examples:
 - `/executor-prex refactor the foo module` — manual mode
 - `/executor-prex -a refactor the foo module` — auto-approve
 - `/executor-prex -ar refactor the foo module` — auto-approve + review-loop
-- `/executor-prex -t` — resolve tsk id from active branch, use `tsk show` as the task
-- `/executor-prex -t 20240415-120030-my-issue` — use an explicit tsk id as the task
-- `/executor-prex -a -t 20240415-120030-my-issue` — auto-approve + tsk-sourced task
-- `/executor-prex -ar --tsk-impl` — auto-approve + review-loop + tsk-sourced task (id via `tsk id`)
 
 ## Pre-flight: Check Codex
 
@@ -227,60 +217,6 @@ cog codex-runner gate codex "$RUN_DIR/preflight.json" || {
 `RESOLVED <path>`), then exits non-zero with a legible message on stderr unless
 `codex_session.available` is `true` and `health` is `ok`. On non-zero exit, release the lock and
 stop — do not continue to stage 1.
-
-## Tsk-Impl Source
-
-When the parser reported `TSK_IMPL=1` (i.e., the user passed `-t`/`--tsk-impl`), resolve the task
-description from a tsk issue **before** Stage 1 planning begins. This overrides `$RUN_DIR/task.txt`
-and `$RUN_DIR/request.md` with the tsk-issue body. When `TSK_IMPL=0`, skip this entire section.
-
-Before running any `tsk` command, read
-[`$DOCS_NOTES_REPO/tech/tools/riptask/commands.md`](file:///$DOCS_NOTES_REPO/tech/tools/riptask/commands.md)
-for CLI conventions. If `$DOCS_NOTES_REPO` is unset or the file is unavailable, fall back to
-`tsk <command> --help`.
-
-Steps:
-
-1. Resolve the id and fetch the issue body with one call:
-
-   ```bash
-   cog executor-prex-tsk-resolve --run-dir "$RUN_DIR" || {
-     cog lock release "$LOCK_FILE"
-     exit 1
-   }
-   ```
-
-   This resolves the id (from the `$RUN_DIR/tsk-impl` state, else `tsk id` on the active branch),
-   fetches the body into `$RUN_DIR/tsk-issue.md`, rewrites `$RUN_DIR/tsk-impl` to `1:<id>`, and
-   prints `TSK_ID=` and `TSK_BODY=`. On any failure (no id resolvable, `tsk show` error) it prints
-   guidance to stderr and exits non-zero: release the lock and STOP. Do NOT fall back to
-   `$ARGUMENTS` or conversation context.
-
-2. Classify the body in `$RUN_DIR/tsk-issue.md` (this is a judgment call, not a mechanic):
-
-   - **Well-specified** — concrete requirements, referenced files, and explicit steps or acceptance
-     criteria. Copy it verbatim into the task slot:
-
-     ```bash
-     cp "$RUN_DIR/tsk-issue.md" "$RUN_DIR/task.txt"
-     cp "$RUN_DIR/tsk-issue.md" "$RUN_DIR/request.md"
-     ```
-
-   - **Thin / vague / incomplete** — short, unreferenced, or lacking actionable steps. Pause the
-     workflow before Stage 1 and ask the user:
-
-     > The tsk issue body is thin. Do you want to complement the spec and build a more complete plan
-     > before I kick off Codex? Reply `yes` (add context), `proceed anyway`, or `abort`.
-
-     - `yes`: ask focused clarifying questions, merge the added context into a consolidated plan,
-       and write the result to `$RUN_DIR/task.txt` and `$RUN_DIR/request.md`. Show the merged plan
-       to the user verbatim and wait for an explicit second approval before continuing.
-     - `proceed anyway`: copy the body as-is (same as the well-specified branch). Note the thin-spec
-       risk in one line.
-     - `abort`: release the lock (`cog lock release "$LOCK_FILE"`) and stop.
-
-3. After this section, Stages 1-5 operate on `$RUN_DIR/task.txt` and `$RUN_DIR/request.md` exactly
-   as they do in non-tsk-impl runs. No other stage needs tsk-specific logic.
 
 ## Stage 1: Plan
 
@@ -342,7 +278,7 @@ orchestrator contract:
 2. request path: `$RUN_DIR/request.md`
 3. output path: `$RUN_DIR/stage2-reviewed-plan.md`
 
-`request.md` is the Bootstrap/Tsk-resolved task file and is created before Stage 1. The parent
+`request.md` is the Bootstrap task file and is created before Stage 1. The parent
 workflow owns the snapshot-pre/post proof check, `verify-proof`, lock release/reacquire, and
 approval loop. Follow `references/stage-2-review-plan.md` for the Stage 2 command shapes and
 failure handling.
@@ -411,11 +347,6 @@ End with a concise summary covering:
 - Keep deterministic mechanics in versioned `cog` subcommands (this skill is a thin
   orchestrator); keep only sequencing and judgment as prose. Do not reintroduce inline multi-line
   shell for setup, parsing, gating, or proof validation.
-- When `-t`/`--tsk-impl` is set, the tsk-issue body (plus any user-supplied complement) is the ONLY
-  source of the task description. Do not silently merge `$ARGUMENTS` trailing text or conversation
-  context into it.
-- If `tsk id` cannot resolve an id, STOP the workflow and release the lock. Do not fall back to
-  other sources.
 
 ## Error Handling
 
@@ -439,4 +370,4 @@ If any other Codex call fails, or if the stage 3 fresh-`exec` fallback also fail
 
 <!-- Migrated from stock-codex to codex-session wrapper on 2026-05-23 (R5). -->
 <!-- Wave-2 thin-orchestrator rewrite on 2026-06-16 (R3): inline setup/parse/gate/proof shell -->
-<!-- moved to cog rundir/lock/executor-prex-parse-args/executor-prex-tsk-resolve/codex-runner gate+verify-proof. -->
+<!-- moved to cog rundir/lock/executor-prex-parse-args/codex-runner gate+verify-proof. -->

@@ -11,24 +11,24 @@ rounds:
   - item: done
     status: done
     depends_on: []
-    prompt: /prex -ar done.md
+    prompt: /executor-prex -ar done.md
     notes: ""
   - item: doing
     status: doing
     depends_on:
       - done
-    prompt: /prex -ar doing.md
+    prompt: /executor-prex -ar doing.md
     notes: ""
   - item: first
     status: todo
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: ""
   - item: second
     status: backlog
     depends_on:
       - first
-    prompt: /prex -ar second.md
+    prompt: /executor-prex -ar second.md
     notes: ""
 EOF
 }

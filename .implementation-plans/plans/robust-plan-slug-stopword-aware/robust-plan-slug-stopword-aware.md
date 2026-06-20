@@ -33,8 +33,8 @@ thus help itself pick better wording.
 
 ## Decisions & Constraints
 
-- **Executor: prex (EF 1.5).** This is a single, cohesive helper change with co-located tests and
-  doc/skill prose updates — one prex run handles it.
+- **Executor: executor-prex (EF 1.5).** This is a single, cohesive helper change with co-located tests and
+  doc/skill prose updates — one executor-prex run handles it.
 - **Stopword filtering is the core fix.** Drop a curated, conservative set of English function words
   *before* selecting slug words, so meaningful words fill the slug. The list is intentionally small
   and limited to genuine filler ("a an and are as at be but by for from in into is it its of on or

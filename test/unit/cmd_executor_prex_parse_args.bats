@@ -11,19 +11,24 @@ setup() {
   source "${LIB_DIR}/commands/cmd_executor_prex_parse_args.sh"
 }
 
-@test "executor-prex parser extracts auto review tsk id and task" {
-  local mode impl id task
+@test "executor-prex parser extracts auto review mode and task" {
+  local mode task
 
-  __cog_executor_prex_parse_args_parse "-ar -t TSK-1 Fix * now" mode impl id task
+  __cog_executor_prex_parse_args_parse "-ar Fix * now" mode task
 
   [ "$mode" = auto-approve-review-loop ]
-  [ "$impl" = 1 ]
-  [ "$id" = TSK-1 ]
   [ "$task" = "Fix * now" ]
 }
 
 @test "executor-prex parser rejects unknown flags with exit 2" {
-  run --separate-stderr __cog_executor_prex_parse_args_parse "--bad Task" mode impl id task
+  run --separate-stderr __cog_executor_prex_parse_args_parse "--bad Task" mode task
+
+  assert_failure 2
+  [[ $stderr == *"unknown executor-prex flag"* ]]
+}
+
+@test "executor-prex parser rejects the removed tsk-impl flag with exit 2" {
+  run --separate-stderr __cog_executor_prex_parse_args_parse "-t TSK-1 Task" mode task
 
   assert_failure 2
   [[ $stderr == *"unknown executor-prex flag"* ]]

@@ -12,7 +12,7 @@ rounds:
   - item: one
     status: todo
     depends_on: []
-    prompt: /prex -ar one.md
+    prompt: /executor-prex -ar one.md
     notes: note
 EOF
   cat >"$REPO_ROOT/plans/bare/queue-rounds.yaml" <<'EOF'
@@ -20,7 +20,7 @@ rounds:
   - item: one
     status: todo
     depends_on: []
-    prompt: /prex -ar one.md
+    prompt: /executor-prex -ar one.md
     notes: note
 EOF
   cat >"$REPO_ROOT/plans/no-repos/queue-rounds.yaml" <<'EOF'
@@ -28,7 +28,7 @@ rounds:
   - item: one
     status: todo
     depends_on: []
-    prompt: /prex -ar one.md
+    prompt: /executor-prex -ar one.md
     notes: note
 EOF
   printf 'file target\n' >"$REPO_ROOT/file-target.md"
@@ -48,7 +48,7 @@ EOF
 
 @test "cog runner-queue-resolve-plan resolves @ directory and repos" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
-  write_main_queue "$queue" "/prex -ar @plans/with-at/"
+  write_main_queue "$queue" "/executor-prex -ar @plans/with-at/"
 
   run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
 
@@ -103,7 +103,7 @@ EOF
 
 @test "cog runner-queue-resolve-plan resolves bare directory and missing repos as empty array" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
-  write_main_queue "$queue" "/prex -ar plans/no-repos/"
+  write_main_queue "$queue" "/executor-prex -ar plans/no-repos/"
 
   run cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
 
@@ -115,17 +115,17 @@ EOF
 @test "cog runner-queue-resolve-plan fails closed for bad targets" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
 
-  write_main_queue "$queue" "/prex -ar file-target.md"
+  write_main_queue "$queue" "/executor-prex -ar file-target.md"
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target is not a directory"* ]]
 
-  write_main_queue "$queue" "/prex -ar plans/no-queue"
+  write_main_queue "$queue" "/executor-prex -ar plans/no-queue"
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target has no queue-rounds.yaml"* ]]
 
-  write_main_queue "$queue" "/prex -ar plans/missing"
+  write_main_queue "$queue" "/executor-prex -ar plans/missing"
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item selected --json
   assert_failure
   [[ $stderr == *"plan target not found"* ]]
@@ -137,7 +137,7 @@ EOF
   printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
   printf 'rounds: []\n' >"$repo/.implementation-plans/plans/parent/child/queue-rounds.yaml"
   local queue="$repo/.implementation-plans/queue-plans.yaml"
-  write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
+  write_main_queue "$queue" "/executor-prex -ar @.implementation-plans/plans/good/"
 
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
 
@@ -150,7 +150,7 @@ EOF
   mkdir -p "$repo/.implementation-plans/plans/good"
   printf 'rounds: []\n' >"$repo/.implementation-plans/plans/good/queue-rounds.yaml"
   local queue="$repo/.implementation-plans/queue-plans.yaml"
-  write_main_queue "$queue" "/prex -ar @.implementation-plans/plans/good/"
+  write_main_queue "$queue" "/executor-prex -ar @.implementation-plans/plans/good/"
 
   run cog runner-queue-resolve-plan --repo-root "$repo" --queue "$queue" --item selected --json
 
@@ -177,7 +177,7 @@ EOF
   assert_failure
   [[ $stderr == *"unsupported plan prompt"* ]]
 
-  write_main_queue "$queue" "/prex -ar plans/bare"
+  write_main_queue "$queue" "/executor-prex -ar plans/bare"
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item missing --json
   assert_failure
   [[ $stderr == *"main queue item not found"* ]]
@@ -187,12 +187,12 @@ plans:
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar plans/bare
+    prompt: /executor-prex -ar plans/bare
     notes: note
   - item: same
     status: todo
     depends_on: []
-    prompt: /prex -ar plans/bare
+    prompt: /executor-prex -ar plans/bare
     notes: note
 EOF
   run --separate-stderr cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$queue" --item same --json

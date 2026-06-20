@@ -24,7 +24,7 @@ setup() {
 
 @test "queue-append entry JSON matches queue schema" {
   local entry
-  entry="$(__cog_queue_append_entry_json item todo "/prex -ar item.md" "base" "note")"
+  entry="$(__cog_queue_append_entry_json item todo "/executor-prex -ar item.md" "base" "note")"
 
   run cog::fn::queue_entry_json_validate "$entry"
 
@@ -35,7 +35,7 @@ setup() {
   local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   printf '%s\n' "rounds: []" >"$queue"
 
-  run cog::cmd::queue_append --schema rounds --queue "$queue" --item one --status todo --prompt "/prex -ar one.md" --json
+  run cog::cmd::queue_append --schema rounds --queue "$queue" --item one --status todo --prompt "/executor-prex -ar one.md" --json
 
   assert_success
   # shellcheck disable=SC2154 # Defined by sourced cmd_queue_append.sh.

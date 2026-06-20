@@ -13,12 +13,12 @@ rounds:
   - item: first
     status: done
     depends_on: []
-    prompt: /prex -ar first.md
+    prompt: /executor-prex -ar first.md
     notes: note
 EOF
   cp "$queue" "$prefix"
 
-  run cog queue-append --schema rounds --queue "$queue" --item second --status todo --prompt "/prex -ar second.md" --depends-on first,setup --notes "note" --json
+  run cog queue-append --schema rounds --queue "$queue" --item second --status todo --prompt "/executor-prex -ar second.md" --depends-on first,setup --notes "note" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.append_only_verified == true and .count_before == 1 and .count_after == 2 and .appended.depends_on == ["first","setup"]' >/dev/null
@@ -29,9 +29,9 @@ EOF
 @test "cog queue-append rejects duplicate items" {
   local queue="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
   printf '%s\n' "rounds: []" >"$queue"
-  cog queue-append --schema rounds --queue "$queue" --item same --status todo --prompt "/prex -ar one.md" --json >/dev/null
+  cog queue-append --schema rounds --queue "$queue" --item same --status todo --prompt "/executor-prex -ar one.md" --json >/dev/null
 
-  run --separate-stderr cog queue-append --schema rounds --queue "$queue" --item same --status todo --prompt "/prex -ar two.md" --json
+  run --separate-stderr cog queue-append --schema rounds --queue "$queue" --item same --status todo --prompt "/executor-prex -ar two.md" --json
 
   assert_failure
   [[ $stderr == *"duplicate queue item"* ]]

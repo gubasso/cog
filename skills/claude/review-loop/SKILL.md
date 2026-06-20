@@ -37,7 +37,7 @@ section defines the per-round input/output protocol used here.
 Two modes depending on `$ARGUMENTS`:
 
 **Handoff mode** — `$ARGUMENTS` is the absolute path to a `review_loop_input.json` file produced by
-`prex` stage 5. Before reading it, validate the orchestrator-supplied handoff file through the
+`executor-prex` stage 5. Before reading it, validate the orchestrator-supplied handoff file through the
 deterministic `cog review-loop-input` surface; that command owns the handoff schema and validation
 contract.
 
@@ -97,7 +97,7 @@ The following guardrails are inlined here as critical safety constraints:
   `--output-last-message`; output capture is unreliable).
 - **Run every Codex call in the foreground** with `run_in_background` false/omitted and a Bash-tool
   `timeout` of `600000ms`; the call blocks until Codex exits. **Never background it.** `review-loop`
-  often runs in a headless / forked context (it carries `context: fork` and is handed off from prex
+  often runs in a headless / forked context (it carries `context: fork` and is handed off from executor-prex
   stage 5) and may run as a nested subagent (Claude Code ≥ v2.1.172). In any headless host a
   backgrounded Codex run is reaped ~5s after the turn's final result, silently losing the round's
   review while the process still exits `0`. A review that cannot finish within 600s is a scope

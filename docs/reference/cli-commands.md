@@ -45,7 +45,6 @@ this reference table.
 | `doctor` | Check cog runtime health and installation prerequisites. |
 | `executor` | Manage shared executor run contracts and stage artifacts. |
 | `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
-| `executor-prex-tsk-resolve` | Resolve a tsk issue for an executor-prex run. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
 | `gc-commit` | Commit with a message file and explicit pathspec. |
 | `gc-plan` | Partition session files by owning repo and run safety scan. |
@@ -73,8 +72,6 @@ this reference table.
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |
-| `prex-parse-args` | Parse prex arguments into run state (compatibility alias for executor-prex-parse-args). |
-| `prex-tsk-resolve` | Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve). |
 | `print-config` | Print resolved configuration values and their sources. |
 | `queue-append` | Append one implementation plan queue entry. |
 | `queue-bootstrap` | Create and validate an implementation plan queue. |
@@ -116,9 +113,6 @@ this reference table.
 | `test-review-lint` | Emit deterministic test-review lint signals. |
 | `test-review-manifest` | Update test-review MANIFEST.yaml. |
 | `tracking-scan` | Report tracked artifacts whose revalidation cadence is overdue. |
-| `tsk-fetch-issue` | Fetch or create a tsk issue. |
-| `tsk-snapshot` | Capture read-only git context for tsk workflows. |
-| `tsk-store-init` | Resolve and initialize the shared tsk store. |
 
 ## Mirrors
 
@@ -142,7 +136,7 @@ classification.
 `cog executor queue-prompts` prints the queue-prompt recognition contract consumed by runner-queue
 integration. Its `match` object is the generic acceptance rule: any `/executor-*` prompt (matched by
 the prefix taxonomy via `cog::fn::skill::classify_prefix`, name shape `^[a-z0-9-]{1,64}$`) in
-`-ar <target-dir>` form is accepted, with `/prex` aliased to `/executor-prex`. The `prompts` array
+`-ar <target-dir>` form is accepted. The `prompts` array
 lists known executors as examples, not a closed allowlist; a new `executor-*` skill needs no resolver
 change. Top-level `runner-queue` plan entries use `-ar <target-dir>` when resolving a main queue item
 to an inner queue.

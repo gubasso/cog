@@ -26,7 +26,7 @@ delegate to that hook (matching how `just lint`/`just test` already delegate to 
 
 ## Decisions & Constraints
 
-- **Executor: prex (EF 1.5).**
+- **Executor: executor-prex (EF 1.5).**
 - **New command `cog man-build`** owns the deterministic scdoc mechanic (the repo's
   skill/script boundary requires deterministic mechanics live in `cog` subcommands, not in justfile
   prose or skills). It supports two modes:

@@ -34,21 +34,21 @@ The authoritative order and status live in `queue-rounds.yaml`.
 
 ```bash
 # Execute the next todo round (executor reads queue-rounds.yaml, runs the first `todo` round, then stops):
-/prex -ar @.implementation-plans/plans/man-page-sync-precommit-hook/
+/executor-prex -ar @.implementation-plans/plans/man-page-sync-precommit-hook/
 
 # Or target the round file directly:
-/prex -ar .implementation-plans/plans/man-page-sync-precommit-hook/man-page-sync-precommit-hook.md
+/executor-prex -ar .implementation-plans/plans/man-page-sync-precommit-hook/man-page-sync-precommit-hook.md
 ```
 
 ## Execution Discipline
 
-**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/prex` session. Do not implement multiple rounds in one session.
+**Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for a single `/executor-prex` session. Do not implement multiple rounds in one session.
 
-When `/prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
+When `/executor-prex` is pointed at this directory or this `README.md`, it MUST read this plan's `queue-rounds.yaml`, find the first round with status `todo`, set that round to `doing`, execute only that round, then set it to `done` and stop.
 
 ## Decisions & Constraints
 
-- **Executor: prex (EF 1.5).**
+- **Executor: executor-prex (EF 1.5).**
 - **New command `cog man-build`** owns the deterministic scdoc mechanic (the repo's
   skill/script boundary requires deterministic mechanics live in `cog` subcommands, not in justfile
   prose or skills). It supports two modes:

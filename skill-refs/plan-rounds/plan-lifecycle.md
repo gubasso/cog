@@ -1,7 +1,7 @@
 # Plan Lifecycle & Executor Model
 
 Shared specification for skills that produce implementation plans. Every plan is a directory of
-self-contained round files, and each round is sized for execution by a single `/prex` run.
+self-contained round files, and each round is sized for execution by a single `/executor-prex` run.
 
 The `.implementation-plans/` tree is **flat and queue-driven**: a plan's status, order,
 dependencies, and execution command live in YAML queue files — never in directory or file names.
@@ -66,14 +66,14 @@ one or modify `.gitignore`.
   Entry order reflects execution priority: active items first, then backlog, then done.
 - **`plans/<slug>/queue-rounds.yaml`** lists that plan's `rounds:` in execution order. Each round
   entry has the same fields, with `item` = the round's `<topic>` and `prompt` =
-  `/prex -ar .implementation-plans/plans/<slug>/<topic>.md`.
+  `/executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`.
 
 **Every queue entry — both levels — carries a `prompt` field.**
 
 ## Round file contract
 
 Each round file (`<topic>.md`) is a **self-contained task description** designed to be consumed
-directly by `/prex -ar <path>` or included via `@` in `/prex -ar @<plan-dir>/`.
+directly by `/executor-prex -ar <path>` or included via `@` in `/executor-prex -ar @<plan-dir>/`.
 
 Self-containment rules:
 
@@ -86,13 +86,13 @@ Self-containment rules:
 
 ## Executor capacity model
 
-Rounds are sized against the capabilities of a single `/prex` run:
+Rounds are sized against the capabilities of a single `/executor-prex` run:
 
 - **Codex timeout**: 600 seconds per stage (planning and implementation). A round must describe work
   completable within this window.
 - **Single write session**: Codex implements in one continuous session. The round must be cohesive —
   changes that require iterative feedback loops across sessions should be separate rounds.
-- **Quality threshold**: Quality degrades when a single prex run handles multiple loosely-related
+- **Quality threshold**: Quality degrades when a single executor-prex run handles multiple loosely-related
   changes. Each round should address one cohesive chunk of work (one feature, one module refactor,
   one layer of the stack).
 - **Practical sizing**: A well-scoped round delivers one coherent feature or architectural layer.
@@ -105,12 +105,12 @@ Rounds are sized against the capabilities of a single `/prex` run:
    missing, writes the plan as `plans/<slug>/` (`README.md`, round files, inner `queue-rounds.yaml`,
    `STRATEGY.md` for XL), and registers the plan in the top-level
    `.implementation-plans/queue-plans.yaml`. It never executes rounds.
-2. **Execution**: Rounds are executed **one at a time**, each in its own `/prex -ar` session. When
+2. **Execution**: Rounds are executed **one at a time**, each in its own `/executor-prex -ar` session. When
    handed the plan directory or its `README.md`, the executor reads the plan's `queue-rounds.yaml`,
    runs the first round whose status is `todo`, then stops. When starting a round it sets that
    round's `status: doing`; after completing it, `status: done` — a crashed or interrupted session
    thus leaves a visible `doing` marker. Never batch multiple rounds into a single session — each
-   round is a self-contained unit sized for one `/prex` run.
+   round is a self-contained unit sized for one `/executor-prex` run.
 3. **Completion**: After all rounds are done, set the plan's `status: done` in the top-level
    `.implementation-plans/queue-plans.yaml`. **Nothing moves on disk** — the plan directory stays
    where it is. Status, not path, records the lifecycle state.
@@ -120,7 +120,7 @@ Rounds are sized against the capabilities of a single `/prex` run:
 - **`plans/<slug>/queue-rounds.yaml`** is the machine-readable source of truth for round order and
   status.
 - **`plans/<slug>/README.md`** is the human-facing index and decision record: problem statement,
-  strategy, execution commands (exact `/prex` invocations), architectural decisions, and rejected
+  strategy, execution commands (exact `/executor-prex` invocations), architectural decisions, and rejected
   alternatives. It mirrors the queue for readers but must not become a competing source of truth for
   status — when in doubt, the `queue-rounds.yaml` wins.
 - **`.implementation-plans/README.md`** (root) is a static explainer of the whole system —
@@ -136,7 +136,7 @@ Migration is manual:
 3. Rename meta files: `_QUEUE.yaml` → `queue-plans.yaml` at the root and `queue-rounds.yaml` inside
    plan dirs; `_README.md` → `README.md` at both levels.
 4. Rewrite every `prompt:` field to the new paths
-   (`/prex -ar .implementation-plans/plans/<slug>/<topic>.md`, etc.).
+   (`/executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`, etc.).
 5. Bootstrap the root `README.md` from the template on the next generating-skill run (or copy it
    manually).
 

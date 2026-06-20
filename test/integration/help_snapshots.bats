@@ -45,7 +45,6 @@ Commands:
   doctor         Check cog runtime health and installation prerequisites.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
-  executor-prex-tsk-resolve Resolve a tsk issue for an executor-prex run.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-plan        Partition session files by owning repo and run safety scan.
@@ -68,8 +67,6 @@ Commands:
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
-  prex-parse-args Parse prex arguments into run state (compatibility alias for executor-prex-parse-args).
-  prex-tsk-resolve Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve).
   print-config   Print resolved configuration values and their sources.
   queue-append   Append one implementation plan queue entry.
   queue-bootstrap Create and validate an implementation plan queue.
@@ -104,10 +101,7 @@ Commands:
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.
-  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue.
-  tsk-fetch-issue Fetch or create a tsk issue.
-  tsk-snapshot   Capture read-only git context for tsk workflows.
-  tsk-store-init Resolve and initialize the shared tsk store."
+  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue."
 }
 
 @test "cog help matches root help" {
@@ -135,7 +129,6 @@ Commands:
   doctor         Check cog runtime health and installation prerequisites.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
-  executor-prex-tsk-resolve Resolve a tsk issue for an executor-prex run.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-plan        Partition session files by owning repo and run safety scan.
@@ -158,8 +151,6 @@ Commands:
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
-  prex-parse-args Parse prex arguments into run state (compatibility alias for executor-prex-parse-args).
-  prex-tsk-resolve Resolve a tsk issue for a prex run (compatibility alias for executor-prex-tsk-resolve).
   print-config   Print resolved configuration values and their sources.
   queue-append   Append one implementation plan queue entry.
   queue-bootstrap Create and validate an implementation plan queue.
@@ -194,10 +185,7 @@ Commands:
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.
-  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue.
-  tsk-fetch-issue Fetch or create a tsk issue.
-  tsk-snapshot   Capture read-only git context for tsk workflows.
-  tsk-store-init Resolve and initialize the shared tsk store."
+  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue."
 }
 
 @test "cog noop --help matches generated snapshot" {

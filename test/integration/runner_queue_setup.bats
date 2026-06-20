@@ -19,7 +19,7 @@ rounds:
   - item: next
     status: todo
     depends_on: []
-    prompt: /prex -ar next.md
+    prompt: /executor-prex -ar next.md
     notes: note
 EOF
 }
@@ -46,7 +46,7 @@ rounds:
   - item: next
     status: todo
     depends_on: []
-    prompt: /prex -ar next.md
+    prompt: /executor-prex -ar next.md
     notes: note
 EOF
 
@@ -67,7 +67,7 @@ rounds:
   - item: inner
     status: todo
     depends_on: []
-    prompt: /prex -ar inner.md
+    prompt: /executor-prex -ar inner.md
     notes: note
 EOF
   cat >"${BATS_TEST_TMPDIR}/repo/queue-plans.yaml" <<'EOF'
@@ -75,7 +75,7 @@ plans:
   - item: main
     status: todo
     depends_on: []
-    prompt: /prex -ar @plans/main/
+    prompt: /executor-prex -ar @plans/main/
     notes: note
 EOF
 

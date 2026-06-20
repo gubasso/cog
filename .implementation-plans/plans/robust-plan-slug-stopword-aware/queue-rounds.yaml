@@ -2,5 +2,5 @@ rounds:
   - item: robust-plan-slug-stopword-aware
     status: todo
     depends_on: []
-    prompt: /prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware/robust-plan-slug-stopword-aware.md
+    prompt: /executor-prex -ar .implementation-plans/plans/robust-plan-slug-stopword-aware/robust-plan-slug-stopword-aware.md
     notes: Make cog plan-slug stopword-aware with additive JSON fields, tests, docs, and plan-writer skill prose updates.

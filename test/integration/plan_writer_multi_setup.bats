@@ -34,11 +34,11 @@ EOF
   [[ $stderr == *"err.kind: InvalidInput"* ]]
 }
 
-@test "cog plan-writer-multi-setup normalizes executor-prex to prex capacity profile" {
+@test "cog plan-writer-multi-setup accepts executor-prex capacity profile" {
   run cog plan-writer-multi-setup --json "--executor executor-prex Work item"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.executor == "prex" and .ef == "1.5"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.executor == "executor-prex" and .ef == "1.5"' >/dev/null
 }
 
 @test "cog plan-writer-multi-setup --help dispatches" {

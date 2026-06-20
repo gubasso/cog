@@ -31,7 +31,6 @@ _cog() {
     doctor
     executor
     executor-prex-parse-args
-    executor-prex-tsk-resolve
     gc-classify-failure
     gc-commit
     gc-plan
@@ -54,8 +53,6 @@ _cog() {
     precommit-apply-template
     precommit-detect
     preflight
-    prex-parse-args
-    prex-tsk-resolve
     print-config
     queue-append
     queue-bootstrap
@@ -91,9 +88,6 @@ _cog() {
     test-review-lint
     test-review-manifest
     tracking-scan
-    tsk-fetch-issue
-    tsk-snapshot
-    tsk-store-init
   )
 
   COMPREPLY=()
