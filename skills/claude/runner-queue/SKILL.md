@@ -5,7 +5,7 @@ description: >
   queue-rounds.yaml, or a top-level plans: main queue, to completion. Use when
   the user asks to "run the queue", "run the plan queue", "execute the plan
   rounds", "drive the plan directory", or invokes "runner-queue".
-  Dispatches queued /prex rounds to fresh claude-delegate subagents, verifies
+  Dispatches queued executor-prex rounds to fresh claude-delegate subagents, verifies
   queue status, commits with /gc -a across every repo the item touched, runs the
   review-implementation-plans boundary, and loops until complete or failed closed.
 argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir>"
@@ -25,15 +25,15 @@ mode it selects main plans in order, resolves each one to an `inner_queue`, driv
 flips the main plan to `done`, commits, runs revision, and continues.
 
 Dispatch each round and each commit through the **Agent tool** (foreground, blocking). Nested
-subagents (Claude Code >= v2.1.172) let `/prex` spawn its own review-stage subagents from within the
-delegate, so `/prex` no longer needs its own top-level process. The old requirement to run each
+subagents (Claude Code >= v2.1.172) let `/executor-prex` spawn its own review-stage subagents from within the
+delegate, so `/executor-prex` no longer needs its own top-level process. The old requirement to run each
 round in a separate headless `claude -p` process is **obsolete and removed**; see the orchestration
 contract docs for the current foreground Agent shape.
 
 A foreground Agent call blocks the orchestrator until the delegate's agentic loop completes and
 returns. The delegate's own Codex Bash calls, one level down, rely on the same session env guarantee
 as the parent: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` must be in force so Claude Code does not
-auto-background long-running Bash calls. `/prex` asserts that env at bootstrap; the foreground
+auto-background long-running Bash calls. `/executor-prex` asserts that env at bootstrap; the foreground
 discipline still applies to every Codex invocation. Multi-level round completion is independently
 guaranteed by the queue-status check below.
 
@@ -74,7 +74,7 @@ rounds:
   - item: round-one
     status: todo
     depends_on: []
-    prompt: "/prex -ar .implementation-plans/plans/<plan>/round-one.md"
+    prompt: "/executor-prex -ar .implementation-plans/plans/<plan>/round-one.md"
     notes: ""
 ```
 
@@ -92,14 +92,14 @@ while IFS= read -r r; do [[ -n "$r" ]] && REPO_FLAGS+=(--repo "$r"); done <<<"$R
 ## Security Posture
 
 Subagents inherit the orchestrating session's **permission mode**. Under the deployed `base.json`
-(`defaultMode: bypassPermissions`), the `claude-delegate` subagent - and the `/prex` / `/gc` work it
+(`defaultMode: bypassPermissions`), the `claude-delegate` subagent - and the `/executor-prex` / `/gc` work it
 runs - execute with that mode without per-process flags. Run only inside a trusted repository. The
 startup guard refuses a dirty worktree across every declared repo and refuses any item already marked
 `doing`.
 
 Do not weaken the trust boundary. The delegate uses the stowed skills from `$HOME/.claude/skills/`
 and the stowed `$HOME/.claude/agents/claude-delegate.md`, not unstowed repo source. If nested
-unattended `/prex` ever surfaces an approval prompt, the session was started in a weaker permission
+unattended `/executor-prex` ever surfaces an approval prompt, the session was started in a weaker permission
 mode than `bypassPermissions`; restart it under the intended mode after confirming the boundary.
 
 ## Usage
@@ -119,7 +119,8 @@ selected plan, resolved `kind`, resolved prompt, inner queue path, and remaining
 does not dispatch delegates, flip status, commit, or run revision.
 
 The plan directory or queue path must not contain whitespace. Arguments are tokenized by
-word-splitting, matching the convention used by `/prex` and the `.implementation-plans/` layout.
+word-splitting, matching the convention used by `/executor-prex` and the `.implementation-plans/`
+layout.
 
 ## Algorithm
 
@@ -215,7 +216,7 @@ echo "REPO_ROOT=$REPO_ROOT ITEM=$ITEM INNER_QUEUE_PATH=$INNER_QUEUE_PATH"
 
       <PROMPT>
 
-  This is a `/prex` round: run all stages (plan -> review -> implement -> review -> loop).
+  This is an `/executor-prex` round: run all stages (plan -> review -> implement -> review -> loop).
   Run every Codex call in the foreground; never background it. The round is complete only when the
   plan is fully implemented and reviewed AND this round's status is flipped to `done` in
   queue-rounds.yaml per the plan's final step. Return your structured result.
@@ -357,7 +358,7 @@ cog queue-status-set --queue "$MAIN_QUEUE_PATH" --schema plans --item "$PLAN_ITE
 ```
 
 Main-plan `done` is always runner-owned via this exact command. Inner-round `done` remains
-verify-only and is owned by the round's `/prex`.
+verify-only and is owned by the round's `/executor-prex`.
 
 Commit the plan's accumulated work plus the main-queue status flip with the existing foreground
 `claude-delegate` `/gc -a` pattern. Build the `--repo` flags from `INNER_REPOS` (still in
@@ -462,7 +463,7 @@ postcondition.
   Writing run-scoped state files under `$RUN_DIR` (for example `inner.env`, mirroring setup's
   `ctx.env`) is not a queue edit and is allowed.
 - Inner-round `done` remains verify-only after the round delegate returns; it is owned by the
-  round's `/prex`.
+  round's `/executor-prex`.
 - Main-plan `done` is set only by `cog queue-status-set --schema plans --from todo --to done`.
 - Revision queue mutations go only through `cog queue-status-set`, `cog queue-append`,
   `cog queue-deps-set`, and `cog queue-reorder`; graph validation goes through
@@ -475,11 +476,12 @@ postcondition.
 - Always commit with `/gc -a` plus `--repo` per satellite, building the satellite list from the inner
   queue's repos (`INNER_REPOS`), not the main-queue `REPOS`; the clean-tree guard across every
   declared repo is what makes stage-all safe.
-- Use queued prompts verbatim. Do not reconstruct `/prex` commands.
+- Use queued prompts verbatim. Do not reconstruct executor commands; `/prex` remains a supported
+  compatibility prompt for existing queues.
 - Plan directories are flat siblings under `plans/`; the resolver fails closed on a nested target.
   Do not work around it by hand-resolving a nested path.
-- Never delegate the main loop to a subagent. Never background Agent, `/prex`, `/gc`, or revision
-  work.
+- Never delegate the main loop to a subagent. Never background Agent, `/executor-prex`, `/prex`,
+  `/gc`, or revision work.
 
 ## Failure Handling
 

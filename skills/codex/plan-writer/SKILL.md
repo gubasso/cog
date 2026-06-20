@@ -95,7 +95,7 @@ The coordinator also bootstraps and appends each inner `rounds:` queue:
 cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
 cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
   --item "$TOPIC" --status todo --depends-on "$DEPENDS_ON_CSV" \
-  --prompt "/prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
+  --prompt "/executor-prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
   --notes "$NOTES" --json
 ```
 

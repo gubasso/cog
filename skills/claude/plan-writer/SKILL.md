@@ -5,14 +5,14 @@ description: >
   under .implementation-plans/plans/. Evaluates complexity (S/M/L/XL): every
   plan is generated as one or more plan directories under
   `.implementation-plans/plans/`; each directory holds self-contained round
-  files sized for one `/prex -ar` run. Includes an interactive
+  files sized for one `/executor-prex -ar` run. Includes an interactive
   interview to clarify scope, alternatives, and decisions before generating.
   Use when the user says "plan-writer", "write a plan", "capture this as a plan",
   or wants to export conversation findings as actionable implementation documents.
 
   Optional flag: --executor <prex|single-pass|limited> overrides the default
   executor assumption used to size rounds. The default is `prex` — assumes the
-  /prex pipeline (Codex plan → Claude review → Codex implement → Claude
+  `/executor-prex` pipeline (Codex plan → Claude review → Codex implement → Claude
   review-loop with fixes), which absorbs in-round risk and produces fewer,
   larger, more cohesive rounds (Executor Factor 1.5). `single-pass` assumes one
   capable model with no review gate; raw complexity stands (EF 1.0). `limited`
@@ -30,7 +30,7 @@ allowed-tools: Bash Read Write Grep Glob
 
 Synthesize the current conversation into an executor-aware implementation plan under
 `.implementation-plans/plans/` — one or more directories of self-contained round files, each sized
-for one `/prex` run and executable by a fresh LLM session with ZERO assumptions about prior
+for one `/executor-prex` run and executable by a fresh LLM session with ZERO assumptions about prior
 conversation. Runs **inline** (no fork): it needs full access to the live conversation to extract
 decisions, findings, and explored code.
 
@@ -322,22 +322,23 @@ Include:
 - Strategy summary (how the work is split and why).
 - A rounds overview that mirrors the plan's `queue-rounds.yaml` (which is the source of truth for
   round order and status — do not duplicate status into prose that can drift).
-- Exact execution commands (`/prex -ar` per-round or full-directory).
+- Exact execution commands (`/executor-prex -ar` per-round or full-directory; `/prex` remains a
+  supported compatibility form for existing queues).
 - **Execution discipline section** — a prominent, clearly labeled section (not just a bullet) that
   states the following rules unambiguously:
-  1. **One round per `/prex` session.** Each round executes in its own isolated `/prex` invocation.
-     Never execute multiple rounds in a single session.
+  1. **One round per `/executor-prex` session.** Each round executes in its own isolated
+     `/executor-prex` invocation. Never execute multiple rounds in a single session.
   2. **Directory or README invocation selects one round, not all.** When the executor receives the
-     plan directory (`/prex -ar @.implementation-plans/plans/<slug>/`) or the `README.md`
-     (`/prex -ar .implementation-plans/plans/<slug>/README.md`), it MUST read this plan's
+     plan directory (`/executor-prex -ar @.implementation-plans/plans/<slug>/`) or the `README.md`
+     (`/executor-prex -ar .implementation-plans/plans/<slug>/README.md`), it MUST read this plan's
      `queue-rounds.yaml`, identify the first round with status `todo`, execute ONLY that single round,
      then stop. It does NOT proceed to the next round in the same session.
   3. **Status flips.** When starting a round, set its `status` to `doing` in the plan's
      `queue-rounds.yaml`; on completion, set it to `done`. A crashed or interrupted session thus
      leaves a visible `doing` marker.
   4. **Sequential sessions.** After completing a round (marking it `done` in the plan's
-     `queue-rounds.yaml`), the executor session ends. The user launches a new `/prex` session for
-     the next round.
+     `queue-rounds.yaml`), the executor session ends. The user launches a new `/executor-prex`
+     session for the next round.
   5. **Why:** Fresh sessions prevent context contamination between rounds, keep token usage
      predictable, and allow the user to review intermediate results before proceeding.
 - Decisions and constraints from the interview (with reasoning). **Always include a
@@ -378,7 +379,7 @@ Each round file must be **self-contained** per the contract in
 Create `$PLANS_DIR/$SLUG/queue-rounds.yaml` through the helper and append one round entry at a time in
 execution order. Each entry still follows Template D: `item` (the round's `<topic>`),
 `status: todo`, `depends_on` (list of earlier round `<topic>`s, or `[]`),
-`prompt: /prex -ar .implementation-plans/plans/<slug>/<topic>.md`, and `notes`.
+`prompt: /executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`, and `notes`.
 
 ```bash
 cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
@@ -388,7 +389,7 @@ cog queue-append \
   --item "$TOPIC" \
   --status todo \
   --depends-on "$DEPENDS_ON_CSV" \
-  --prompt "/prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
+  --prompt "/executor-prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
   --notes "$NOTES" \
   --json
 ```
@@ -400,7 +401,7 @@ helper:
 
 - `item: <slug>` always names a directory.
 - `status: todo`, `depends_on` (other plan `item`s, or `[]`), and `notes`.
-- `prompt: /prex -ar @.implementation-plans/plans/<slug>/`.
+- `prompt: /executor-prex -ar @.implementation-plans/plans/<slug>/`.
 - If Layer 1 produced multiple sibling directories, append one top-level entry per directory,
   sharing a slug prefix and wired with `depends_on` for ordering.
 
@@ -452,13 +453,13 @@ After writing all files, report to the user:
 3. Complexity grade and round count per directory.
 4. A list of each round file with its topic (one line per round).
 5. The exact execution commands to run:
-   - Single round: `/prex -ar .implementation-plans/plans/<slug>/<topic>.md`
-   - Sequential rounds: list each `/prex -ar` command in order.
-   - Full directory: `/prex -ar @.implementation-plans/plans/<slug>/`
-6. A reminder that **each `/prex` invocation executes exactly one round** — even when pointing at
+   - Single round: `/executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`
+   - Sequential rounds: list each `/executor-prex -ar` command in order.
+   - Full directory: `/executor-prex -ar @.implementation-plans/plans/<slug>/`
+6. A reminder that **each `/executor-prex` invocation executes exactly one round** — even when pointing at
    the directory or `README.md`. The executor reads the plan's `queue-rounds.yaml`, picks the next
-   `todo` round, executes it, and stops. A new `/prex` session is required for each subsequent
-   round.
+   `todo` round, executes it, and stops. A new `/executor-prex` session is required for each
+   subsequent round.
 
 Do NOT display the full contents of the generated files unless the user asks.
 
@@ -491,4 +492,4 @@ Normal interactive `/plan-writer` use ignores coordinator mode.
   before invoking this skill.
 - The generated `README.md` of a directory plan must make the one-round-per-session rule impossible
   to miss. This is a hard constraint, not a suggestion — the execution discipline section is
-  load-bearing for how `/prex` consumes the plan.
+  load-bearing for how `/executor-prex` consumes the plan.

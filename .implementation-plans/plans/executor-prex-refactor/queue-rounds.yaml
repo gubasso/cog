@@ -29,7 +29,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage5-review-loop.md
     notes: ""
   - item: docs-tests-cleanup
-    status: todo
+    status: done
     depends_on:
       - stage5-review-loop
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/docs-tests-cleanup.md

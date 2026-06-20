@@ -88,7 +88,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/lean-plan-and-review-skills/
     notes: 'L, 4 rounds, prex. Four lean plan-mode-style skills: /plan-claude (opus+xhigh, gated), /plan-codex (native effort high), /review-plan-claude, /review-plan-codex. Shared cog plan-doc/plan-review artifact mechanics; consume research shelf; retire legacy plan-reviewer.'
   - item: executor-prex-refactor
-    status: todo
+    status: done
     depends_on:
       - lean-plan-and-review-skills
       - review-deep-loop-refactor

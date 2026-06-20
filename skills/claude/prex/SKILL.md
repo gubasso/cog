@@ -343,10 +343,17 @@ Read `stage1-plan.txt`, summarize the result briefly for the user, and move dire
 ## Stage 2 Through Stage 5 Details
 
 The detailed Stage 2 plan review, Stage 3 implementation, Stage 4 implementation review, and
-Stage 5 review-loop handoff protocol lives in `references/stage-2-through-5-details.md`. Read that
-reference before starting Stage 2 and follow it exactly. Keep this `SKILL.md` as the orchestration
-entry point; the reference carries the long-form command shapes, validation checks, and fallback
-tables.
+Stage 5 review-loop handoff protocol is maintained by the canonical executor in
+`../executor-prex/references/`:
+
+- `stage-2-review-plan.md`
+- `stage-3-implement.md`
+- `stage-4-review-implementation.md`
+- `stage-5-review-loop.md`
+
+Read those per-stage references before starting Stage 2 and follow them as the compatibility-alias
+stage guidance. Preserve this `/prex` entry point and the `prex-*` compatibility cog command names
+already used in this skill; do not recreate a separate lumped stage reference under the alias.
 
 ## Final Output
 

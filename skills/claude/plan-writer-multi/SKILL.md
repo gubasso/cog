@@ -291,7 +291,7 @@ to `.implementation-plans/`.
   each plan directory through `cog queue-append` (append-only, with a `prompt:` field). For each
   sibling directory, bootstrap and append the inner `queue-rounds.yaml` through the same helper.
   Every plan/round file is self-contained and carries the `Executor: <EXECUTOR> (EF <EF>)` line.
-  Include the one-round-per-`/prex`-session execution-discipline section.
+  Include the one-round-per-`/executor-prex`-session execution-discipline section.
 
 ```bash
 cog plan-slug --text "$(cat "$RUN_DIR/orientation.txt")" --json
@@ -308,13 +308,13 @@ For each sibling directory:
 cog queue-bootstrap --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" --json
 cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
   --item "$TOPIC" --status todo --depends-on "$ROUND_DEPENDS_ON_CSV" \
-  --prompt "/prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
+  --prompt "/executor-prex -ar .implementation-plans/plans/$SLUG/$TOPIC.md" \
   --notes "$ROUND_NOTES" --json
 ```
 
 Append one `queue-plans.yaml` entry per sibling directory. Use `depends_on` between top-level
 entries where the domain split has ordering, and use
-`/prex -ar @.implementation-plans/plans/<slug>/` as the top-level prompt form.
+`/executor-prex -ar @.implementation-plans/plans/<slug>/` as the top-level prompt form.
 
 If the plan's rounds implement into a **satellite git repo** other than the one holding the plan
 (for example, extracting code into a target project or writing into a SoT docs repo), add an optional
@@ -331,7 +331,7 @@ Report (do not dump full file contents unless asked):
 
 1. Plan directory or directories, file count, approx line count.
 2. Adjusted grade, Layer 1 directory count, and Layer 2 round count per directory.
-3. The exact `/prex -ar` execution command(s) and the one-round-per-session reminder for directories.
+3. The exact `/executor-prex -ar` execution command(s) and the one-round-per-session reminder for directories.
 4. One-line **synthesis provenance**: drafted independently by Claude and Codex (or Claude-only if
    degraded), plus any notable element adopted from the Codex draft.
 
