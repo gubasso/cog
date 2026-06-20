@@ -26,6 +26,7 @@ This directory is organized using Diataxis zones.
 ## Guides
 
 - [Install cog](guides/install.md)
+- [Maintenance tracking](guides/maintenance-tracking.md)
 - [Release and man-page build](guides/release-and-man-build.md)
 
 ## Reference

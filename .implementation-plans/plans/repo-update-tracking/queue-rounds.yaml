@@ -1,6 +1,6 @@
 rounds:
   - item: tracking-registry
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/repo-update-tracking/tracking-registry.md
     notes: YAML tracking registry (docs/reference/maintenance-tracking.yaml) with descriptive fields + runbook (docs/guides/), seeded with the model/effort reference entries.
