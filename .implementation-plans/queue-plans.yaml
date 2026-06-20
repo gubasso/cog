@@ -23,7 +23,7 @@ plans:
     prompt: /prex -ar @.implementation-plans/plans/cog-self-contained-skill-refs/
     notes: 'Make cog self-contained: ship skill-source refs in-repo (XDG), governance rule, decouple codex-conventions'
   - item: docs-design-tracking-principle
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar @.implementation-plans/plans/docs-design-tracking-principle/
     notes: S, 1 round, prex. Add tracking-file/periodic-revalidation docs-design principle to $DOCS_NOTES_REPO docs-design shelf (general pattern). Writes outside cog. Independent.
