@@ -212,6 +212,9 @@ The command list and short descriptions are sourced from command modules under
 *skill-lint*
 	Lint SKILL.md files against the skill/script boundary.
 
+*skill-refs*
+	Resolve in-repo/installed skill-source reference files.
+
 *suckless-apply*
 	Check, apply, and build a suckless patch.
 

@@ -76,6 +76,7 @@ _cog() {
     runner-queue-resolve-plan
     runner-queue-setup
     skill-lint
+    skill-refs
     suckless-apply
     suckless-conflicts
     suckless-preflight

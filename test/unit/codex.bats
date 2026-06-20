@@ -192,3 +192,35 @@ EOF
     assert_output "$expected"
   done
 }
+
+@test "codex_orientation emits read-only and write preambles" {
+  run cog::fn::codex_orientation read-only
+  assert_success
+  [[ $output == *"STRICT READ-ONLY MODE"* ]]
+
+  run cog::fn::codex_orientation write
+  assert_success
+  [[ $output == *"WRITE MODE ACTIVE"* ]]
+}
+
+@test "codex_orientation rejects invalid mode" {
+  run cog::fn::codex_orientation nope
+
+  assert_failure
+}
+
+@test "codex_explain_status emits guidance for known statuses" {
+  local status
+  for status in quota-75 resume-blocked timeout-124 sigterm ok; do
+    run cog::fn::codex_explain_status "$status"
+    assert_success
+    [[ -n $output ]]
+  done
+}
+
+@test "codex_explain_status rejects unknown status with known list" {
+  run cog::fn::codex_explain_status bogus
+
+  assert_failure
+  [[ $output == *"known statuses"* ]]
+}

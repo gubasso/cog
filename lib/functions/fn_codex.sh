@@ -340,3 +340,133 @@ cog::fn::codex_classify_error() {
     printf '%s\n' "nonzero"
   fi
 }
+
+cog::fn::codex_orientation() {
+  local mode="${1:-}"
+  case "$mode" in
+    read-only)
+      cat <<'EOF'
+=== STRICT READ-ONLY MODE ===
+You are operating in READ-ONLY mode. This is a hard constraint.
+PROHIBITED actions — any of these is a critical violation:
+- Creating, modifying, or deleting any file
+- Writing to any path on disk
+- Running git commands (commit, add, push, reset, checkout, etc.)
+- Executing any command that mutates system state
+PERMITTED actions:
+- Reading files, analyzing code, producing text output
+- Running read-only shell commands (cat, grep, find, ls, etc.)
+Produce your plan as text output only.
+===
+EOF
+      ;;
+    write)
+      cat <<'EOF'
+=== WRITE MODE ACTIVE ===
+The prior READ-ONLY restriction no longer applies. You now have WRITE access.
+PERMITTED actions:
+- Creating, modifying, and deleting files within the workspace
+- Running build/lint/test commands
+STILL PROHIBITED:
+- Running any git commands (commit, add, push, reset, checkout, etc.)
+- Writing outside the workspace directory
+Implement the plan below exactly. Report all files changed and any deviations.
+===
+EOF
+      ;;
+    *)
+      cog::helpers::die "$EX_USAGE" "InvalidInput" \
+        "invalid codex orientation mode" "mode: ${mode}" \
+        "expected read-only or write" ""
+      ;;
+  esac
+}
+
+cog::fn::codex_known_statuses() {
+  printf '%s\n' \
+    ok empty-output resume-blocked resume-owner-missing account-mismatch \
+    recovered-owner resume-no-rollout timeout-124 quota-75 sigterm nonzero
+}
+
+cog::fn::codex_explain_status() {
+  local status="${1:-}"
+  case "$status" in
+    ok)
+      cat <<'EOF'
+ok: the call completed successfully with usable output. Proceed.
+EOF
+      ;;
+    empty-output)
+      cat <<'EOF'
+empty-output: the process exited cleanly but produced no output-last-message
+content. Treat as a failed run; inspect the events log and retry.
+EOF
+      ;;
+    quota-75)
+      cat <<'EOF'
+quota-75 (AutoExhausted, exit 75): true depletion — accounts were tried and all
+failed with 401/429, or no eligible account exists. Wait until the earliest
+availability ETA in stderr, then retry. Only clear cooldowns when stderr shows
+the block is cooldown-only; for pure quota-window exhaustion, wait for the reset.
+EOF
+      ;;
+    resume-blocked)
+      cat <<'EOF'
+resume-blocked (ResumeBlocked, exit 75): exec resume can run only on the account
+that owns the thread, and that owner is quota-limited. This is a quota state, not
+a missing-thread error. Recover by waiting until the owner's reset time and
+re-running the resume, OR start a fresh exec on an available account (new thread,
+no continuity). The fresh-exec fallback is a deliberate continuity-losing choice.
+EOF
+      ;;
+    resume-owner-missing)
+      cat <<'EOF'
+resume-owner-missing: the owning account/rollout for the thread is unavailable.
+Start a fresh exec (new thread) rather than resuming.
+EOF
+      ;;
+    account-mismatch)
+      cat <<'EOF'
+account-mismatch: --account was ignored for resume because the thread is owned by
+a different account. The resume ran (or would run) on the owning account; do not
+assume the requested account was used.
+EOF
+      ;;
+    recovered-owner)
+      cat <<'EOF'
+recovered-owner: the wrapper recovered the owning account for the resume. The run
+proceeded on the recovered owner; note the account actually used.
+EOF
+      ;;
+    resume-no-rollout)
+      cat <<'EOF'
+resume-no-rollout: no rollout/thread found to resume (or a sandbox mismatch).
+Start a fresh exec; do not retry the resume as-is.
+EOF
+      ;;
+    timeout-124)
+      cat <<'EOF'
+timeout-124 (exit 124): the call hit the wrapper/orchestration timeout. Retry only
+after reducing scope or increasing the timeout at the orchestration level.
+EOF
+      ;;
+    sigterm)
+      cat <<'EOF'
+sigterm: the process was terminated by a signal. This is an interruption, not a
+model failure — do not treat it as a quota or content error. Re-run when ready.
+EOF
+      ;;
+    nonzero)
+      cat <<'EOF'
+nonzero: a non-zero exit that did not match a known quota/resume/timeout/signal
+class. Inspect stderr and the events log to diagnose before retrying.
+EOF
+      ;;
+    *)
+      cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+        "unknown codex status" "status: ${status}" \
+        "known statuses: $(cog::fn::codex_known_statuses | tr '\n' ' ')" \
+        "pass one of the known status classes"
+      ;;
+  esac
+}

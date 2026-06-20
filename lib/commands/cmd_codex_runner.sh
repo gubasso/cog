@@ -13,6 +13,8 @@ __cog_codex_runner_usage() {
   cog::fn::ui_data "Usage: cog codex-runner snapshot-post <run-dir> <pre.snap> <post.snap> <diff>"
   cog::fn::ui_data "Usage: cog codex-runner gate [codex|sandbox] <out.json>"
   cog::fn::ui_data "Usage: cog codex-runner verify-proof --proof <diff> --artifact <file> [--artifact <file>...] [--require-json <jq-expr>]"
+  cog::fn::ui_data "Usage: cog codex-runner orientation <read-only|write>"
+  cog::fn::ui_data "Usage: cog codex-runner explain-status <status>"
 }
 
 __cog_codex_runner_bool_for_status() {
@@ -384,6 +386,22 @@ cog::cmd::codex_runner() {
     verify-proof)
       shift
       __cog_codex_runner_verify_proof "$@"
+      ;;
+    orientation)
+      shift
+      [[ $# -eq 1 ]] || cog::fn::error_raise "MissingArgument" \
+        "invalid orientation arguments" \
+        "usage: cog codex-runner orientation <read-only|write>" "" \
+        "run 'cog codex-runner --help'"
+      cog::fn::codex_orientation "$1"
+      ;;
+    explain-status)
+      shift
+      [[ $# -eq 1 ]] || cog::fn::error_raise "MissingArgument" \
+        "invalid explain-status arguments" \
+        "usage: cog codex-runner explain-status <status>" "" \
+        "run 'cog codex-runner --help'"
+      cog::fn::codex_explain_status "$1"
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \

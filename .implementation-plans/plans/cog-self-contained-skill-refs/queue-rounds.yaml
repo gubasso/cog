@@ -1,6 +1,6 @@
 rounds:
   - item: cog-command-foundations
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/cog-self-contained-skill-refs/cog-command-foundations.md
     notes: 'Foundations: cog skill-refs resolver + codex-runner orientation/explain-status + tests + completion/man'

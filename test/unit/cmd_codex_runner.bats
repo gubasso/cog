@@ -44,3 +44,22 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == false and (.reason | contains("missing or empty artifact"))' >/dev/null
 }
+
+@test "codex-runner orientation command emits preamble and rejects invalid mode" {
+  run cog::cmd::codex_runner orientation read-only
+  assert_success
+  [[ -n $output ]]
+  [[ $output == *"STRICT READ-ONLY MODE"* ]]
+
+  run cog::cmd::codex_runner orientation nope
+  assert_failure
+}
+
+@test "codex-runner explain-status command emits guidance and rejects unknown status" {
+  run cog::cmd::codex_runner explain-status quota-75
+  assert_success
+  [[ -n $output ]]
+
+  run cog::cmd::codex_runner explain-status nope
+  assert_failure
+}

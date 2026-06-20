@@ -90,6 +90,7 @@ Commands:
   runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
   runner-queue-setup Parse runner-queue arguments and create run state.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
+  skill-refs     Resolve in-repo/installed skill-source reference files.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
@@ -171,6 +172,7 @@ Commands:
   runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
   runner-queue-setup Parse runner-queue arguments and create run state.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
+  skill-refs     Resolve in-repo/installed skill-source reference files.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
