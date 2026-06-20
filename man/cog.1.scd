@@ -66,6 +66,9 @@ The command list and short descriptions are sourced from command modules under
 *doctor*
 	Check cog runtime health and installation prerequisites.
 
+*executor*
+	Manage shared executor run contracts and stage artifacts.
+
 *executor-prex-parse-args*
 	Parse executor-prex arguments into run state.
 

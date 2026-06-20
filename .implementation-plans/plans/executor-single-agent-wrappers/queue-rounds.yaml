@@ -1,6 +1,6 @@
 rounds:
   - item: executor-cog-contracts
-    status: todo
+    status: done
     depends_on: []
     prompt: /prex -ar .implementation-plans/plans/executor-single-agent-wrappers/executor-cog-contracts.md
     notes: ""

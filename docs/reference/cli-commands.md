@@ -43,6 +43,7 @@ this reference table.
 | `digest-check` | Check digest frontmatter for source drift. |
 | `digest-stamp` | Stamp digest frontmatter from source files. |
 | `doctor` | Check cog runtime health and installation prerequisites. |
+| `executor` | Manage shared executor run contracts and stage artifacts. |
 | `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
 | `executor-prex-tsk-resolve` | Resolve a tsk issue for an executor-prex run. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
@@ -137,6 +138,9 @@ for the requested access mode.
 
 `cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner`
 classification.
+
+`cog executor queue-prompts` prints the Round-1 queue-prompt recognition contract consumed by later
+runner-queue integration work.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.

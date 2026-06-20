@@ -29,6 +29,7 @@ _cog() {
     digest-check
     digest-stamp
     doctor
+    executor
     executor-prex-parse-args
     executor-prex-tsk-resolve
     gc-classify-failure
