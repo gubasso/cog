@@ -23,7 +23,7 @@ rounds:
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage4-review-code-deep.md
     notes: ""
   - item: stage5-review-loop
-    status: todo
+    status: done
     depends_on:
       - stage4-review-code-deep
     prompt: /prex -ar .implementation-plans/plans/executor-prex-refactor/stage5-review-loop.md

@@ -366,8 +366,10 @@ details.
 ## Stage 5: Optional Review Loop
 
 Run the optional `review-loop` handoff only after all Stage 4 `NEEDS_DISCUSSION` items are resolved
-and the mode or task complexity calls for it. Stage 5 behavior is unchanged in this round; follow
-`references/stage-5-review-loop.md` for handoff JSON, child run-dir proof, and summary handling.
+and the mode or task complexity calls for it. The handoff input is assembled and validated by
+`cog review-loop-input`, and the child run-dir is located via `cog rundir snapshot-children` +
+`cog rundir locate-child`; follow `references/stage-5-review-loop.md` for the handoff build, child
+run-dir proof, and summary handling.
 
 ## Final Output
 
