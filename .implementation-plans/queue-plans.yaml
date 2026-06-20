@@ -87,19 +87,6 @@ plans:
       - cog-self-contained-skill-refs
     prompt: /prex -ar @.implementation-plans/plans/lean-plan-and-review-skills/
     notes: 'L, 4 rounds, prex. Four lean plan-mode-style skills: /plan-claude (opus+xhigh, gated), /plan-codex (native effort high), /review-plan-claude, /review-plan-codex. Shared cog plan-doc/plan-review artifact mechanics; consume research shelf; retire legacy plan-reviewer.'
-  - item: executor-single-agent-wrappers
-    status: todo
-    depends_on:
-      - lean-plan-and-review-skills
-      - codex-native-effort-runner
-      - skill-taxonomy-governance
-    prompt: /prex -ar @.implementation-plans/plans/executor-single-agent-wrappers/
-    notes: L, 4 rounds, prex. New /executor-claude + /executor-codex-session wrappers with the 3-stage feature (plan-* -> review-plan-* by the OTHER engine -> execute) in cog executor; usable as queue prompts; runner-queue recognizes them.
-  - item: model-effort-policy-and-rename
-    status: done
-    depends_on: []
-    prompt: /prex -ar @.implementation-plans/plans/model-effort-policy-and-rename/
-    notes: 'L (Round 3 XL), 3 rounds, prex. Independent (all artifacts under docs/). Model/effort policy SoT (never sonnet -> opus+low): web-research dated evidence in docs/reference/; model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/; never-sonnet ADR; AGENTS/CLAUDE wiring. Then atomic rename plans-revision skill + cog plans-revision-scan/verify -> review-implementation-plans, re-grade opus/low, PLUS expand it to review queue ordering/dependencies (model sets depends_on; script deterministically topo-sorts): new cog queue-deps-set/queue-reorder/queue-graph-check, extended verify gate, two-/gc-commit revision pass, superseding ADR (changes ADR-0012 revision-boundary contract). Round 3 gated-deletes the 3 DocsNNotes model-reference files after in-cog replacements verify.'
   - item: executor-prex-refactor
     status: todo
     depends_on:
@@ -109,3 +96,17 @@ plans:
       - skill-taxonomy-governance
     prompt: /prex -ar @.implementation-plans/plans/executor-prex-refactor/
     notes: XL, 6 rounds, prex. Rename prex->executor-prex (migrate cog tokens + Stop-gate/artifact contracts + queue-prompt compat); per-stage sections; eliminate stage-2-through-5-details.md; DRY-wire Stage 1->/plan-codex, 2->/review-plan-claude, 4->review-code-deep, 5->review-loop+cog review-loop-input.
+  - item: model-effort-policy-and-rename
+    status: done
+    depends_on: []
+    prompt: /prex -ar @.implementation-plans/plans/model-effort-policy-and-rename/
+    notes: 'L (Round 3 XL), 3 rounds, prex. Independent (all artifacts under docs/). Model/effort policy SoT (never sonnet -> opus+low): web-research dated evidence in docs/reference/; model-effort-policy.md + descriptive TOML (claude+codex) in docs/reference/; never-sonnet ADR; AGENTS/CLAUDE wiring. Then atomic rename plans-revision skill + cog plans-revision-scan/verify -> review-implementation-plans, re-grade opus/low, PLUS expand it to review queue ordering/dependencies (model sets depends_on; script deterministically topo-sorts): new cog queue-deps-set/queue-reorder/queue-graph-check, extended verify gate, two-/gc-commit revision pass, superseding ADR (changes ADR-0012 revision-boundary contract). Round 3 gated-deletes the 3 DocsNNotes model-reference files after in-cog replacements verify.'
+  - item: executor-single-agent-wrappers
+    status: todo
+    depends_on:
+      - lean-plan-and-review-skills
+      - codex-native-effort-runner
+      - skill-taxonomy-governance
+      - executor-prex-refactor
+    prompt: /prex -ar @.implementation-plans/plans/executor-single-agent-wrappers/
+    notes: L, 4 rounds, prex. New /executor-claude + /executor-codex-session wrappers with the 3-stage feature (plan-* -> review-plan-* by the OTHER engine -> execute) in cog executor; usable as queue prompts; runner-queue recognizes them.
