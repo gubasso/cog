@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse a runner-queue commit result.'
 
-__cog_runner_queue_parse_commit_self_check='((.commit_sha|type=="string") and (.line|type=="string")) or ((.ok == true) and (.commits|type=="array"))'
+__cog_runner_queue_parse_commit_self_check='(.ok == true) and (.commits|type=="array")'
 
 __cog_runner_queue_parse_commit_usage() {
   cog::fn::ui_data "Usage: cog runner-queue-parse-commit <gc-out-file> [--json]"
@@ -33,14 +33,6 @@ __cog_runner_queue_parse_commit_build_json() {
   if ((${#failed_lines[@]} > 0)); then
     cog::fn::error_raise "InvalidInput" \
       "gc commit failed" "line: ${failed_lines[*]}" "" "inspect the gc output"
-  fi
-
-  if ((${#ok_lines[@]} == 1)) && [[ ${ok_lines[0]} != *" repo="* ]]; then
-    local rest sha
-    rest="${ok_lines[0]#* }"
-    sha="${rest%% *}"
-    jq -n --arg commit_sha "$sha" --arg line "${ok_lines[0]}" '{commit_sha: $commit_sha, line: $line}'
-    return 0
   fi
 
   for line in "${ok_lines[@]}"; do
@@ -80,10 +72,6 @@ cog::cmd::runner_queue_parse_commit() {
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_runner_queue_parse_commit_self_check" "$json"
   else
-    if jq -e 'has("commits")' <<<"$json" >/dev/null; then
-      jq -r '.commits[] | "COMMIT_SHA=" + .sha + (if .repo == "" then "" else " repo=" + .repo end)' <<<"$json"
-    else
-      cog::fn::ui_data "COMMIT_SHA=$(jq -r '.commit_sha' <<<"$json")"
-    fi
+    jq -r '.commits[] | "COMMIT_SHA=" + .sha + (if .repo == "" then "" else " repo=" + .repo end)' <<<"$json"
   fi
 }

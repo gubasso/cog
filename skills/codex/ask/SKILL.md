@@ -86,7 +86,7 @@ if [ "$FAST_DEGRADED" -eq 0 ]; then
   cat > "$RUN_DIR/prompt.txt" <<EOF
 \$ask <-w if WEB_SEARCH else nothing> <verbatim question text>
 
-You are running with the \`quick\` Codex effort tier to answer this
+You are running at `low` Codex effort to answer this
 question read-only. Cite file paths and line numbers. Give a concise,
 direct answer.
 EOF

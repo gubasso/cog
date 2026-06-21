@@ -11,10 +11,10 @@ setup() {
   run cog runner-queue-parse-commit "$out" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and (.line | startswith("COMMIT_PUSH_OK"))' >/dev/null
+  printf '%s\n' "$output" | jq -e '.ok == true and .commits[0].sha == "abc1234" and (.commits[0].line | startswith("COMMIT_PUSH_OK"))' >/dev/null
 }
 
-@test "cog runner-queue-parse-commit preserves legacy single-repo outputs" {
+@test "cog runner-queue-parse-commit emits a single bare line as one commit" {
   local out="${BATS_TEST_TMPDIR}/gc.out"
   printf '%s\n' "COMMIT_OK abc1234" >"$out"
 
@@ -26,7 +26,7 @@ setup() {
   run cog runner-queue-parse-commit "$out" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.commit_sha == "abc1234" and .line == "COMMIT_OK abc1234"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.ok == true and .commits[0].sha == "abc1234" and .commits[0].repo == "" and .commits[0].line == "COMMIT_OK abc1234"' >/dev/null
 }
 
 @test "cog runner-queue-parse-commit emits multi-repo lines and json" {

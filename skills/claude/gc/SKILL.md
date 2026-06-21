@@ -83,7 +83,7 @@ every touched repo is accepted and committed by default.
 Emit one canonical status line per committed repo via `cog msg`, as the trailing
 block of the reply with nothing after it. In multi-repo mode each line carries a
 free-form `repo=<root>` suffix; for a single repo omit the suffix so the line is
-byte-identical to the legacy form:
+the canonical single-repo form:
 
 ```bash
 cog msg ok commit "$SHA"                                 # COMMIT_OK <sha>

@@ -288,10 +288,10 @@ cog runner-queue-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" || exit 1
 cog runner-queue-parse-commit "$RUN_DIR/commit-$RUN_COUNT.out" --json
 ```
 
-The helper scans every `COMMIT_*` line. A single legacy line with no `repo=` suffix yields one
-`COMMIT_SHA=<sha>`; multi-repo output yields one `COMMIT_SHA=<sha> repo=<root>` per repo and, with
-`--json`, `{"ok":true,"commits":[{"repo","sha","line"}]}`. It exits non-zero if any repo's line is
-`COMMIT_*_FAILED` or if no `COMMIT_*` line is present.
+The helper scans every `COMMIT_*` line. A line with no `repo=` suffix yields one `COMMIT_SHA=<sha>`;
+a line with the suffix yields `COMMIT_SHA=<sha> repo=<root>`. With `--json` the output is always
+`{"ok":true,"commits":[{"repo","sha","line"}]}`, one entry per line. It exits non-zero if any repo's
+line is `COMMIT_*_FAILED` or if no `COMMIT_*` line is present.
 
 After each successful round commit, record `ITEM:repo:SHA`, run **Review-Plan-Implementation Boundary**, increment
 the direct-round counter when this invocation is `rounds:` mode, honor direct-round `--max N`, and
