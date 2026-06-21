@@ -1,5 +1,5 @@
 ---
-name: refactor-migration-plan
+name: plan-refactor-migration
 description: >
   Generate an AI-friendly, multi-phase refactor or rewrite plan inside the current target project
   from a separate source project. Deterministic setup, source scan, and drift fingerprint mechanics
@@ -7,11 +7,10 @@ description: >
 argument-hint: "[--review] <source-project-path> [--target-lang=<lang>]"
 ---
 
-<!-- trigger-tests: "refactor-migration-plan", "migration plan", "rewrite plan", "refactor plan from source project" -->
+<!-- trigger-tests: "plan-refactor-migration", "migration plan", "rewrite plan", "refactor plan from source project" -->
 <!-- cog-skill: plan-emitter -->
-<!-- cog-skill: superseded-by plan-refactor-migration -->
 
-# `refactor-migration-plan`
+# `plan-refactor-migration`
 
 This skill preserves the live skill contract: it writes only the plan directory, never source code,
 and treats the source project as read-only. It may reference parity-test scaffolds in the plan but

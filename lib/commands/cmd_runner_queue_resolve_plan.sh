@@ -72,8 +72,8 @@ __cog_runner_queue_resolve_plan_build_json() {
     "plan target is not a directory" "path: ${target_path}" "item: ${item}" ""
 
   # Plan directories are always flat siblings directly under .implementation-plans/plans/.
-  # Fail closed on any nested plan in the canonical tree (it would be invisible to review-implementation-plans).
-  cog::fn::review_implementation_plans_assert_flat "$repo_root"
+  # Fail closed on any nested plan in the canonical tree (it would be invisible to review-plan-implementation).
+  cog::fn::review_plan_implementation_assert_flat "$repo_root"
 
   inner_queue_path="${target_path}/queue-rounds.yaml"
   [[ -f $inner_queue_path ]] || cog::fn::error_raise "InvalidInput" \

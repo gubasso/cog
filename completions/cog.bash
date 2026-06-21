@@ -68,10 +68,10 @@ _cog() {
     research-shelf
     review-agents-finalize
     review-cli-signals
-    review-implementation-plans-scan
-    review-implementation-plans-verify
     review-init
     review-loop-input
+    review-plan-implementation-scan
+    review-plan-implementation-verify
     review-refs
     review-scope
     review-validate-findings

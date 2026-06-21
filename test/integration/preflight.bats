@@ -99,16 +99,3 @@ EOF
     and .claude_env.checks.bash_default_timeout_ge_600000 == true
     and .claude_env.checks.bash_max_timeout_ge_600000 == true' "$out" >/dev/null
 }
-
-@test "cog preflight claude-env advisory mode warns and exits zero when env is absent" {
-  local out="${BATS_TEST_TMPDIR}/claude-env-advisory.json"
-
-  run env -u CLAUDE_CODE_DISABLE_BACKGROUND_TASKS \
-    -u BASH_DEFAULT_TIMEOUT_MS \
-    -u BASH_MAX_TIMEOUT_MS \
-    cog preflight claude-env "$out" --allow-legacy-session
-
-  assert_success
-  [[ $output == *"WARNING claude-env preflight advisory"* ]]
-  jq -e '.claude_env.ok == false and .claude_env.advisory == true' "$out" >/dev/null
-}

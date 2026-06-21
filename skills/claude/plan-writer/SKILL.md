@@ -116,11 +116,6 @@ directory in Phase 6b, once the Layer 1 split is decided and before any writes.
 If `cog plan-init` reports that `$PLAN_ROOT` cannot be created or validated, report the
 error and stop.
 
-If a legacy `$REPO_ROOT/.plan/` directory exists, inform the user that this repo still carries
-plans in the legacy layout (migration is manual — see `plan-lifecycle.md` § "Migrating a legacy
-`.plan/` tree") and continue with the new layout. Do not migrate automatically. `plan-init` reports
-this as `legacy_plan_dir`; the judgment and user-facing explanation stay in this skill.
-
 ### 1d — Load shared references
 
 Read all three reference files into context:
@@ -476,7 +471,7 @@ Normal interactive `/plan-writer` use ignores coordinator mode.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`). Never nest a plan directory inside another and
   never create subdirectories within a plan directory; relationships and order live only in
-  `depends_on`. `cog plan-init`, `cog review-implementation-plans-scan`, and `cog runner-queue-resolve-plan`
+  `depends_on`. `cog plan-init`, `cog review-plan-implementation-scan`, and `cog runner-queue-resolve-plan`
   fail closed on any nested plan.
 - Do not modify any existing files in the repository (only write to `.implementation-plans/`; in
   coordinator mode, write only to the given scratch `<output-path>`).

@@ -3,7 +3,6 @@
 
 __cog_preflight_usage() {
   cog::fn::ui_data "Usage: cog preflight <codex|sandbox|git|claude-env> <out.json>"
-  cog::fn::ui_data "Usage: cog preflight claude-env <out.json> [--allow-legacy-session]"
   cog::fn::ui_data "Usage: cog preflight agents <out.json> [--classification <file>] [--no-cache]"
 }
 
@@ -154,14 +153,10 @@ __cog_preflight_claude_env_json() {
 }
 
 __cog_preflight_claude_env() {
-  local out="" allow_legacy=false
+  local out=""
 
   while (($# > 0)); do
     case "$1" in
-      --allow-legacy-session)
-        allow_legacy=true
-        shift
-        ;;
       -*)
         cog::fn::error_raise "InvalidInput" \
           "unknown preflight claude-env option" "option: $1" "" "run 'cog preflight --help'"
@@ -176,23 +171,12 @@ __cog_preflight_claude_env() {
   done
 
   [[ -n $out ]] || cog::fn::error_raise "MissingArgument" \
-    "missing output path" "usage: cog preflight claude-env <out.json> [--allow-legacy-session]" "" \
+    "missing output path" "usage: cog preflight claude-env <out.json>" "" \
     "run 'cog preflight --help'"
 
   if [[ ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS-} == "1" ]]; then
     __cog_preflight_write "$out" '.claude_env.ok != null' \
       "$(__cog_preflight_claude_env_json true false "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is in force")"
-    return 0
-  fi
-
-  # Advisory downgrade is reserved for legacy sessions that predate the env
-  # injection — i.e. the variable is wholly ABSENT from this process. An
-  # explicitly-present wrong value (e.g. =0, =false) signals a bad base env
-  # layer, not a legacy session, so it must take the fail-closed path below.
-  if [[ $allow_legacy == true && -z ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS+x} ]]; then
-    __cog_preflight_write "$out" '.claude_env.ok != null' \
-      "$(__cog_preflight_claude_env_json false true "env not in force in the current session; warn-only per migration sequencing")"
-    cog::fn::ui_human "WARNING claude-env preflight advisory: CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 is not in force in this session; restart claude-session after this round."
     return 0
   fi
 

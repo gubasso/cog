@@ -7,7 +7,7 @@ description: >
   rounds", "drive the plan directory", or invokes "runner-queue".
   Dispatches queued executor prompts to fresh claude-delegate subagents, verifies
   queue status, commits with /gc -a across every repo the item touched, runs the
-  review-implementation-plans boundary, and loops until complete or failed closed.
+  review-plan-implementation boundary, and loops until complete or failed closed.
 argument-hint: "[-n|--dry-run] [--max <n>] <queue-path|plan-dir>"
 disable-model-invocation: true
 allowed-tools: Bash Read Agent Skill
@@ -73,7 +73,7 @@ field, never in the filesystem. `cog runner-queue-resolve-plan` resolves each ma
 `plans/<slug>/` directory and fails closed if the resolved target is not a direct child of `plans/`.
 
 DO NOT delegate the main loop to a subagent. Main loop = depth 0; each round delegate = +1; each
-review-implementation-plans subagent = +1 sibling, not nested under the round delegate; hard cap = 5.
+review-plan-implementation subagent = +1 sibling, not nested under the round delegate; hard cap = 5.
 
 ## Multi-Repo Plans
 
@@ -293,7 +293,7 @@ The helper scans every `COMMIT_*` line. A single legacy line with no `repo=` suf
 `--json`, `{"ok":true,"commits":[{"repo","sha","line"}]}`. It exits non-zero if any repo's line is
 `COMMIT_*_FAILED` or if no `COMMIT_*` line is present.
 
-After each successful round commit, record `ITEM:repo:SHA`, run **Review-Implementation-Plans Boundary**, increment
+After each successful round commit, record `ITEM:repo:SHA`, run **Review-Plan-Implementation Boundary**, increment
 the direct-round counter when this invocation is `rounds:` mode, honor direct-round `--max N`, and
 loop.
 
@@ -369,7 +369,7 @@ Commit the plan's accumulated work plus the main-queue status flip with the exis
 `claude-delegate` `/gc -a` pattern. Build the `--repo` flags from `INNER_REPOS` (still in
 `inner.env`) so the commit covers the selected plan's satellites; `/gc -a` always commits `REPO_ROOT`
 itself, which carries the main-queue `done` flip. Parse with `cog runner-queue-parse-commit`,
-run **Review-Implementation-Plans Boundary**, increment the plan-level counter, honor `--max N`, and loop. In main
+run **Review-Plan-Implementation Boundary**, increment the plan-level counter, honor `--max N`, and loop. In main
 mode an inner queue may run many rounds, but the plan-level `--max` counter increments only after the
 main plan is flipped, committed, and revision completes.
 
@@ -395,28 +395,28 @@ cog runner-queue-resolve-plan --repo-root "$REPO_ROOT" --queue "$MAIN_QUEUE_PATH
 
 Print the selected plan item, resolved `kind`, resolved prompt, resolved `inner_queue_path`, and
 remaining `todo` plans. Do not dispatch a round delegate, call `queue-status-set`, commit, or run
-`review-implementation-plans`. In main mode, `--max N` counts completed and committed main plans, not inner rounds.
+`review-plan-implementation`. In main mode, `--max N` counts completed and committed main plans, not inner rounds.
 
-## Review-Implementation-Plans Boundary
+## Review-Plan-Implementation Boundary
 
 Run this boundary after every successful `/gc` for a committed item - after each committed inner
 round and after each committed main plan - and before the next `queue-select`. Skip it entirely under
 `--dry-run`.
 
-Invoke the project-local `review-implementation-plans` skill as a foreground Agent subagent. It is a
+Invoke the project-local `review-plan-implementation` skill as a foreground Agent subagent. It is a
 sibling of the round delegate (+1 depth), not nested under it. Unlike the stowed
 `$HOME/.claude/skills/` skills the delegate normally uses (see Security Posture),
-`review-implementation-plans` is a **project** skill resolved from the repo working tree; the prompt
+`review-plan-implementation` is a **project** skill resolved from the repo working tree; the prompt
 sets cwd to `REPO_ROOT` so the delegate loads
-`.claude/skills/review-implementation-plans/SKILL.md` from there. The revision subagent owns its own
+`.claude/skills/review-plan-implementation/SKILL.md` from there. The revision subagent owns its own
 foreground `/gc -a` calls for revision drift; the runner does not issue a separate revision commit.
 The boundary may produce up to two commits: one for plan reconciliation and one for queue
 order/dependency review.
 
-`review-implementation-plans` always requires `--main-queue`. In `plans:` mode pass `MAIN_QUEUE_PATH` from
+`review-plan-implementation` always requires `--main-queue`. In `plans:` mode pass `MAIN_QUEUE_PATH` from
 `ctx.env`. In `rounds:` mode `ctx.env` has no `MAIN_QUEUE_PATH` (setup writes it only for `plans:`),
 so resolve the project main queue - the root `.implementation-plans/queue-plans.yaml`, the canonical
-location `review-implementation-plans` documents - before dispatching:
+location `review-plan-implementation` documents - before dispatching:
 
 ```bash
 . "$RUN_DIR/ctx.env"
@@ -426,7 +426,7 @@ REVISION_MAIN_QUEUE="${MAIN_QUEUE_PATH:-$REPO_ROOT/.implementation-plans/queue-p
 
 Pass `REVISION_MAIN_QUEUE` as the `--main-queue` value in the prompt below. In `rounds:` mode the
 revision pass reconciles the inner rounds queue against that project main queue; if a repo has no root
-main queue the boundary fails closed rather than running `review-implementation-plans` with a missing argument.
+main queue the boundary fails closed rather than running `review-plan-implementation` with a missing argument.
 
 - `subagent_type`: `claude-delegate`
 - `description`: `Revise implementation plans`
@@ -435,7 +435,7 @@ main queue the boundary fails closed rather than running `review-implementation-
   ```text
   Working repo (your cwd): <REPO_ROOT>
 
-  Run the project-local `review-implementation-plans` skill after the committed queue item:
+  Run the project-local `review-plan-implementation` skill after the committed queue item:
 
       --repo-root <REPO_ROOT>
       --main-queue <REVISION_MAIN_QUEUE>
@@ -452,12 +452,12 @@ main queue the boundary fails closed rather than running `review-implementation-
 
 After it returns, require `STATUS: OK` and verify a clean worktree plus a parseable result for both
 phases: each phase is either `NO_DRIFT` or a parsed revision `REVISION_COMMIT_OK <sha>` / multi-repo
-summary. The `review-implementation-plans` skill must have passed
-`cog review-implementation-plans-verify`; if the result is missing, failed, dirty, or unparseable,
+summary. The `review-plan-implementation` skill must have passed
+`cog review-plan-implementation-verify`; if the result is missing, failed, dirty, or unparseable,
 stop the entire run before selecting more work.
 
-Assumption: `review-implementation-plans` already performs `cog review-implementation-plans-scan`,
-`cog review-implementation-plans-verify`, `cog queue-deps-set`, `cog queue-reorder`,
+Assumption: `review-plan-implementation` already performs `cog review-plan-implementation-scan`,
+`cog review-plan-implementation-verify`, `cog queue-deps-set`, `cog queue-reorder`,
 `cog queue-graph-check`, and its own foreground `/gc`; this runner enforces the boundary and
 postcondition.
 
@@ -492,7 +492,7 @@ queue schema; invalid YAML; duplicate item; existing `doing`; dirty tree; blocke
 `state: complete`; inner-round delegate returning while the round is not `done`; main
 `queue-status-set` guard failure because the item is no longer `todo`; missing or failed `COMMIT_*`;
 revision returning `STATUS: FAILED`, lacking a verified clean postcondition, or not proving
-`review-implementation-plans-verify` passed.
+`review-plan-implementation-verify` passed.
 
 An intentional `--max` stop is normal and reports remaining work. Dry-run never dispatches, flips
 status, commits, or runs revision. Report the run directory and the failing `claude-delegate`

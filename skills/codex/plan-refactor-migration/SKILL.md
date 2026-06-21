@@ -1,13 +1,13 @@
 ---
-name: refactor-migration-plan
+name: plan-refactor-migration
 description: >
   Generate or review a migration/refactor plan from a source project into the current target
   project. Deterministic setup, source scanning, and drift checks delegate to cog; migration
-  design remains prose. Use when the user says "refactor-migration-plan", "migration plan",
+  design remains prose. Use when the user says "plan-refactor-migration", "migration plan",
   "refactor plan", "port this project", or "rewrite plan from source".
 ---
 
-# `refactor-migration-plan` (Codex)
+# `plan-refactor-migration` (Codex)
 
 This Codex twin preserves the live Codex twin contract: the artifact is the plan, not implementation
 code. The source project is read-only and the target source tree is not edited by this skill.

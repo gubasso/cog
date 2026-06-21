@@ -228,17 +228,3 @@ setup() {
   [ "${config[json]}" = "true" ]
   [ "${config[log_level]}" = "debug" ]
 }
-
-@test "uses xdg config home without legacy paths" {
-  local -A ctx config source line
-
-  printf '%s\n' 'json=true' >"${XDG_CONFIG_HOME}/cog/config.sh"
-  mkdir -p "${HOME}/.cog"
-  printf '%s\n' 'json=false' >"${HOME}/.cog/config.sh"
-  ctx=()
-
-  cog::fn::config_load ctx config source line
-
-  [ "${config[json]}" = "true" ]
-  [ "${source[json]}" = "user:${XDG_CONFIG_HOME}/cog/config.sh" ]
-}

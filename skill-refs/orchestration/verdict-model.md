@@ -1,7 +1,7 @@
 # Verdict & Severity Model
 
 Shared enums for review verdicts, finding severity, and finding categories. Used by
-`implementation-reviewer`, `refactor-migration-plan` (review mode), `review-plan-claude`,
+`implementation-reviewer`, `plan-refactor-migration` (review mode), `review-plan-claude`,
 `review-plan-codex`, and `review-code-deep` (via `llm-review-discipline.md`).
 
 ## Verdict Enum

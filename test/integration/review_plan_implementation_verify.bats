@@ -46,15 +46,15 @@ EOF
 
 scan_fixture() {
   local root="$1" out="$2"
-  cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" "$out" >/dev/null
+  cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" "$out" >/dev/null
 }
 
 verify_fixture() {
   local before="$1" after="$2"
-  cog review-implementation-plans-verify --before "$before" --after "$after" --json
+  cog review-plan-implementation-verify --before "$before" --after "$after" --json
 }
 
-@test "review-implementation-plans-verify passes no-op" {
+@test "review-plan-implementation-verify passes no-op" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -76,7 +76,7 @@ verify_fixture() {
   ' >/dev/null
 }
 
-@test "review-implementation-plans-verify reports status changes" {
+@test "review-plan-implementation-verify reports status changes" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -91,7 +91,7 @@ verify_fixture() {
   printf '%s\n' "$output" | jq -e '.changed == true and (.status_changes[] | select(.item == "second" and .from == "todo" and .to == "done"))' >/dev/null
 }
 
-@test "review-implementation-plans-verify reports new items" {
+@test "review-plan-implementation-verify reports new items" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -106,7 +106,7 @@ verify_fixture() {
   printf '%s\n' "$output" | jq -e '.changed == true and (.new_items[] | select(.item == "third" and .status == "todo"))' >/dev/null
 }
 
-@test "review-implementation-plans-verify fails on completed-history rewrites" {
+@test "review-plan-implementation-verify fails on completed-history rewrites" {
   local field root before after queue
   for field in prompt depends_on notes status; do
     root="${BATS_TEST_TMPDIR}/repo-${field}"
@@ -130,7 +130,7 @@ verify_fixture() {
   done
 }
 
-@test "review-implementation-plans-verify fails on doing-history rewrites" {
+@test "review-plan-implementation-verify fails on doing-history rewrites" {
   local field root before after queue
   for field in prompt depends_on notes status; do
     root="${BATS_TEST_TMPDIR}/repo-doing-${field}"
@@ -154,7 +154,7 @@ verify_fixture() {
   done
 }
 
-@test "review-implementation-plans-verify judges the after scan, not the live queue (no TOCTOU)" {
+@test "review-plan-implementation-verify judges the after scan, not the live queue (no TOCTOU)" {
   # The gate must verify the captured after-scan contents, not re-read live queue
   # files. Mutating the live file after the scan must NOT change the verdict.
   local root="${BATS_TEST_TMPDIR}/repo"
@@ -176,7 +176,7 @@ verify_fixture() {
   printf '%s\n' "$output" | jq -e '.ok == true and .graph_valid == true' >/dev/null
 }
 
-@test "review-implementation-plans-verify reports changed plan files" {
+@test "review-plan-implementation-verify reports changed plan files" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -191,7 +191,7 @@ verify_fixture() {
   printf '%s\n' "$output" | jq -e '.changed == true and (.changed_queues | length) == 0' >/dev/null
 }
 
-@test "review-implementation-plans-verify reports dependency changes" {
+@test "review-plan-implementation-verify reports dependency changes" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -211,7 +211,7 @@ verify_fixture() {
   ' >/dev/null
 }
 
-@test "review-implementation-plans-verify reports reordered queues" {
+@test "review-plan-implementation-verify reports reordered queues" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -232,7 +232,7 @@ verify_fixture() {
   ' >/dev/null
 }
 
-@test "review-implementation-plans-verify fails closed on dangling dependency" {
+@test "review-plan-implementation-verify fails closed on dangling dependency" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"
@@ -249,7 +249,7 @@ verify_fixture() {
   [[ $output == *"queue dependency graph is invalid"* ]]
 }
 
-@test "review-implementation-plans-verify fails closed on dependency cycle" {
+@test "review-plan-implementation-verify fails closed on dependency cycle" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local before="${BATS_TEST_TMPDIR}/before.json"
   local after="${BATS_TEST_TMPDIR}/after.json"

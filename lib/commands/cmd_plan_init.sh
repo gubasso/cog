@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Bootstrap implementation plan root files.'
 
-__cog_plan_init_self_check='(.ok|type=="boolean") and (.repo_root|type=="string") and (.plan_root|type=="string") and (.plans_dir|type=="string") and (.queue_path|type=="string") and (.created|type=="array") and (.existing|type=="array") and (.legacy_plan_dir|type=="boolean")'
+__cog_plan_init_self_check='(.ok|type=="boolean") and (.repo_root|type=="string") and (.plan_root|type=="string") and (.plans_dir|type=="string") and (.queue_path|type=="string") and (.created|type=="array") and (.existing|type=="array")'
 
 __cog_plan_init_usage() {
   cog::fn::ui_data "Usage: cog plan-init [--repo-root <dir>] (<out.json>|--json)"
@@ -35,7 +35,7 @@ __cog_plan_init_write_root_readme() {
 }
 
 __cog_plan_init_build_json() {
-  local repo_root="$1" ok=true reason="" legacy=false
+  local repo_root="$1" ok=true reason=""
   local plan_root plans_dir root_readme root_queue
   local -a created=() existing=()
   plan_root="${repo_root}/.implementation-plans"
@@ -47,7 +47,6 @@ __cog_plan_init_build_json() {
     ok=false
     reason="repo root is not a directory"
   else
-    [[ -d ${repo_root}/.plan ]] && legacy=true
     if [[ -d $plan_root ]]; then
       existing+=("$plan_root")
     else
@@ -65,7 +64,7 @@ __cog_plan_init_build_json() {
     fi
 
     # Plan directories must be flat siblings under plans/; fail closed on any nested plan.
-    cog::fn::review_implementation_plans_assert_flat "$repo_root"
+    cog::fn::review_plan_implementation_assert_flat "$repo_root"
 
     if [[ -e $root_readme ]]; then
       existing+=("$root_readme")
@@ -88,11 +87,10 @@ __cog_plan_init_build_json() {
     --arg queue_path "$root_queue" \
     --argjson created "$(__cog_plan_init_json_array "${created[@]}")" \
     --argjson existing "$(__cog_plan_init_json_array "${existing[@]}")" \
-    --argjson legacy_plan_dir "$legacy" \
     --arg reason "$reason" \
     '{ok: $ok, repo_root: $repo_root, plan_root: $plan_root, plans_dir: $plans_dir,
       queue_path: $queue_path, created: $created, existing: $existing,
-      legacy_plan_dir: $legacy_plan_dir, reason: (if $ok then null else $reason end)}'
+      reason: (if $ok then null else $reason end)}'
 }
 
 cog::cmd::plan_init() {

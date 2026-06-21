@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Inventory all implementation-plan queues and repo/plan fingerprints.'
 
-__cog_review_implementation_plans_scan_self_check='
+__cog_review_plan_implementation_scan_self_check='
   (.ok == true) and
   (.repo_root | type == "string" and startswith("/")) and
   (.main_queue_path | type == "string" and startswith("/")) and
@@ -25,24 +25,24 @@ __cog_review_implementation_plans_scan_self_check='
   ] | all)
 '
 
-__cog_review_implementation_plans_scan_usage() {
-  cog::fn::ui_data "Usage: cog review-implementation-plans-scan --repo-root <dir> --main-queue <path> (<out.json>|--json)"
+__cog_review_plan_implementation_scan_usage() {
+  cog::fn::ui_data "Usage: cog review-plan-implementation-scan --repo-root <dir> --main-queue <path> (<out.json>|--json)"
 }
 
-__cog_review_implementation_plans_scan_build_json() {
+__cog_review_plan_implementation_scan_build_json() {
   local repo_root="$1" main_queue="$2"
   local abs_repo abs_main inventory repo_fingerprint plans_fingerprint
 
   [[ -n $repo_root && -n $main_queue ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-    "missing review-implementation-plans-scan argument" \
-    "usage: cog review-implementation-plans-scan --repo-root <dir> --main-queue <path> (<out.json>|--json)" "" \
-    "run 'cog review-implementation-plans-scan --help'"
+    "missing review-plan-implementation-scan argument" \
+    "usage: cog review-plan-implementation-scan --repo-root <dir> --main-queue <path> (<out.json>|--json)" "" \
+    "run 'cog review-plan-implementation-scan --help'"
 
   abs_repo="$(realpath "$repo_root")"
   abs_main="$(realpath "$main_queue")"
-  inventory="$(cog::fn::review_implementation_plans_inventory_json "$abs_repo" "$abs_main")"
-  repo_fingerprint="$(cog::fn::review_implementation_plans_repo_fingerprint "$abs_repo")"
-  plans_fingerprint="$(cog::fn::review_implementation_plans_plans_fingerprint "$abs_repo")"
+  inventory="$(cog::fn::review_plan_implementation_inventory_json "$abs_repo" "$abs_main")"
+  repo_fingerprint="$(cog::fn::review_plan_implementation_repo_fingerprint "$abs_repo")"
+  plans_fingerprint="$(cog::fn::review_plan_implementation_plans_fingerprint "$abs_repo")"
 
   jq -n \
     --argjson ok true \
@@ -56,40 +56,40 @@ __cog_review_implementation_plans_scan_build_json() {
       queues: $inventory.queues}'
 }
 
-cog::cmd::review_implementation_plans_scan() {
+cog::cmd::review_plan_implementation_scan() {
   local repo_root="" main_queue="" mode="" out="" json
   while (($# > 0)); do
     case "$1" in
       -h | --help)
-        __cog_review_implementation_plans_scan_usage
+        __cog_review_plan_implementation_scan_usage
         return 0
         ;;
       --repo-root)
         [[ $# -ge 2 && -z $repo_root ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-          "missing repo root" "option: --repo-root" "" "run 'cog review-implementation-plans-scan --help'"
+          "missing repo root" "option: --repo-root" "" "run 'cog review-plan-implementation-scan --help'"
         repo_root="$2"
         shift 2
         ;;
       --main-queue)
         [[ $# -ge 2 && -z $main_queue ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-          "missing main queue path" "option: --main-queue" "" "run 'cog review-implementation-plans-scan --help'"
+          "missing main queue path" "option: --main-queue" "" "run 'cog review-plan-implementation-scan --help'"
         main_queue="$2"
         shift 2
         ;;
       --json)
         [[ -z $mode ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "InvalidInput" \
-          "duplicate review-implementation-plans-scan output mode" "" "" "choose either --json or an output path"
+          "duplicate review-plan-implementation-scan output mode" "" "" "choose either --json or an output path"
         mode=json
         shift
         ;;
       -*)
         cog::fn::error_raise_with_exit "$EX_USAGE" "InvalidInput" \
-          "unknown review-implementation-plans-scan option" "option: $1" "" "run 'cog review-implementation-plans-scan --help'"
+          "unknown review-plan-implementation-scan option" "option: $1" "" "run 'cog review-plan-implementation-scan --help'"
         ;;
       *)
         [[ -z $mode && -z $out ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "TooManyArguments" \
-          "too many review-implementation-plans-scan output paths" "argument: $1" "" \
-          "run 'cog review-implementation-plans-scan --help'"
+          "too many review-plan-implementation-scan output paths" "argument: $1" "" \
+          "run 'cog review-plan-implementation-scan --help'"
         out="$1"
         mode="file"
         shift
@@ -98,13 +98,13 @@ cog::cmd::review_implementation_plans_scan() {
   done
 
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-    "missing review-implementation-plans-scan output mode" "usage: cog review-implementation-plans-scan ... (<out.json>|--json)" "" \
-    "run 'cog review-implementation-plans-scan --help'"
+    "missing review-plan-implementation-scan output mode" "usage: cog review-plan-implementation-scan ... (<out.json>|--json)" "" \
+    "run 'cog review-plan-implementation-scan --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_review_implementation_plans_scan_build_json "$repo_root" "$main_queue")"
+  json="$(__cog_review_plan_implementation_scan_build_json "$repo_root" "$main_queue")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
-    cog::fn::json_emit "$__cog_review_implementation_plans_scan_self_check" "$json"
+    cog::fn::json_emit "$__cog_review_plan_implementation_scan_self_check" "$json"
   else
-    cog::fn::json_write_fragment "$out" "$__cog_review_implementation_plans_scan_self_check" "$json"
+    cog::fn::json_write_fragment "$out" "$__cog_review_plan_implementation_scan_self_check" "$json"
   fi
 }

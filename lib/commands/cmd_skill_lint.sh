@@ -114,9 +114,8 @@ __cog_skill_lint_check_plan_gate() {
 
 __cog_skill_lint_check_prefix_taxonomy() {
   # Prefix taxonomy is a hard-fail structural contract for Claude skills with
-  # governed declared intent. Legacy migrations may declare a correctly-prefixed
-  # replacement with <!-- cog-skill: superseded-by <name> -->.
-  local file="$1" runtime name class expected="" superseded superseded_class
+  # governed declared intent.
+  local file="$1" runtime name class expected=""
 
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
   [[ $runtime == claude ]] || return 0
@@ -136,16 +135,10 @@ __cog_skill_lint_check_prefix_taxonomy() {
 
   [[ $class == "$expected" ]] && return 0
 
-  superseded="$(cog::fn::skill::superseded_by "$file")"
-  if [[ -n $superseded ]] && cog::fn::skill::name_is_valid "$superseded"; then
-    superseded_class="$(cog::fn::skill::classify_prefix "$superseded")"
-    [[ $superseded_class == "$expected" ]] && return 0
-  fi
-
   __cog_skill_lint_finding \
     "$file" 1 "skill-prefix-taxonomy" \
     "skill intent '${expected}' does not match name prefix class '${class}'" \
-    "rename the skill to '${expected}-*' or add a valid <!-- cog-skill: superseded-by <replacement> --> marker pointing to a '${expected}-*' name during migration"
+    "rename the skill to '${expected}-*'"
   return 1
 }
 

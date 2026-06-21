@@ -47,11 +47,10 @@ forbidden_scan_codex() {
     claudemd
     gc
     osc-obs
-    plan-reviewer
     plan-writer
     plan-writer-multi
     pre-commit
-    refactor-migration-plan
+    plan-refactor-migration
     review-code-deep
     review-findings
     review-loop
@@ -77,7 +76,7 @@ forbidden_scan_codex() {
     gc
     implementation-reviewer
     plan-writer
-    refactor-migration-plan
+    plan-refactor-migration
     review-code-deep
     suckless-patcher
     test-review
@@ -127,7 +126,7 @@ forbidden_scan_codex() {
   assert_file_contains "$file" "claude-delegate"
   assert_file_contains "$file" "cog queue-select"
   assert_file_contains "$file" "Queue Modes"
-  assert_file_contains "$file" "review-implementation-plans"
+  assert_file_contains "$file" "review-plan-implementation"
   assert_file_contains "$file" "cog queue-status-set"
   assert_file_contains "$file" "runner-queue-resolve-plan"
   assert_file_contains "$file" "DO NOT delegate the main loop"

@@ -84,8 +84,8 @@ The workflow needs:
 3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
    and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
    reasoning effort come from `cog codex-runner --effort` (`high` for stage 1 planning via
-   `/plan-codex`, `medium` for stage 3 implementation; `deep` is the human-judged escalation tier,
-   used only when the user asks for it). See the "Wrapper:
+   `/plan-codex`, `medium` for stage 3 implementation; escalate stage 3 to `high` only when the
+   user asks for it). See the "Wrapper:
    `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
    for the full API reference.
 
@@ -124,15 +124,13 @@ Immediately after creating the run directory, assert the session env guarantee b
 Substitute the literal `RUN_DIR` and `LOCK_FILE` values from the `cog rundir` output:
 
 ```bash
-cog preflight claude-env "$RUN_DIR/preflight-claude-env.json" --allow-legacy-session \
+cog preflight claude-env "$RUN_DIR/preflight-claude-env.json" \
   || { cog lock release "$LOCK_FILE"; exit 1; }
 ```
 
-The `--allow-legacy-session` flag exists only for this env rollout. In the already-running session
-that predates the `base.json` env change, an absent guarantee is advisory: `cog` writes
-`preflight-claude-env.json`, warns, and returns 0 so the current plan can finish. In a restarted
-session the strict check should pass because `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is in force.
-Without that migration flag, `cog preflight claude-env` fails closed when the env guarantee is absent.
+`cog preflight claude-env` fails closed when the env guarantee is absent: a correctly bootstrapped
+`claude-session` keeps `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` in force and the check passes;
+otherwise the `||` branch releases the lock and stops.
 
 The lock file stores two lines — the `RUN_DIR` path and the owning Claude Code PID (`$PPID`). The
 Stop hook uses the PID to scope enforcement: only the session that created the lock is blocked while
@@ -335,8 +333,8 @@ End with a concise summary covering:
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
   `--effort high` at the stage 1 `/plan-codex` planning call site and `--effort medium` at the
-  stage 3 implementation call sites; substitute `--effort deep` only when the user explicitly asks
-  to escalate a stage (stuck/looping runs, novel design, security-critical changes). Do not pass
+  stage 3 implementation call sites; escalate to `--effort high` only when the user explicitly asks
+  to push a stage harder (stuck/looping runs, novel design, security-critical changes). Do not pass
   `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference
   file.

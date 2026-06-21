@@ -1,5 +1,5 @@
 ---
-name: review-implementation-plans
+name: review-plan-implementation
 description: >
   Reconcile implementation plans and queues with the current repository state
   after a committed runner-queue item, before selecting the next item, so
@@ -11,9 +11,8 @@ allowed-tools: Bash Read Edit Write Skill
 disable-model-invocation: true
 ---
 
-<!-- trigger-tests: "review-implementation-plans", "review-implementation-plans --repo-root <dir> --main-queue <path>" -->
+<!-- trigger-tests: "review-plan-implementation", "review-plan-implementation --repo-root <dir> --main-queue <path>" -->
 <!-- cog-skill: plan-emitter -->
-<!-- cog-skill: superseded-by review-plan-implementation -->
 
 # Review Implementation Plans
 
@@ -44,8 +43,8 @@ commit-output files can be written there.
 
 All deterministic mechanics live in `cog`:
 
-- Inventory and fingerprints: `cog review-implementation-plans-scan --repo-root <repo> --main-queue <queue> <out.json>`.
-- Verification: `cog review-implementation-plans-verify --before <before.json> --after <after.json> <out.json>`.
+- Inventory and fingerprints: `cog review-plan-implementation-scan --repo-root <repo> --main-queue <queue> <out.json>`.
+- Verification: `cog review-plan-implementation-verify --before <before.json> --after <after.json> <out.json>`.
 - Status changes: `cog queue-status-set --queue <path> --schema <plans|rounds> --item <item> --from <status> --to <status> <out.json>`.
 - New work: `cog queue-append --schema <plans|rounds> --queue <path> --item <item> --status <status> --prompt <prompt> [--depends-on csv] [--notes text] <out.json>`.
 - Dependency changes: `cog queue-deps-set --queue <path> --schema <plans|rounds> --item <item> --depends-on <csv|""> [--expect <csv>] <out.json>`.
@@ -63,7 +62,7 @@ plan and round prose files.
 1. Resolve `--repo-root` and `--main-queue` from `$ARGUMENTS`. If either is missing, return
    `STATUS: FAILED` and a concise reason. Do not guess.
 
-2. Run the before scan into `$RUN_DIR/before.json` with `cog review-implementation-plans-scan`. If scan fails,
+2. Run the before scan into `$RUN_DIR/before.json` with `cog review-plan-implementation-scan`. If scan fails,
    return `STATUS: FAILED` and stop.
 
 3. Inspect the before scan and the repository state. Consider only items whose scan entry has
@@ -81,10 +80,10 @@ plan and round prose files.
 6. For newly found gaps, regressions, or follow-up work, append new queue entries only through
    `cog queue-append`. Use `plans` for new main-plan entries and `rounds` for inner plan rounds.
    Any new plan is a flat sibling directory under `.implementation-plans/plans/` (`plans/<slug>/`)
-   wired via `depends_on` — never a nested directory. `cog review-implementation-plans-scan` fails
+   wired via `depends_on` — never a nested directory. `cog review-plan-implementation-scan` fails
    closed on any nested plan it inventories.
 
-7. Run the after scan into `$RUN_DIR/after.json`, then verify with `cog review-implementation-plans-verify` into
+7. Run the after scan into `$RUN_DIR/after.json`, then verify with `cog review-plan-implementation-verify` into
    `$RUN_DIR/verify.json`. If verification fails, return `STATUS: FAILED`; the parent runner must stop.
 
 8. Read `$RUN_DIR/verify.json`. If reconciliation changed nothing, record `PLAN_REVIEW:
@@ -99,7 +98,7 @@ plan and round prose files.
    Never move or re-depend `done` or `doing` items.
 
 10. Run another after scan into `$RUN_DIR/after-order.json`, then verify with
-    `cog review-implementation-plans-verify` into `$RUN_DIR/verify-order.json`. If verification fails,
+    `cog review-plan-implementation-verify` into `$RUN_DIR/verify-order.json`. If verification fails,
     return `STATUS: FAILED`.
 
 11. Read `$RUN_DIR/verify-order.json`. If ordering review changed nothing, record `QUEUE_REVIEW:

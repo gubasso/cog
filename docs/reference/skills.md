@@ -68,10 +68,10 @@ below maps each currently shipped artifact to its taxonomy class.
 - skills/claude/plan-claude
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
-- skills/claude/refactor-migration-plan
+- skills/claude/plan-refactor-migration
 - skills/codex/plan-codex
 - skills/codex/plan-writer
-- skills/codex/refactor-migration-plan
+- skills/codex/plan-refactor-migration
 
 ### review-*
 
@@ -87,7 +87,7 @@ Plan-review sub-namespace (`review-plan-*`):
 
 - skills/claude/review-plan-claude
 - skills/codex/review-plan-codex
-- .claude/skills/review-implementation-plans
+- .claude/skills/review-plan-implementation
 
 ### executor-*
 
@@ -118,16 +118,3 @@ Utility skills outside the four governed behavioral prefixes, plus shipped agent
 - skills/codex/test-review
 - .claude/skills/cog-skill-creator
 - agents/claude/claude-delegate.md
-
-## Taxonomy Migration Notes
-
-These compatibility notes record rename transitions that are still visible in shipped skill names or
-queue prompts.
-
-- `prex` -> `executor-prex` has fully landed: `executor-prex` is the canonical and only executor
-  skill. The `/prex` alias, the `prex-*` compatibility cog commands, and the `tsk-*` integration
-  have been removed; queue prompts use `/executor-prex -ar`.
-- `plan-reviewer` is retained as a legacy compatibility shim and carries
-  `<!-- cog-skill: superseded-by review-plan-claude -->`. New plan-review work uses
-  `review-plan-claude` or `review-plan-codex`.
-- `runner-queue` already satisfies the taxonomy as a `runner-*` skill; no rename planned.

@@ -138,7 +138,7 @@ The command list and short descriptions are sourced from command modules under
 *preflight*
 	Run centralized orchestrator preflight checks.
 
-	*cog preflight claude-env <out.json> [--allow-legacy-session]* asserts
+	*cog preflight claude-env <out.json>* asserts
 	the Claude Code no-backgrounding session env. Strict mode requires
 	*CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1*; Bash timeout env vars are
 	recorded as diagnostics only.
@@ -188,17 +188,17 @@ The command list and short descriptions are sourced from command modules under
 *review-cli-signals*
 	Probe whether the project is a CLI from classification data.
 
-*review-implementation-plans-scan*
-	Inventory all implementation-plan queues and repo/plan fingerprints.
-
-*review-implementation-plans-verify*
-	Verify a review-implementation-plans run against a before/after scan.
-
 *review-init*
 	Create a review run directory and resolve output paths.
 
 *review-loop-input*
 	Build and validate review-loop handoff input JSON.
+
+*review-plan-implementation-scan*
+	Inventory all implementation-plan queues and repo/plan fingerprints.
+
+*review-plan-implementation-verify*
+	Verify a review-plan-implementation run against a before/after scan.
 
 *review-refs*
 	Resolve docs-n-notes review reference files.

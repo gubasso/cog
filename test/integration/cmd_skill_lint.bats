@@ -617,27 +617,6 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint rejects plan-reviewer intent superseded by plan-star" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer" plan-reviewer claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: superseded-by plan-reviewer-replacement -->\n<!-- cog-plan-mode-gate -->\n# Plan Reviewer\n' >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"skill-prefix-taxonomy"* ]]
-}
-
-@test "cog skill-lint accepts plan-reviewer intent with review-plan superseded-by" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer" plan-reviewer claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: superseded-by review-plan-reviewer -->\n<!-- cog-plan-mode-gate -->\n# Plan Reviewer\n' >>"$file"
-
-  run cog skill-lint "$file"
-
-  assert_success
-}
-
 @test "cog skill-lint rejects executor intent not named executor-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/legacy-exec" legacy-exec claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/legacy-exec/SKILL.md"
@@ -647,16 +626,6 @@ EOF
 
   assert_failure
   [[ $stderr == *"skill-prefix-taxonomy"* ]]
-}
-
-@test "cog skill-lint accepts executor intent with executor superseded-by" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/legacy-exec" legacy-exec claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/legacy-exec/SKILL.md"
-  printf '\n<!-- cog-skill: superseded-by executor-prex -->\n# Plan Review Execute\n' >>"$file"
-
-  run cog skill-lint "$file"
-
-  assert_success
 }
 
 @test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
@@ -669,38 +638,6 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint accepts plan-emitter legacy name with plan superseded-by" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/migration-plan" migration-plan claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/migration-plan/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: superseded-by plan-migration -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
-
-  run cog skill-lint "$file"
-
-  assert_success
-}
-
-@test "cog skill-lint rejects superseded-by with invalid replacement name" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/migration-plan" migration-plan claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/migration-plan/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: superseded-by bad_name -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"skill-prefix-taxonomy"* ]]
-}
-
-@test "cog skill-lint rejects superseded-by whose replacement prefix mismatches expected class" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/migration-plan" migration-plan claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/migration-plan/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: superseded-by review-plan-migration -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"skill-prefix-taxonomy"* ]]
-}
-
 @test "cog skill-lint accepts plan-writer style skill that mentions plan review words" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture" plan-writer-fixture claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture/SKILL.md"
@@ -709,35 +646,6 @@ EOF
   run cog skill-lint "$file"
 
   assert_success
-}
-
-@test "cog::fn::skill::superseded_by succeeds with empty output when the marker is absent" {
-  source "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh"
-  local file="${BATS_TEST_TMPDIR}/no-marker.md"
-  printf 'a skill body with no superseded-by marker\n' >"$file"
-
-  # Run under the same errexit/pipefail discipline as bin/cog so an absent
-  # marker stays success-valued (empty stdout) instead of aborting callers.
-  run bash -c '
-    set -euo pipefail
-    source "$1"
-    out="$(cog::fn::skill::superseded_by "$2")"
-    printf "RESULT=[%s]\n" "$out"
-  ' _ "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh" "$file"
-
-  assert_success
-  assert_output "RESULT=[]"
-}
-
-@test "cog::fn::skill::superseded_by extracts the replacement name when present" {
-  source "${BATS_TEST_DIRNAME}/../../lib/functions/fn_skill.sh"
-  local file="${BATS_TEST_TMPDIR}/with-marker.md"
-  printf '<!-- cog-skill: superseded-by executor-prex -->\n' >"$file"
-
-  run cog::fn::skill::superseded_by "$file"
-
-  assert_success
-  assert_output "executor-prex"
 }
 
 @test "lint suppression allowlists are the single source of truth across helper and contract doc" {

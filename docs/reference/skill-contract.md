@@ -130,16 +130,6 @@ segments with a real skill name so those legitimate references are not flagged.
 
 Codex skills do not require `trigger-tests`.
 
-During an in-progress rename, a legacy skill may suppress only `skill-prefix-taxonomy` with a
-replacement marker:
-
-```text
-<!-- cog-skill: superseded-by <skill-name> -->
-```
-
-The replacement name must be a valid skill name and must carry the expected taxonomy prefix. This is
-not a general lint suppression and is not part of `allowed_lint_suppressions_json`.
-
 ## Orchestration Lint Checks
 
 `cog skill-lint` scans skill prose for high-confidence violations of the env-first orchestration

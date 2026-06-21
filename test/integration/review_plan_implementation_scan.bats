@@ -46,11 +46,11 @@ EOF
   printf '%s\n' 'source' >"$root/source.txt"
 }
 
-@test "review-implementation-plans-scan inventories queues mutable flags and repos co-key" {
+@test "review-plan-implementation-scan inventories queues mutable flags and repos co-key" {
   local root="${BATS_TEST_TMPDIR}/repo"
   write_scan_fixture "$root"
 
-  run cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
+  run cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
@@ -66,20 +66,20 @@ EOF
   ' >/dev/null
 }
 
-@test "review-implementation-plans-scan fails on both item-array schemas" {
+@test "review-plan-implementation-scan fails on both item-array schemas" {
   local root="${BATS_TEST_TMPDIR}/repo"
   write_scan_fixture "$root"
   cat >>"$root/.implementation-plans/plans/alpha/queue-rounds.yaml" <<'EOF'
 plans: []
 EOF
 
-  run --separate-stderr cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
+  run --separate-stderr cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
 
   assert_failure
   [[ $stderr == *"ambiguous schema"* ]]
 }
 
-@test "review-implementation-plans-scan fails on neither item-array schema" {
+@test "review-plan-implementation-scan fails on neither item-array schema" {
   local root="${BATS_TEST_TMPDIR}/repo"
   write_scan_fixture "$root"
   cat >"$root/.implementation-plans/plans/alpha/queue-rounds.yaml" <<'EOF'
@@ -87,39 +87,39 @@ repos:
   - /tmp/satellite
 EOF
 
-  run --separate-stderr cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
+  run --separate-stderr cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
 
   assert_failure
   [[ $stderr == *"no supported schema"* ]]
 }
 
-@test "review-implementation-plans-scan emits stable fingerprints" {
+@test "review-plan-implementation-scan emits stable fingerprints" {
   local root="${BATS_TEST_TMPDIR}/repo"
   local first second
   write_scan_fixture "$root"
 
-  first="$(cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json)"
-  second="$(cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json)"
+  first="$(cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json)"
+  second="$(cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json)"
 
   assert_equal "$(jq -r '.repo_fingerprint' <<<"$first")" "$(jq -r '.repo_fingerprint' <<<"$second")"
   assert_equal "$(jq -r '.plans_fingerprint' <<<"$first")" "$(jq -r '.plans_fingerprint' <<<"$second")"
 }
 
-@test "review-implementation-plans-scan fails closed on a nested plan directory" {
+@test "review-plan-implementation-scan fails closed on a nested plan directory" {
   local root="${BATS_TEST_TMPDIR}/repo"
   write_scan_fixture "$root"
   mkdir -p "$root/.implementation-plans/plans/alpha/nested"
   printf 'rounds: []\n' >"$root/.implementation-plans/plans/alpha/nested/queue-rounds.yaml"
 
-  run --separate-stderr cog review-implementation-plans-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
+  run --separate-stderr cog review-plan-implementation-scan --repo-root "$root" --main-queue "$root/.implementation-plans/queue-plans.yaml" --json
 
   assert_failure
   [[ $stderr == *"nested plan directory detected"* ]]
   [[ $stderr == *"plans/alpha/nested/queue-rounds.yaml"* ]]
 }
 
-@test "review-implementation-plans-scan --help dispatches" {
-  run cog review-implementation-plans-scan --help
+@test "review-plan-implementation-scan --help dispatches" {
+  run cog review-plan-implementation-scan --help
 
   assert_success
   [[ $output == *"Inventory all implementation-plan queues"* ]]

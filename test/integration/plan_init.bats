@@ -14,7 +14,7 @@ setup() {
   run cog plan-init --repo-root "$repo" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.ok == true and (.created | length) == 4 and .legacy_plan_dir == false' >/dev/null
+  printf '%s\n' "$output" | jq -e '.ok == true and (.created | length) == 4' >/dev/null
   [ -d "${repo}/.implementation-plans/plans" ]
   [ -f "${repo}/.implementation-plans/README.md" ]
   grep -F "plans: []" "${repo}/.implementation-plans/queue-plans.yaml"

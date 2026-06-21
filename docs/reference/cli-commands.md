@@ -92,8 +92,8 @@ this reference table.
 | `research-shelf validate` | Validate the research shelf index and entries. |
 | `review-agents-finalize` | Finalize review reference resolution from classification data. |
 | `review-cli-signals` | Probe whether the project is a CLI from classification data. |
-| `review-implementation-plans-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
-| `review-implementation-plans-verify` | Verify a review-implementation-plans run against a before/after scan. |
+| `review-plan-implementation-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
+| `review-plan-implementation-verify` | Verify a review-plan-implementation run against a before/after scan. |
 | `review-init` | Create a review run directory and resolve output paths. |
 | `review-loop-input` | Build and validate review-loop handoff input JSON. |
 | `review-refs` | Resolve docs-n-notes review reference files. |
@@ -123,7 +123,7 @@ surface and must be kept in sync with `lib/commands/cmd_*.sh`.
 `cog queue-select --schema plans|rounds` selects from either queue schema; omitted `--schema`
 defaults to `rounds`.
 
-`cog preflight claude-env <out.json> [--allow-legacy-session]` asserts the Claude Code
+`cog preflight claude-env <out.json>` asserts the Claude Code
 no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash
 timeout env vars are recorded as diagnostics only.
 
@@ -151,7 +151,7 @@ and falling back to the repo checkout.
 Plan directories are flat siblings, a single level under `.implementation-plans/plans/`
 (`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
 filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
-`cog review-implementation-plans-scan` (revision inventory, via `cog::fn::review_implementation_plans_assert_flat`), and
+`cog review-plan-implementation-scan` (revision inventory, via `cog::fn::review_plan_implementation_assert_flat`), and
 `cog runner-queue-resolve-plan` (a resolved target must be a direct child of `plans/`).
 
 Top-level plan queue entries may select different executors while still targeting flat sibling plan

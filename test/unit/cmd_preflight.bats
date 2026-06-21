@@ -68,24 +68,13 @@ setup() {
     and .claude_env.checks.bash_max_timeout_ge_600000 == true' "$out" >/dev/null
 }
 
-@test "preflight claude-env advisory mode records absent env without failing" {
-  local out="${BATS_TEST_TMPDIR}/claude-env-advisory.json"
-  unset CLAUDE_CODE_DISABLE_BACKGROUND_TASKS BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS CLAUDE_AUTO_BACKGROUND_TASKS
-
-  run __cog_preflight_claude_env "$out" --allow-legacy-session
-
-  assert_success
-  [[ $output == *"WARNING claude-env preflight advisory"* ]]
-  jq -e '.claude_env.ok == false and .claude_env.advisory == true' "$out" >/dev/null
-}
-
-@test "preflight claude-env fails closed for an explicit wrong value even with --allow-legacy-session" {
+@test "preflight claude-env fails closed for an explicit wrong value" {
   local out="${BATS_TEST_TMPDIR}/claude-env-explicit-zero.json"
   # shellcheck disable=SC2030,SC2031 # Each bats @test runs in its own subshell; exporting the env here is intentional.
   export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=0
   unset BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS CLAUDE_AUTO_BACKGROUND_TASKS
 
-  run --separate-stderr __cog_preflight_claude_env "$out" --allow-legacy-session
+  run --separate-stderr __cog_preflight_claude_env "$out"
 
   assert_failure 70
   [[ $stderr == *"err.kind: ClaudeEnvMissing"* ]]

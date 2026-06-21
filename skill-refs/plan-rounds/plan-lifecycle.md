@@ -125,20 +125,3 @@ Rounds are sized against the capabilities of a single `/executor-prex` run:
   status — when in doubt, the `queue-rounds.yaml` wins.
 - **`.implementation-plans/README.md`** (root) is a static explainer of the whole system —
   structure, queue semantics, execution discipline. It carries no per-plan state.
-
-## Migrating a legacy `.plan/` tree
-
-Earlier versions of this spec used `<repo-root>/.plan/` with underscore-prefixed meta files.
-Migration is manual:
-
-1. `git mv .plan .implementation-plans` (or plain `mv` if untracked).
-2. `mkdir .implementation-plans/plans` and move every `<slug>/` dir into it.
-3. Rename meta files: `_QUEUE.yaml` → `queue-plans.yaml` at the root and `queue-rounds.yaml` inside
-   plan dirs; `_README.md` → `README.md` at both levels.
-4. Rewrite every `prompt:` field to the new paths
-   (`/executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`, etc.).
-5. Bootstrap the root `README.md` from the template on the next generating-skill run (or copy it
-   manually).
-
-The generating skill detects a legacy `.plan/` dir and informs the user, but never migrates
-automatically.

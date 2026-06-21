@@ -13,8 +13,8 @@ Answer a question about the project. **Do not modify any files.**
 
 By default the skill answers inline in the current session using the active Codex model/effort. The
 only exception is the `-f/--fast` path, which spawns a single nested
-`cog codex-runner run-exec --mode quick-auto --effort quick` call to actually run the
-answer on the quick (cheap) model and relays its captured `--output-last-message` output.
+`cog codex-runner run-exec --mode quick-auto --effort low` call to actually run the
+answer at low effort and relays its captured `--output-last-message` output.
 
 ## Rules
 
@@ -29,7 +29,7 @@ answer on the quick (cheap) model and relays its captured `--output-last-message
 
 | Flag           | Short | Effect                                                                                                                                                                                                                                 |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort quick` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` is preserved into the nested call. |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` is preserved into the nested call. |
 | `--web-search` | `-w`  | Perform a complete and deep web search/research before answering, grounding the response in current upstream docs and specs.                                                                                                           |
 
 Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wf`), and must
@@ -93,7 +93,7 @@ EOF
 
   cog codex-runner run-exec \
     --mode quick-auto \
-    --effort quick \
+    --effort low \
     --prompt "$RUN_DIR/prompt.txt" \
     --output "$RUN_DIR/answer.txt" \
     --events "$RUN_DIR/events.jsonl" \

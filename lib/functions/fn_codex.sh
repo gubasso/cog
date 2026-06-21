@@ -45,23 +45,14 @@ __cog_codex_validate_mode() {
 __cog_codex_map_effort() {
   local effort="${1:-}"
 
-  # Round 1 maps legacy profile names to native Codex reasoning effort as a
-  # judgment call grounded in docs/reference/model-effort-policy.md escalation
-  # guidance and the existing low-effort codex_sandbox_probe precedent.
   case "$effort" in
     minimal | low | medium | high)
       printf '%s\n' "$effort"
       ;;
-    quick)
-      printf '%s\n' low
-      ;;
-    deep)
-      printf '%s\n' high
-      ;;
     *)
       cog::helpers::die "$EX_USAGE" "InvalidInput" \
         "invalid codex effort" "effort: ${effort}" \
-        "expected minimal, low, medium, high, quick, or deep" ""
+        "expected minimal, low, medium, or high" ""
       ;;
   esac
 }

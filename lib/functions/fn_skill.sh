@@ -104,12 +104,6 @@ cog::fn::skill::name_in_namespace() {
   [[ "$(cog::fn::skill::classify_prefix "$name")" == "$namespace" ]]
 }
 
-cog::fn::skill::superseded_by() {
-  local file="$1"
-  { grep -oE '<!--[[:space:]]*cog-skill:[[:space:]]*superseded-by[[:space:]]+[a-zA-Z0-9_-]+[[:space:]]*-->' "$file" || true; } \
-    | sed -nE '1{s/.*superseded-by[[:space:]]+([a-zA-Z0-9_-]+)[[:space:]]*-->.*/\1/p;}'
-}
-
 cog::fn::skill::is_plan_reviewer_intent() {
   local file="$1"
   cog::fn::skill::is_plan_emitter "$file" || return 1

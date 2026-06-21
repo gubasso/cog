@@ -88,8 +88,8 @@ The following guardrails are inlined here as critical safety constraints:
   Environment Compatibility section in the shared conventions file.
 - Round 1 passes `--effort medium` — the first full-diff review gets the flagship model at the
   quality-default effort. Rounds 2+ use `--effort low` (same model, low effort) since they are
-  continuations reviewing incremental, already-triaged fixes. Substitute `--effort deep` for a
-  round only when the user explicitly asks to escalate (e.g. a stuck/looping review). Never pass
+  continuations reviewing incremental, already-triaged fixes. Escalate to `--effort high` for a
+  round only when the user explicitly asks (e.g. a stuck/looping review). Never pass
   `-m`/`-c` flags at the call site.
 - Never use `--approval-policy` or `-a` (not supported for `codex-session exec`).
 - Never use `codex-session review --uncommitted` (does not support `--json` or
