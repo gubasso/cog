@@ -8,7 +8,7 @@ model: opus
 effort: low
 argument-hint: "<prompt-or-plan-path>"
 disable-model-invocation: true
-allowed-tools: Bash Read Write Edit Grep Glob
+allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
 <!-- trigger-tests: "executor-claude", "execute one prompt through Claude", "execute one plan through Claude" -->
@@ -26,8 +26,8 @@ Stage 3 is native Claude implementation in the current session.
 
 This skill uses the `executor-*` taxonomy prefix and does not carry the
 `cog-skill` plan-emitter marker or the `cog-plan-mode-gate` Phase 0 marker.
-All plan emission is delegated to `/plan-claude`, which carries its own Phase 0
-plan-mode gate. Per
+All plan emission is delegated to `/plan-claude` via the Agent tool (Stage 1),
+which carries its own Phase 0 plan-mode gate. Per
 `docs/decisions/0015-plan-skills-not-in-plan-mode.md` and
 `docs/reference/skill-contract.md` ("Plan-mode gate"), `cog skill-lint` requires
 the gate stanza only for Claude skills carrying the plan-emitter marker.
@@ -118,10 +118,20 @@ stage2-stderr.log
 
 Run this stage only when input kind is `prompt`.
 
-Invoke `/plan-claude` natively in the current Claude session. Pass the output
-path or otherwise instruct the plan to be written to
-`<run-dir>/stage1-plan.md`, using the original request as the orientation. The
-generated plan must include assumptions, ambiguities, dependencies, and risks.
+Delegate plan generation to a foreground Claude subagent through the **Agent
+tool** (`subagent_type: general-purpose`), not the Skill tool — see
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
+`/plan-claude` carries `disable-model-invocation: true`, so the Skill tool
+refuses it; Agent-tool delegation loads the skill body via `Read` and is the
+supported lane.
+
+The delegation prompt instructs the subagent to read
+`$HOME/.claude/skills/plan-claude/SKILL.md` and follow it end-to-end, passing
+`--output <run-dir>/stage1-plan.md` and using the original request as the
+orientation. The subagent runs the interview non-interactively: it treats every
+interview decision as a skill-chosen best-default and records it (a subagent
+cannot prompt the user mid-run). The generated plan must include assumptions,
+ambiguities, dependencies, and risks.
 
 The Stage 2 plan input is:
 
