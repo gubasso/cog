@@ -22,6 +22,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0015: Plan-emitting skills must not run in Claude plan mode](decisions/0015-plan-skills-not-in-plan-mode.md)
 - [ADR-0016: Skill Prefix Taxonomy](decisions/0016-skill-prefix-taxonomy.md)
 - [ADR-0017: Reference self-containment](decisions/0017-reference-self-containment.md)
+- [ADR-0018: Remove tsk and prex; converge on executor-prex](decisions/0018-remove-tsk-and-prex-converge-executor-prex.md)
+- [ADR-0019: Lean, positively-framed skill prose](decisions/0019-lean-positive-skill-prose.md)
 
 ## Guides
 

@@ -16,8 +16,7 @@ description: >
 
 Same contract as the Claude `plan-writer` skill: turn a self-contained context brief into an
 executor-aware directory-plan draft. The adjusted grade is a sizing signal for directory rounds. The
-plan-rounds references are shared via `$DOCS_NOTES_REPO`; this twin reads the same files. Canonical
-semantics live in the Claude twin — see `skills/claude/plan-writer/SKILL.md`.
+plan-rounds references are shared via `$DOCS_NOTES_REPO`; this twin reads the same files.
 
 This twin is **read-only** and **non-interactive**: it never writes repo files, never bootstraps or
 registers `.implementation-plans/`, and never asks the user questions. It emits exactly one plan
@@ -114,6 +113,5 @@ mechanics in its draft, but final filesystem changes remain coordinator-owned.
 
 ## See also
 
-- Claude twin (canon): `skills/claude/plan-writer/SKILL.md`.
 - Plan-rounds references: `$(cog skill-refs path plan-rounds/<file>.md)`.
 - Codex invocation conventions: maintenance reference `docs/reference/codex-conventions.md`.

@@ -5,7 +5,7 @@ description: >
   persisted research shelf for reusable context and saving the final plan
   through cog plan-doc.
 model: opus
-effort: xhigh
+effort: high
 argument-hint: "[--output <abs.md>] [--research-root <dir>] <orientation/focus/goal>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob AskUserQuestion
@@ -18,8 +18,7 @@ allowed-tools: Bash Read Write Grep Glob AskUserQuestion
 
 Build one lean, self-contained implementation plan. This skill behaves like native planning:
 research reusable context, interview until the shape is clear, emit the plan to screen, and save one
-markdown artifact through `cog plan-doc`. It does not create `.implementation-plans/`, queue files, or
-directory-plan output; those remain owned by `plan-writer` and `plan-writer-multi`.
+markdown artifact through `cog plan-doc`.
 
 <!-- cog-plan-mode-gate -->
 **Phase 0: Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan mode

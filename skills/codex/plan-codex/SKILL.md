@@ -9,8 +9,7 @@ description: >
 
 Build one lean, self-contained implementation plan. This skill researches reusable context through
 the persisted shelf, reasons over the current codebase, emits the plan to screen, and saves one
-markdown artifact through `cog plan-doc`. It does not create `.implementation-plans/`, queue files, or
-directory-plan output; those remain owned by `plan-writer` and `plan-writer-multi`.
+markdown artifact through `cog plan-doc`.
 
 ## Invocation
 

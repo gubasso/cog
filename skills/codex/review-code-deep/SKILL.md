@@ -170,6 +170,5 @@ it to `<output-path>`.
 
 ## See Also
 
-- Claude twin: `skills/claude/review-code-deep/SKILL.md`.
 - Reference tree: `$DOCS_NOTES_REPO/tech/`.
 - Companion skills: `/review-findings`, `/test-review`, `/code-review`.

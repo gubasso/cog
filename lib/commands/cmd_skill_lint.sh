@@ -149,6 +149,55 @@ __cog_skill_lint_check_prefix_taxonomy() {
   return 1
 }
 
+__cog_skill_lint_check_source_paths() {
+  # Runtime skill files must not reference another skill's source-tree path
+  # (e.g. skills/claude/<name>/SKILL.md or the stale Codex twin shape
+  # codex-session/.agents/skills/<name>/SKILL.md). Such source-repo meta has no
+  # meaning in the end-user runtime; reference the skill by its runtime name or
+  # move the meta to docs/. Authoring placeholders (skills/claude/<name>/SKILL.md
+  # with a literal <name>) and runtime-installed delegation paths
+  # ($HOME/.claude/skills/... or project-local .claude/skills/...) are not
+  # matched: the regex anchors to a concrete claude/codex source segment and a
+  # real skill name. See docs/decisions/0019-lean-positive-skill-prose.md.
+  local file="$1"
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
+  local fence_re='^[[:space:]]*```+'
+  local src_re='(skills/(claude|codex)|codex-session/\.agents/skills)/[a-z0-9-]+/SKILL\.md'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] && continue
+
+    if [[ $line =~ $src_re ]]; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-source-path-reference" \
+        "source-repo skill path reference in runtime skill body" \
+        "reference the skill by its runtime name, or move source-repo meta to docs/"
+      failed=1
+    fi
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_is_cog_extraction() {
   local line="$1"
   [[ $line =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\"\$\(cog[[:space:]].*\|[[:space:]]*(sed[[:space:]]+-n|cut[[:space:]]|jq[[:space:]]+-r) ]]
@@ -487,6 +536,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_prefix_taxonomy "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_source_paths "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

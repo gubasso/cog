@@ -22,9 +22,7 @@ judgment. Run directory setup, input classification, canonical artifact paths,
 OTHER-engine reviewer selection, Codex invocation, and executor summaries stay
 behind `cog`.
 
-This mirrors `skills/codex/executor-codex-session/SKILL.md` with engine roles
-inverted. Stage 3 is native Claude implementation in this session, not a Codex
-call.
+Stage 3 is native Claude implementation in the current session.
 
 This skill uses the `executor-*` taxonomy prefix and does not carry the
 `cog-skill` plan-emitter marker or the `cog-plan-mode-gate` Phase 0 marker.

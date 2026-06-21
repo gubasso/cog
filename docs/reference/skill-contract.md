@@ -85,6 +85,28 @@ This taxonomy is related accepted skill governance alongside [ADR-0013](../decis
 (model/effort policy) and [ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md) (plan-mode
 gate); those ADRs are referenced here, not changed.
 
+## Lean positive prose
+
+Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what
+it isn't. See [ADR-0019](../decisions/0019-lean-positive-skill-prose.md).
+
+- **Positive framing.** Drop preemptive "what this skill is not" scoping. Negative or exclusion
+  statements are allowed only when explicitly requested or when correcting a recurrent drift; an
+  operational guardrail with an empirical reason (a known drift, a command behavior, a sandbox/tool
+  constraint, an explicit user/orchestrator policy) is not a violation. This part is prose judgment,
+  not linted.
+- **No source-repo meta.** A runtime skill file must not reference another skill's source-tree path
+  (`skills/claude/<name>/SKILL.md`, `skills/codex/<name>/SKILL.md`, or the stale twin shape
+  `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's
+  installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead.
+  Reference sibling skills by their runtime name (`/plan-claude`, `$plan-writer`).
+
+Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), project-local runtime
+paths (`.claude/skills/<name>/SKILL.md`), `cog skill-refs path ...` resolvers, and authoring
+placeholders with a literal `<name>` are not source-repo meta violations. The
+`skill-source-path-reference` lint rule below is anchored to concrete `claude`/`codex` source
+segments with a real skill name so those legitimate references are not flagged.
+
 ## Structural Lint Checks
 
 `cog skill-lint` hard-fails these structural issues:
@@ -100,6 +122,11 @@ gate); those ADRs are referenced here, not changed.
   plan-emitters use `plan-*`, plan-reviewers use `review-plan-*`, and executors use `executor-*`.
   Executor intent takes precedence over plan-emitter status for staged executor skills that emit
   intermediate plan artifacts.
+- `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
+  (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
+  scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring
+  placeholders and runtime-installed `.claude/skills` paths are not flagged. See "Lean positive
+  prose".
 
 Codex skills do not require `trigger-tests`.
 

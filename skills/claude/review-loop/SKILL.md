@@ -28,9 +28,8 @@ resolved issues.
 Prepend the read-only orientation preamble from `cog codex-runner orientation read-only` to every
 Codex review prompt; it is the primary behavioral control for read-only enforcement. CLI invocation
 patterns and timeout requirements are owned by the `cog codex-runner run-exec` surface used below.
-The Codex twin of `review-code-deep` lives at
-`codex-session/.agents/skills/review-code-deep/SKILL.md` — its "Orchestrator Invocation Contract"
-section defines the per-round input/output protocol used here.
+The Codex `$review-code-deep` skill defines, in its "Orchestrator Invocation Contract" section, the
+per-round input/output protocol used here.
 
 ## Inputs
 

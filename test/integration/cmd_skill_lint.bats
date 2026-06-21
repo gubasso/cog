@@ -311,6 +311,59 @@ EOF
   [[ $stderr == *"orchestration-removed-codex-foreground"* ]]
 }
 
+@test "cog skill-lint rejects a source-repo skill path reference" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Canonical semantics live in the Claude twin: skills/claude/plan-writer/SKILL.md.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-source-path-reference"* ]]
+}
+
+@test "cog skill-lint rejects a stale codex-session twin source path" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'The twin lives at codex-session/.agents/skills/review-code-deep/SKILL.md here.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-source-path-reference"* ]]
+}
+
+@test "cog skill-lint allows an authoring placeholder skill path" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Draft a separate skills/codex/<name>/SKILL.md for Codex parity.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint allows runtime-installed claude skills paths" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016
+  printf '%s\n' 'Read the skill file at $HOME/.claude/skills/plan-writer/SKILL.md and follow it.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint ignores a source-repo skill path inside a fenced block" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```text
+skills/claude/plan-writer/SKILL.md
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
 @test "cog skill-lint rejects removed guard-codex-foreground references" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   printf '%s\n' 'Install guard-codex-foreground for foreground enforcement.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
