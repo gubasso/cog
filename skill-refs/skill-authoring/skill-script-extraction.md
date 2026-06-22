@@ -115,7 +115,7 @@ keep machine parsing clean:
 
 `<ctx>` is uppercased with non-alphanumerics collapsed to `_`, so `msg failed commit-push "denied"`
 prints `COMMIT_PUSH_FAILED denied`. This generalizes the original gc `COMMIT_OK` / `COMMIT_FAILED`
-vocabulary: a parent (`/plan-queue-runner`) parses the last non-empty line of a child's output
+vocabulary: a parent (`/runner-queue`) parses the last non-empty line of a child's output
 deterministically — so when a skill emits a status line, **nothing may follow it**.
 
 Prefer `msg` over ad-libbed `echo`. The grammar is the contract; keep it canonical by generating it.
@@ -194,7 +194,7 @@ Do not extract or do the following:
 - **Judgment tables.** A table that reads deterministic inputs but encodes a _decision_
   (resume-fallback reaction, finding → status triage, plan-conformance) stays prose.
 - **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely
-  multi-line parsers (executor-prex, plan-writer-multi, plan-queue-runner) earn a subcommand.
+  multi-line parsers (executor-prex, plan-writer-multi, runner-queue) earn a subcommand.
 - **Micro-helper clouds.** Several subcommands stitched with `jq` between each call. Make it coarse:
   one subcommand, one JSON object.
 - **Hand-rolled `agent-helper` resolve/fallback blocks.** Bare call + `require`; never a stale

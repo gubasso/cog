@@ -317,8 +317,7 @@ Include:
 - Strategy summary (how the work is split and why).
 - A rounds overview that mirrors the plan's `queue-rounds.yaml` (which is the source of truth for
   round order and status — do not duplicate status into prose that can drift).
-- Exact execution commands (`/executor-prex -ar` per-round or full-directory; `/executor-prex` remains a
-  supported compatibility form for existing queues).
+- Exact execution commands (`/executor-prex -ar` per-round or full-directory).
 - **Execution discipline section** — a prominent, clearly labeled section (not just a bullet) that
   states the following rules unambiguously:
   1. **One round per `/executor-prex` session.** Each round executes in its own isolated

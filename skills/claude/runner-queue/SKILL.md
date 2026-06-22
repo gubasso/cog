@@ -54,8 +54,8 @@ fails closed in setup. Live data is directory-only in this round: every main pla
 
 A `plans:` entry selects the executor through its queued `prompt:`. The resolver accepts the
 `-ar <plan-dir>` form for **any** `/executor-*` prompt — matched by the prefix taxonomy, not a
-hardcoded list (`/executor-prex` stays an alias for `/executor-prex`) — maps it to the plan directory's inner
-`queue-rounds.yaml`, and preserves the prompt verbatim. Examples (not a closed set):
+hardcoded list — maps it to the plan directory's inner `queue-rounds.yaml`, and preserves the prompt
+verbatim. Examples (not a closed set):
 
 ```yaml
 plans:
@@ -479,7 +479,7 @@ postcondition.
 - Always commit with `/gc -a` plus `--repo` per satellite, building the satellite list from the inner
   queue's repos (`INNER_REPOS`), not the main-queue `REPOS`; the clean-tree guard across every
   declared repo is what makes stage-all safe.
-- Use queued prompts verbatim. Do not reconstruct executor commands. Any `/executor-*` prompt is accepted (matched by the prefix taxonomy); `/executor-prex` is supported only as an alias for `/executor-prex`.
+- Use queued prompts verbatim. Do not reconstruct executor commands. Any `/executor-*` prompt is accepted (matched by the prefix taxonomy).
 - Plan directories are flat siblings under `plans/`; the resolver fails closed on a nested target.
   Do not work around it by hand-resolving a nested path.
 - Never delegate the main loop to a subagent. Never background Agent, queued executor prompts, `/gc`, or revision work.

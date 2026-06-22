@@ -1,6 +1,6 @@
 plans:
   - item: prex-artifacts-and-installer-leftover
-    status: todo
+    status: done
     depends_on: []
     prompt: /executor-prex -ar @.implementation-plans/plans/prex-artifacts-and-installer-leftover/
     notes: Fix /prex artifacts + stale skill-name refs + self-cleaning installer (single round)

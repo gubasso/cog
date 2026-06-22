@@ -8,7 +8,7 @@ review, and a review loop).
 
 Run delegated agentic work as **in-session foreground subagents**, not via a headless `claude -p`
 subprocess. A generic `claude-delegate` subagent is the reusable primitive; orchestrators (e.g.
-`plan-queue-runner`) dispatch each unit to it via the **Agent tool**.
+`runner-queue`) dispatch each unit to it via the **Agent tool**.
 
 ## Why headless `claude -p` was wrong
 
@@ -77,7 +77,7 @@ We initially shipped this as prose-only (architecture-only), reasoning that fore
 the orchestrator's deterministic completion check (re-reading `QUEUE.yaml` for `status == done`)
 made the reaping failure unlikely. That proved insufficient: under in-session delegation a delegate
 can still background its **own** Codex Bash call one level down and end its turn, getting the child
-SIGTERM-reaped (observed 2026-06-17, `plan-queue-runner` → `claude-delegate` → `executor-prex` stage 3). The
+SIGTERM-reaped (observed 2026-06-17, `runner-queue` → `claude-delegate` → `executor-prex` stage 3). The
 "option-2" guard is now **implemented** as a `PreToolUse(Bash)` hook —
 `agent-helper hook-guard codex-foreground` — which fires inside subagents too (confirmed: PreToolUse
 runs for subagent tool calls, carrying `agent_id`) and blocks any Codex call that is backgrounded or
@@ -89,5 +89,5 @@ shared by the producer and the now-thin Stop-gate hook, so the two can no longer
 ## Status
 
 Accepted / Implemented (2026-06-17). Enacted in dotfiles by
-`claude/.claude/agents/claude-delegate.md`, `claude/.claude/skills/plan-queue-runner/SKILL.md`, and
+`claude/.claude/agents/claude-delegate.md`, `claude/.claude/skills/runner-queue/SKILL.md`, and
 `claude/.claude/skills/executor-prex/SKILL.md`. Mirrored as ADR-0001 in the dotfiles and `cog` repos.

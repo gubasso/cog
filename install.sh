@@ -85,6 +85,9 @@ comp_dir="$xdg_data_home/bash-completion/completions"
 man_dir="$xdg_data_home/man/man1"
 state_dir="$xdg_state_home/cog"
 manifest="$state_dir/install-manifest"
+_self_dir="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=install-common.sh
+. "$_self_dir/install-common.sh"
 
 if [[ $EUID -eq 0 && -z ${PREFIX:-} ]]; then
   printf '%s\n' "refusing to install into root's home; set PREFIX for a system install" >&2
@@ -126,6 +129,22 @@ record_path "$comp_dir/cog"
 install_man_page
 
 sort -u "$manifest_tmp" >"$manifest_tmp.sorted"
+
+# Stale-prune: remove cog-owned files the previous install shipped that this
+# install no longer ships (e.g. a renamed/removed skill directory). User-authored
+# files are never recorded in a manifest, so they are never pruned. First-ever
+# install has no prior manifest and prunes nothing. App-payload entries already
+# removed by the hard-clear above make their `rm -f` a harmless no-op.
+if [[ -e $manifest ]]; then
+  while IFS= read -r stale; do
+    valid_manifest_path "$stale" || continue
+    rm -f -- "$stale"
+    prune_manifest_skill_dir "$stale" "$home/.claude/skills"
+    prune_manifest_skill_dir "$stale" "$home/.claude/agents"
+    prune_manifest_skill_dir "$stale" "$home/.agents/skills"
+  done < <(comm -23 <(sort -u "$manifest") "$manifest_tmp.sorted")
+fi
+
 mv -f "$manifest_tmp.sorted" "$manifest"
 rm -f "$manifest_tmp"
 trap - EXIT
