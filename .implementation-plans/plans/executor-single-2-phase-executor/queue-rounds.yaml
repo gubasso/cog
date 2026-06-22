@@ -1,0 +1,7 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: implement-executor-single-and-decouple
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar .implementation-plans/plans/executor-single-2-phase-executor/implement-executor-single-and-decouple.md
+    notes: 'Single L round: flow-descriptor SoT + executor/engine rename + phase-keyed artifacts/summary v2; migrate executor-lean trio; add executor-single trio; update cmd_executor.bats; ADR 0026 + docs.'

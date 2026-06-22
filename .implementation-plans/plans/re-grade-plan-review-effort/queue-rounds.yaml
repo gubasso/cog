@@ -1,0 +1,7 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: apply-effort-regrade
+    status: todo
+    depends_on: []
+    prompt: /executor-lean .implementation-plans/plans/re-grade-plan-review-effort/apply-effort-regrade.md
+    notes: Remove Claude override; refine policy refs; add ADR-0026; record shelf entry; validate

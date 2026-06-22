@@ -1,4 +1,29 @@
 plans:
+  - item: prex-artifacts-and-installer-leftover
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar @.implementation-plans/plans/prex-artifacts-and-installer-leftover/
+    notes: Fix /prex artifacts + stale skill-name refs + self-cleaning installer (single round)
+  - item: producer-blind-consumer-skills
+    status: todo
+    depends_on: []
+    prompt: /executor-lean -ar @.implementation-plans/plans/producer-blind-consumer-skills/
+    notes: 'Producer-blind consumer skills: prose fixes + ADR 0026 + skill-lint producer-blindness rule'
+  - item: re-grade-plan-review-effort
+    status: todo
+    depends_on: []
+    prompt: /executor-lean -ar @.implementation-plans/plans/re-grade-plan-review-effort/
+    notes: Re-grade review-plan-lean to session default; record verification-effort policy (ADR-0026)
+  - item: review-lean-rename
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar @.implementation-plans/plans/review-lean-rename/
+    notes: Rename review-code-deep -> review-lean + faithful single-pass review skill upgrade
+  - item: executor-single-2-phase-executor
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar @.implementation-plans/plans/executor-single-2-phase-executor/
+    notes: Single-round L plan, executor-prex. Add executor-single 2-phase executor (plan->execute) as native twin pair + executor-single-codex launcher; decouple cog executor stage ordinals from phases via per-executor flow descriptor; rename --executor(skill)/--engine(agent), drop --plan-engine; phase-keyed artifacts/summary v2; migrate executor-lean trio; queue-prompts +2; ADR 0026.
   - item: robust-plan-slug-stopword-aware
     status: todo
     depends_on: []

@@ -1,0 +1,7 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: rename-and-single-pass-upgrade
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar .implementation-plans/plans/review-lean-rename/rename-and-single-pass-upgrade.md
+    notes: Rename review-code-deep -> review-lean across repo + single-pass content upgrade to both twins

@@ -1,0 +1,7 @@
+# Rounds for this plan, in execution order. status: backlog | todo | doing | done
+rounds:
+  - item: producer-blindness-rule
+    status: todo
+    depends_on: []
+    prompt: /executor-lean -ar .implementation-plans/plans/producer-blind-consumer-skills/producer-blindness-rule.md
+    notes: Fix producer-name leaks, codify the golden rule (ADR+docs), enforce in cog skill-lint
