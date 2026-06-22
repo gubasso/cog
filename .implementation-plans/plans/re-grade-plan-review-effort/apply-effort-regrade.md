@@ -34,7 +34,7 @@ IN scope:
 
 - Remove `model:` + `effort:` from the Claude `review-plan-lean` frontmatter.
 - Refine the model/effort policy references (both TOMLs + the human-readable policy doc).
-- Add a new ADR (0026) and its `docs/README.md` index line.
+- Add a new ADR (0027) and its `docs/README.md` index line.
 - Record the external evidence on the research shelf.
 - Run the validation gates.
 
@@ -104,9 +104,10 @@ OUT of scope:
 
 ### Existing Patterns
 
-- ADR numbering is sequential zero-padded; the next free number is **0026** (0024 and 0025 already
-  exist). Accepted ADRs are never deleted; changed decisions get a new ADR. This ADR **extends**
-  0013, it does not supersede it.
+- ADR numbering is sequential zero-padded; the next free number is **0027** (0024, 0025, and 0026
+  already exist). Confirm the next free `docs/decisions/` number at implement time and bump if taken.
+  Accepted ADRs are never deleted; changed decisions get a new ADR. This ADR **extends** 0013, it
+  does not supersede it.
 - Markdown fenced code blocks must declare a language (`text` when none applies) — markdownlint
   MD040.
 - TOML escalation/rationale fields use `"""triple-quoted"""` multi-line strings.
@@ -181,17 +182,17 @@ work: it rides the session default (Claude opus + high; Codex gpt-5.5 + medium) 
 frontmatter override. Generator-verifier asymmetry makes critique cheaper than generation, but
 correctness judging is non-trivial, so the high default is the right floor rather than a reduced
 tier. Reserve the xhigh/max exception tiers for reviews that span many subsystems, are
-security-critical, are expensive to reverse, or run as evaluations. See ADR-0026 and the
+security-critical, are expensive to reverse, or run as evaluations. See ADR-0027 and the
 research-shelf entry tagged `verifier-asymmetry`.
 ```
 
-### Step 5: Write ADR-0026
+### Step 5: Write ADR-0027
 
-Create `docs/decisions/0026-review-effort-rides-default.md` following `docs/decisions/template.md`
+Create `docs/decisions/0027-review-effort-rides-default.md` following `docs/decisions/template.md`
 (mirror the section shape of `docs/decisions/0013-model-effort-policy.md`):
 
 ```markdown
-# ADR-0026: Review/verification effort rides the session default
+# ADR-0027: Review/verification effort rides the session default
 
 ## Context and Problem Statement
 
@@ -243,7 +244,7 @@ Accepted
 In `docs/README.md`, add this line immediately after the ADR-0025 entry (currently line 32):
 
 ```text
-- [ADR-0026: Review/verification effort rides the session default](decisions/0026-review-effort-rides-default.md)
+- [ADR-0027: Review/verification effort rides the session default](decisions/0027-review-effort-rides-default.md)
 ```
 
 ### Step 7: Record the external evidence on the research shelf
@@ -300,9 +301,9 @@ Fix any failures before completing. Do not run any git commands.
 - [ ] The Claude TOML escalation clause states that review/verification rides the default and lists
       the xhigh exception cases.
 - [ ] `docs/reference/model-effort-policy.md` has a `## Review And Verification Work` section.
-- [ ] `docs/decisions/0026-review-effort-rides-default.md` exists, follows the template, and is
+- [ ] `docs/decisions/0027-review-effort-rides-default.md` exists, follows the template, and is
       marked `Accepted`.
-- [ ] `docs/README.md` lists the ADR-0026 entry after ADR-0025.
+- [ ] `docs/README.md` lists the ADR-0027 entry after ADR-0026.
 - [ ] A research-shelf entry tagged `verifier-asymmetry` (consuming `review-plan-lean`) exists and
       `cog research-shelf validate` passes.
 - [ ] `cog skill-lint skills/claude/review-plan-lean/SKILL.md` passes.

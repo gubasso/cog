@@ -97,7 +97,7 @@ When `/executor-prex` is pointed at this directory or this `README.md`, it MUST:
 - **`executor-single-codex` marker drift.** Mitigation: mirror `executor-lean-codex` exactly and
   gate on `cog skill-lint`.
 - **ADR number collision.** Mitigation: confirm the next free `docs/decisions/` number at implement
-  time (0026 expected) and bump if taken.
+  time (0027 expected, since 0026 is now taken) and bump if taken.
 - **`executor-prex` 4-stage hook-guard confusion.** Accepted/avoided: it is a separate flow and is
   explicitly out of scope.
 

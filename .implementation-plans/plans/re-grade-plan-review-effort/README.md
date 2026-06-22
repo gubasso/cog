@@ -28,7 +28,7 @@ right size.
 The authoritative order and status live in `queue-rounds.yaml`.
 
 1. `apply-effort-regrade.md` — remove the Claude override, refine both TOMLs + the policy doc, add
-   ADR-0026 + its index line, record the research-shelf entry, and run the validation gates.
+   ADR-0027 + its index line, record the research-shelf entry, and run the validation gates.
 
 ## Execution Commands
 
@@ -53,9 +53,9 @@ top-level `queue-plans.yaml`). A crashed or interrupted session thus leaves a vi
 - **Remove the override entirely** (do not pin `effort: high`). The session default is already
   opus + high, and policy says exploration/review skills set no override — matching `review-code-deep`
   and `review-loop`. (User decision, this session.)
-- **New ADR + reference updates** to record the verification-effort principle; the ADR (0026)
-  **extends** ADR-0013 and does not supersede it. The next free ADR number is 0026 because 0024 and
-  0025 already exist.
+- **New ADR + reference updates** to record the verification-effort principle; the ADR (0027)
+  **extends** ADR-0013 and does not supersede it. The next free ADR number is 0027 because 0024,
+  0025, and 0026 already exist; confirm at implement time and bump if taken.
 - **Record the external evidence** on the research shelf so the justification is durable and reusable.
 - Codex twin needs no change — it already rides the default.
 - No git operations in this round.

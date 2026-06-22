@@ -281,8 +281,8 @@ behavior are unchanged.
 
 ### Step 10: Docs + ADR
 
-- `docs/decisions/0026-executor-stage-phase-decoupling.md` (confirm 0026 is the next free number at
-  implement time; bump if taken). Record: ordinals decoupled from phases via per-executor flow
+- `docs/decisions/0027-executor-stage-phase-decoupling.md` (0026 is now taken; confirm the next free
+  number at implement time and bump if taken). Record: ordinals decoupled from phases via per-executor flow
   descriptors; `executor=skill` / `engine=agent` naming; the `executor-single` 2-phase flow;
   artifacts/summary schema v2. Add the index line to `docs/README.md`.
 - `docs/reference/cli-commands.md`: update the `cog executor` section (new `--executor`/`--engine`
@@ -328,7 +328,7 @@ reference the literal `stage2-reviewed-plan.md` (lean) — those are unaffected.
       `SKILL.md` files.
 - [ ] `just test` passes (including the updated `test/integration/cmd_executor.bats`), and
       `just lint` passes.
-- [ ] ADR `0026-executor-stage-phase-decoupling.md` exists and is indexed in `docs/README.md`;
+- [ ] ADR `0027-executor-stage-phase-decoupling.md` exists and is indexed in `docs/README.md`;
       `cli-commands.md` and `skills.md` reflect the new flags and skills.
 - [ ] This plan's `queue-rounds.yaml` shows round `implement-executor-single-and-decouple` as `done`.
 - [ ] The top-level `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
