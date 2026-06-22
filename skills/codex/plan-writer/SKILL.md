@@ -1,20 +1,20 @@
 ---
 name: plan-writer
 description: >
-  Codex twin of the Claude `plan-writer` skill. Single-pass generator that turns
+  Single-pass generator that turns
   a self-contained context brief (or orientation) plus read-only repo research
   into directory-plan drafts for the directory-only, two-layer model, using the
   complexity heuristic and the executor-prex Executor Factor as sizing signals. Read-only
   and non-interactive; emits the plan as its final message. Primarily driven by
-  the `plan-writer-multi` coordinator as the parallel second engine. Triggers:
+  a dual-engine coordinator as the parallel second engine. Triggers:
   "plan-writer", "write a plan", "draft an implementation plan".
 ---
 
-<!-- trigger-tests: "plan-writer for this brief", "draft an implementation plan from this context", "plan-writer-multi codex worker" -->
+<!-- trigger-tests: "plan-writer for this brief", "draft an implementation plan from this context", "dual-engine codex plan worker" -->
 
-# Plan Writer — Codex twin
+# Plan Writer (Codex)
 
-Same contract as the Claude `plan-writer` skill: turn a self-contained context brief into an
+Turn a self-contained context brief into an
 executor-aware directory-plan draft. The adjusted grade is a sizing signal for directory rounds. The
 plan-rounds references ship with `cog` and resolve through `cog skill-refs path`.
 
@@ -36,7 +36,7 @@ Read all three plan-rounds references before sizing or generating:
 
 ## Orchestrator Invocation Contract
 
-The `plan-writer-multi` coordinator invokes this twin with a prompt that opens with the `$plan-writer`
+A dual-engine coordinator invokes this skill with a prompt that opens with the `$plan-writer`
 mention, followed by a **self-contained raw context brief** inlined verbatim, followed by a short
 orientation footer. In this mode:
 
@@ -74,7 +74,7 @@ follow the same steps, emitting the plan as the final message.
 
 ## Coordinator-owned helper mechanics
 
-This Codex twin is a worker. It must not create `.implementation-plans/`, register queues, run
+This skill is a worker. It must not create `.implementation-plans/`, register queues, run
 collision checks, or imply that it directly mutates plan ledgers in orchestrator mode. The
 coordinator that synthesizes the definitive plan owns those writes and delegates deterministic
 mechanics to `cog`:

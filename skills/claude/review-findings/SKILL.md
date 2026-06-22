@@ -3,7 +3,7 @@ name: review-findings
 description: >
   Triage code review findings, validate them against code and current docs, apply
   appropriate fixes, and emit structured triage plus followups. Use for review
-  reports, review-code-deep JSON, review comments, or review-loop triage.
+  reports, structured findings JSON, review comments, or triage from any review pass.
 model: opus
 effort: low
 ---
@@ -13,7 +13,7 @@ effort: low
 # Review Findings
 
 `review-findings` is the triage source of truth for review findings. It accepts freeform findings
-and the `review-code-deep` JSON schema:
+and the shared structured-findings contract:
 
 - `severity`: `blocking|important|nit|suggestion|question|praise`
 - `file`, `line_start`, `line_end`, `category`, `headline`, `evidence`, `reasoning`, `suggestion`,

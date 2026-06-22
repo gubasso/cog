@@ -143,6 +143,24 @@ placeholders with a literal `<name>` are not source-repo meta violations. The
 `skill-source-path-reference` lint rule below is anchored to concrete `claude`/`codex` source
 segments with a real skill name so those legitimate references are not flagged.
 
+## Producer-blind consumers
+
+A consumer skill depends only on its structural input contract and is blind to which skill produced
+that input. Describe the contract the skill reads — the `.implementation-plans/` directory structure,
+the shared structured-findings contract — never the identity of the producing skill. All input
+validation and parsing is delegated to `cog`. See
+[ADR-0026](../decisions/0026-consumer-skill-producer-blindness.md).
+
+Enforcement is the `producer-blindness` lint rule, keyed off a curated consumer-to-producer map held
+in `lib/commands/cmd_skill_lint.sh` (not an in-skill marker). The rule scans mapped consumer skills
+for a forbidden producer name as a whole skill-name token, in both the frontmatter `description:`
+text and body prose, while ignoring fenced code blocks. Current map entries:
+
+```text
+runner-queue    -> plan-writer, plan-writer-multi
+review-findings -> review-code-deep, review-loop
+```
+
 ## Structural Lint Checks
 
 `cog skill-lint` hard-fails these structural issues:
@@ -158,6 +176,10 @@ segments with a real skill name so those legitimate references are not flagged.
   plan-emitters use `plan-*`, plan-reviewers use `review-plan-*`, and executors use `executor-*`.
   Executor intent takes precedence over plan-emitter status for staged executor skills that emit
   intermediate plan artifacts.
+- `producer-blindness`: a mapped consumer skill names a forbidden producer skill as a whole
+  skill-name token. The scan covers frontmatter `description:` text and body prose while ignoring
+  fenced code blocks, and is scoped to consumers in the curated consumer-to-producer map. See
+  "Producer-blind consumers".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring

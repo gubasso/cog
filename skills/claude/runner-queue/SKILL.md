@@ -17,7 +17,7 @@ allowed-tools: Bash Read Agent Skill
 
 # Runner Queue
 
-Drive a plan-writer implementation queue to completion. This skill runs **inline** in the
+Drive a queued implementation plan under `.implementation-plans/` to completion. This skill runs **inline** in the
 orchestrating session at depth 0. In `rounds:` mode it preserves the existing per-round behavior:
 select a runnable round, dispatch its exact `prompt` to a fresh `claude-delegate` subagent, verify
 the round flipped itself to `done`, commit with `/gc -a`, run revision, and continue. In `plans:`

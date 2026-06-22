@@ -92,7 +92,7 @@ judged reusable in Phase 2. Do not fabricate paths, APIs, commands, or line-spec
 
 ## Phase 4: Interview
 
-Use `AskUserQuestion` for the interview loop. Reuse the `plan-writer` interview pattern:
+Use `AskUserQuestion` for the interview loop, following this interview pattern:
 
 - Start with an adaptive batch of 2-3 important questions when unresolved scope, approach, or testing
   choices materially affect the plan.

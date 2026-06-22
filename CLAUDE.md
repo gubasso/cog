@@ -43,3 +43,10 @@ Runtime skill files carry no source-repo meta (no skills/.../SKILL.md cross-refe
 belongs in docs/. The source-path part is enforced by cog skill-lint (skill-source-path-reference).
 See docs/decisions/0019-lean-positive-skill-prose.md and docs/reference/skill-contract.md
 ("Lean positive prose").
+
+Non-negotiable: a consumer skill depends only on its structural input contract (the
+.implementation-plans/ directory structure, the shared structured-findings contract) and is blind to
+which skill produced that input; it never names the producer in prose, and all input validation is
+delegated to cog. Enforced by cog skill-lint (producer-blindness) via a curated consumer->producer
+map. See docs/decisions/0026-consumer-skill-producer-blindness.md and
+docs/reference/skill-contract.md ("Producer-blind consumers").

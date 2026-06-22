@@ -460,8 +460,8 @@ Do NOT display the full contents of the generated files unless the user asks.
 ## Orchestrator Invocation Contract (coordinator mode)
 
 The coordinator-mode contract lives in `references/orchestrator-invocation-contract.md`. Read that
-reference when this skill is invoked non-interactively by a coordinator such as `plan-writer-multi`.
-Normal interactive `/plan-writer` use ignores coordinator mode.
+reference when this skill is invoked non-interactively in coordinator mode. Normal interactive use
+ignores coordinator mode.
 
 
 ## Guardrails

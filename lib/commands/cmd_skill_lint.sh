@@ -613,6 +613,71 @@ __cog_skill_lint_scan_prose_file() {
   return "$failed"
 }
 
+# Consumer skill name -> space-separated producer names it must not name in prose.
+__cog_skill_lint_producer_blind_producers() {
+  case "$1" in
+    runner-queue) printf '%s' "plan-writer plan-writer-multi" ;;
+    review-findings) printf '%s' "review-code-deep review-loop" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
+# Returns 0 when $1 (a line) contains $2 (a producer name) as a complete
+# skill-name token: letters, digits, underscore, and hyphen are token
+# characters, so review-code-deep matches `review-code-deep` and /review-code-deep
+# but not review-code-deeper or my-review-code-deep-wrapper.
+__cog_skill_lint_line_has_producer_token() {
+  local line="$1" producer="$2"
+  local rest="$line" before="" idx after
+  while [[ $rest == *"$producer"* ]]; do
+    idx="${rest%%"$producer"*}"
+    before="${idx: -1}"
+    after="${rest:${#idx}+${#producer}:1}"
+    if [[ ! $before =~ [A-Za-z0-9_-] && ! $after =~ [A-Za-z0-9_-] ]]; then
+      return 0
+    fi
+    rest="${rest:${#idx}+${#producer}}"
+  done
+  return 1
+}
+
+# Producer-blindness: a mapped consumer skill must not name the producer of its
+# structural input. The scan covers frontmatter description text and body prose
+# (the review-findings leaks live partly in the folded description:), and only
+# fenced code blocks are skipped. See docs/decisions/0026-consumer-skill-producer-blindness.md.
+__cog_skill_lint_check_producer_blind() {
+  local file="$1"
+  local name producers
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  producers="$(__cog_skill_lint_producer_blind_producers "$name")"
+  [[ -z $producers ]] && return 0
+
+  local line line_no=0 failed=0 in_fence=false producer
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] && continue
+
+    for producer in $producers; do
+      if __cog_skill_lint_line_has_producer_token "$line" "$producer"; then
+        __cog_skill_lint_finding "$file" "$line_no" "producer-blindness" \
+          "names producer skill '${producer}'; a consumer must be blind to its input's producer" \
+          "describe the structural input contract (e.g. .implementation-plans/ or the findings contract); do not name the producer skill"
+        failed=1
+      fi
+    done
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -633,6 +698,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_forbidden_runtime_refs "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_producer_blind "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

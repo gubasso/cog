@@ -77,6 +77,16 @@ canonical runtime skill instead of reimplementing the workflow inline. See
 `docs/decisions/0024-skill-reference-self-containment-golden-rules.md` and
 `docs/decisions/0025-sot-executor-delegation.md`.
 
+## Producer-Blind Consumers
+
+A consumer skill depends only on its structural input contract — the `.implementation-plans/`
+directory structure, the shared structured-findings contract — and is blind to which skill produced
+that input. Describe the input contract the skill reads; never name the producing skill in prose. All
+input validation and parsing is delegated to `cog`. Enforcement is the `producer-blindness` rule in
+`cog skill-lint`, keyed off a curated consumer-to-producer map in `lib/commands/cmd_skill_lint.sh`.
+See `docs/decisions/0026-consumer-skill-producer-blindness.md` and `docs/reference/skill-contract.md`
+("Producer-blind consumers").
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

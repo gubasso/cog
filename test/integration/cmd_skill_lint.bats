@@ -751,3 +751,89 @@ EOF
   # does not fire (the default scan and pre-commit hook both exclude templates/).
   [[ $stderr != *"skill-refs-docs-notes-repo-reference"* ]]
 }
+
+write_mapped_consumer() {
+  # A structurally valid Claude consumer skill named $1 whose body is clean
+  # except for any extra lines the caller appends afterward.
+  local dir="$1" name="$2"
+  mkdir -p "$dir"
+  cat >"$dir/SKILL.md" <<EOF
+---
+name: $name
+description: Consumer skill that reads a structural input contract.
+---
+
+<!-- trigger-tests: "demo" -->
+
+# Demo
+
+It drives the structural input to completion.
+EOF
+}
+
+@test "cog skill-lint flags a mapped consumer naming a producer in body prose" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-queue" runner-queue
+  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint flags a mapped consumer naming a producer in folded frontmatter description" {
+  mkdir -p "${BATS_TEST_TMPDIR}/skills/claude/review-findings"
+  cat >"${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md" <<'EOF'
+---
+name: review-findings
+description: >
+  Triage findings. Use for review-code-deep JSON and review comments.
+---
+
+<!-- trigger-tests: "demo" -->
+
+# Demo
+
+Triage the structured findings contract.
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint ignores a producer name inside a fenced block for a mapped consumer" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-queue" runner-queue
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md" <<'EOF'
+
+```text
+plan-writer-multi
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+
+  assert_success
+  [[ $stderr != *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint does not flag a producer name for an unmapped skill" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'This skill freely names plan-writer and review-code-deep and review-loop.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+  [[ $stderr != *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint does not flag a larger token containing a producer name" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-findings" review-findings
+  printf '%s\n' 'A review-code-deeper variant and a my-review-loop-wrapper are not producers.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
+
+  assert_success
+  [[ $stderr != *"producer-blindness"* ]]
+}
