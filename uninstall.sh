@@ -17,6 +17,7 @@ valid_manifest_path() {
   fi
 
   if path_under "$path" "$app_root" \
+    || path_under "$path" "$data_dir/skill-refs" \
     || path_under "$path" "$prefix/bin" \
     || path_under "$path" "$home/.claude/skills" \
     || path_under "$path" "$home/.claude/agents" \
@@ -68,6 +69,7 @@ prefix="${PREFIX:-$home/.local}"
 xdg_data_home="${XDG_DATA_HOME:-$home/.local/share}"
 xdg_state_home="${XDG_STATE_HOME:-$home/.local/state}"
 app_root="$prefix/lib/cog"
+data_dir="$xdg_data_home/cog"
 comp_dir="$xdg_data_home/bash-completion/completions"
 man_dir="$xdg_data_home/man/man1"
 state_dir="$xdg_state_home/cog"
@@ -106,8 +108,8 @@ while IFS= read -r path; do
   prune_manifest_skill_dir "$path" "$home/.agents/skills"
 done <"$manifest"
 
-prune_empty_tree "$app_root/templates/pre-commit"
-rmdir_empty "$app_root/templates"
+prune_empty_tree "$data_dir/skill-refs"
+rmdir_empty "$data_dir"
 rmdir_empty "$app_root/lib/commands"
 rmdir_empty "$app_root/lib/functions"
 rmdir_empty "$app_root/lib"

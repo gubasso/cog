@@ -48,6 +48,18 @@ repos:
       - id: check-json5
         exclude: '[-.]lock\.json$'
 
+  # --- EditorConfig ---
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker
+    rev: v3.7.0
+    hooks:
+      - id: editorconfig-checker
+        alias: ec
+        args: [-disable-insert-final-newline, '-exclude', 'LICENSE']
+        # Markdown is excluded: editorconfig-checker can't parse it — it flags
+        # fenced-code-block interiors and defaults to indent_size=4 even when
+        # unset. Keep .editorconfig indent aligned with ruff-format (4 spaces).
+        exclude: '\.md$'
+
   # Pre-commit hook for Ruff, a fast Python linter
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.7

@@ -43,6 +43,8 @@ Commands:
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
+  editorconfig-apply Apply an editorconfig template to a project.
+  editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
   gc-classify-failure Classify commit or push failure logs.
@@ -128,6 +130,8 @@ Commands:
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
+  editorconfig-apply Apply an editorconfig template to a project.
+  editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
   gc-classify-failure Classify commit or push failure logs.

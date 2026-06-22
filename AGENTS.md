@@ -62,10 +62,13 @@ in `docs/`, not in a runtime skill file. The source-path part is enforced by `co
 
 ## Reference Self-Containment
 
-Required runtime references ship in-repo under `skill-refs/`, install to
-`$XDG_DATA_HOME/cog/skill-refs`, and resolve through `cog skill-refs`. External docs are optional
-runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
-internal runtime dependency.
+`skill-refs/` is the single source of truth for every skill-external resource: read-only references
+live under `skill-refs/<area>/`, and deploy-payload templates that commands copy into a user's project
+live under `skill-refs/templates/<domain>/` (e.g. `pre-commit`, `editorconfig`). The whole tree ships
+in-repo, installs to `$XDG_DATA_HOME/cog/skill-refs`, and resolves through `cog skill-refs` /
+`cog::fn::skill_refs_root` (`cog::fn::template::root <domain>` for template roots). External docs are
+optional runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
+internal runtime dependency. See `docs/decisions/0023-skill-refs-unified-resource-sot.md`.
 
 ## Orchestration Guards
 

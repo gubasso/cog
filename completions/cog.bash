@@ -29,6 +29,8 @@ _cog() {
     digest-check
     digest-stamp
     doctor
+    editorconfig-apply
+    editorconfig-detect
     executor
     executor-prex-parse-args
     gc-classify-failure

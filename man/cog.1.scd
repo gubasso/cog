@@ -66,6 +66,12 @@ The command list and short descriptions are sourced from command modules under
 *doctor*
 	Check cog runtime health and installation prerequisites.
 
+*editorconfig-apply*
+	Apply an editorconfig template to a project.
+
+*editorconfig-detect*
+	Detect editorconfig template type.
+
 *executor*
 	Manage shared executor run contracts and stage artifacts.
 

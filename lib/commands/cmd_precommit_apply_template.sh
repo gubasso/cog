@@ -7,29 +7,6 @@ __cog_precommit_apply_template_usage() {
   cog::fn::ui_data "Usage: cog precommit-apply-template --type <type> [--project-root <dir>] [--template-root <dir>] [--config-conflict overwrite|skip|abort] [--companion-conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
-__cog_precommit_template_root_default() {
-  realpath -m "${LIB_DIR}/../templates/pre-commit"
-}
-
-__cog_precommit_apply_template_json_object_array() {
-  if [[ $# -eq 0 ]]; then jq -cn '[]'; else printf '%s\n' "$@" | jq -s .; fi
-}
-
-__cog_precommit_apply_template_record_json() {
-  jq -cn --arg src "$1" --arg dst "$2" '{src: $src, dst: $dst}'
-}
-
-__cog_precommit_apply_template_valid_policy() {
-  case "$1" in overwrite | skip | abort) return 0 ;; *) return 1 ;; esac
-}
-
-__cog_precommit_apply_template_assert_under_project() {
-  local project_root="$1" dst="$2" root_abs dst_abs
-  root_abs="$(realpath -m -- "$project_root")"
-  dst_abs="$(realpath -m -- "$dst")"
-  [[ $dst_abs == "$root_abs" || $dst_abs == "$root_abs/"* ]]
-}
-
 __cog_precommit_apply_template_enumerate_operations() {
   local template_dir="$1" project_root="$2" template_root="$3" src rel dst
   OPERATIONS=()
@@ -37,13 +14,13 @@ __cog_precommit_apply_template_enumerate_operations() {
     [[ -f $src && ! -L $src ]] || return 2
     rel="${src#"$template_dir"/}"
     dst="$project_root/$rel"
-    __cog_precommit_apply_template_assert_under_project "$project_root" "$dst" || return 3
+    cog::fn::template::assert_under_project "$project_root" "$dst" || return 3
     OPERATIONS+=("$src"$'\t'"$dst"$'\t'"$rel")
   done < <(find "$template_dir" -type f -print0 | sort -z)
   src="$template_root/committed.toml"
   dst="$project_root/committed.toml"
   [[ -f $src && ! -L $src ]] || return 4
-  __cog_precommit_apply_template_assert_under_project "$project_root" "$dst" || return 3
+  cog::fn::template::assert_under_project "$project_root" "$dst" || return 3
   OPERATIONS+=("$src"$'\t'"$dst"$'\t'"committed.toml")
 }
 
@@ -55,7 +32,7 @@ __cog_precommit_apply_template_build_json() {
   local type="$1" project_root="$2" template_root="$3" config_conflict="$4" companion_conflict="$5"
   local ok=true reason="" template_dir="$template_root/$type" template_config="$template_root/$type/.pre-commit-config.yaml"
   local op src dst rel policy enum_status copied=() skipped=() conflicts=()
-  if ! __cog_precommit_apply_template_valid_policy "$config_conflict" || ! __cog_precommit_apply_template_valid_policy "$companion_conflict"; then
+  if ! cog::fn::template::valid_policy "$config_conflict" || ! cog::fn::template::valid_policy "$companion_conflict"; then
     ok=false
     reason="conflict policy must be overwrite, skip, or abort"
   elif [[ -z $type ]]; then
@@ -94,7 +71,7 @@ __cog_precommit_apply_template_build_json() {
     for op in "${OPERATIONS[@]}"; do
       IFS=$'\t' read -r src dst rel <<<"$op"
       policy="$(__cog_precommit_apply_template_policy "$rel" "$config_conflict" "$companion_conflict")"
-      [[ -e $dst && $policy == abort ]] && conflicts+=("$(__cog_precommit_apply_template_record_json "$src" "$dst")")
+      [[ -e $dst && $policy == abort ]] && conflicts+=("$(cog::fn::template::record_json "$src" "$dst")")
     done
     [[ ${#conflicts[@]} -eq 0 ]] || {
       ok=false
@@ -106,11 +83,11 @@ __cog_precommit_apply_template_build_json() {
       IFS=$'\t' read -r src dst rel <<<"$op"
       policy="$(__cog_precommit_apply_template_policy "$rel" "$config_conflict" "$companion_conflict")"
       if [[ -e $dst && $policy == skip ]]; then
-        skipped+=("$(__cog_precommit_apply_template_record_json "$src" "$dst")")
+        skipped+=("$(cog::fn::template::record_json "$src" "$dst")")
         continue
       fi
       if install -D -m 0644 "$src" "$dst"; then
-        copied+=("$(__cog_precommit_apply_template_record_json "$src" "$dst")")
+        copied+=("$(cog::fn::template::record_json "$src" "$dst")")
       else
         ok=false
         reason="copy failed"
@@ -120,9 +97,9 @@ __cog_precommit_apply_template_build_json() {
   fi
   jq -n --argjson ok "$ok" --arg project_root "$project_root" --arg template_root "$template_root" \
     --arg type "$type" --arg template_dir "$template_dir" \
-    --argjson copied "$(__cog_precommit_apply_template_json_object_array "${copied[@]}")" \
-    --argjson skipped "$(__cog_precommit_apply_template_json_object_array "${skipped[@]}")" \
-    --argjson conflicts "$(__cog_precommit_apply_template_json_object_array "${conflicts[@]}")" \
+    --argjson copied "$(cog::fn::template::json_object_array "${copied[@]}")" \
+    --argjson skipped "$(cog::fn::template::json_object_array "${skipped[@]}")" \
+    --argjson conflicts "$(cog::fn::template::json_object_array "${conflicts[@]}")" \
     --arg config_conflict "$config_conflict" --arg companion_conflict "$companion_conflict" --arg reason "$reason" \
     '{ok: $ok, project_root: $project_root, template_root: $template_root, type: $type, template_dir: $template_dir,
       copied: $copied, skipped: $skipped, conflicts: $conflicts, config_conflict: $config_conflict,
@@ -132,7 +109,7 @@ __cog_precommit_apply_template_build_json() {
 cog::cmd::precommit_apply_template() {
   local type="" project_root template_root config_conflict=abort companion_conflict=abort mode="" out="" json
   project_root="$(pwd -P)"
-  template_root="$(__cog_precommit_template_root_default)"
+  template_root="$(cog::fn::template::root pre-commit)"
   while (($# > 0)); do
     case "$1" in
       -h | --help)

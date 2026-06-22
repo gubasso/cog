@@ -33,6 +33,18 @@ repos:
       - id: check-json5
         exclude: '[-.]lock\.json$'
 
+  # --- EditorConfig ---
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker
+    rev: v3.7.0
+    hooks:
+      - id: editorconfig-checker
+        alias: ec
+        args: [-disable-insert-final-newline, '-exclude', 'LICENSE']
+        # Markdown is excluded: editorconfig-checker can't parse it — it flags
+        # fenced-code-block interiors and defaults to indent_size=4 even when
+        # unset. Align indent rules with shfmt (-i 2) in .editorconfig.
+        exclude: '\.md$'
+
   # ShellCheck – static analysis
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1

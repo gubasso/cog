@@ -103,11 +103,10 @@ trap 'rm -f "$manifest_tmp" "$manifest_tmp.sorted" "${man_tmp:-}"' EXIT
 # user-home skill/agent roots are NOT cleared (they hold user-authored content)
 # and remain on the overlay + manifest-only path.
 install -d "$app_root"
-rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/templates" "${app_root:?}/VERSION"
+rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/VERSION"
 rm -rf -- "${data_dir:?}/skill-refs"
 copy_tree "$repo_root/bin" "$app_root/bin"
 copy_tree "$repo_root/lib" "$app_root/lib"
-copy_tree "$repo_root/templates" "$app_root/templates"
 copy_tree "$repo_root/skill-refs" "$data_dir/skill-refs"
 install -m 0644 "$repo_root/VERSION" "$app_root/VERSION"
 record_path "$app_root/VERSION"

@@ -27,6 +27,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0020: Remove superseded skills and migration shims; complete pending renames](decisions/0020-remove-superseded-skills-and-migration-shims.md)
 - [ADR-0021: Twin skill naming and delegation hints](decisions/0021-twin-skill-naming-and-delegation-hints.md)
 - [ADR-0022: cog-owned durable long-running jobs](decisions/0022-cog-owned-durable-longrun.md)
+- [ADR-0023: skill-refs is the unified SoT for skill-external resources](decisions/0023-skill-refs-unified-resource-sot.md)
 
 ## Guides
 

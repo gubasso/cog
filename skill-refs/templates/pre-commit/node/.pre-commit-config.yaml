@@ -34,6 +34,19 @@ repos:
       - id: check-json5
         exclude: '[-.]lock\.json$|/package-lock\.json$'
 
+  # --- EditorConfig ---
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker
+    rev: v3.7.0
+    hooks:
+      - id: editorconfig-checker
+        alias: ec
+        args: [-disable-insert-final-newline, '-exclude', 'LICENSE']
+        # Markdown is excluded: editorconfig-checker can't parse it — it flags
+        # fenced-code-block interiors and defaults to indent_size=4 even when
+        # unset. Markdown/JS/TS formatting is owned by prettier (+ markdownlint);
+        # align .editorconfig indent with prettier's tabWidth.
+        exclude: '\.md$'
+
   # YAML style
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0

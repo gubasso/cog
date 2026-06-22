@@ -15,15 +15,19 @@ effort: low
 # Pre-commit Skill
 
 Set up a tailored `.pre-commit-config.yaml` for the current project by combining a broad cog
-template with repo-specific customization.
+template with repo-specific customization. Every setup also establishes a `.editorconfig` and its
+`editorconfig-checker` hook, with the `.editorconfig` aligned to the project's active formatters and
+linters.
 
-Principle: templates are broad and general; local configs are precise and tailored.
+Principle: templates are broad and general; local configs are precise and tailored — repo-specific
+customization belongs in the local config.
 
 ## Inputs
 
 - `$ARGUMENTS`: optional project type, such as `bash`, `python`, `rust`, `zig`, `c`, `node`, or
   `sveltekit`.
-- Template directory: cog's `templates/pre-commit/` tree, or a caller-supplied `--template-root`.
+- Template directories: cog's `skill-refs/templates/pre-commit/` and `skill-refs/templates/editorconfig/`
+  trees, or a caller-supplied `--template-root`.
 - Current working directory: the target project.
 
 The `markdown` template exists in the cog-owned template tree but is not auto-detected by this skill
@@ -51,15 +55,15 @@ The detection helper emits:
 {
   "ok": true,
   "project_root": "/repo",
-  "template_root": "/repo/cog/templates/pre-commit",
+  "template_root": "/repo/cog/skill-refs/templates/pre-commit",
   "requested_type": null,
   "detected_type": "rust",
   "confidence": "high",
   "classification": {},
   "signals": ["Cargo.toml"],
   "conflicts": [],
-  "template_dir": "/repo/cog/templates/pre-commit/rust",
-  "template_config": "/repo/cog/templates/pre-commit/rust/.pre-commit-config.yaml",
+  "template_dir": "/repo/cog/skill-refs/templates/pre-commit/rust",
+  "template_config": "/repo/cog/skill-refs/templates/pre-commit/rust/.pre-commit-config.yaml",
   "template_exists": true,
   "reason": null
 }
@@ -75,18 +79,21 @@ cog precommit-apply-template \
   --json
 ```
 
+Alongside the selected type's files, the helper always copies the shared `committed.toml`
+(commit-message linting) companion from the template root, governed by `--companion-conflict`.
+
 The apply helper emits:
 
 ```json
 {
   "ok": true,
   "project_root": "/repo",
-  "template_root": "/repo/cog/templates/pre-commit",
+  "template_root": "/repo/cog/skill-refs/templates/pre-commit",
   "type": "rust",
-  "template_dir": "/repo/cog/templates/pre-commit/rust",
+  "template_dir": "/repo/cog/skill-refs/templates/pre-commit/rust",
   "copied": [
     {
-      "src": "/repo/cog/templates/pre-commit/rust/.pre-commit-config.yaml",
+      "src": "/repo/cog/skill-refs/templates/pre-commit/rust/.pre-commit-config.yaml",
       "dst": "/repo/.pre-commit-config.yaml"
     }
   ],
@@ -101,6 +108,20 @@ The apply helper emits:
 The helper's conflict policies are only `overwrite`, `skip`, and `abort`. Merge is judgment-heavy
 and stays in this skill: inspect both files, decide the merge manually, then use the helper only for
 safe copies that remain.
+
+EditorConfig is its own cog-owned template domain. Detect and deploy the matching `.editorconfig`:
+
+```bash
+cog editorconfig-detect --json
+cog editorconfig-apply --type "$TYPE" --conflict "$EDITORCONFIG_POLICY" --json
+```
+
+`editorconfig-detect` emits the same shape as `precommit-detect` (with `template_root` under
+`skill-refs/templates/editorconfig` and `template_config` ending in `.editorconfig`).
+`editorconfig-apply` copies that one file to `<project>/.editorconfig` and emits
+`{ok, type, template_dir, copied[], skipped[], conflicts[], conflict, reason}`. Its `--conflict`
+policy is `overwrite`, `skip`, or `abort` (default `abort`); reconciling an existing project
+`.editorconfig` is judgment that stays in this skill.
 
 ## Workflow
 
@@ -129,6 +150,7 @@ safe copies that remain.
    - preserve the template's section order and comment style;
    - keep the housekeeping base consistent with existing templates;
    - keep `committed` as the single source of truth for commit-message linting;
+   - keep the `editorconfig-checker` hook present, aligned with the shared `.editorconfig` baseline;
    - document `language: system` hooks with their external dependency.
 
 8. Before copying to the project, inspect possible conflicts. Ask the user for the headline
@@ -160,8 +182,26 @@ safe copies that remain.
     - add excludes only for generated, vendored, binary, external, or intentionally unmanaged paths;
     - tailor companion files such as `lychee.toml` or `.config/nextest.toml`.
 
-13. Present a final summary: template hooks added, updated, or removed; local hooks added, removed,
-    or adjusted; external tool requirements; and next commands:
+13. Establish and align `.editorconfig`. Deploy the matching template with `cog editorconfig-apply`
+    (reconcile a pre-existing project `.editorconfig` in prose rather than overwriting it), and confirm
+    the config carries the `editorconfig-checker` hook (the language templates ship it). Align the
+    settings with the project's active formatters and linters so the checker never fights them:
+    - add the project's language indent blocks to match its formatter: `[*.rs]` and `[*.zig]` space 4
+      (rustfmt, zig fmt); `[*.py]` space 4 (ruff-format); `[*.{sh,bash,bats}]` space 2 (shfmt `-i 2`);
+      `[*.{js,jsx,ts,tsx,svelte,vue,css,scss}]` space 2 (prettier `tabWidth`); leave C indent to
+      clang-format. The shared baseline already covers data formats (`json`/`yaml`/`toml` space 2)
+      and `Makefile` (tab);
+    - set `max_line_length` per glob only where a formatter or linter enforces a width (and
+      `max_line_length = off` for prose globs such as `[*.md]`);
+    - leave `insert_final_newline` and `trim_trailing_whitespace` owned by the housekeeping hooks,
+      and pass `-disable-insert-final-newline` to editorconfig-checker so final-newline ownership is
+      not duplicated;
+    - exclude `*.md` from editorconfig-checker, which mis-parses fenced blocks; markdown stays owned
+      by the markdown tooling, with `[*.md] trim_trailing_whitespace = false` preserving hard breaks.
+
+14. Present a final summary: template hooks added, updated, or removed; local hooks added, removed,
+    or adjusted; `.editorconfig` settings established or aligned; external tool requirements; and
+    next commands:
 
     ```bash
     pre-commit install
@@ -172,10 +212,8 @@ safe copies that remain.
 
 - Always pin hooks to tags, never branches or `HEAD`.
 - Prefer well-maintained, widely used hook repositories.
-- Never push repo-specific customizations back to the broad template.
-- Never create, tailor, or repair a config to bypass a real failure.
-- Never recommend `SKIP=`, `--no-verify`, `git commit -n`, `pre-commit uninstall`,
-  `core.hooksPath`, or disabling commit stages.
+- Keep all commit and push stages enforced; never recommend `SKIP=`, `--no-verify`,
+  `git commit -n`, `pre-commit uninstall`, `core.hooksPath`, or disabling commit stages.
 - Removing a hook is allowed only when it is irrelevant, obsolete, superseded, or broken beyond
   repair with a better replacement.
 - Ask before destructive changes such as overwriting existing config or removing manually added

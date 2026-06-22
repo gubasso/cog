@@ -1,0 +1,20 @@
+# EditorConfig for C projects, shipped by the cog pre-commit skill.
+# C source formatting is owned by clang-format, so no [*.c]/[*.h] indent block
+# is set here (avoids fighting the formatter).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,json5,jsonc,yaml,yml,toml}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,24 @@
+# EditorConfig for bash projects, shipped by the cog pre-commit skill.
+# Shell indent aligns with shfmt (-i 2). The editorconfig-checker hook enforces
+# these; markdown is owned by other tooling.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{sh,bash,bats}]
+indent_style = space
+indent_size = 2
+
+[*.{json,json5,jsonc,yaml,yml,toml}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false

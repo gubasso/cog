@@ -27,7 +27,8 @@ teardown() {
   [ -x "$PREFIX/bin/cog" ]
   assert_file_exists "$PREFIX/lib/cog/lib/helpers.sh"
   assert_file_exists "$PREFIX/lib/cog/VERSION"
-  assert_dir_exists "$PREFIX/lib/cog/templates/pre-commit"
+  assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/pre-commit"
+  assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/editorconfig"
 
   run cog --version
   assert_success
