@@ -42,6 +42,11 @@ or plans, with `review-plan-*` as the sub-namespace for plan-before-implementati
 executes one prompt/plan; `runner-*` orchestrates executor-selected queue items. A skill's prefix must
 match its behavior.
 
+Native twin skills share one base name across `skills/claude/` and `skills/codex/`; platform-token
+suffixes are reserved for delegation launchers that run the other platform under the hood. See
+`docs/decisions/0021-twin-skill-naming-and-delegation-hints.md` and `docs/reference/skill-contract.md`
+("Twin and delegation skill naming").
+
 Skills that output a plan must not run in Claude plan mode (it is read-only and blocks the plan
 writes). They carry a Phase 0 plan-mode gate marked with `<!-- cog-skill: plan-emitter -->` and
 `<!-- cog-plan-mode-gate -->`, enforced by `cog skill-lint`'s `plan-mode-gate` rule. See

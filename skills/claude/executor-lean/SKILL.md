@@ -1,5 +1,5 @@
 ---
-name: executor-claude
+name: executor-lean
 description: >
   Execute one prompt or implementation plan through the Claude executor flow:
   Claude plans when needed, Codex reviews Claude-made plans, then Claude implements
@@ -11,7 +11,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
-<!-- trigger-tests: "executor-claude", "execute one prompt through Claude", "execute one plan through Claude" -->
+<!-- trigger-tests: "executor-lean", "execute one prompt through Claude", "execute one plan through Claude" -->
 
 # Executor Claude
 
@@ -26,7 +26,7 @@ Stage 3 is native Claude implementation in the current session.
 
 This skill uses the `executor-*` taxonomy prefix and does not carry the
 `cog-skill` plan-emitter marker or the `cog-plan-mode-gate` Phase 0 marker.
-All plan emission is delegated to `/plan-claude` via the Agent tool (Stage 1),
+All plan emission is delegated to `/plan-one-lean` via the Agent tool (Stage 1),
 which carries its own Phase 0 plan-mode gate. Per
 `docs/decisions/0015-plan-skills-not-in-plan-mode.md` and
 `docs/reference/skill-contract.md` ("Plan-mode gate"), `cog skill-lint` requires
@@ -44,7 +44,7 @@ cog executor init --executor claude --input <prompt-or-plan> [--plan-engine clau
 ```
 
 For prompt input, omit `--plan-engine`; `cog executor init` resolves
-`plan_engine=claude`, reviewer `/review-plan-codex`, and stages
+`plan_engine=claude`, reviewer `/review-plan-lean`, and stages
 `stage1,stage2,stage3`.
 
 For plan input, pass `--plan-engine claude`. The path alone cannot prove which
@@ -62,8 +62,8 @@ implementation, subagent work, or orchestration work. Each Codex call blocks
 until `cog codex-runner` returns. Native effort is passed with `--effort`; do
 not use legacy profile-based invocation.
 
-Stage 2 runs Codex through `cog codex-runner run-exec --mode danger --effort
-high`; the write-capable `danger` sandbox is required because `/review-plan-codex`
+Stage 2 runs Codex through `cog codex-runner run-exec --mode danger --access write --effort
+high`; the write-capable `danger` sandbox is required because `/review-plan-lean`
 writes its reviewed-plan artifact through `cog plan-review`, and the read-only
 `native`/`fallback`/`quick-auto` sandboxes block that write (the run directory
 also lives outside the workspace, so only full-access `danger` can write there).
@@ -101,7 +101,7 @@ For plan input, `cog executor init` writes `plan-source`, containing the
 supplied plan path, and does not create `request.md`. Before building the Stage
 2 prompt, create a non-empty `<run-dir>/request.md` that captures the original
 task or supplied-plan source context. This run-scoped request artifact satisfies
-`/review-plan-codex`'s orchestrator contract. All other deterministic artifact
+`/review-plan-lean`'s orchestrator contract. All other deterministic artifact
 path mechanics come from `cog`.
 
 The Stage 2 Codex runner files are run-scoped capture files, not canonical
@@ -121,12 +121,12 @@ Run this stage only when input kind is `prompt`.
 Delegate plan generation to a foreground Claude subagent through the **Agent
 tool** (`subagent_type: general-purpose`), not the Skill tool — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
-`/plan-claude` carries `disable-model-invocation: true`, so the Skill tool
+`/plan-one-lean` carries `disable-model-invocation: true`, so the Skill tool
 refuses it; Agent-tool delegation loads the skill body via `Read` and is the
 supported lane.
 
 The delegation prompt instructs the subagent to read
-`$HOME/.claude/skills/plan-claude/SKILL.md` and follow it end-to-end, passing
+`$HOME/.claude/skills/plan-one-lean/SKILL.md` and follow it end-to-end, passing
 `--output <run-dir>/stage1-plan.md` and using the original request as the
 orientation. The subagent runs the interview non-interactively: it treats every
 interview decision as a skill-chosen best-default and records it (a subagent
@@ -143,12 +143,12 @@ before continuing.
 
 ## Stage 2: Review Plan
 
-Claude-made plans are reviewed by Codex via `/review-plan-codex`. Use the
+Claude-made plans are reviewed by Codex via `/review-plan-lean`. Use the
 reviewer returned by `cog executor init`; for this executor, it must be
-`/review-plan-codex`.
+`/review-plan-lean`.
 
 Build a prompt file under the run directory that instructs Codex to invoke
-`/review-plan-codex` with exactly three absolute paths:
+`/review-plan-lean` with exactly three absolute paths:
 
 ```text
 1. plan-path: <stage1-plan.md or the supplied plan path>
@@ -164,7 +164,7 @@ Run Codex in the foreground at native effort `high` with the write-capable
 `cog plan-review`, so a read-only sandbox cannot be used here:
 
 ```bash
-cog codex-runner run-exec --mode danger --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log>
 ```
 
 Treat `<run-dir>/stage2-reviewed-plan.md` as the authoritative review artifact.
@@ -196,7 +196,7 @@ After implementation, write the final implementation report to
 Emit an executor summary after Stage 3 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor claude --input-kind <prompt|plan> --plan-engine claude --reviewer /review-plan-codex --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor claude --input-kind <prompt|plan> --plan-engine claude --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Status rules:
@@ -232,7 +232,7 @@ prose when a `cog` command reports structured output.
 - No legacy profile-based invocation anywhere.
 - Do not instruct a runtime read of maintenance-reference conventions.
 - Deterministic mechanics stay behind `cog executor`, `cog codex-runner`,
-  `/plan-claude`, and `/review-plan-codex`.
+  `/plan-one-lean`, and `/review-plan-lean`.
 - Do not use inline shell functions, loops, or text-parsing routines.
 - Do not run git commands unless explicitly authorized.
 - This skill executes one prompt or plan. It does not modify `cog executor`,

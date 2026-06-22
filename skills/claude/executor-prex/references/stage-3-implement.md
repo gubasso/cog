@@ -92,6 +92,7 @@ is the only disambiguator (sandbox-mismatch vs. absent/deleted), so consult
 ```bash
 cog codex-runner run-exec \
   --mode danger \
+  --access write \
   --effort medium \
   --prompt "$RUN_DIR/stage3-prompt-full.md" \
   --output "$RUN_DIR/stage3-impl-report.txt" \

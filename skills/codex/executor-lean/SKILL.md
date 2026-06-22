@@ -1,5 +1,5 @@
 ---
-name: executor-codex-session
+name: executor-lean
 description: >
   Execute one prompt or implementation plan through the Codex-session executor flow:
   Codex plans when needed, Claude reviews Codex-made plans, then Codex implements the
@@ -26,7 +26,7 @@ cog executor init --executor codex-session --input <prompt-or-plan> [--plan-engi
 ```
 
 For prompt input, omit `--plan-engine`; `cog executor init` resolves
-`plan_engine=codex`, reviewer `/review-plan-claude`, and stages
+`plan_engine=codex`, reviewer `/review-plan-lean`, and stages
 `stage1,stage2,stage3`.
 
 For plan input, pass `--plan-engine codex`. The path alone cannot prove which engine
@@ -68,24 +68,25 @@ For prompt input, `cog executor init` writes `request.md` under the run director
 For plan input, `cog executor init` writes `plan-source`, containing the supplied plan
 path, and does not create `request.md`. Before Stage 2, create a non-empty
 `<run-dir>/request.md` that captures the original task or supplied-plan source context.
-This run-scoped request artifact satisfies `/review-plan-claude`'s orchestrator
+This run-scoped request artifact satisfies `/review-plan-lean`'s orchestrator
 contract. All other deterministic artifact path mechanics come from `cog`.
 
 ## Stage 1: Plan
 
 Run this stage only when input kind is `prompt`.
 
-Build a prompt file under the run directory that instructs Codex to invoke
-`/plan-codex`, save a lean implementation plan to the Stage 1 artifact path, and report
-any assumptions, ambiguities, dependencies, and risks. Save the generated plan to
-`<run-dir>/stage1-plan.md`.
+Build a prompt file under the run directory whose literal first line is `$plan-one-lean`,
+followed by `--output <run-dir>/stage1-plan.md`, the original task, and the request to
+report any assumptions, ambiguities, dependencies, and risks. `$plan-one-lean` saves its
+own plan artifact to `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 
-Use native effort with the write-capable `danger` sandbox through
-`cog codex-runner`. `/plan-codex` saves its plan artifact through `cog plan-doc`,
-which a read-only sandbox blocks:
+Use native effort with the write-capable `danger` sandbox through `cog codex-runner`.
+`$plan-one-lean` saves its plan artifact through `cog plan-doc`, which a read-only sandbox
+blocks. The runner's `--output` captures Codex's final message in a separate
+`<run-dir>/stage1-codex-output.md` file, leaving the plan artifact untouched:
 
 ```bash
-cog codex-runner run-exec --mode danger --effort high --prompt <stage1-prompt.md> --output <stage1-plan.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage1-prompt.md> --output <stage1-codex-output.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log>
 ```
 
 The Stage 2 plan input is:
@@ -95,8 +96,8 @@ The Stage 2 plan input is:
 
 ## Stage 2: Review Plan
 
-Codex-made plans are reviewed by Claude via `/review-plan-claude`. Use the reviewer
-returned by `cog executor init`; for this executor, it must be `/review-plan-claude`.
+Codex-made plans are reviewed by Claude via `/review-plan-lean`. Use the reviewer
+returned by `cog executor init`; for this executor, it must be `/review-plan-lean`.
 This is a foreground Claude subagent delegation through Task/Agent, not a
 `cog codex-runner` call.
 
@@ -130,7 +131,7 @@ modify files, which the read-only `native`/`fallback`/`quick-auto` sandboxes
 block:
 
 ```bash
-cog codex-runner run-exec --mode danger --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log>
 ```
 
 Do not send runtime instructions to read maintenance references. Include the needed
@@ -141,7 +142,7 @@ orientation in the prompt itself.
 Emit an executor summary after Stage 3 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor codex-session --input-kind <prompt|plan> --plan-engine codex --reviewer /review-plan-claude --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor codex-session --input-kind <prompt|plan> --plan-engine codex --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Status rules:
@@ -173,6 +174,6 @@ executor summary using the status rules above. Do not infer status from prose wh
 - No legacy profile-based invocation anywhere.
 - Do not instruct a runtime read of maintenance-reference conventions.
 - Deterministic mechanics stay behind `cog executor`, `cog codex-runner`, and
-  `/review-plan-claude`.
-- This skill executes one prompt or plan. It does not author `/executor-claude`, wire
+  `/review-plan-lean`.
+- This skill executes one prompt or plan. It does not author `/executor-lean`, wire
   queue prompts, or implement runner integration.

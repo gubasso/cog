@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Manage shared executor run contracts and stage artifacts.'
 
-__cog_executor_init_self_check='(.schema=="cog.executor.init.v1") and (.ok==true) and (.run_dir|type=="string")'
+__cog_executor_init_self_check='(.schema=="cog.executor.init.v1") and (.ok==true) and (.run_dir|type=="string") and (.review_engine|type=="string")'
 __cog_executor_queue_prompts_self_check='(.schema=="cog.executor.queue-prompts.v1") and (.prompts|type=="array")'
 __cog_executor_artifacts_self_check='(.stage1_plan|type=="string") and (.stage2_reviewed_plan|type=="string") and (.stage3_execution|type=="string") and (.summary|type=="string")'
 __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and (.stages|type=="array") and has("plan_path")'
@@ -45,8 +45,8 @@ __cog_executor_validate_stage_status() {
 
 __cog_executor_validate_reviewer() {
   case "${1:-}" in
-    /review-plan-claude | /review-plan-codex) return 0 ;;
-    *) cog::fn::error_raise "InvalidInput" "invalid executor reviewer" "reviewer: ${1:-}" "expected /review-plan-claude or /review-plan-codex" "" ;;
+    /review-plan-lean) return 0 ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid executor reviewer" "reviewer: ${1:-}" "expected /review-plan-lean" "" ;;
   esac
 }
 
@@ -81,7 +81,7 @@ __cog_executor_init_write_state() {
 
 __cog_executor_init() {
   local executor="" input="" plan_engine="" json="${COG_UI_JSON:-false}"
-  local classify_json input_kind run_dir reviewer_json reviewer artifacts_json init_json
+  local classify_json input_kind run_dir reviewer_json reviewer review_engine artifacts_json init_json
 
   while (($# > 0)); do
     case "$1" in
@@ -133,6 +133,7 @@ __cog_executor_init() {
   fi
   reviewer_json="$(cog::fn::executor::select_reviewer_json "$plan_engine")"
   reviewer="$(jq -r '.reviewer' <<<"$reviewer_json")"
+  review_engine="$(jq -r '.review_engine' <<<"$reviewer_json")"
   run_dir="$(cog::fn::rundir_create "executor-${executor}")"
   __cog_executor_init_write_state "$run_dir" "$classify_json"
   artifacts_json="$(cog::fn::executor::artifacts_json "$run_dir")"
@@ -144,11 +145,13 @@ __cog_executor_init() {
     --arg run_dir "$run_dir" \
     --argjson input_obj "$(jq -c '{kind, value, plan_path}' <<<"$classify_json")" \
     --arg plan_engine "$plan_engine" \
+    --arg review_engine "$review_engine" \
     --arg reviewer "$reviewer" \
     --argjson stages "$(jq -c '.stages' <<<"$classify_json")" \
     --argjson artifacts "$artifacts_json" \
     '{schema: $schema, ok: $ok, action: $action, executor: $executor, run_dir: $run_dir,
-      input: $input_obj, plan_engine: $plan_engine, reviewer: $reviewer, stages: $stages,
+      input: $input_obj, plan_engine: $plan_engine, review_engine: $review_engine,
+      reviewer: $reviewer, stages: $stages,
       artifacts: $artifacts}')"
 
   if [[ $json == true ]]; then
@@ -157,6 +160,7 @@ __cog_executor_init() {
     cog::fn::ui_data "RUN_DIR=${run_dir}"
     cog::fn::ui_data "INPUT_KIND=${input_kind}"
     cog::fn::ui_data "PLAN_ENGINE=${plan_engine}"
+    cog::fn::ui_data "REVIEW_ENGINE=${review_engine}"
     cog::fn::ui_data "REVIEWER=${reviewer}"
     cog::fn::ui_data "STAGES=$(__cog_executor_emit_stages_line "$classify_json")"
     cog::fn::ui_data "SUMMARY_PATH=$(jq -r '.summary' <<<"$artifacts_json")"
@@ -348,6 +352,9 @@ __cog_executor_summary() {
   __cog_executor_validate_input_kind "$input_kind"
   __cog_executor_validate_reviewer "$reviewer"
   # Enforce the OTHER-engine table: the reviewer must be the one the plan-engine selects.
+  # Retained for forward-compatibility: with both engines collapsed to /review-plan-lean this
+  # comparison cannot currently reject (review_engine carries the live routing signal); it would
+  # re-engage as a real guard if reviewer names ever diverge by engine again.
   local expected_reviewer
   expected_reviewer="$(cog::fn::executor::select_reviewer_json "$plan_engine" | jq -r '.reviewer')"
   [[ $reviewer == "$expected_reviewer" ]] || cog::fn::error_raise "InvalidInput" \

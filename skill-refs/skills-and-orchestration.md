@@ -173,7 +173,7 @@ Two superficially similar things must use different tools:
 | Pattern                                                   | Tool    | When to use                                                                                                                                                                                                          | Example                                                                                |
 | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Dispatch** — same conversation, expand a name to a body | `Skill` | Command-shim → skill expansion at the top of a conversation. The `Skill` tool inlines the target's body into the current context; nothing is forked. There is no "return" to manage because the parent never paused. | `/prear` command shim → `Skill(executor-prex)`                                                  |
-| **Delegation** — isolated work, structured return         | `Agent` | Anywhere a parent skill needs another skill's body to run in its own context and return a single reply. The `Agent` tool produces a real fork at the transport layer; the parent only sees the child's final reply.  | `executor-prex` stage 2 → `Agent(general-purpose, "read review-plan-claude/SKILL.md and follow it")` |
+| **Delegation** — isolated work, structured return         | `Agent` | Anywhere a parent skill needs another skill's body to run in its own context and return a single reply. The `Agent` tool produces a real fork at the transport layer; the parent only sees the child's final reply.  | `executor-prex` stage 2 → `Agent(general-purpose, "read review-plan-lean/SKILL.md and follow it")` |
 
 The single load-bearing rule: **never use the `Skill` tool from inside another skill's body for
 delegation**. Nested `Skill` calls reproduce the `anthropics/claude-code#17351` failure mode — the
@@ -569,5 +569,5 @@ optimistically.
   to move deterministic shell out of a `SKILL.md` body into a versioned `agent-helper` subcommand,
   and the `msg` output/status contract parents parse.
 - ~/.dotfiles/claude/.claude/skills/executor-prex/SKILL.md
-- ~/.dotfiles/claude/.claude/skills/review-plan-claude/SKILL.md
+- ~/.dotfiles/claude/.claude/skills/review-plan-lean/SKILL.md
 - ~/.dotfiles/claude/.claude/skills/review-loop/SKILL.md

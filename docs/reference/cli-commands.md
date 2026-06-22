@@ -162,11 +162,11 @@ plans:
   - item: alpha
     status: todo
     depends_on: []
-    prompt: /executor-claude -ar @.implementation-plans/plans/alpha/
+    prompt: /executor-lean -ar @.implementation-plans/plans/alpha/
     notes: ""
   - item: beta
     status: todo
     depends_on: [alpha]
-    prompt: /executor-codex-session -ar @.implementation-plans/plans/beta/
+    prompt: /executor-lean-codex -ar @.implementation-plans/plans/beta/
     notes: ""
 ```

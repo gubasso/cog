@@ -84,7 +84,7 @@ The workflow needs:
 3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
    and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
    reasoning effort come from `cog codex-runner --effort` (`high` for stage 1 planning via
-   `/plan-codex`, `medium` for stage 3 implementation; escalate stage 3 to `high` only when the
+   `/plan-one-lean`, `medium` for stage 3 implementation; escalate stage 3 to `high` only when the
    user asks for it). See the "Wrapper:
    `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
    for the full API reference.
@@ -218,11 +218,11 @@ stop — do not continue to stage 1.
 
 ## Stage 1: Plan
 
-Delegate planning to Codex's own `/plan-codex` skill. The parent orchestrator does **not** invoke
-`/plan-codex` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
+Delegate planning to Codex's own `/plan-one-lean` skill. The parent orchestrator does **not** invoke
+`/plan-one-lean` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
 `$RUN_DIR/stage1-prompt.md` and passes that prompt through `cog codex-runner run-exec`.
 
-The Stage 1 prompt must tell Codex to run `/plan-codex`, save the lean plan to
+The Stage 1 prompt must tell Codex to run `/plan-one-lean`, save the lean plan to
 `$RUN_DIR/stage1-plan.md`, and produce a numbered, reviewable implementation plan with assumptions,
 ambiguities, dependencies, and risks. Include the original task and relevant repo constraints. The
 only permitted write during this planning stage is the plan artifact under `RUN_DIR`.
@@ -233,6 +233,7 @@ Keep the prompt-file rule: write the complete Stage 1 prompt to `RUN_DIR` first,
 ```bash
 cog codex-runner run-exec \
   --mode danger \
+  --access write \
   --effort high \
   --prompt "$RUN_DIR/stage1-prompt.md" \
   --output "$RUN_DIR/stage1-plan.md" \
@@ -269,7 +270,7 @@ Read `stage1-plan.md`, summarize the result briefly for the user, and move direc
 
 ## Stage 2: Review Plan
 
-Delegate plan review via the **Agent tool** to `/review-plan-claude`, using its three-absolute-path
+Delegate plan review via the **Agent tool** to `/review-plan-lean`, using its three-absolute-path
 orchestrator contract:
 
 1. plan path: `$RUN_DIR/stage1-plan.md`
@@ -332,7 +333,7 @@ End with a concise summary covering:
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort high` at the stage 1 `/plan-codex` planning call site and `--effort medium` at the
+  `--effort high` at the stage 1 `/plan-one-lean` planning call site and `--effort medium` at the
   stage 3 implementation call sites; escalate to `--effort high` only when the user explicitly asks
   to push a stage harder (stuck/looping runs, novel design, security-critical changes). Do not pass
   `-m`/`-c model_reasoning_effort`.

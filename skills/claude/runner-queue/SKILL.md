@@ -62,9 +62,9 @@ plans:
   - item: plan-with-executor-prex
     prompt: /executor-prex -ar @.implementation-plans/plans/plan-with-executor-prex/
   - item: plan-with-claude
-    prompt: /executor-claude -ar @.implementation-plans/plans/plan-with-claude/
+    prompt: /executor-lean -ar @.implementation-plans/plans/plan-with-claude/
   - item: plan-with-codex
-    prompt: /executor-codex-session -ar @.implementation-plans/plans/plan-with-codex/
+    prompt: /executor-lean-codex -ar @.implementation-plans/plans/plan-with-codex/
 ```
 
 Plan directories are **flat siblings** directly under `.implementation-plans/plans/`

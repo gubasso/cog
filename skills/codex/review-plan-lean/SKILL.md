@@ -1,5 +1,5 @@
 ---
-name: review-plan-codex
+name: review-plan-lean
 description: >
   Review one implementation plan before concrete implementation, using the
   persisted research shelf for reusable context and saving the annotated
@@ -15,11 +15,12 @@ validation mechanics to `cog plan-review`.
 ## Invocation
 
 When an orchestrator invokes this skill through `cog codex-runner`, it must pass native effort
-`high`, never encode effort in this skill's frontmatter, and never use a legacy `--profile`. The live
-`run-exec` surface has four modes; `--stderr` is required for `native` and `fallback`.
+`high`, `--access write`, never encode effort in this skill's frontmatter, and never use a legacy
+`--profile`. The live `run-exec` surface has four modes; `--stderr` is required for `native` and
+`fallback`.
 
 ```bash
-cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> --effort high --prompt <file> --output <file> --events <file> [--stderr <file>]
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <file> --output <file> --events <file> [--stderr <file>]
 ```
 
 ## Inputs
@@ -82,7 +83,7 @@ When relevant research is missing, stale, or too broad for the task, refresh it 
 current sources and record the finding through the shelf:
 
 ```bash
-cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "review-plan-claude,review-plan-codex" --json
+cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "review-plan-lean,executor-lean,executor-lean-codex,executor-prex" --json
 ```
 
 Do not copy old web findings into the skill body as permanent facts.

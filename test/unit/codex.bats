@@ -56,6 +56,24 @@ EOF
   [[ $output == *"--dangerously-bypass-approvals-and-sandbox --json"* ]]
 }
 
+@test "codex_mode_is_write_capable only allows danger" {
+  run cog::fn::codex_mode_is_write_capable danger
+  assert_success
+
+  run cog::fn::codex_mode_is_write_capable native
+  assert_failure
+
+  run cog::fn::codex_mode_is_write_capable fallback
+  assert_failure
+
+  run cog::fn::codex_mode_is_write_capable quick-auto
+  assert_failure
+
+  run cog::fn::codex_mode_is_write_capable bogus
+  assert_failure
+  [[ $output == *"mode"* ]]
+}
+
 @test "codex_resume_command renders resume command" {
   run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl
 

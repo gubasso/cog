@@ -95,14 +95,14 @@ cog::fn::executor::select_reviewer_json() {
       jq -cn \
         --arg plan_engine claude \
         --arg review_engine codex \
-        --arg reviewer /review-plan-codex \
+        --arg reviewer /review-plan-lean \
         '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
       ;;
     codex)
       jq -cn \
         --arg plan_engine codex \
         --arg review_engine claude \
-        --arg reviewer /review-plan-claude \
+        --arg reviewer /review-plan-lean \
         '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
       ;;
     *)
@@ -132,16 +132,16 @@ cog::fn::executor::queue_prompts_json() {
         stage_model: "executor-prex"
       },
       {
-        skill: "executor-claude",
-        slash: "/executor-claude",
+        skill: "executor-lean",
+        slash: "/executor-lean",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
         stage_model: "executor-3-stage"
       },
       {
-        skill: "executor-codex-session",
-        slash: "/executor-codex-session",
+        skill: "executor-lean-codex",
+        slash: "/executor-lean-codex",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,

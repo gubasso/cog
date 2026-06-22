@@ -17,6 +17,11 @@ and docs/reference/skill-contract.md ("Prefix taxonomy"): plan-* emits plans, re
 plans, review-plan-* is the plan-review sub-namespace, executor-* executes one prompt/plan, and
 runner-* orchestrates executor-selected queue items.
 
+Non-negotiable: native twin skills share one base name across skills/claude/ and skills/codex/;
+platform-token suffixes are reserved for delegation launchers that run the other platform under the
+hood. See docs/decisions/0021-twin-skill-naming-and-delegation-hints.md and
+docs/reference/skill-contract.md ("Twin and delegation skill naming").
+
 Non-negotiable: skills that output a plan must not run in Claude plan mode; they carry a Phase 0
 plan-mode gate (markers cog-skill: plan-emitter + cog-plan-mode-gate), enforced by cog skill-lint.
 See docs/decisions/0015-plan-skills-not-in-plan-mode.md and docs/reference/skill-contract.md

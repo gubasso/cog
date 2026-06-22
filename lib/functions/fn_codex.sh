@@ -42,6 +42,21 @@ __cog_codex_validate_mode() {
   esac
 }
 
+cog::fn::codex_mode_is_write_capable() {
+  case "${1:-}" in
+    danger)
+      return 0
+      ;;
+    native | fallback | quick-auto)
+      return 1
+      ;;
+    *)
+      __cog_codex_validate_mode "${1:-}"
+      return 1
+      ;;
+  esac
+}
+
 __cog_codex_map_effort() {
   local effort="${1:-}"
 

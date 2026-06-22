@@ -37,6 +37,10 @@ renames are deferred to dependent sibling rounds.
 Related accepted skill governance, referenced not modified:
 [ADR-0013](0013-model-effort-policy.md) and [ADR-0015](0015-plan-skills-not-in-plan-mode.md).
 
+[ADR-0021](0021-twin-skill-naming-and-delegation-hints.md) extends this taxonomy with the native
+twin versus delegation-launcher naming rule. It keeps these prefixes intact and defines when platform
+tokens belong in the suffix.
+
 ## Consequences
 
 - Good: future skill names follow a stable, citable contract.

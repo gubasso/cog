@@ -64,8 +64,39 @@ EOF
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium" and .access == "read-only"' >/dev/null
   assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
+}
+
+@test "cog codex-runner run-exec enforces write access coherence" {
+  local mode
+  for mode in native fallback quick-auto; do
+    rm -f "$CODEX_FAKE_LOG"
+    local stderr_args=()
+    if [[ $mode == native || $mode == fallback ]]; then
+      stderr_args=(--stderr "${BATS_TEST_TMPDIR}/${mode}.stderr")
+    fi
+    run --separate-stderr cog codex-runner run-exec --mode "$mode" --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/${mode}.out" --events "${BATS_TEST_TMPDIR}/${mode}.jsonl" "${stderr_args[@]}"
+
+    assert_failure
+    [[ $stderr == *"write access requires a write-capable mode"* ]]
+    [ ! -e "$CODEX_FAKE_LOG" ]
+  done
+
+  run cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger.out" --events "${BATS_TEST_TMPDIR}/danger.jsonl"
+  assert_success
+  printf '%s\n' "$output" | jq -e '.access == "write" and .status == "ok"' >/dev/null
+
+  run cog codex-runner run-exec --mode danger --access read-only --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger-read.out" --events "${BATS_TEST_TMPDIR}/danger-read.jsonl"
+  assert_success
+  printf '%s\n' "$output" | jq -e '.access == "read-only" and .status == "ok"' >/dev/null
+}
+
+@test "cog codex-runner run-exec rejects invalid access" {
+  run --separate-stderr cog codex-runner run-exec --mode danger --access bogus --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/bogus.out" --events "${BATS_TEST_TMPDIR}/bogus.jsonl"
+
+  assert_failure
+  [[ $stderr == *"invalid run-exec access"* ]]
 }
 
 @test "cog codex-runner run-resume emits resume signal" {

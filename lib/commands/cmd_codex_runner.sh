@@ -4,7 +4,7 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--thread first|last] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--thread first|last] [--print-command]"
   cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--print-command]"
   cog::fn::ui_data "Usage: cog codex-runner extract-thread <events.jsonl> <first|last>"
   cog::fn::ui_data "Usage: cog codex-runner check-output <out> <stderr>"
@@ -22,7 +22,7 @@ __cog_codex_runner_bool_for_status() {
 }
 
 __cog_codex_runner_run_exec() {
-  local mode="" effort="" prompt="" output="" events="" stderr="" thread_selection="" print_command=false
+  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" thread_selection="" print_command=false
   local command exit_code=0 output_status status thread_id="" account="" reset_eta ok json
   while (($# > 0)); do
     case "$1" in
@@ -32,6 +32,10 @@ __cog_codex_runner_run_exec() {
         ;;
       --effort)
         effort="${2:-}"
+        shift 2
+        ;;
+      --access)
+        access="${2:-}"
         shift 2
         ;;
       --prompt)
@@ -62,10 +66,19 @@ __cog_codex_runner_run_exec() {
     esac
   done
   [[ -n $mode && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> --effort <tier> --prompt <file> --output <file> --events <file>" "" \
+    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file>" "" \
     "run 'cog codex-runner --help'"
   if [[ $mode != danger && $mode != quick-auto && -z $stderr ]]; then
     cog::fn::error_raise "MissingArgument" "missing stderr file" "option: --stderr" "" "native and fallback modes require stderr capture"
+  fi
+  case "$access" in
+    read-only | write) ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid run-exec access" "access: ${access}" "expected read-only or write" "" ;;
+  esac
+  if [[ $access == write ]] && ! cog::fn::codex_mode_is_write_capable "$mode"; then
+    cog::fn::error_raise "InvalidInput" \
+      "write access requires a write-capable mode" "mode: ${mode}, access: ${access}" \
+      "only danger is write-capable" "use --mode danger or --access read-only"
   fi
 
   command="$(cog::fn::codex_exec_command "$mode" "$effort" "$prompt" "$output" "$events" "$stderr")"
@@ -93,6 +106,7 @@ __cog_codex_runner_run_exec() {
     --argjson exit_code "$exit_code" \
     --arg status "$status" \
     --arg mode "$mode" \
+    --arg access "$access" \
     --arg effort "$effort" \
     --arg output_file "$output" \
     --arg events_file "$events" \
@@ -102,10 +116,10 @@ __cog_codex_runner_run_exec() {
     --arg reset_eta "$reset_eta" \
     --arg command "$command" \
     '{action: $action, ok: $ok, exit_code: $exit_code, status: $status, mode: $mode,
-      effort: $effort, output_file: $output_file, events_file: $events_file,
+      access: $access, effort: $effort, output_file: $output_file, events_file: $events_file,
       stderr_file: $stderr_file, thread_id: $thread_id, account: $account,
       reset_eta: $reset_eta, command: $command}')"
-  cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null and .effort != null" "$json"
+  cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null and .effort != null and .access != null" "$json"
 }
 
 __cog_codex_runner_run_resume() {

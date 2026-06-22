@@ -16,7 +16,8 @@ setup() {
     '.input == {kind: "prompt", value: "Implement thing", plan_path: null} and
      .stages == ["stage1","stage2","stage3"] and
      .plan_engine == "codex" and
-     .reviewer == "/review-plan-claude"' >/dev/null
+     .review_engine == "claude" and
+     .reviewer == "/review-plan-lean"' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   [ -d "$run_dir" ]
@@ -33,7 +34,8 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.input.kind == "plan" and
      .stages == ["stage2","stage3"] and
-     .reviewer == "/review-plan-codex"' >/dev/null
+     .review_engine == "codex" and
+     .reviewer == "/review-plan-lean"' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   assert_file_contains "${run_dir}/plan-source" "$plan"
@@ -54,12 +56,12 @@ setup() {
   run cog executor select-reviewer --plan-engine claude --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.review_engine == "codex" and .reviewer == "/review-plan-codex"' >/dev/null
+    '.review_engine == "codex" and .reviewer == "/review-plan-lean"' >/dev/null
 
   run cog executor select-reviewer --plan-engine codex --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.review_engine == "claude" and .reviewer == "/review-plan-claude"' >/dev/null
+    '.review_engine == "claude" and .reviewer == "/review-plan-lean"' >/dev/null
 }
 
 @test "cog executor classify-input treats missing md path as prompt" {
@@ -91,7 +93,7 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.queue-prompts.v1" and (.prompts | length) == 3' >/dev/null
   printf '%s\n' "$output" | jq -e \
-    '[.prompts[].slash] as $s | ($s | index("/executor-prex")) and ($s | index("/executor-claude")) and ($s | index("/executor-codex-session"))' >/dev/null
+    '[.prompts[].slash] as $s | ($s | index("/executor-prex")) and ($s | index("/executor-lean")) and ($s | index("/executor-lean-codex"))' >/dev/null
   printf '%s\n' "$output" | jq -e \
     '.match.namespace == "executor" and .match.target_argument == "-ar" and (.match.aliases | length) == 0' >/dev/null
 }
@@ -101,7 +103,7 @@ setup() {
   mkdir -p "$run_dir"
 
   run cog executor summary --run-dir "$run_dir" --executor codex-session \
-    --input-kind prompt --plan-engine codex --reviewer /review-plan-claude \
+    --input-kind prompt --plan-engine codex --reviewer /review-plan-lean \
     --stage1 "done" --stage2 "done" --stage3 "done" --json
 
   assert_success
@@ -109,7 +111,7 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.summary.v1" and
      .stages.stage1.status == "done" and
-     .reviewer == "/review-plan-claude"' >/dev/null
+     .reviewer == "/review-plan-lean"' >/dev/null
   assert_file_exists "${run_dir}/executor-summary.json"
 }
 
@@ -118,23 +120,23 @@ setup() {
   mkdir -p "$run_dir"
 
   run cog executor summary --run-dir "$run_dir" --executor claude \
-    --input-kind plan --plan-engine claude --reviewer /review-plan-codex \
+    --input-kind plan --plan-engine claude --reviewer /review-plan-lean \
     --stage1 "skipped" --stage2 "done" --stage3 "done"
 
   assert_success
   [[ $output == *"RESOLVED ${run_dir}/executor-summary.json"* ]]
 }
 
-@test "cog executor summary rejects a reviewer that violates the other-engine table" {
+@test "cog executor summary rejects an unknown reviewer" {
   local run_dir="${BATS_TEST_TMPDIR}/summary-bad"
   mkdir -p "$run_dir"
 
   run --separate-stderr cog executor summary --run-dir "$run_dir" --executor codex-session \
-    --input-kind prompt --plan-engine codex --reviewer /review-plan-codex \
+    --input-kind prompt --plan-engine codex --reviewer /review-plan-other \
     --stage1 "done" --stage2 "done" --stage3 "done"
 
   assert_failure
-  [[ $stderr == *"reviewer does not match the other-engine table"* ]]
+  [[ $stderr == *"invalid executor reviewer"* ]]
 }
 
 @test "cog executor --help dispatches" {

@@ -65,11 +65,12 @@ below maps each currently shipped artifact to its taxonomy class.
 
 ### plan-*
 
-- skills/claude/plan-claude
+- skills/claude/plan-one-lean-codex
+- skills/claude/plan-one-lean
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
 - skills/claude/plan-refactor-migration
-- skills/codex/plan-codex
+- skills/codex/plan-one-lean
 - skills/codex/plan-writer
 - skills/codex/plan-refactor-migration
 
@@ -85,15 +86,16 @@ Code-review skills:
 
 Plan-review sub-namespace (`review-plan-*`):
 
-- skills/claude/review-plan-claude
-- skills/codex/review-plan-codex
+- skills/claude/review-plan-lean
+- skills/codex/review-plan-lean
 - .claude/skills/review-plan-implementation
 
 ### executor-*
 
-- skills/claude/executor-claude
+- skills/claude/executor-lean
+- skills/claude/executor-lean-codex
 - skills/claude/executor-prex
-- skills/codex/executor-codex-session
+- skills/codex/executor-lean
 
 ### runner-*
 

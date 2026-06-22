@@ -85,6 +85,21 @@ This taxonomy is related accepted skill governance alongside [ADR-0013](../decis
 (model/effort policy) and [ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md) (plan-mode
 gate); those ADRs are referenced here, not changed.
 
+## Twin and delegation skill naming
+
+Native twins use one base name in both runtime trees and are distinguished by directory:
+`skills/claude/<name>/` and `skills/codex/<name>/`. The skill frontmatter `name` matches that shared
+base name in both trees. When one native twin is changed, inspect the other twin for the matching
+contract update.
+
+Delegation launchers use a platform-token suffix when the suffix is a user-facing hint that the
+current platform runs the other platform under the hood. For example, a Claude skill ending in
+`-codex` launches Codex-backed work while Claude keeps the orchestration surface.
+
+This rule is recorded in
+[ADR-0021](../decisions/0021-twin-skill-naming-and-delegation-hints.md) and complements the prefix
+taxonomy above.
+
 ## Lean positive prose
 
 Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what
@@ -99,7 +114,7 @@ it isn't. See [ADR-0019](../decisions/0019-lean-positive-skill-prose.md).
   (`skills/claude/<name>/SKILL.md`, `skills/codex/<name>/SKILL.md`, or the stale twin shape
   `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's
   installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead.
-  Reference sibling skills by their runtime name (`/plan-claude`, `$plan-writer`).
+  Reference sibling skills by their runtime name (`/plan-one-lean`, `$plan-writer`).
 
 Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), project-local runtime
 paths (`.claude/skills/<name>/SKILL.md`), `cog skill-refs path ...` resolvers, and authoring
