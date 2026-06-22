@@ -13,16 +13,29 @@ setup() {
   assert_success
   assert_line --regexp '^RUN_DIR='
   assert_line --regexp '^SCOPE_JSON='
+  assert_line --regexp '^TECH_SCOPE_JSON='
+  refute_line --regexp '^CLASSIFICATION_JSON='
+  refute_line --regexp '^CLI_JSON='
+  refute_line --regexp '^REFS_JSON='
   local run_dir
   run_dir="$(printf '%s\n' "$output" | sed -n 's/^RUN_DIR=//p')"
   [ -f "${run_dir}/paths.env" ]
+  grep -q '^TECH_SCOPE_JSON=' "${run_dir}/paths.env"
+  refute grep -q '^CLASSIFICATION_JSON=' "${run_dir}/paths.env"
+  refute grep -q '^CLI_JSON=' "${run_dir}/paths.env"
+  refute grep -q '^REFS_JSON=' "${run_dir}/paths.env"
 }
 
 @test "cog review-init emits JSON paths" {
   run cog review-init review --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.paths.scope and .paths.cli_signals and .paths_env' >/dev/null
+  printf '%s\n' "$output" | jq -e '
+    .paths.scope and .paths.tech_scope and .paths.findings and .paths_env
+    and (.paths.classification | not)
+    and (.paths.cli_signals | not)
+    and (.paths.refs | not)
+  ' >/dev/null
 }
 
 @test "cog review-init rejects duplicate prefixes" {

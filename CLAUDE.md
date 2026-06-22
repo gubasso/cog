@@ -10,6 +10,13 @@ references under skill-refs/<area>/ and deploy-payload templates under skill-ref
 optional enhancers only. See docs/decisions/0017-reference-self-containment.md and
 docs/decisions/0023-skill-refs-unified-resource-sot.md.
 
+Non-negotiable: runtime skills never depend on docs/reference/codex-conventions.md or
+DOCS_NOTES_REPO. Codex behavior comes from cog codex-runner, and load-bearing shared references are
+imported to skill-refs and resolved with cog skill-refs path. Shared judgment workflows delegate to a
+canonical runtime skill instead of reimplementing the workflow inline. See
+docs/decisions/0024-skill-reference-self-containment-golden-rules.md and
+docs/decisions/0025-sot-executor-delegation.md.
+
 Non-negotiable: skill model/effort selection follows docs/reference/model-effort-policy.md and
 docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use model: opus + effort:
 low).

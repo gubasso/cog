@@ -9,9 +9,9 @@ the **contracts and shapes** — not the orchestration logic itself.
 ## Sandbox Detection Probe
 
 Before the first Codex call in a workflow, determine whether the native bwrap sandbox works. The
-canonical probe and fallback patterns are defined in the cog maintenance reference
-`docs/reference/codex-conventions.md` (§Sandbox Detection Probe and §Fallback Patterns), and the
-runtime behavior is owned by `cog codex-runner`.
+sandbox probe and fallback are owned by `cog codex-runner`: `cog codex-runner gate sandbox` resolves
+availability, health, and sandbox mode in one call. Skills consume that surface rather than
+reimplementing the probe.
 
 - Run once per workflow, not per stage.
 - Persist `SANDBOX_MODE` by substituting its literal value in subsequent commands (shell state does

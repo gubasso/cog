@@ -45,6 +45,15 @@ repos:
         pass_filenames: true
         stages: [pre-commit]
 
+      - id: skill-refs-lint
+        name: skill-refs self-containment lint
+        entry: bin/cog skill-lint
+        language: system
+        files: ^skill-refs/.*\.md$
+        exclude: ^skill-refs/templates/
+        pass_filenames: true
+        stages: [pre-commit]
+
       - id: test-integration
         name: integration tests
         entry: bash -c 'if compgen -G "test/integration/*.bats" > /dev/null; then bats test/integration; else printf "%s\n" "no integration tests yet"; fi'

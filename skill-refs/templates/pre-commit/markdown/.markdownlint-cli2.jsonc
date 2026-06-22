@@ -15,7 +15,6 @@
 //   - MD029 rule:    https://github.com/DavidAnson/markdownlint/blob/main/doc/md029.md
 //   - linter≠fmt:    https://github.com/DavidAnson/markdownlint/blob/main/doc/Prettier.md
 //   - dprint md cfg: https://dprint.dev/plugins/markdown/config/
-//   - full note:     $DOCS_NOTES_REPO/tech/programming/configs/markdown-formatting-toolchain.md
 //
 // "fix": true enables autofix — but it is GLOBAL (no per-rule fix toggle). To
 // keep fix-mode from fighting dprint or auto-editing content, every OTHER fixable

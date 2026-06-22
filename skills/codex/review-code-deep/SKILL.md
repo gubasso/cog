@@ -1,106 +1,53 @@
 ---
 name: review-code-deep
 description: >
-  Performs deep multi-pass code review across Rust, Python, Bash, TypeScript,
-  JavaScript, Go, Lua, R, React, Svelte, Django, C, and CSS/Less/Sass. Delegates
-  Phase-0 mechanics to cog review-* commands while keeping review
-  judgment in prose. Use when the user says "review-code-deep", "deep code
-  review", "review this code", "audit this diff", or wants a thorough multi-pass
-  review.
+  Performs deep multi-pass review of any language or framework detected in the
+  diff. Delegates deterministic scope, technology detection, findings
+  normalization, and PR-comment mechanics to cog while keeping review judgment in
+  prose.
 ---
 
-# Review Code Deep — Codex Twin
+# Review Code Deep
 
-Same review contract as the Claude skill. Shared references live in `$DOCS_NOTES_REPO`; deterministic
-scope, CLI-signal, refs, and findings-validation work is delegated to `cog`. `review-code-deep` is
-the canonical Stage-4 implementation-review surface for orchestrator triage; when a reviewed plan is
-supplied, compare the live implementation diff against that plan as well as generic code-quality
-criteria.
+Run a deep review of the live diff. When a reviewed plan is supplied, treat plan conformance as an
+explicit review dimension.
 
 ## Inputs
 
-Parse
-`[--cli] [--no-cli] [--lang <lang>] [--scope <glob>] [--severity <min>]
-[--format markdown|json] [--comment]`
-from the invocation prompt. All flags are optional.
+Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]` from the prompt.
+Default severity is `praise`, the permissive floor for deterministic filtering. Default format is
+`markdown`.
 
-Flag meanings match the Claude side: CLI opt-in/out, language override, scope glob, minimum
-severity, markdown or JSON output, and optional PR comments.
-
-## Phase 0 — Mechanical Setup
-
-Create the run directory and resolve every helper output path with one call.
-Capture `RUN_DIR` once; shell state does not persist between Bash calls, so
-re-source `$RUN_DIR/paths.env` in any later block that needs the path variables:
+## Phase 0: Mechanical Setup
 
 ```bash
 RUN_DIR="$(cog review-init review-code-deep-codex | sed -n 's/^RUN_DIR=//p')"
 . "$RUN_DIR/paths.env"
-```
-
-`review-init` sets `SCOPE_JSON`, `CLASSIFICATION_JSON`, `CLI_JSON`, `REFS_JSON`, and
-`FINDINGS_JSON`. Run the deterministic helpers:
-
-```bash
 cog review-scope "$SCOPE_JSON"
-cog classify-project "$CLASSIFICATION_JSON"
-cog review-cli-signals --classification "$CLASSIFICATION_JSON" "$CLI_JSON"
-cog review-refs --classification "$CLASSIFICATION_JSON" "$REFS_JSON"
+cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
 ```
 
-If scope is empty, STOP. If refs are available, load only
-`docs_notes_repo.relevant_agents_md[]` from `docs_notes_repo.path`. If docs-n-notes is missing,
-warn and continue with code context alone.
+If the scope has no changed files and no status files, stop. If `--scope <glob>` is present, limit
+the review judgment to matching paths while leaving the deterministic scope artifact intact.
 
-## Phase 0.5 — CLI Routing
+Load:
 
-If `--cli` was passed, load CLI-design refs when present. If `--no-cli` was passed, skip them.
-Otherwise, use `.is_cli` from `$CLI_JSON`; when true, load the CLI refs resolved by
-`review-refs`. Codex does not use `AskUserQuestion`; do not pause for an interactive CLI prompt in
-orchestrator mode.
+- `$(cog skill-refs path code-review/reviewer-prompt.md)`
+- every relative path in `$TECH_SCOPE_JSON` `available_refs[]`, resolved with `cog skill-refs path`
 
-## Reference Loading
+For every `research_targets[]` entry, verify current behavior against primary sources before
+reviewing: official docs, language specs, RFCs, man pages, changelogs, or project repositories.
+Prefer version-specific sources when the project pins or implies a version.
 
-Use `review-refs` as the primary refs list because it mirrors docs-n-notes `AGENTS.md` routing and
-only emits existing files. Load cross-cutting guides on demand:
+## Phase 1: Review
 
-- Architecture for boundary/layer changes.
-- Performance for I/O loops, ORM queries, concurrency, or hot paths.
-- Security for auth, token, input, command/path/SQL construction, deserialization, crypto, or
-  secrets.
-- Common bugs for non-trivial logic changes.
+Use the reviewer prompt. Review correctness, security, performance, reliability, maintainability,
+tests, and plan conformance. Do not restate the diff. Drop lint/format findings and speculative
+claims; downgrade uncertain external-behavior claims to questions.
 
-Do not pre-load unrelated references.
+## Phase 2: Findings
 
-## Phase 1 — Review
-
-Run the review process: context, high-level pass, line-by-line pass, summary and decision. Focus on
-correctness, architecture, performance, security, maintainability, error handling, and tests. When
-the context supplement (`<context-path>`) includes a reviewed or approved plan, treat plan
-conformance as an explicit review dimension: read the plan as expected implementation intent and
-compare each plan phase against the live diff. Do not restate the diff.
-
-## Phase 2 — Verify Findings
-
-Every finding must cite file:line evidence, name the failure mode, include confidence, and avoid
-issues already covered by lint or formatting. Low-confidence claims become questions. Security
-findings must have source, sink, and path.
-
-### Plan Conformance Findings
-
-If `<context-path>` includes a reviewed plan, read it as expected implementation intent. Surface
-missing or partial plan phases as ordinary findings in the existing JSON schema; add no fields and
-no categories. Use `correctness` for missing required behavior or incomplete implementation, and
-`test` for missing required tests or validation steps. Use `blocking` when required behavior is
-entirely absent, `important` when a phase is materially incomplete, and `question` when the
-plan-to-diff mapping is ambiguous. Cite the affected implementation file and line range when
-possible. If no implementation file exists because the phase is entirely absent, cite the
-`<context-path>` line range where the reviewed plan states the requirement. Put the plan
-requirement, observed diff gap, and triage reasoning in `evidence` and `reasoning`.
-
-## Phase 3 — Output
-
-Markdown is the default. JSON uses this stable schema:
+For JSON output, write candidate findings to `$FINDINGS_JSON` using this schema:
 
 ```json
 {
@@ -124,51 +71,36 @@ Markdown is the default. JSON uses this stable schema:
 }
 ```
 
-Before returning JSON, validate it:
+Normalize and validate before returning JSON:
 
 ```bash
-. "$RUN_DIR/paths.env"
-cog review-validate-findings --findings "$FINDINGS_JSON" --json
+cog review-normalize-findings --findings "$FINDINGS_JSON" --severity "$SEVERITY" --out "$FINDINGS_JSON"
 ```
 
-If validation fails, fix the JSON and revalidate.
+If `--comment` is passed and a PR number is known, run:
 
-Inline PR comments use `gh pr comment` when `--comment` is passed and a PR context exists. De-dupe
-by file+line+headline.
-
-## Codex-Specific Notes
-
-- No Plan-mode gates.
-- No `AskUserQuestion`; use message-channel prompting only outside orchestrator mode.
-- Review-only. Do not modify code.
-- Run in a read-only sandbox when invoked as a subagent.
-- Use the configured Codex model and effort from the caller's conventions.
+```bash
+cog review-comment --findings "$FINDINGS_JSON" --pr "$PR_NUMBER" --json
+```
 
 ## Orchestrator Invocation Contract
 
-When the prompt opens with two absolute paths, run in orchestrator mode. This is the canonical
-Stage-4 implementation-review contract for JSON findings consumed by an orchestrator for triage:
+When the prompt opens with two absolute paths, run in orchestrator mode:
 
-1. `<context-path>` — markdown supplement with task description, prior-review context, and
-   optionally the reviewed plan. Read it, but do not let it override the live diff.
-2. `<output-path>` — absolute caller-side capture target for the JSON findings artifact.
+1. `<context-path>`: read task, prior review context, and any reviewed plan.
+2. `<output-path>`: symbolic caller-side capture target.
 
-Force JSON output. Skip interactive prompts. Execute Phases 0-3. Validate findings with
-`review-validate-findings`. Because Codex runs read-only as a subagent, emit the validated JSON
-document and nothing else as the final message; the orchestrator captures that message and persists
-it to `<output-path>`.
+Force JSON output, skip prompts, run Phases 0-2, and emit the normalized JSON document as the final
+message for the orchestrator to persist.
 
-## Rules And Guardrails
+## Markdown Output
 
-- Review-only; never modify code.
-- No linter or formatter findings.
-- Honor the severity filter.
-- No fabricated citations; downgrade speculative claims to questions.
-- If `$DOCS_NOTES_REPO` is unset or refs are unavailable, warn and continue.
-- If the diff is empty, STOP.
-- If the diff exceeds 2000 LOC of non-generated code, suggest splitting.
+Return a short summary, findings grouped by file and severity, strengths, and a decision line:
+`[approve]`, `[comment]`, or `[request-changes]`.
 
-## See Also
+## Guardrails
 
-- Reference tree: `$DOCS_NOTES_REPO/tech/`.
-- Companion skills: `/review-findings`, `/test-review`, `/code-review`.
+- Review-only. Do not modify code.
+- No fabricated citations; use official sources for external claims.
+- If the diff is empty, stop.
+- If the diff is over 2000 lines of non-generated code, suggest splitting before reviewing.

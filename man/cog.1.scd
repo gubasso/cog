@@ -191,11 +191,8 @@ The command list and short descriptions are sourced from command modules under
 *research-shelf*
 	Store and validate dated research findings.
 
-*review-agents-finalize*
-	Finalize review reference resolution from classification data.
-
-*review-cli-signals*
-	Probe whether the project is a CLI from classification data.
+*review-comment*
+	Plan or post PR comments for review findings.
 
 *review-init*
 	Create a review run directory and resolve output paths.
@@ -203,17 +200,23 @@ The command list and short descriptions are sourced from command modules under
 *review-loop-input*
 	Build and validate review-loop handoff input JSON.
 
+*review-loop-progress*
+	Compare review findings across loop rounds.
+
+*review-normalize-findings*
+	Validate, sort, and severity-filter review findings JSON.
+
 *review-plan-implementation-scan*
 	Inventory all implementation-plan queues and repo/plan fingerprints.
 
 *review-plan-implementation-verify*
 	Verify a review-plan-implementation run against a before/after scan.
 
-*review-refs*
-	Resolve docs-n-notes review reference files.
-
 *review-scope*
 	Detect changed-file review scope.
+
+*review-tech-scope*
+	Detect review technologies and bundled reference targets.
 
 *review-validate-findings*
 	Validate review findings JSON.

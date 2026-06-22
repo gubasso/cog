@@ -70,6 +70,13 @@ in-repo, installs to `$XDG_DATA_HOME/cog/skill-refs`, and resolves through `cog 
 optional runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
 internal runtime dependency. See `docs/decisions/0023-skill-refs-unified-resource-sot.md`.
 
+Runtime skills never depend on `docs/reference/codex-conventions.md` or `DOCS_NOTES_REPO`. Codex
+behavior comes from `cog codex-runner`, and load-bearing shared references are imported to
+`skill-refs/` and resolved with `cog skill-refs path`. Shared judgment workflows delegate to a
+canonical runtime skill instead of reimplementing the workflow inline. See
+`docs/decisions/0024-skill-reference-self-containment-golden-rules.md` and
+`docs/decisions/0025-sot-executor-delegation.md`.
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

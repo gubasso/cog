@@ -83,6 +83,7 @@ Code-review skills:
 - skills/claude/review-loop
 - skills/codex/implementation-reviewer
 - skills/codex/review-code-deep
+- skills/codex/review-findings
 
 Plan-review sub-namespace (`review-plan-*`):
 

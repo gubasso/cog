@@ -15,17 +15,9 @@ the Claude `suckless-patcher` skill.
 
 ## Reference Resolution
 
-Shared references live in `$DOCS_NOTES_REPO`:
-
-```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-[ -z "$DOCS_NOTES" ] && {
-  echo "suckless-patcher: \$DOCS_NOTES_REPO not set." >&2
-  echo "suckless-patcher: continuing without domain-specific references." >&2
-}
-```
-
-When available, suckless references resolve to `$DOCS_NOTES_REPO/tech/tools/suckless/`.
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver
+always succeeds for shipped references. `REFS/patch-strategies.md` means
+`$(cog skill-refs path tools/suckless/patch-strategies.md)`.
 
 ## Inputs
 
@@ -117,8 +109,7 @@ Any non-zero plain `git apply --check` is treated as conflict evidence. The help
    changed, and build result.
 
 4. If `suckless-apply` reports `needs_conflict_resolution=true`, run `suckless-conflicts`, then read
-   the referenced `.rej` files. Use the suckless conflict-resolution playbook at
-   `$DOCS_NOTES_REPO/tech/tools/suckless/patch-strategies.md` when available.
+   the referenced `.rej` files. Use `REFS/patch-strategies.md` for the conflict-resolution playbook.
 
 5. Resolve conflicts in prose and with targeted edits, preferring `apply_patch` for manual conflict
    edits. For each rejected hunk, identify the intended behavior, apply the intent manually, and

@@ -12,18 +12,14 @@ __cog_review_init_paths_json() {
     --arg run_dir "$run_dir" \
     --arg paths_env "$paths_env" \
     --arg scope "${run_dir}/scope.json" \
-    --arg classification "${run_dir}/classification.json" \
-    --arg cli "${run_dir}/cli-signals.json" \
-    --arg refs "${run_dir}/review-refs.json" \
+    --arg tech_scope "${run_dir}/tech-scope.json" \
     --arg findings "${run_dir}/findings.json" \
     '{
       run_dir: $run_dir,
       paths_env: $paths_env,
       paths: {
         scope: $scope,
-        classification: $classification,
-        cli_signals: $cli,
-        refs: $refs,
+        tech_scope: $tech_scope,
         findings: $findings
       }
     }'
@@ -36,9 +32,7 @@ __cog_review_init_write_paths_env() {
   {
     printf 'RUN_DIR=%q\n' "$run_dir"
     printf 'SCOPE_JSON=%q\n' "${run_dir}/scope.json"
-    printf 'CLASSIFICATION_JSON=%q\n' "${run_dir}/classification.json"
-    printf 'CLI_JSON=%q\n' "${run_dir}/cli-signals.json"
-    printf 'REFS_JSON=%q\n' "${run_dir}/review-refs.json"
+    printf 'TECH_SCOPE_JSON=%q\n' "${run_dir}/tech-scope.json"
     printf 'FINDINGS_JSON=%q\n' "${run_dir}/findings.json"
   } >"$paths_env" || cog::fn::error_raise "JsonWriteFailed" \
     "could not write review paths env" "path: ${paths_env}" "" "check run directory permissions"
@@ -84,9 +78,7 @@ cog::cmd::review_init() {
   else
     cog::fn::ui_data "RUN_DIR=${run_dir}"
     cog::fn::ui_data "SCOPE_JSON=${run_dir}/scope.json"
-    cog::fn::ui_data "CLASSIFICATION_JSON=${run_dir}/classification.json"
-    cog::fn::ui_data "CLI_JSON=${run_dir}/cli-signals.json"
-    cog::fn::ui_data "REFS_JSON=${run_dir}/review-refs.json"
+    cog::fn::ui_data "TECH_SCOPE_JSON=${run_dir}/tech-scope.json"
     cog::fn::ui_data "FINDINGS_JSON=${run_dir}/findings.json"
   fi
 }

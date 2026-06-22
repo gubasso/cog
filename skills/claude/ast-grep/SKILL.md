@@ -350,15 +350,11 @@ rule:
 
 ## Reference resolution
 
-Shared references live in `$DOCS_NOTES_REPO`. Resolve at skill start:
-
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-
-If `$DOCS_NOTES_REPO` is unset, the skill warns and continues without ast-grep references.
-
-References resolve to `$DOCS_NOTES_REPO/tech/tools/ast-grep/`.
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver
+always succeeds for shipped references, so no graceful-degrade fallback is needed.
 
 Available references (load on demand):
 
-- `REFS/rule-reference.md` — comprehensive ast-grep rule documentation covering atomic rules,
-  relational rules, composite rules, and metavariables.
+- `REFS/rule-reference.md` means `$(cog skill-refs path tools/ast-grep/rule-reference.md)` —
+  comprehensive ast-grep rule documentation covering atomic rules, relational rules, composite
+  rules, and metavariables.

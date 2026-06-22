@@ -188,12 +188,12 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint accepts pure cog command and env resolution blocks" {
+@test "cog skill-lint accepts pure cog command and skill-refs resolution blocks" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
 
 ```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
+REF="$(cog skill-refs path code-review/AGENTS.md)"
 cog require skill-lint
 cog skill-lint "$DRAFT_FILE"
 ```
@@ -202,6 +202,43 @@ EOF
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   assert_success
+}
+
+@test "cog skill-lint rejects codex conventions references in runtime skills" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '%s\n' 'Use docs/reference/codex-conventions.md for runtime behavior.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-codex-conventions-reference"* ]]
+}
+
+@test "cog skill-lint rejects DOCS_NOTES_REPO references in runtime skills" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+DOCS_NOTES="${DOCS_NOTES_REPO:-}"
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-docs-notes-repo-reference"* ]]
+}
+
+@test "cog skill-lint forbidden reference rules ignore governance docs" {
+  local doc="${BATS_TEST_TMPDIR}/docs/reference/skill-contract.md"
+  mkdir -p "$(dirname "$doc")"
+  printf '%s\n' 'codex-conventions.md and DOCS_NOTES_REPO are named here as governance text.' >"$doc"
+
+  run --separate-stderr cog skill-lint "$doc"
+
+  assert_failure
+  [[ $stderr != *"skill-codex-conventions-reference"* ]]
+  [[ $stderr != *"skill-docs-notes-repo-reference"* ]]
 }
 
 @test "cog skill-lint accepts multi-line while-read argv builders" {
@@ -663,4 +700,54 @@ EOF
       return 1
     }
   done < <(cog::fn::skill::allowed_lint_suppressions_json | jq -r '.[]')
+}
+
+@test "cog skill-lint rejects codex-conventions reference in runtime skill-refs" {
+  local ref="${BATS_TEST_TMPDIR}/skill-refs/code-review/demo.md"
+  mkdir -p "$(dirname "$ref")"
+  printf '%s\n' 'See docs/reference/codex-conventions.md for the probe.' >"$ref"
+
+  run --separate-stderr cog skill-lint "$ref"
+
+  assert_failure
+  [[ $stderr == *"skill-refs-codex-conventions-reference"* ]]
+}
+
+@test "cog skill-lint rejects DOCS_NOTES_REPO reference in runtime skill-refs" {
+  local ref="${BATS_TEST_TMPDIR}/skill-refs/code-review/demo.md"
+  mkdir -p "$(dirname "$ref")"
+  cat >"$ref" <<'EOF'
+Canonical: $DOCS_NOTES_REPO/tech/programming/code-review/AGENTS.md
+EOF
+
+  run --separate-stderr cog skill-lint "$ref"
+
+  assert_failure
+  [[ $stderr == *"skill-refs-docs-notes-repo-reference"* ]]
+}
+
+@test "cog skill-lint accepts a clean runtime skill-refs file" {
+  local ref="${BATS_TEST_TMPDIR}/skill-refs/code-review/demo.md"
+  mkdir -p "$(dirname "$ref")"
+  cat >"$ref" <<'EOF'
+Resolve refs with `cog skill-refs path code-review/AGENTS.md`.
+EOF
+
+  run --separate-stderr cog skill-lint "$ref"
+
+  assert_success
+}
+
+@test "cog skill-lint self-containment rule exempts skill-refs templates deploy payload" {
+  local tpl="${BATS_TEST_TMPDIR}/skill-refs/templates/pre-commit/markdown/demo.md"
+  mkdir -p "$(dirname "$tpl")"
+  cat >"$tpl" <<'EOF'
+note: $DOCS_NOTES_REPO/tech/programming/configs/markdown.md
+EOF
+
+  run --separate-stderr cog skill-lint "$tpl"
+
+  # templates/ is a deploy payload, not a runtime ref: the self-containment rule
+  # does not fire (the default scan and pre-commit hook both exclude templates/).
+  [[ $stderr != *"skill-refs-docs-notes-repo-reference"* ]]
 }

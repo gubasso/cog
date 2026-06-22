@@ -12,40 +12,39 @@ __cog_refactor_setup_readable_file() {
 }
 
 __cog_refactor_setup_guideline_json() {
-  local path docs fallback=false
+  local path fallback=false
   if __cog_refactor_setup_readable_file "${REFACTOR_GUIDELINE:-}"; then
     jq -n --arg path "$(realpath "$REFACTOR_GUIDELINE")" --arg source REFACTOR_GUIDELINE --argjson fallback false \
       '{path: $path, source: $source, fallback: $fallback}'
     return 0
   fi
-  if docs="$(cog::fn::refs_resolve_docs_path "${DOCS_NOTES_REPO:-}" 2>/dev/null)"; then
-    path="$docs/tech/programming/best-practices/refactor-migration-guideline.md"
-    if __cog_refactor_setup_readable_file "$path"; then
-      jq -n --arg path "$(realpath "$path")" --arg source DOCS_NOTES_REPO --argjson fallback false \
-        '{path: $path, source: $source, fallback: $fallback}'
-      return 0
-    fi
-    path="$docs/tech/programming/best-practices/refactor-guideline-excerpt.md"
-    if __cog_refactor_setup_readable_file "$path"; then
-      fallback=true
-      jq -n --arg path "$(realpath "$path")" --arg source DOCS_NOTES_REPO_EXCERPT --argjson fallback "$fallback" \
-        '{path: $path, source: $source, fallback: $fallback}'
-      return 0
-    fi
+  if path="$(cog::fn::skill_refs_path "refactor/refactor-migration-guideline.md" 2>/dev/null)" \
+    && __cog_refactor_setup_readable_file "$path"; then
+    jq -n --arg path "$(realpath "$path")" --arg source skill_refs --argjson fallback false \
+      '{path: $path, source: $source, fallback: $fallback}'
+    return 0
+  fi
+  if path="$(cog::fn::skill_refs_path "refactor/refactor-guideline-excerpt.md" 2>/dev/null)" \
+    && __cog_refactor_setup_readable_file "$path"; then
+    fallback=true
+    jq -n --arg path "$(realpath "$path")" --arg source skill_refs_excerpt --argjson fallback "$fallback" \
+      '{path: $path, source: $source, fallback: $fallback}'
+    return 0
   fi
   jq -n '{path: null, source: null, fallback: false}'
 }
 
 __cog_refactor_setup_references_json() {
-  local base="${DOCS_NOTES_REPO:-}" prefix
-  if [[ -n $base ]]; then
-    prefix="$base/tech/programming/best-practices"
-    jq -n --arg templates "$prefix/refactor-plan-templates.md" --arg refusal_list "$prefix/refactor-refusal-list.md" \
-      --arg madr_template "$prefix/madr-template.md" \
-      '{templates: $templates, refusal_list: $refusal_list, madr_template: $madr_template}'
-  else
-    jq -n '{templates: null, refusal_list: null, madr_template: null}'
-  fi
+  local templates="" refusal_list="" madr_template=""
+  templates="$(cog::fn::skill_refs_path "refactor/refactor-plan-templates.md" 2>/dev/null || true)"
+  refusal_list="$(cog::fn::skill_refs_path "refactor/refactor-refusal-list.md" 2>/dev/null || true)"
+  madr_template="$(cog::fn::skill_refs_path "refactor/madr-template.md" 2>/dev/null || true)"
+  jq -n --arg templates "$templates" --arg refusal_list "$refusal_list" --arg madr_template "$madr_template" \
+    '{
+      templates: (if $templates == "" then null else $templates end),
+      refusal_list: (if $refusal_list == "" then null else $refusal_list end),
+      madr_template: (if $madr_template == "" then null else $madr_template end)
+    }'
 }
 
 __cog_refactor_setup_build_json() {

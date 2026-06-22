@@ -20,6 +20,15 @@ __cog_skill_lint_add_default_files() {
   done < <(find "$root/skills/claude" "$root/skills/codex" "$root/.claude/skills" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null | sort)
 }
 
+# Runtime skill-refs markdown (everything under skill-refs/ except the
+# templates/ deploy payload) is scanned for the self-containment golden rules.
+__cog_skill_lint_add_default_skill_refs() {
+  local root="$1" path
+  while IFS= read -r path; do
+    [[ -n $path ]] && printf '%s\n' "$path"
+  done < <(find "$root/skill-refs" -type f -name '*.md' -not -path "$root/skill-refs/templates/*" -print 2>/dev/null | sort)
+}
+
 __cog_skill_lint_finding() {
   local file="$1" line="$2" rule="$3" message="$4" fix="$5"
   printf '%s:%s: %s: %s; fix: %s\n' "$file" "$line" "$rule" "$message" "$fix" >&2
@@ -188,6 +197,81 @@ __cog_skill_lint_check_source_paths() {
     fi
   done <"$file"
 
+  return "$failed"
+}
+
+__cog_skill_lint_check_forbidden_runtime_refs() {
+  local file="$1" runtime failed=0
+  local line line_no=0 in_frontmatter=false frontmatter_done=false
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ -n $runtime ]] || return 0
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    if [[ $line == *"codex-conventions.md"* ]]; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-codex-conventions-reference" \
+        "runtime skill references codex-conventions.md" \
+        "use the cog codex-runner command surface instead"
+      failed=1
+    fi
+    if [[ $line == *"DOCS_NOTES_REPO"* ]]; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-docs-notes-repo-reference" \
+        "runtime skill references DOCS_NOTES_REPO" \
+        "import load-bearing references to skill-refs and resolve them with cog skill-refs path"
+      failed=1
+    fi
+  done <"$file"
+
+  return "$failed"
+}
+
+# A runtime skill-refs file is any file under skill-refs/ that is loaded by a
+# skill at runtime via `cog skill-refs path`. The templates/ subtree is a
+# deploy payload copied into user projects, not a runtime ref, so it is exempt.
+__cog_skill_lint_is_skill_refs_runtime() {
+  local file="$1"
+  [[ $file == *"skill-refs/"* ]] || return 1
+  [[ $file == *"skill-refs/templates/"* ]] && return 1
+  return 0
+}
+
+# Runtime skill-refs are surfaced to skills (e.g. review-tech-scope feeds
+# code-review guides to review-code-deep), so the same self-containment golden
+# rules that bind SKILL.md bodies bind the refs they load. Scan the whole file;
+# refs carry no frontmatter to skip.
+__cog_skill_lint_check_skill_refs_forbidden() {
+  local file="$1" failed=0 line line_no=0
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+    if [[ $line == *"codex-conventions.md"* ]]; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-refs-codex-conventions-reference" \
+        "runtime skill-refs references codex-conventions.md" \
+        "describe the behavior or point to the cog codex-runner command surface instead"
+      failed=1
+    fi
+    if [[ $line == *"DOCS_NOTES_REPO"* ]]; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-refs-docs-notes-repo-reference" \
+        "runtime skill-refs references DOCS_NOTES_REPO" \
+        "import the reference into skill-refs and resolve it with cog skill-refs path"
+      failed=1
+    fi
+  done <"$file"
   return "$failed"
 }
 
@@ -532,6 +616,10 @@ __cog_skill_lint_scan_prose_file() {
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
+  if __cog_skill_lint_is_skill_refs_runtime "$file"; then
+    __cog_skill_lint_check_skill_refs_forbidden "$file"
+    return $?
+  fi
   if ! __cog_skill_lint_check_structure "$file"; then
     failed=1
   fi
@@ -542,6 +630,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_source_paths "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_forbidden_runtime_refs "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then
@@ -571,6 +662,9 @@ cog::cmd::skill_lint() {
     while IFS= read -r file; do
       files+=("$file")
     done < <(__cog_skill_lint_add_default_files "$repo_root")
+    while IFS= read -r file; do
+      files+=("$file")
+    done < <(__cog_skill_lint_add_default_skill_refs "$repo_root")
   fi
 
   for file in "${files[@]}"; do

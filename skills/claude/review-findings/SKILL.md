@@ -1,101 +1,89 @@
 ---
 name: review-findings
 description: >
-  Process and address code review findings from implementation reviews.
-  Use when the user provides a review report, findings list, or feedback from a code review
-  (self-review, peer review, or LLM-assisted review) and wants each finding triaged, validated,
-  and addressed. Triggers: "review findings", "address findings", "fix review", "review report",
-  "handle feedback", "address review points", "review comments", or when the user pastes a
-  numbered/bulleted list of code review observations after an implementation task.
+  Triage code review findings, validate them against code and current docs, apply
+  appropriate fixes, and emit structured triage plus followups. Use for review
+  reports, review-code-deep JSON, review comments, or review-loop triage.
 model: opus
 effort: low
 ---
 
 <!-- trigger-tests: "review findings", "address findings", "fix review", "review report", "handle feedback" -->
 
-# Review Findings Processor
+# Review Findings
 
-Process a list of code review findings, triage each one, and either address it or justify skipping
-it.
+`review-findings` is the triage source of truth for review findings. It accepts freeform findings
+and the `review-code-deep` JSON schema:
 
-## Input Expectations
+- `severity`: `blocking|important|nit|suggestion|question|praise`
+- `file`, `line_start`, `line_end`, `category`, `headline`, `evidence`, `reasoning`, `suggestion`,
+  `confidence`
 
-The user provides:
+## Reference Resolution
 
-1. **Review findings** -- a list of observations, issues, suggestions, or questions from a code
-   review.
-2. **Task context** (may already be in conversation) -- the original goal/task that was implemented.
-
-If the task context is unclear, ask the user to briefly describe the original implementation goal
-before proceeding.
+Load review discipline from `$(cog skill-refs path code-review/llm-review-discipline.md)`. When
+severity wording needs the shared output contract, load
+`$(cog skill-refs path implementation-review/severity-levels.md)`.
 
 ## Workflow
 
-For each finding in the list, execute these steps sequentially:
+1. Parse the findings and task context. If the task context is missing and affects triage, ask one
+   focused question before editing.
+2. Classify each finding as `Issue`, `Suggestion`, or `Question`.
+3. Verify issues and suggestions against the current code, local docs, and official sources when the
+   claim depends on API behavior, library semantics, configuration, or an external specification.
+4. Assign status:
+   - `blocking` or `important` with `high`/`medium` confidence: `FIXED` when the fix is minor and
+     clear; otherwise `NEEDS_DISCUSSION`.
+   - `nit` or `suggestion`: `ACKNOWLEDGED` unless the user explicitly asks for cleanup.
+   - `question`: `QUESTION`.
+   - `praise`: omit from actionable output.
+   - low-confidence findings that fail independent re-check: `DISMISSED`.
+5. Apply minimal code edits for `FIXED` findings. Keep unrelated refactors out of scope.
+6. Record decisions, deferrals, and open questions as followups.
 
-### Step 1: Classify the Finding
+## Output
 
-Determine the finding type:
+```markdown
+# Findings Triage
 
-- **Issue** -- a bug, incorrect usage, missing handling, style violation, etc.
-- **Suggestion** -- an improvement idea, refactor proposal, optimization.
-- **Question** -- a clarification request or knowledge gap from the reviewer.
+## Summary
 
-### Step 2: Relevance Check
+- Fixed: N
+- Acknowledged: N
+- Dismissed: N
+- Needs discussion: N
+- Questions: N
 
-Evaluate:
+## Findings
 
-1. **Does it make sense?** Is the observation technically correct and well-founded?
-2. **Is it aligned with the task goal?** Or is it scope creep / tangential drift?
+### Finding N: <headline>
 
-If the finding fails either check, skip to Step 5 (Justify Skip).
-
-### Step 3: Verify Against Latest Docs (for Issues and Suggestions)
-
-Before applying a fix, verify the finding against current documentation:
-
-- Use web search to confirm the correct/latest API, method signature, config option, or best
-  practice for the relevant tool, framework, or library mentioned in the finding.
-- This prevents "fixing" something with outdated patterns or deprecated APIs.
-- If the finding itself references an outdated API or pattern, note that in the output.
-
-### Step 4: Address the Finding
-
-Depending on classification:
-
-- **Issue**: Fix/correct the code. Apply the change.
-- **Suggestion**: Implement if it improves quality without scope creep. If borderline, ask the user.
-- **Question**: Answer it if you have enough context. If you genuinely don't know or it requires
-  user-specific knowledge, prompt the user for clarification.
-
-### Step 5: Justify Skip (when applicable)
-
-If a finding is skipped (irrelevant, wrong, out of scope, not worth the cost), provide a brief,
-concrete justification. Don't be vague -- state _why_ it doesn't apply.
-
-## Output Format
-
-After processing all findings, produce a summary report. For each finding use this structure:
-
-```text
-### Finding N: <short title>
 - **Type**: Issue | Suggestion | Question
-- **Verdict**: Addressed | Skipped | Needs User Input
-- **Reasoning**: <1-2 sentences on relevance and alignment>
-- **Doc check**: <what was verified, source if relevant>
-- **Action taken**: <what was changed, or why it was skipped, or the answer to the question>
+- **Status**: FIXED | ACKNOWLEDGED | DISMISSED | NEEDS_DISCUSSION | QUESTION
+- **Source**: <file:line_start-line_end or freeform source>
+- **Reasoning**: <brief validation and task-scope reasoning>
+- **Doc check**: <source checked, or "not needed">
+- **Action taken**: <change, answer, or skip rationale>
+
+## Followups
+
+### Decisions
+
+- <decision or "None">
+
+### Deferrals
+
+- <deferral or "None">
+
+### Open Questions
+
+- <question or "None">
 ```
 
-At the end, include a brief **Summary** section with counts (addressed / skipped / needs input) and
-any overarching observations.
+## Guardrails
 
-## Guidelines
-
-- Process findings in the order given. Don't reorder by severity unless the user asks.
-- Be direct in justifications. "Not worth fixing" is acceptable if explained.
-- When a finding is a question that you can answer confidently, just answer it.
-- When a finding requires a code change, make the change and reference the file/line.
-- If multiple findings overlap or conflict, note the dependency and handle them coherently.
-- Do not gold-plate. Address what's asked, don't expand scope.
-- If the findings list is very large (15+), give the user a quick overview of your triage plan
-  before diving in, so they can reprioritize if needed.
+- Fix only findings that pass relevance and verification checks.
+- Cite changed files in the report when edits are made.
+- Use official docs as primary sources for external API or spec claims.
+- Preserve the input order unless dependencies between findings require grouping.

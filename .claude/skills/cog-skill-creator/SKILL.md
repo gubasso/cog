@@ -26,16 +26,10 @@ skill bodies runtime-native; Codex frontmatter supports only `name` and `descrip
 
 ## Reference Resolution
 
-Shared references live in `$DOCS_NOTES_REPO`. Resolve at skill start:
-
-```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-```
-
-If `$DOCS_NOTES_REPO` is unset, warn and continue without external skill-authoring references. When
-it is set, read the relevant skill-authoring references before drafting. Treat
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. Read
+`$(cog skill-refs path skill-authoring/skill-script-extraction.md)` before drafting. Treat
 `docs/reference/skill-contract.md` in this repo as the authoritative local contract, and apply its
-three governing decisions while authoring:
+governing decisions while authoring:
 
 - prefix taxonomy (`docs/decisions/0016-skill-prefix-taxonomy.md`);
 - model/effort policy (`docs/reference/model-effort-policy.md`, `docs/decisions/0013-model-effort-policy.md`);

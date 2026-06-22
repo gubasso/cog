@@ -69,14 +69,15 @@ _cog() {
     refactor-setup
     require
     research-shelf
-    review-agents-finalize
-    review-cli-signals
+    review-comment
     review-init
     review-loop-input
+    review-loop-progress
+    review-normalize-findings
     review-plan-implementation-scan
     review-plan-implementation-verify
-    review-refs
     review-scope
+    review-tech-scope
     review-validate-findings
     rundir
     runner-queue-parse-commit

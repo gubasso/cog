@@ -28,6 +28,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0021: Twin skill naming and delegation hints](decisions/0021-twin-skill-naming-and-delegation-hints.md)
 - [ADR-0022: cog-owned durable long-running jobs](decisions/0022-cog-owned-durable-longrun.md)
 - [ADR-0023: skill-refs is the unified SoT for skill-external resources](decisions/0023-skill-refs-unified-resource-sot.md)
+- [ADR-0024: Skill reference self-containment golden rules](decisions/0024-skill-reference-self-containment-golden-rules.md)
+- [ADR-0025: SoT executor delegation](decisions/0025-sot-executor-delegation.md)
 
 ## Guides
 

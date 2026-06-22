@@ -16,7 +16,7 @@ description: >
 
 Same contract as the Claude `plan-writer` skill: turn a self-contained context brief into an
 executor-aware directory-plan draft. The adjusted grade is a sizing signal for directory rounds. The
-plan-rounds references are shared via `$DOCS_NOTES_REPO`; this twin reads the same files.
+plan-rounds references ship with `cog` and resolve through `cog skill-refs path`.
 
 This twin is **read-only** and **non-interactive**: it never writes repo files, never bootstraps or
 registers `.implementation-plans/`, and never asks the user questions. It emits exactly one plan
@@ -108,10 +108,10 @@ mechanics in its draft, but final filesystem changes remain coordinator-owned.
   defaults noted in the draft.
 - **No code modification.** Read-only sandbox — use `--sandbox read-only` (or the fallback
   `-c 'sandbox_permissions=["disk-full-read-access"]'`). The plan goes to the final message only.
-- **Model / effort.** Planning is a full-effort task — the caller runs `--effort medium`. See
-  the maintenance reference `docs/reference/codex-conventions.md` for the invocation pattern.
+- **Model / effort.** Planning is a full-effort task — the caller runs `--effort medium` through the
+  `cog codex-runner` command surface.
 
 ## See also
 
 - Plan-rounds references: `$(cog skill-refs path plan-rounds/<file>.md)`.
-- Codex invocation conventions: maintenance reference `docs/reference/codex-conventions.md`.
+- Codex invocation conventions: `cog codex-runner` command surface.

@@ -158,15 +158,16 @@ minimum helper version; otherwise `require` is the lighter check.
 
 ### Graceful degradation for soft dependencies
 
-Soft, optional inputs degrade with a warning rather than failing. The canonical case is
-`$DOCS_NOTES_REPO`:
+Soft, optional inputs degrade with a warning rather than failing. The canonical case is an optional
+external tool — e.g. PR-comment features that need `gh`:
 
 ```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-[ -z "$DOCS_NOTES" ] && agent-helper msg warn "DOCS_NOTES_REPO unset; continuing without refs"
+command -v gh >/dev/null || agent-helper msg warn "gh unavailable; continuing without PR comments"
 ```
 
-Hard dependencies fail closed (`require` / `msg fatal`); soft ones warn and continue.
+Hard dependencies fail closed (`require` / `msg fatal`); soft ones warn and continue. Shipped
+references are not soft dependencies: they resolve in-repo via `cog skill-refs path <rel>` (the
+resolver always succeeds), so no graceful-degrade fallback is needed for them.
 
 ## Testing requirement
 

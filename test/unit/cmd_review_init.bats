@@ -19,7 +19,12 @@ setup() {
   run __cog_review_init_paths_json /tmp/run /tmp/run/paths.env
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.paths.cli_signals == "/tmp/run/cli-signals.json"' >/dev/null
+  printf '%s\n' "$output" | jq -e '
+    .paths.tech_scope == "/tmp/run/tech-scope.json"
+    and (.paths.classification | not)
+    and (.paths.cli_signals | not)
+    and (.paths.refs | not)
+  ' >/dev/null
 }
 
 @test "review-init writes sourceable paths env" {
@@ -30,6 +35,10 @@ setup() {
 
   assert_success
   assert_file_contains "${run_dir}/paths.env" "RUN_DIR="
+  assert_file_contains "${run_dir}/paths.env" "TECH_SCOPE_JSON="
+  refute grep -q "CLASSIFICATION_JSON=" "${run_dir}/paths.env"
+  refute grep -q "CLI_JSON=" "${run_dir}/paths.env"
+  refute grep -q "REFS_JSON=" "${run_dir}/paths.env"
 }
 
 @test "review-init rejects missing prefix" {

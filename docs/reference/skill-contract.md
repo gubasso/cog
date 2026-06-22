@@ -18,6 +18,27 @@ commands and decide what to do with their results.
 When a skill or command script is created or edited, check for duplicated deterministic mechanics.
 If two command modules need the same logic, move it to `lib/functions/` under `cog::fn::*`.
 
+## Self-contained references
+
+Runtime skills resolve load-bearing shared references through `cog skill-refs path <rel>`.
+`skill-refs/` is the shipped source of truth for skill-external resources, installed under
+`$XDG_DATA_HOME/cog/skill-refs` and available from the repo checkout during development.
+
+Codex invocation mechanics are exposed to skills through `cog codex-runner` subcommands such as
+`run-exec`, `finalize`, `orientation`, and `explain-status`. The Codex conventions reference under
+`docs/reference/` is maintenance documentation for that command surface, not a runtime skill
+dependency.
+
+External docs shelves, including DocsNNotes, are optional runtime enhancers only. When guidance is
+load-bearing for a shipped skill, import it into `skill-refs/` and resolve it with `cog skill-refs
+path`.
+
+## SoT executor delegation
+
+Shared judgment workflows use one canonical executor skill. Callers assemble context, invoke that
+runtime skill by name, and persist the structured output instead of reimplementing the workflow
+inline. The reference case is `review-loop` delegating finding triage to `review-findings`.
+
 ## Orchestration Contract
 
 Skills that spawn Codex, delegate to agents, manage queues, or otherwise orchestrate nested work must
@@ -142,6 +163,16 @@ segments with a real skill name so those legitimate references are not flagged.
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring
   placeholders and runtime-installed `.claude/skills` paths are not flagged. See "Lean positive
   prose".
+- `skill-codex-conventions-reference`: a runtime skill body references the maintenance-only Codex
+  conventions document instead of the `cog codex-runner` command surface. The scan skips
+  frontmatter and applies only to `skills/**/SKILL.md` runtime skill files.
+- `skill-docs-notes-repo-reference`: a runtime skill body references `DOCS_NOTES_REPO` instead of a
+  bundled `skill-refs/` resource. The scan skips frontmatter and applies only to runtime skill
+  files.
+- `skill-refs-codex-conventions-reference` / `skill-refs-docs-notes-repo-reference`: a runtime
+  `skill-refs/**` reference (the docs skills load via `cog skill-refs path`) names the maintenance-only
+  Codex conventions document or `DOCS_NOTES_REPO`. The same golden rules bind the refs a skill loads,
+  not just the `SKILL.md` body. The `skill-refs/templates/**` deploy payload is exempt.
 
 Codex skills do not require `trigger-tests`.
 

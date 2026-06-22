@@ -67,7 +67,7 @@ repos:
   #
   # dprint.json is strict JSON (no comments). The textWrap=maintain rationale,
   # MD029 renumbering, fix-mode isolation, and the SoT decision are documented in
-  # $DOCS_NOTES_REPO/tech/programming/configs/markdown-formatting-toolchain.md.
+  # this project's markdown formatting toolchain notes.
   #
   # External dependency: dprint must be on PATH (e.g., `cargo install dprint`
   # or your package manager). Pinned through dprint.json, not pre-commit.

@@ -49,10 +49,8 @@ for the extraction rule and the output/status contract.
 Codex invocation mechanics — durable-job launch, polling, finalize/cancel, and thread ID
 extraction — are owned by the `cog codex-runner` surface (`run-exec`, `run-resume`,
 `finalize`, `status`, `cancel`, `gate`, `orientation`, `explain-status`) used throughout this skill;
-the maintenance reference is
-`docs/reference/codex-conventions.md`. Obtain Codex behavioral preambles from
-`cog codex-runner orientation <read-only|write>` and interpret runner statuses with
-`cog codex-runner explain-status <status>`.
+obtain Codex behavioral preambles from `cog codex-runner orientation <read-only|write>` and
+interpret runner statuses with `cog codex-runner explain-status <status>`.
 
 > **Execution discipline — env first; every Codex run is a durable job.** `/executor-prex` runs as an
 > **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
@@ -81,13 +79,10 @@ The workflow needs:
 1. A task description. Sources, in order of precedence: `$ARGUMENTS`; otherwise the current
    conversation context.
 2. A repository context summary sufficient for Codex to plan and implement.
-3. `codex-session` installed and on `PATH`. The wrapper composes config-recipes, resolves accounts,
-   and sets `CODEX_HOME` per-account per-group before passing through to `codex`. Model selection and
-   reasoning effort come from `cog codex-runner --effort` (`high` for stage 1 planning via
-   `/plan-one-lean`, `medium` for stage 3 implementation; escalate stage 3 to `high` only when the
-   user asks for it). See the "Wrapper:
-   `codex-session`" section in the maintenance reference `docs/reference/codex-conventions.md`
-   for the full API reference.
+3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch, resume,
+   finalize/cancel/status, orientation, status explanation, account-aware wrapper setup, and effort
+   selection (`high` for stage 1 planning via `/plan-one-lean`, `medium` for stage 3 implementation;
+   escalate stage 3 to `high` only when the user asks for it).
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
 ask one focused clarifying question before starting stage 1.

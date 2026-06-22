@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 
 : "${COG_UI_JSON:=false}"
+: "${COG_UI_DRY_RUN:=false}"
 : "${COG_UI_COLOR_STDOUT:=false}"
 : "${COG_UI_COLOR_STDERR:=false}"
 
@@ -32,6 +33,7 @@ cog::fn::ui_init() {
   local -n __config_ref="$config_name"
 
   COG_UI_JSON="${__config_ref[json]:-${__ctx_ref[json]:-false}}"
+  COG_UI_DRY_RUN="${__config_ref[dry_run]:-${__ctx_ref[dry_run]:-false}}"
   COG_UI_COLOR_STDOUT="$(__cog_ui_resolve_color 1)"
   COG_UI_COLOR_STDERR="$(__cog_ui_resolve_color 2)"
 }

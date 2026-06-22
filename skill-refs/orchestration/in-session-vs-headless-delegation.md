@@ -66,8 +66,8 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and
   >600s call). Duration is never judged: a long unit is never a reason to split it. The orchestrator's
   own tool calls stay foreground; the model still never backgrounds its own tool calls. This applies
   in every Codex-driving skill (`executor-prex`, `review-loop`, `plan-writer-multi`, `ask`); runtime
-  behavior is owned by `cog codex-runner`, and the canon is
-  `docs/decisions/0022-cog-owned-durable-longrun.md` plus `docs/reference/codex-conventions.md`.
+  behavior is owned by `cog codex-runner`, and the durable-job contract is recorded in
+  `docs/decisions/0022-cog-owned-durable-longrun.md`.
 - **Use the `Agent` tool, never the `Skill` tool, for nested delegation** — `Skill` inline-injects
   the child body and the orchestrator stops mid-workflow (`anthropics/claude-code#17351`). Nesting
   being supported does not change this: the Agent tool is still the boundary. See

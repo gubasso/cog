@@ -228,9 +228,29 @@ __cog_preflight_json_array_from_lines() {
   fi
 }
 
+__cog_preflight_agents_add_ref_if_exists() {
+  local -n __out_ref="$1"
+  local rel="$2"
+  if cog::fn::skill_refs_path "$rel" >/dev/null 2>&1; then
+    __out_ref+="${rel}"$'\n'
+  fi
+}
+
+__cog_preflight_agents_skill_refs() {
+  local is_cli="${1:-false}"
+  shift || true
+  local out="" lang
+  __cog_preflight_agents_add_ref_if_exists out "code-review/AGENTS.md"
+  [[ $is_cli == true ]] && __cog_preflight_agents_add_ref_if_exists out "cli-design/AGENTS.md"
+  for lang in "$@"; do
+    __cog_preflight_agents_add_ref_if_exists out "code-review/languages/${lang}/code-review-guide.md"
+  done
+  printf '%s' "$out" | sort -u | grep -v '^$' || true
+}
+
 __cog_preflight_agents() {
   local out="" classification_file="" no_cache=false cache_file="" classification
-  local is_cli docs_path="" docs_available=false refs_json="[]" json stamp
+  local is_cli refs_root="" docs_available=false refs_json="[]" json stamp
   local -a langs=() refs=()
 
   while (($# > 0)); do
@@ -282,15 +302,15 @@ __cog_preflight_agents() {
   is_cli="$(jq -r 'if .is_cli == true then "true" else "false" end' <<<"$classification")"
   mapfile -t langs < <(jq -r '(.languages // [])[]? | .lang // empty' <<<"$classification")
 
-  if docs_path="$(cog::fn::refs_resolve_docs_path)"; then
+  if refs_root="$(cog::fn::skill_refs_root 2>/dev/null)"; then
     docs_available=true
-    mapfile -t refs < <(cog::fn::refs_compute "$docs_path" "$is_cli" "${langs[@]}")
+    mapfile -t refs < <(__cog_preflight_agents_skill_refs "$is_cli" "${langs[@]}")
   fi
   refs_json="$(__cog_preflight_json_array_from_lines "${refs[@]}")"
   json="$(jq -cn \
     --argjson classification "$classification" \
     --argjson available "$docs_available" \
-    --arg path "$docs_path" \
+    --arg path "$refs_root" \
     --argjson refs "$refs_json" \
     '{classification: $classification, docs_notes_repo: {available: $available, path: $path, relevant_agents_md: $refs}}')"
   __cog_preflight_write "$out" '.docs_notes_repo != null' "$json"

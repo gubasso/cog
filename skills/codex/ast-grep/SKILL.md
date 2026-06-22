@@ -346,20 +346,11 @@ rule:
 
 ## Reference resolution
 
-Shared references live in `$DOCS_NOTES_REPO` (the docs-n-notes repository). Resolve at skill start:
-
-```bash
-DOCS_NOTES="${DOCS_NOTES_REPO:-}"
-[ -z "$DOCS_NOTES" ] && {
-  echo "ast-grep: \$DOCS_NOTES_REPO not set." >&2
-  echo "ast-grep: continuing without domain-specific references." >&2
-}
-```
-
-If `$DOCS_NOTES_REPO` is unset, the skill continues but degrades: ast-grep references at
-`$DOCS_NOTES_REPO/tech/tools/ast-grep/` are unavailable.
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver
+always succeeds for shipped references, so no graceful-degrade fallback is needed.
 
 Available references (load on demand):
 
-- `REFS/rule-reference.md` — comprehensive ast-grep rule documentation covering atomic rules,
-  relational rules, composite rules, and metavariables.
+- `REFS/rule-reference.md` means `$(cog skill-refs path tools/ast-grep/rule-reference.md)` —
+  comprehensive ast-grep rule documentation covering atomic rules, relational rules, composite
+  rules, and metavariables.
