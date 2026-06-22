@@ -146,13 +146,11 @@ sending — do not rely on `$RUN_DIR` / `$SANDBOX_MODE` being set in the next Ba
 
 #### Phase B — Parallel dispatch (one assistant message, two tool calls)
 
-> **The Bash tool call MUST be issued in the foreground with `timeout: 600000` (600 s).**
-> `run_in_background` must be false/omitted — never background the Codex call; in a headless host a
-> backgrounded run is reaped ~5s after the turn's final result, silently losing the answer.
-> (Running it concurrently with the Agent call — two tool calls in one message — is fine; that is
-> not backgrounding.) The default 120 s timeout will SIGTERM Codex before a `-w` run with web
-> research can finish — this is the observed failure mode in `$_SKILL_RUNS/ask-codex-*` runs that
-> produced only the stdin notice followed by `child terminated by signal 15`.
+> **`run-exec` launches a cog-owned durable job and returns immediately**, so the launch and the
+> Explore Agent call can share one assistant message and run concurrently. cog runs Codex in its own
+> session with a durable state file, so the run is never time-gated and survives an interrupted
+> observer; `cog codex-runner finalize` reconstructs the answer from the durable artifacts. Duration
+> is never judged. The orchestrator's own tool calls stay foreground; it never backgrounds them.
 
 In a single assistant message, issue **both** tool calls so they run concurrently:
 
@@ -173,7 +171,18 @@ cog codex-runner run-exec \
   --output "$RUN_DIR/codex-ask.txt" \
   --events "$RUN_DIR/codex-events.jsonl" \
   --stderr "$RUN_DIR/codex-stderr.log" \
-  > "$RUN_DIR/codex-runner.json"
+  --state "$RUN_DIR/codex.longrun.json"
+```
+
+`run-exec` launches the Codex durable job and returns immediately, so it runs concurrently with the
+Explore Agent. After the Agent returns, poll-and-classify with one verb,
+`cog codex-runner finalize --max-wall <secs>`: the exit code is the signal (0 ok · 1 failed · 75
+still running). Re-run finalize while it exits 75; duration is never judged.
+
+```bash
+# Re-run while it exits 75 (still running); the exit code is the signal
+# (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
+cog codex-runner finalize --state "$RUN_DIR/codex.longrun.json" --max-wall 300 > "$RUN_DIR/codex-runner.json"
 ```
 
 #### Phase C — Collect

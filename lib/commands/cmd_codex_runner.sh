@@ -4,8 +4,11 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--thread first|last] [--print-command]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> [--stderr <file>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--thread first|last] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner status --state <file>"
+  cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>] [--poll <secs>]"
+  cog::fn::ui_data "Usage: cog codex-runner cancel --state <file> [--signal TERM|KILL]"
   cog::fn::ui_data "Usage: cog codex-runner extract-thread <events.jsonl> <first|last>"
   cog::fn::ui_data "Usage: cog codex-runner check-output <out> <stderr>"
   cog::fn::ui_data "Usage: cog codex-runner classify-error <exit-code> <stderr>"
@@ -21,9 +24,23 @@ __cog_codex_runner_bool_for_status() {
   [[ $1 == ok ]] && printf '%s\n' true || printf '%s\n' false
 }
 
+# Derive the durable-job label from the --state filename (strip .longrun.json).
+__cog_codex_runner_label_for_state() {
+  local state_file="$1" base
+  base="$(basename -- "$state_file")"
+  base="${base%.longrun.json}"
+  base="${base%.json}"
+  printf '%s\n' "$base"
+}
+
+# run-exec is now a non-blocking LAUNCHER. Codex runs as a cog-owned durable job
+# (detached in its own session) so a Bash-tool 600s SIGTERM cannot kill it.
+# The result JSON is produced later by `finalize`, reconstructed from durable
+# artifacts; this call only starts the job and prints STATE_FILE=/JOB_PGID=.
 __cog_codex_runner_run_exec() {
-  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" thread_selection="" print_command=false
-  local command exit_code=0 output_status status thread_id="" account="" reset_eta ok json
+  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" print_command=false
+  local command label run_dir engine_meta pgid
+  local -a argv=()
   while (($# > 0)); do
     case "$1" in
       --mode)
@@ -54,6 +71,10 @@ __cog_codex_runner_run_exec() {
         stderr="${2:-}"
         shift 2
         ;;
+      --state)
+        state="${2:-}"
+        shift 2
+        ;;
       --thread)
         thread_selection="${2:-}"
         shift 2
@@ -66,11 +87,8 @@ __cog_codex_runner_run_exec() {
     esac
   done
   [[ -n $mode && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file>" "" \
+    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog codex-runner --help'"
-  if [[ $mode != danger && $mode != quick-auto && -z $stderr ]]; then
-    cog::fn::error_raise "MissingArgument" "missing stderr file" "option: --stderr" "" "native and fallback modes require stderr capture"
-  fi
   case "$access" in
     read-only | write) ;;
     *) cog::fn::error_raise "InvalidInput" "invalid run-exec access" "access: ${access}" "expected read-only or write" "" ;;
@@ -87,44 +105,31 @@ __cog_codex_runner_run_exec() {
     return 0
   fi
 
-  set +e
-  cog::fn::codex_exec_run "$mode" "$effort" "$prompt" "$output" "$events" "$stderr"
-  exit_code=$?
-  set -e
-  output_status="$(cog::fn::codex_check_output "$output" "$stderr")"
-  status="$(cog::fn::codex_classify_error "$exit_code" "$stderr")"
-  [[ $status == ok && $output_status != ok ]] && status="$output_status"
-  if [[ -n $thread_selection ]]; then
-    thread_id="$(cog::fn::codex_extract_thread "$events" "$thread_selection" || true)"
-    [[ -n $thread_id ]] && account="$(cog::fn::codex_lookup_thread_account "$thread_id" || true)"
-  fi
-  reset_eta="$(cog::fn::codex_extract_reset_eta "$stderr" || true)"
-  ok="$(__cog_codex_runner_bool_for_status "$status")"
-  json="$(jq -n \
-    --arg action run-exec \
-    --argjson ok "$ok" \
-    --argjson exit_code "$exit_code" \
-    --arg status "$status" \
-    --arg mode "$mode" \
-    --arg access "$access" \
-    --arg effort "$effort" \
-    --arg output_file "$output" \
-    --arg events_file "$events" \
-    --arg stderr_file "$stderr" \
-    --arg thread_id "$thread_id" \
-    --arg account "$account" \
-    --arg reset_eta "$reset_eta" \
-    --arg command "$command" \
-    '{action: $action, ok: $ok, exit_code: $exit_code, status: $status, mode: $mode,
-      access: $access, effort: $effort, output_file: $output_file, events_file: $events_file,
-      stderr_file: $stderr_file, thread_id: $thread_id, account: $account,
-      reset_eta: $reset_eta, command: $command}')"
-  cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null and .effort != null and .access != null" "$json"
+  [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
+    "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
+  label="$(__cog_codex_runner_label_for_state "$state")"
+  run_dir="$(dirname -- "$state")"
+  [[ -n $stderr ]] || stderr="${run_dir}/${label}.stderr.log"
+
+  cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
+  engine_meta="$(jq -cn \
+    --arg engine_action run-exec --arg mode "$mode" --arg access "$access" \
+    --arg effort "$effort" --arg thread_selection "$thread_selection" --arg command "$command" \
+    '{engine_action: $engine_action, mode: $mode, access: $access, effort: $effort,
+      thread_selection: $thread_selection, command: $command}')"
+
+  cog::fn::longrun::start --state "$state" --label "$label" \
+    --stdout "$events" --stderr "$stderr" --output "$output" \
+    --engine codex --engine-meta "$engine_meta" -- "${argv[@]}"
+  pgid="$(jq -r '.pgid' "$state" 2>/dev/null || true)"
+  cog::fn::ui_data "STATE_FILE=${state}"
+  cog::fn::ui_data "JOB_PGID=${pgid}"
 }
 
 __cog_codex_runner_run_resume() {
-  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" print_command=false
-  local command exit_code=0 output_status status warning_signal resume_signal reset_eta ok json
+  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" print_command=false
+  local command label run_dir engine_meta pgid
+  local -a argv=()
   while (($# > 0)); do
     case "$1" in
       --account)
@@ -155,6 +160,10 @@ __cog_codex_runner_run_resume() {
         stderr="${2:-}"
         shift 2
         ;;
+      --state)
+        state="${2:-}"
+        shift 2
+        ;;
       --print-command)
         print_command=true
         shift
@@ -163,47 +172,203 @@ __cog_codex_runner_run_resume() {
     esac
   done
   [[ -n $account && -n $thread_id && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file>" "" \
+    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog codex-runner --help'"
   command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events")"
   if [[ $print_command == true ]]; then
     cog::fn::ui_data "$command"
     return 0
   fi
-  set +e
-  cog::fn::codex_resume_run "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$stderr"
-  exit_code=$?
-  set -e
-  output_status="$(cog::fn::codex_check_output "$output" "$stderr")"
-  status="$(cog::fn::codex_classify_error "$exit_code" "$stderr")"
-  [[ $status == ok && $output_status != ok ]] && status="$output_status"
-  warning_signal="$(cog::fn::codex_resume_warning "$stderr" || true)"
-  if [[ -n $warning_signal ]]; then
-    resume_signal="$warning_signal"
+
+  [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
+    "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
+  label="$(__cog_codex_runner_label_for_state "$state")"
+  run_dir="$(dirname -- "$state")"
+  [[ -n $stderr ]] || stderr="${run_dir}/${label}.stderr.log"
+
+  cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv
+  engine_meta="$(jq -cn \
+    --arg engine_action run-resume --arg account "$account" --arg thread_id "$thread_id" \
+    --arg effort "$effort" --arg command "$command" \
+    '{engine_action: $engine_action, account: $account, thread_id: $thread_id,
+      effort: $effort, command: $command}')"
+
+  cog::fn::longrun::start --state "$state" --label "$label" \
+    --stdout "$events" --stderr "$stderr" --output "$output" \
+    --engine codex --engine-meta "$engine_meta" -- "${argv[@]}"
+  pgid="$(jq -r '.pgid' "$state" 2>/dev/null || true)"
+  cog::fn::ui_data "STATE_FILE=${state}"
+  cog::fn::ui_data "JOB_PGID=${pgid}"
+}
+
+__cog_codex_runner_require_state() {
+  local state="$1"
+  [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
+    "missing --state" "option: --state" "" "run 'cog codex-runner --help'"
+  [[ -r $state ]] || cog::fn::error_raise "InputNotFound" \
+    "codex job state not found" "path: ${state}" "" "check the --state path"
+}
+
+__cog_codex_runner_status() {
+  local state=""
+  while (($# > 0)); do
+    case "$1" in
+      --state)
+        state="${2:-}"
+        shift 2
+        ;;
+      *) cog::fn::error_raise "InvalidInput" "invalid status argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
+    esac
+  done
+  __cog_codex_runner_require_state "$state"
+  cog::fn::json_emit '(.state | type == "string")' "$(cog::fn::longrun::status_json "$state")"
+}
+
+__cog_codex_runner_cancel() {
+  local state="" signal=TERM
+  while (($# > 0)); do
+    case "$1" in
+      --state)
+        state="${2:-}"
+        shift 2
+        ;;
+      --signal)
+        signal="${2:-}"
+        shift 2
+        ;;
+      *) cog::fn::error_raise "InvalidInput" "invalid cancel argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
+    esac
+  done
+  __cog_codex_runner_require_state "$state"
+  case "$signal" in
+    TERM | KILL) ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid signal" "signal: ${signal}" "expected TERM or KILL" "" ;;
+  esac
+  cog::fn::json_emit '(.state | type == "string")' "$(cog::fn::longrun::cancel "$state" "$signal")"
+}
+
+# Classify a finished (or lost) codex job from durable artifacts and emit the
+# run-exec / run-resume result JSON shape callers already consume. Safe to call
+# even if the launching observer was killed: nothing here depends on it.
+__cog_codex_runner_finalize() {
+  local state="" max_wall=0 poll=3
+  while (($# > 0)); do
+    case "$1" in
+      --state)
+        state="${2:-}"
+        shift 2
+        ;;
+      --max-wall)
+        max_wall="${2:-}"
+        shift 2
+        ;;
+      --poll)
+        poll="${2:-}"
+        shift 2
+        ;;
+      *) cog::fn::error_raise "InvalidInput" "invalid finalize argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
+    esac
+  done
+  __cog_codex_runner_require_state "$state"
+  [[ $max_wall =~ ^[0-9]+$ ]] || max_wall=0
+
+  ((max_wall > 0)) && cog::fn::longrun::wait "$state" "$max_wall" "$poll" >/dev/null
+
+  local resolve base exit_code exit_source
+  resolve="$(cog::fn::longrun::resolve_exit "$state")"
+  base="$(jq -r '.state' <<<"$resolve")"
+  exit_code="$(jq -r '.exit_code // ""' <<<"$resolve")"
+  exit_source="$(jq -r '.exit_source // ""' <<<"$resolve")"
+
+  if [[ $base == running ]]; then
+    # Not terminal yet. Never classify a live job (its events file is mid-write).
+    # GR4: signal "still running" via exit 75; the caller simply re-runs finalize.
+    cog::fn::json_emit '(.state | type == "string")' "$(jq -c '. + {ok: false}' "$state")"
+    cog::fn::ui_human "cog: codex job still running — poll again (re-run finalize)"
+    return "$(cog::fn::longrun::signal_code running)"
+  fi
+
+  local engine_action mode access effort thread_selection account thread_id command output events stderr
+  engine_action="$(jq -r '.engine_meta.engine_action // "run-exec"' "$state")"
+  mode="$(jq -r '.engine_meta.mode // ""' "$state")"
+  access="$(jq -r '.engine_meta.access // "read-only"' "$state")"
+  effort="$(jq -r '.engine_meta.effort // ""' "$state")"
+  thread_selection="$(jq -r '.engine_meta.thread_selection // ""' "$state")"
+  account="$(jq -r '.engine_meta.account // ""' "$state")"
+  thread_id="$(jq -r '.engine_meta.thread_id // ""' "$state")"
+  command="$(jq -r '.engine_meta.command // ""' "$state")"
+  output="$(jq -r '.artifacts.output // ""' "$state")"
+  events="$(jq -r '.artifacts.stdout // ""' "$state")"
+  stderr="$(jq -r '.artifacts.stderr // ""' "$state")"
+
+  local status output_status final_state reset_eta ok
+  if [[ -n $exit_code ]]; then
+    output_status="$(cog::fn::codex_check_output "$output" "$stderr")"
+    status="$(cog::fn::codex_classify_error "$exit_code" "$stderr")"
+    [[ $status == ok && $output_status != ok ]] && status="$output_status"
   else
-    resume_signal="$status"
+    # Wrapper lost before recording the exit code: reconstruct from artifacts.
+    status="$(cog::fn::codex_reconstruct_status "$events" "$output")"
+    case "$status" in
+      ok | empty-output) exit_code=0 ;;
+      nonzero) exit_code=1 ;;
+      *) exit_code=143 ;;
+    esac
   fi
   reset_eta="$(cog::fn::codex_extract_reset_eta "$stderr" || true)"
   ok="$(__cog_codex_runner_bool_for_status "$status")"
-  json="$(jq -n \
-    --arg action run-resume \
-    --argjson ok "$ok" \
-    --argjson exit_code "$exit_code" \
-    --arg status "$status" \
-    --arg resume_signal "$resume_signal" \
-    --arg effort "$effort" \
-    --arg account "$account" \
-    --arg thread_id "$thread_id" \
-    --arg output_file "$output" \
-    --arg events_file "$events" \
-    --arg stderr_file "$stderr" \
-    --arg reset_eta "$reset_eta" \
-    --arg command "$command" \
-    '{action: $action, ok: $ok, exit_code: $exit_code, status: $status,
-      resume_signal: $resume_signal, effort: $effort, account: $account, thread_id: $thread_id,
-      output_file: $output_file, events_file: $events_file, stderr_file: $stderr_file,
-      reset_eta: $reset_eta, command: $command}')"
-  cog::fn::json_emit "$__cog_codex_runner_self_check and .resume_signal != null and .effort != null" "$json"
+
+  if [[ $ok == true ]]; then
+    final_state="finalized-ok"
+  elif [[ $exit_source == reconstructed ]]; then
+    final_state="lost"
+  else
+    final_state="finalized-failed"
+  fi
+  cog::fn::longrun::persist_final "$state" "$final_state" "$exit_code" "$exit_source" >/dev/null
+
+  local json
+  if [[ $engine_action == run-resume ]]; then
+    local warning_signal resume_signal
+    warning_signal="$(cog::fn::codex_resume_warning "$stderr" || true)"
+    if [[ -n $warning_signal ]]; then resume_signal="$warning_signal"; else resume_signal="$status"; fi
+    json="$(jq -n \
+      --arg action run-resume --argjson ok "$ok" --argjson exit_code "$exit_code" \
+      --arg status "$status" --arg resume_signal "$resume_signal" --arg effort "$effort" \
+      --arg account "$account" --arg thread_id "$thread_id" \
+      --arg output_file "$output" --arg events_file "$events" --arg stderr_file "$stderr" \
+      --arg reset_eta "$reset_eta" --arg command "$command" \
+      '{action: $action, ok: $ok, exit_code: $exit_code, status: $status,
+        resume_signal: $resume_signal, effort: $effort, account: $account, thread_id: $thread_id,
+        output_file: $output_file, events_file: $events_file, stderr_file: $stderr_file,
+        reset_eta: $reset_eta, command: $command}')"
+    cog::fn::json_emit "$__cog_codex_runner_self_check and .resume_signal != null and .effort != null" "$json"
+  else
+    local extracted_thread="" extracted_account=""
+    if [[ -n $thread_selection ]]; then
+      extracted_thread="$(cog::fn::codex_extract_thread "$events" "$thread_selection" || true)"
+      [[ -n $extracted_thread ]] && extracted_account="$(cog::fn::codex_lookup_thread_account "$extracted_thread" || true)"
+    fi
+    json="$(jq -n \
+      --arg action run-exec --argjson ok "$ok" --argjson exit_code "$exit_code" \
+      --arg status "$status" --arg mode "$mode" --arg access "$access" --arg effort "$effort" \
+      --arg output_file "$output" --arg events_file "$events" --arg stderr_file "$stderr" \
+      --arg thread_id "$extracted_thread" --arg account "$extracted_account" \
+      --arg reset_eta "$reset_eta" --arg command "$command" \
+      '{action: $action, ok: $ok, exit_code: $exit_code, status: $status, mode: $mode,
+        access: $access, effort: $effort, output_file: $output_file, events_file: $events_file,
+        stderr_file: $stderr_file, thread_id: $thread_id, account: $account,
+        reset_eta: $reset_eta, command: $command}')"
+    cog::fn::json_emit "$__cog_codex_runner_self_check and .exit_code != null and .status != null and .effort != null and .access != null" "$json"
+  fi
+
+  # GR4: the exit code is the signal. 0 = ok, 1 = failed; the body carries the
+  # status/thread_id/account details the caller reads only when it wants them.
+  if [[ $ok == true ]]; then
+    return "$(cog::fn::longrun::signal_code ok)"
+  fi
+  cog::fn::ui_human "cog: codex job ${final_state} (status: ${status}, exit_code: ${exit_code})"
+  return "$(cog::fn::longrun::signal_code failed)"
 }
 
 __cog_codex_runner_extract_thread() {
@@ -373,6 +538,18 @@ cog::cmd::codex_runner() {
     run-resume)
       shift
       __cog_codex_runner_run_resume "$@"
+      ;;
+    status)
+      shift
+      __cog_codex_runner_status "$@"
+      ;;
+    finalize)
+      shift
+      __cog_codex_runner_finalize "$@"
+      ;;
+    cancel)
+      shift
+      __cog_codex_runner_cancel "$@"
       ;;
     extract-thread)
       shift

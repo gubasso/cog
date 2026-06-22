@@ -97,11 +97,17 @@ EOF
     --prompt "$RUN_DIR/prompt.txt" \
     --output "$RUN_DIR/answer.txt" \
     --events "$RUN_DIR/events.jsonl" \
-    > "$RUN_DIR/runner.json"
+    --state "$RUN_DIR/ask.longrun.json"
+  # Re-run while it exits 75 (still running); the exit code is the signal
+  # (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
+  cog codex-runner finalize --state "$RUN_DIR/ask.longrun.json" --max-wall 300 > "$RUN_DIR/runner.json"
 fi
 ```
 
-Set the Bash tool timeout to `600000` ms (600s) for the nested call.
+The nested Codex run is a cog-owned durable job. Poll-and-classify with one verb,
+`cog codex-runner finalize --max-wall <secs>`, which reconstructs the answer from the durable
+artifacts: the exit code is the signal (0 ok · 1 failed · 75 still running). Re-run finalize while it
+exits 75; duration is never judged.
 
 **Recursion guard.** The inner prompt must never contain `-f` / `--fast`; the orchestration strips
 it unconditionally. `-w` is forwarded as-is when set.

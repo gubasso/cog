@@ -36,6 +36,11 @@ this reference table.
 | `classify-project` | Classify repository shape. |
 | `claudemd-audit` | Audit CLAUDE.md deterministic signals. |
 | `codex-runner` | Run codex-session orchestration helpers. |
+| `codex-runner run-exec ... --state <file>` | Launch a Codex exec as a cog-owned durable job. |
+| `codex-runner run-resume ... --state <file>` | Launch a Codex resume as a cog-owned durable job. |
+| `codex-runner finalize --state <file> [--max-wall <secs>]` | Poll up to `--max-wall` then classify from durable artifacts; exit 0 ok, 1 failed, 75 still running. |
+| `codex-runner status --state <file>` | Report a Codex durable job's live state. |
+| `codex-runner cancel --state <file>` | Terminate a Codex durable job's process group. |
 | `codex-runner orientation <read-only\|write>` | Print the canonical Codex prompt orientation block. |
 | `codex-runner explain-status <status>` | Explain a Codex runner status. |
 | `cog-skill-creator-scaffold` | Compute skill scaffold paths. |
@@ -55,6 +60,7 @@ this reference table.
 | `init` | Initialize cog runtime directories and prerequisites. |
 | `lint-codex-wrapper` | Enforce Codex single-entrypoint markdown snippets. |
 | `lock` | Acquire or release a workflow run lock. |
+| `longrun` | Launch, poll, finalize, and cancel cog-owned durable long-running jobs. |
 | `msg` | Emit uniform machine status lines. |
 | `noop` | Exercise command dispatch without side effects. |
 | `osc-preflight` | Detect OBS/osc session prerequisites. |

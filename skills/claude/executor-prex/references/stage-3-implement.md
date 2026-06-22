@@ -29,6 +29,17 @@ cog codex-runner run-resume \
   --output "$RUN_DIR/stage3-impl-report.txt" \
   --events "$RUN_DIR/stage3-events.jsonl" \
   --stderr "$RUN_DIR/stage3-stderr.log" \
+  --state "$RUN_DIR/stage3.longrun.json"
+```
+
+`run-resume` launches the durable job and returns immediately. Poll-and-classify it in one verb with
+`cog codex-runner finalize --max-wall <secs>`: the exit code is the signal (0 = ok · 1 = failed ·
+75 = still running). Re-run finalize while it exits 75; duration is never judged:
+
+```bash
+# Re-run while this exits 75 (still running); exit code is the signal:
+# 0 = done & ok, 1 = done & failed, 75 = still running. Duration is never judged.
+cog codex-runner finalize --state "$RUN_DIR/stage3.longrun.json" --max-wall 300 \
   > "$RUN_DIR/stage3-runner.json"
 ```
 
@@ -99,6 +110,15 @@ cog codex-runner run-exec \
   --events "$RUN_DIR/stage3-events.jsonl" \
   --stderr "$RUN_DIR/stage3-stderr.log" \
   --thread first \
+  --state "$RUN_DIR/stage3.longrun.json"
+```
+
+Then poll-and-classify exactly as for the resume call:
+
+```bash
+# Re-run while this exits 75 (still running); exit code is the signal:
+# 0 = done & ok, 1 = done & failed, 75 = still running. Duration is never judged.
+cog codex-runner finalize --state "$RUN_DIR/stage3.longrun.json" --max-wall 300 \
   > "$RUN_DIR/stage3-runner.json"
 ```
 
@@ -106,9 +126,9 @@ cog codex-runner run-exec \
 `$RUN_DIR` file paths as instructions for Codex to read; the container sandbox may not have access
 to those paths. Inline all content directly in the prompt body.
 
-When using Claude Code's Bash tool for either the resume call or the fallback fresh-exec, set the
-timeout to `600000ms`. Run it in the **foreground** — `run_in_background` must be false/omitted. This
-call blocks until Codex exits; never background it (see **Execution discipline** above).
+Both call sites launch a cog-owned durable job and are polled-and-classified by re-running
+`cog codex-runner finalize --max-wall <secs>` while it exits 75 (still running); a long run is never
+a failure (see **Execution discipline** above).
 
 Extract the implementation thread ID:
 

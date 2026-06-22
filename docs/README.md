@@ -25,6 +25,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0018: Remove tsk and prex; converge on executor-prex](decisions/0018-remove-tsk-and-prex-converge-executor-prex.md)
 - [ADR-0019: Lean, positively-framed skill prose](decisions/0019-lean-positive-skill-prose.md)
 - [ADR-0020: Remove superseded skills and migration shims; complete pending renames](decisions/0020-remove-superseded-skills-and-migration-shims.md)
+- [ADR-0021: Twin skill naming and delegation hints](decisions/0021-twin-skill-naming-and-delegation-hints.md)
+- [ADR-0022: cog-owned durable long-running jobs](decisions/0022-cog-owned-durable-longrun.md)
 
 ## Guides
 

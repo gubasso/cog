@@ -378,7 +378,7 @@ __cog_skill_lint_emit_orchestration_finding() {
       ;;
     orchestration-background-codex)
       # shellcheck disable=SC2016
-      __cog_skill_lint_finding "$file" "$line_no" "$rule" "instruction to background orchestration work" 'run foreground with `run_in_background` false/omitted and timeout `600000ms`'
+      __cog_skill_lint_finding "$file" "$line_no" "$rule" "instruction to background orchestration work" 'let cog own long runs as durable jobs: launch with `cog codex-runner run-exec --state`, then poll-and-classify with `cog codex-runner finalize --max-wall <secs>` (exit 0 ok, 1 failed, 75 still running); only ad-hoc shell backgrounding (`&`, `run_in_background: true`) is prohibited'
       ;;
     orchestration-claude-p-recursion)
       # shellcheck disable=SC2016
@@ -415,7 +415,17 @@ __cog_skill_lint_orchestration_rule_for_line() {
     return 0
   fi
 
-  if ! __cog_skill_lint_has_background_prohibition "$line"; then
+  # cog-OWNED durable jobs are sanctioned. The agency distinction is the rule:
+  # cog (not the model) detaches the process via setsid and owns its lifecycle
+  # through a durable state file, so invoking the durable-job protocol is never
+  # the banned "model backgrounds its own tool call". Only model-issued ad-hoc
+  # backgrounding (`&`, `run_in_background: true`) stays flagged.
+  local is_durable_job=false
+  if [[ $lower =~ cog[[:space:]]+(longrun|codex-runner)[[:space:]]+(start|run-exec|run-resume|finalize|status|cancel) ]]; then
+    is_durable_job=true
+  fi
+
+  if [[ $is_durable_job == false ]] && ! __cog_skill_lint_has_background_prohibition "$line"; then
     if { [[ $line =~ run_in_background.*true && $lower =~ (codex|orchestration|subagent|delegate) ]] \
       || [[ $lower =~ (^|[[:space:]\`[:punct:]])background[[:space:]]+(the[[:space:]]+|a[[:space:]]+|an[[:space:]]+|this[[:space:]]+|that[[:space:]]+)?(codex|orchestration|delegate|subagent) ]] \
       || [[ $lower =~ (^|[[:space:]\`[:punct:]])detach[[:space:]]+(the[[:space:]]+|a[[:space:]]+|an[[:space:]]+|this[[:space:]]+|that[[:space:]]+)?(codex|orchestration|delegate|subagent) ]]; }; then

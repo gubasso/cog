@@ -242,3 +242,47 @@ EOF
   assert_failure
   [[ $output == *"known statuses"* ]]
 }
+
+@test "codex_exec_argv builds a redirection-free argv array" {
+  local prompt="${BATS_TEST_TMPDIR}/p.md"
+  printf 'multi\nline prompt\n' >"$prompt"
+  local -a argv=()
+  cog::fn::codex_exec_argv danger high "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+
+  [[ ${argv[0]} == "codex-session" ]]
+  [[ ${argv[1]} == "exec" ]]
+  # The prompt is a single argv element preserving its newlines (no shell redirection tokens).
+  [[ ${argv[-1]} == $'multi\nline prompt' ]]
+  printf '%s\n' "${argv[*]}" | grep -q -- "--dangerously-bypass-approvals-and-sandbox"
+  printf '%s\n' "${argv[*]}" | grep -q -- "--output-last-message"
+  printf '%s\n' "${argv[*]}" | grep -qv -- "2>"
+}
+
+@test "codex_resume_argv pins the account and resumes the thread" {
+  local prompt="${BATS_TEST_TMPDIR}/p.md"
+  printf 'go\n' >"$prompt"
+  local -a argv=()
+  cog::fn::codex_resume_argv acct medium thr-1 "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+
+  printf '%s\n' "${argv[*]}" | grep -q -- "--account acct"
+  printf '%s\n' "${argv[*]}" | grep -q -- "resume thr-1"
+  [[ ${argv[-1]} == "go" ]]
+}
+
+@test "codex_reconstruct_status reads the durable events tail and output presence" {
+  local events="${BATS_TEST_TMPDIR}/ev.jsonl"
+  local out="${BATS_TEST_TMPDIR}/out.md"
+
+  : >"$out"
+  run cog::fn::codex_reconstruct_status "$events" "$out"
+  assert_output "empty-output"
+
+  printf '%s\n' message >"$out"
+  printf '%s\n' '{"type":"thread.started"}' '{"type":"turn.completed"}' >"$events"
+  run cog::fn::codex_reconstruct_status "$events" "$out"
+  assert_output "ok"
+
+  printf '%s\n' '{"type":"turn.failed"}' >"$events"
+  run cog::fn::codex_reconstruct_status "$events" "$out"
+  assert_output "nonzero"
+}

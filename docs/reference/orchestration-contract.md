@@ -24,18 +24,38 @@ CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1
 This disables background-task functionality, including Bash and subagent `run_in_background`,
 auto-backgrounding, and Ctrl+B. It keeps subagent spawns synchronous.
 
-The defensive complement is to set both Bash timeout variables to integers at least `600000`:
-
-```text
-BASH_DEFAULT_TIMEOUT_MS=600000
-BASH_MAX_TIMEOUT_MS=600000
-```
-
-The timeout pair does not replace `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`. It prevents short Bash
-timeouts from pressuring the model or harness toward backgrounding a long Codex call.
+This env var governs the Claude *harness* — its auto-backgrounding of tool calls and subagents. It
+does not extend how long a single Bash call may run. The Bash tool enforces a hard ceiling of about
+600s that no environment variable raises (`BASH_DEFAULT_TIMEOUT_MS` / `BASH_MAX_TIMEOUT_MS` are
+non-functional in many versions), and when that ceiling fires it SIGTERMs the whole foreground
+process tree. A genuinely long external command therefore cannot be a single foreground Bash call —
+it runs as a cog-owned durable job (see below).
 
 `claude-session` configuration is the source of truth for env and hook registration. `cog` asserts
 the observed runtime state fail-closed before orchestration work that depends on this contract.
+
+## Durable Long-Running Jobs
+
+A coding agent runs for as long as it needs; duration is never a failure or quality signal. `cog`
+owns long-running processes instead of the Bash tool: `cog longrun` and `cog codex-runner run-exec`
+launch the process detached in its own session/process group (via `setsid`), so the Bash-tool
+tree-SIGTERM cannot reach it, and record an atomically-updated JSON state file. The result lives in
+one verb, `cog … finalize --max-wall <secs>`: it polls up to `--max-wall` then classifies the outcome
+purely from durable artifacts (exit-code file, done-marker, captured stdout/stderr), so an observer
+killed at the ceiling loses nothing.
+
+**The exit code is the signal.** `finalize` exits `0` (done, ok), `1` (done, failed), or `75`
+(`EX_TEMPFAIL` — still running) — the caller branches on `$?` and reads the JSON body only for
+details. A still-`running` job is never classified and never an error; finalize emits its snapshot and
+exits `75`. Because the ~600s ceiling forbids one blocking call, the orchestrator owns the
+*repetition*: it re-issues the bounded `finalize --max-wall` **tool call** while it sees `75`. That is
+a trivial `$?`-based retry across tool calls, never a shell `while` inside one >600s invocation. The
+contract is identical for `cog longrun` and `cog codex-runner`.
+
+This is the only sanctioned form of non-blocking execution. cog detaching its own child is not the
+model backgrounding its own tool call; ad-hoc shell backgrounding (`&`, `run_in_background: true`) on
+Codex or orchestration work stays prohibited, and `cog skill-lint` enforces the distinction. Every
+`codex-session` run is a durable job. See [ADR-0022](../decisions/0022-cog-owned-durable-longrun.md).
 
 ## Delegate And Verify
 
@@ -70,6 +90,10 @@ Spend depth only when isolation is valuable. Chain skills inline when same-conte
 enough. When a design would exceed depth five, flatten it into durable queue iteration: persist the
 next unit of work, return to the parent, and start a fresh foreground chain from queue state. This
 durable-queue trampoline is a documented future option, not a new mechanism in this round.
+
+Cog-owned durable jobs (above) are processes cog supervises, not Agent-tool subagents, so they cost
+zero subagent levels: the polling orchestrator stays at its current depth regardless of how long the
+job runs.
 
 ## External References
 

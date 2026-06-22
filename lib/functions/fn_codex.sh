@@ -138,6 +138,78 @@ EOF
   esac
 }
 
+# Build the codex exec argv (program + args, no shell redirection) into the
+# caller-named array. The durable-job launcher redirects stdin from /dev/null,
+# stdout (the --json event stream) to the events file, and stderr to the stderr
+# file; --output-last-message is written by codex itself. This is the argv
+# equivalent of cog::fn::codex_exec_command and the source of truth shared with
+# the legacy in-process runner.
+cog::fn::codex_exec_argv() {
+  local mode="${1:-}"
+  local effort="${2:-}"
+  local prompt_file="${3:-}"
+  local output_file="${4:-}"
+  local outvar="${5:-}"
+  local codex_effort prompt
+
+  __cog_codex_require_arg "$mode" "mode" "cog::fn::codex_exec_argv"
+  __cog_codex_validate_mode "$mode"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_exec_argv"
+  __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_exec_argv"
+  __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_argv"
+  __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_exec_argv"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
+  prompt="$(__cog_codex_read_prompt "$prompt_file")"
+
+  # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
+  local -n __argv="$outvar"
+  case "$mode" in
+    native)
+      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
+        --output-last-message "$output_file" "$prompt")
+      ;;
+    fallback)
+      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort"
+        -c 'sandbox_permissions=["disk-full-read-access"]' --json
+        --output-last-message "$output_file" "$prompt")
+      ;;
+    quick-auto)
+      __argv=(codex-session --account auto exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
+        --output-last-message "$output_file" "$prompt")
+      ;;
+    danger)
+      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort"
+        --dangerously-bypass-approvals-and-sandbox --json
+        --output-last-message "$output_file" "$prompt")
+      ;;
+  esac
+}
+
+cog::fn::codex_resume_argv() {
+  local account="${1:-}"
+  local effort="${2:-}"
+  local thread_id="${3:-}"
+  local prompt_file="${4:-}"
+  local output_file="${5:-}"
+  local outvar="${6:-}"
+  local codex_effort prompt
+
+  __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_argv"
+  __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_argv"
+  __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_argv"
+  __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_resume_argv"
+  __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_argv"
+  __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_resume_argv"
+  codex_effort="$(__cog_codex_map_effort "$effort")"
+  prompt="$(__cog_codex_read_prompt "$prompt_file")"
+
+  # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
+  local -n __argv="$outvar"
+  __argv=(codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id"
+    --dangerously-bypass-approvals-and-sandbox --json
+    --output-last-message "$output_file" "$prompt")
+}
+
 cog::fn::codex_resume_command() {
   local account="${1:-}"
   local effort="${2:-}"
@@ -329,6 +401,29 @@ cog::fn::codex_check_output() {
   fi
 }
 
+# Best-effort status when the exit code could not be recovered (the detached
+# wrapper was lost before recording it — host reboot, OOM kill). Reads only
+# durable artifacts: the last meaningful --json event and the output file. Used
+# by finalize's reconstruction path; never fabricates a code, only a class.
+cog::fn::codex_reconstruct_status() {
+  local events_file="${1:-}"
+  local output_file="${2:-}"
+  local last=""
+
+  if [[ -r $events_file ]]; then
+    last="$(jq -r 'select(.type) | .type' "$events_file" 2>/dev/null | tail -1 || true)"
+  fi
+  if [[ ! -s $output_file ]]; then
+    printf '%s\n' "empty-output"
+    return 0
+  fi
+  case "$last" in
+    turn.completed | item.completed) printf '%s\n' "ok" ;;
+    turn.failed | error) printf '%s\n' "nonzero" ;;
+    *) printf '%s\n' "sigterm" ;;
+  esac
+}
+
 cog::fn::codex_extract_reset_eta() {
   local stderr_file="${1:-}"
   [[ -r $stderr_file ]] || return 0
@@ -484,8 +579,10 @@ EOF
       ;;
     timeout-124)
       cat <<'EOF'
-timeout-124 (exit 124): the call hit the wrapper/orchestration timeout. Retry only
-after reducing scope or increasing the timeout at the orchestration level.
+timeout-124 (exit 124): a probe/health-check wrapper timeout fired (e.g. the
+sandbox probe), not the agent run. Codex runs are durable jobs and are never
+time-gated: duration is not a failure. Inspect the durable state/artifacts and
+keep polling or finalize; do not reduce scope or shorten the prompt.
 EOF
       ;;
     sigterm)

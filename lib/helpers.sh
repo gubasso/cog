@@ -14,6 +14,8 @@ readonly EX_UNAVAILABLE
 readonly EX_SOFTWARE
 : "${EX_IOERR:=74}"
 readonly EX_IOERR
+: "${EX_TEMPFAIL:=75}"
+readonly EX_TEMPFAIL
 : "${EX_CONFIG:=78}"
 readonly EX_CONFIG
 

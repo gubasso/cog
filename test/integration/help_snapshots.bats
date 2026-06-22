@@ -55,6 +55,7 @@ Commands:
   init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
+  longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
   msg            Emit uniform machine status lines.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
@@ -139,6 +140,7 @@ Commands:
   init           Initialize cog runtime directories and prerequisites.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
+  longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
   msg            Emit uniform machine status lines.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.

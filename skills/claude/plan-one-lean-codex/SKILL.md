@@ -54,14 +54,19 @@ Write `<RUN_DIR>/stage1-prompt.md` with:
 - The instruction that Codex must save exactly one lean plan through `cog plan-doc`, print the plan,
   and report assumptions, ambiguities, dependencies, and risks.
 
-Run Codex in the foreground:
+Launch the durable Codex job, then poll-and-classify it with one verb, `cog codex-runner finalize
+--max-wall <secs>`. The exit code is the signal (0 = ok · 1 = failed · 75 = still running);
+re-run finalize while it exits 75. Duration is never judged.
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --thread last
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --thread last --state <RUN_DIR>/stage1.longrun.json
+# Re-run while it exits 75 (still running); exit code is the signal (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
+cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300 > <RUN_DIR>/stage1-runner.json
 ```
 
-Save the runner JSON to `<RUN_DIR>/stage1-runner.json`. Treat the plan path, not the runner output,
-as the authoritative artifact. Verify the plan path exists and is non-empty before reporting success.
+`finalize` writes the runner JSON to `<RUN_DIR>/stage1-runner.json`. Treat the plan path, not the
+runner output, as the authoritative artifact. Verify the plan path exists and is non-empty before
+reporting success.
 
 ## Final Response
 
@@ -70,7 +75,7 @@ stderr path, status, and whether the plan artifact exists.
 
 ## Guardrails
 
-- Foreground only; never background the Codex call.
+- The Codex run is a cog-owned durable job (`run-exec` + `finalize --max-wall`); the exit code is the signal (0 = ok, 1 = failed, 75 = still running) and duration is never judged.
 - Use native effort through `--effort`; never use legacy profiles.
 - Do not run git commands.
 - Deterministic runner mechanics stay behind `cog rundir` and `cog codex-runner`.

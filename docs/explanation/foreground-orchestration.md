@@ -18,8 +18,22 @@ decision to auto-background a command.
 
 That distinction matters. A field case used a foreground Codex call with `timeout: 600000`; the hook
 allowed the request, and the call was still auto-backgrounded later. The fix is environment, not a
-hook: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` disables background-task functionality, and long Bash
-timeouts keep orchestration calls inside the expected foreground window.
+hook: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` disables background-task functionality.
+
+## Long Codex Runs Are Durable Jobs, Not Foreground Bash Calls
+
+An earlier version of this note claimed long Bash timeouts keep a long Codex call inside the
+foreground window. That is false: the Bash tool enforces a hard ~600s ceiling that no env var raises,
+and the ceiling SIGTERMs the foreground process tree, orphaning the child. So a long agent run is not
+a single foreground Bash call. `cog` launches it as a durable job — detached in its own session via
+`setsid`, with an atomically-updated state file — and the orchestrator brings it to a result with one
+verb, `finalize --max-wall <secs>`, which polls then classifies from durable artifacts even if the
+polling call was killed. Duration is never judged. **The exit code is the signal**: `finalize` exits
+`0` (ok), `1` (failed), or `75` (still running); the orchestrator re-issues the bounded `finalize`
+*tool call* while it sees `75` — a `$?`-based retry across tool calls, not a shell `while` inside one
+>600s call. This is cog detaching its own process, distinct from the model backgrounding a tool call
+(still banned). See the orchestration contract's "Durable Long-Running Jobs" and
+[ADR-0022](../decisions/0022-cog-owned-durable-longrun.md).
 
 ## Future Durable-Queue Trampoline
 

@@ -41,6 +41,7 @@ _cog() {
     init
     lint-codex-wrapper
     lock
+    longrun
     msg
     noop
     osc-preflight

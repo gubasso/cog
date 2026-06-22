@@ -102,6 +102,9 @@ The command list and short descriptions are sourced from command modules under
 *lock*
 	Acquire or release a workflow run lock.
 
+*longrun*
+	Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
+
 *msg*
 	Emit uniform machine status lines.
 

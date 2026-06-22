@@ -55,14 +55,19 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and
 
 ## The standing rules (unchanged, and why)
 
-- **Never background a Codex `exec`/`resume`**, regardless of host (headless **or**
-  in-session/forked subagent). Run it in the foreground (`run_in_background` false/omitted, Bash
-  timeout `600000ms`, blocks until exit). Backgrounding breaks synchronous result classification and
-  risks reaping. A unit that cannot finish in the foreground budget is a planning error (split it),
-  never a reason to detach. This rule lives inline in every Codex-driving skill (`executor-prex`,
-  `review-loop`, `plan-writer-multi`, `ask`); the runtime behavior is owned by `cog codex-runner`,
-  and the maintenance-time canon is `docs/reference/codex-conventions.md` (a maintenance-only doc,
-  not a runtime-loaded reference).
+- **Every Codex `exec`/`resume` is a cog-owned durable job**, regardless of host (headless **or**
+  in-session/forked subagent). Launch it with `cog codex-runner run-exec`/`run-resume --state`, then
+  bring it to a result with one verb: `cog codex-runner finalize --state <file> --max-wall <secs>`,
+  which polls up to `--max-wall` then classifies from durable artifacts. cog runs the process in its
+  own session with a durable state file, so the run is never time-gated (the Bash tool's hard ~600s
+  ceiling cannot kill it) and an interrupted observer loses nothing. **The exit code is the signal**:
+  `finalize` exits `0` (ok), `1` (failed), or `75` (still running) — re-issue the bounded `finalize`
+  tool call while it returns `75` (a `$?`-based retry across tool calls, never a shell `while` in one
+  >600s call). Duration is never judged: a long unit is never a reason to split it. The orchestrator's
+  own tool calls stay foreground; the model still never backgrounds its own tool calls. This applies
+  in every Codex-driving skill (`executor-prex`, `review-loop`, `plan-writer-multi`, `ask`); runtime
+  behavior is owned by `cog codex-runner`, and the canon is
+  `docs/decisions/0022-cog-owned-durable-longrun.md` plus `docs/reference/codex-conventions.md`.
 - **Use the `Agent` tool, never the `Skill` tool, for nested delegation** — `Skill` inline-injects
   the child body and the orchestrator stops mid-workflow (`anthropics/claude-code#17351`). Nesting
   being supported does not change this: the Agent tool is still the boundary. See

@@ -46,26 +46,26 @@ the judgment. See
 `$(cog skill-refs path skill-authoring/skill-script-extraction.md)`
 for the extraction rule and the output/status contract.
 
-Codex invocation mechanics — CLI invocation patterns, thread ID extraction, and timeout
-requirements — are owned by the `cog codex-runner` surface (`run-exec`, `run-resume`, `gate`,
-`orientation`, `explain-status`) used throughout this skill; the maintenance reference is
+Codex invocation mechanics — durable-job launch, polling, finalize/cancel, and thread ID
+extraction — are owned by the `cog codex-runner` surface (`run-exec`, `run-resume`,
+`finalize`, `status`, `cancel`, `gate`, `orientation`, `explain-status`) used throughout this skill;
+the maintenance reference is
 `docs/reference/codex-conventions.md`. Obtain Codex behavioral preambles from
 `cog codex-runner orientation <read-only|write>` and interpret runner statuses with
 `cog codex-runner explain-status <status>`.
 
-> **Execution discipline — env first, never background a Codex call.** `/executor-prex` runs as an
+> **Execution discipline — env first; every Codex run is a durable job.** `/executor-prex` runs as an
 > **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
-> such as `runner-queue`) or standalone in an interactive session — not, as before, "always
-> headless `claude -p`". The no-backgrounding guarantee comes from the `claude-session` env layer:
-> `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` disables Claude Code auto-backgrounding for the session.
-> The `cog preflight claude-env` assertion below verifies that guarantee at bootstrap. Foreground
-> discipline remains the in-session contract: every Codex Bash call (and every other tool call in
-> this workflow) **MUST run in the foreground** with `run_in_background` false/omitted and a Bash-tool
-> `timeout` of `600000ms`; the call blocks until Codex exits. A round whose Codex stage cannot finish
-> within the 600s window is a **planning error** — split the round per `plan-lifecycle.md` — **never**
-> a reason to background. A genuine overrun surfaces deterministically as a `timeout-124`/`sigterm`
-> status with partial logs; handle it via the Resume Fallback, not by detaching. Details are recorded
-> in
+> such as `runner-queue`) or standalone in an interactive session. The Claude-harness no-backgrounding
+> guarantee comes from the `claude-session` env layer: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`,
+> asserted by the `cog preflight claude-env` check below. Every Codex stage is a **cog-owned durable
+> job**: `cog codex-runner run-exec`/`run-resume` launch it with `--state` and return immediately,
+> and `cog codex-runner finalize --max-wall <secs>` polls-and-classifies in one verb: it waits up to
+> `<secs>`, then reports via its exit code — **0 = done & ok, 1 = done & failed, 75 = still running**.
+> Re-run `finalize` while it exits 75; **duration is never judged**, and a long run is never a reason
+> to split the round. The orchestrator's own tool calls stay in the foreground; cog owns the long
+> process, and `finalize` reconstructs the result from durable state, so an interrupted poll loses
+> nothing. Details are recorded in
 > `$(cog skill-refs path orchestration/in-session-vs-headless-delegation.md)`.
 
 Orchestration patterns shared with `review-loop` (proof-of- delegation, lock management, review-loop
@@ -150,11 +150,14 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `stage1-plan.md`
+- `stage1-plan.md` (plan artifact, written by `/plan-one-lean`)
+- `stage1-codex-output.md` (Codex final message)
 - `stage1-events.jsonl`
+- `stage1.longrun.json` (durable job state)
 - `stage2-reviewed-plan.md`
 - `stage3-impl-report.txt`
 - `stage3-events.jsonl`
+- `stage3.longrun.json` (durable job state)
 - `stage4-context.md`
 - `stage4-findings.json`
 - `stage4-proof.diff`
@@ -236,16 +239,27 @@ cog codex-runner run-exec \
   --access write \
   --effort high \
   --prompt "$RUN_DIR/stage1-prompt.md" \
-  --output "$RUN_DIR/stage1-plan.md" \
+  --output "$RUN_DIR/stage1-codex-output.md" \
   --events "$RUN_DIR/stage1-events.jsonl" \
   --stderr "$RUN_DIR/stage1-stderr.log" \
   --thread last \
-  > "$RUN_DIR/stage1-runner.json"
+  --state "$RUN_DIR/stage1.longrun.json"
 ```
 
-When using Claude Code's Bash tool for this command, set the timeout to `600000ms`. Run it in the
-**foreground** — `run_in_background` must be false/omitted. This call blocks until Codex exits; never
-background it (see **Execution discipline** above).
+`--output` captures Codex's final message in `stage1-codex-output.md`; the plan artifact itself is
+`stage1-plan.md`, written by `/plan-one-lean` through `cog plan-doc`. They are separate files, so the
+runner output never overwrites the plan.
+
+`run-exec` launches the Codex run as a cog-owned durable job and returns immediately. Poll-and-classify
+it in one verb with `cog codex-runner finalize --max-wall <secs>`: the exit code is the signal
+(0 = ok · 1 = failed · 75 = still running). Re-run finalize while it exits 75; duration is never judged:
+
+```bash
+# Re-run while this exits 75 (still running); exit code is the signal:
+# 0 = done & ok, 1 = done & failed, 75 = still running. Duration is never judged.
+cog codex-runner finalize --state "$RUN_DIR/stage1.longrun.json" --max-wall 300 \
+  > "$RUN_DIR/stage1-runner.json"
+```
 
 Extract the planning thread ID and the planning account:
 
@@ -289,7 +303,8 @@ reviewed plan supersedes Codex's original draft. Stage 3 uses native Codex effor
 (`cog codex-runner run-resume --effort medium`, no `--profile`) pinned with
 `--account "$PLAN_ACCOUNT"` and `--thread-id "$PLAN_THREAD_ID"`; branch only on the runner-emitted
 `status`/`resume_signal`. Follow `references/stage-3-implement.md` for exact command shapes, the
-resume decision table, the Resume Fallback, and the prompt-file / `600000ms` / foreground discipline.
+resume decision table, the Resume Fallback, and the prompt-file rule plus the durable-job poll
+protocol.
 
 ## Stage 4: Review Implementation
 
@@ -355,8 +370,8 @@ After each Codex call, validate the output file is non-empty:
 [ -s "$RUN_DIR/stage1-plan.md" ] || echo "ERROR: stage1-plan.md is empty"
 ```
 
-If the stage 3 resume call fails (non-zero exit, empty output file, bwrap error, or Bash tool
-timeout), follow the documented **Resume Fallback** before reporting final failure.
+If stage 3's `finalize` reports a failed status (non-zero exit, empty output file, bwrap error, or a
+resume-mechanics signal), follow the documented **Resume Fallback** before reporting final failure.
 
 If any other Codex call fails, or if the stage 3 fresh-`exec` fallback also fails:
 

@@ -38,9 +38,12 @@ supplied path that is not a readable regular `.md` file is prompt text according
 
 ## Execution Discipline
 
-Use foreground execution only; never background the Codex call or orchestration work.
-Each Codex call blocks until `cog codex-runner` returns. Native effort is passed with
-`--effort`; do not use legacy profile-based invocation.
+Every Codex run is a cog-owned durable job: `cog codex-runner run-exec` launches it with `--state`
+and returns immediately, then poll-and-classify with one verb,
+`cog codex-runner finalize --max-wall <secs>`. The exit code is the signal (0 ok · 1 failed · 75
+still running); re-run finalize while it exits 75. A coding agent runs as long as it needs — duration
+is never judged. Keep orchestration work foreground; never background it yourself. Native effort is
+passed with `--effort`; do not use legacy profile-based invocation.
 
 Stage boundaries must verify durable postconditions before advancing. An output artifact
 must exist and be non-empty before the next stage starts.
@@ -83,10 +86,13 @@ own plan artifact to `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 Use native effort with the write-capable `danger` sandbox through `cog codex-runner`.
 `$plan-one-lean` saves its plan artifact through `cog plan-doc`, which a read-only sandbox
 blocks. The runner's `--output` captures Codex's final message in a separate
-`<run-dir>/stage1-codex-output.md` file, leaving the plan artifact untouched:
+`<run-dir>/stage1-codex-output.md` file, leaving the plan artifact untouched. Launch the durable job,
+then poll-and-classify:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage1-prompt.md> --output <stage1-codex-output.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage1-prompt.md> --output <stage1-codex-output.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log> --state <stage1.longrun.json>
+# Re-run while it exits 75 (still running). Duration is never judged; exit code is the signal: 0 ok, 1 failed, 75 still running.
+cog codex-runner finalize --state <stage1.longrun.json> --max-wall 300
 ```
 
 The Stage 2 plan input is:
@@ -128,10 +134,12 @@ under the run directory that carries only relevant session context:
 
 Run Codex with the write-capable `danger` sandbox. Implementation must create and
 modify files, which the read-only `native`/`fallback`/`quick-auto` sandboxes
-block:
+block. Launch the durable job, then poll-and-classify:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort medium --prompt <stage3-prompt.md> --output <stage3-execution.md> --events <stage3-events.jsonl> --stderr <stage3-stderr.log> --state <stage3.longrun.json>
+# Re-run while it exits 75 (still running). Duration is never judged; exit code is the signal: 0 ok, 1 failed, 75 still running.
+cog codex-runner finalize --state <stage3.longrun.json> --max-wall 300
 ```
 
 Do not send runtime instructions to read maintenance references. Include the needed
@@ -169,7 +177,7 @@ executor summary using the status rules above. Do not infer status from prose wh
 
 ## Guardrails
 
-- Foreground only; never background the Codex call or orchestration work.
+- Codex runs are cog-owned durable jobs: `run-exec` launches, then poll-and-classify with `cog codex-runner finalize --max-wall <secs>`. The exit code is the signal (0 ok · 1 failed · 75 still running); re-run finalize while it exits 75, and duration is never judged. Keep orchestration work foreground; never background it.
 - Native effort only, via `--effort`.
 - No legacy profile-based invocation anywhere.
 - Do not instruct a runtime read of maintenance-reference conventions.

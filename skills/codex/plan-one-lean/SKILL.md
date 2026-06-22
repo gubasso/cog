@@ -14,11 +14,13 @@ markdown artifact through `cog plan-doc`.
 ## Invocation
 
 When an orchestrator invokes this skill through `cog codex-runner`, it must pass native effort
-`high`, `--access write`, and never a legacy `--profile`. The live `run-exec` surface has four modes;
-`--stderr` is required for `native` and `fallback`.
+`high`, `--access write`, `--state <file>`, and never a legacy `--profile`. `run-exec` launches a
+durable job; the orchestrator polls-and-classifies it with one verb, `cog codex-runner finalize
+--max-wall <secs>`. The exit code is the signal (0 = ok · 1 = failed · 75 = still running); it
+re-runs finalize while it exits 75. Duration is never judged.
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <file> --output <file> --events <file> [--stderr <file>]
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]
 ```
 
 ## Inputs

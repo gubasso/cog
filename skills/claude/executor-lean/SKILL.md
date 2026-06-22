@@ -57,10 +57,12 @@ to `cog executor`; do not reimplement that check.
 
 ## Execution Discipline
 
-Use foreground execution only; never background the Codex review, Claude
-implementation, subagent work, or orchestration work. Each Codex call blocks
-until `cog codex-runner` returns. Native effort is passed with `--effort`; do
-not use legacy profile-based invocation.
+The Stage 2 Codex review is a cog-owned durable job: launch it with `cog codex-runner run-exec
+--state`, then poll-and-classify with one verb, `cog codex-runner finalize --max-wall <secs>`. The
+exit code is the signal (0 ok · 1 failed · 75 still running); re-run finalize while it exits 75.
+Duration is never judged. Keep Claude implementation, subagent work, and orchestration foreground;
+never background them. Native effort is passed with `--effort`; do not use legacy profile-based
+invocation.
 
 Stage 2 runs Codex through `cog codex-runner run-exec --mode danger --access write --effort
 high`; the write-capable `danger` sandbox is required because `/review-plan-lean`
@@ -159,12 +161,14 @@ Build a prompt file under the run directory that instructs Codex to invoke
 The reviewer reads shared filesystem artifacts. Do not inline the full plan
 into the prompt unless recovery requires it.
 
-Run Codex in the foreground at native effort `high` with the write-capable
-`danger` sandbox. The reviewer must write `stage2-reviewed-plan.md` through
-`cog plan-review`, so a read-only sandbox cannot be used here:
+Launch Codex as a durable job at native effort `high` with the write-capable
+`danger` sandbox (the reviewer writes `stage2-reviewed-plan.md` through
+`cog plan-review`, so a read-only sandbox cannot be used here), then poll-and-classify:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log>
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log> --state <stage2.longrun.json>
+# Re-run while it exits 75 (still running). Duration is never judged; exit code is the signal: 0 ok, 1 failed, 75 still running.
+cog codex-runner finalize --state <stage2.longrun.json> --max-wall 300
 ```
 
 Treat `<run-dir>/stage2-reviewed-plan.md` as the authoritative review artifact.

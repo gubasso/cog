@@ -34,6 +34,8 @@ if [[ -n $out && ${CODEX_FAKE_EMPTY:-0} != 1 ]]; then
 fi
 [[ -z ${CODEX_FAKE_STDERR:-} ]] || printf '%s\n' "$CODEX_FAKE_STDERR" >&2
 printf '%s\n' '{"type":"thread.started","thread_id":"thread-a"}'
+[[ -n ${CODEX_FAKE_SLEEP:-} ]] && sleep "$CODEX_FAKE_SLEEP"
+printf '%s\n' '{"type":"turn.completed"}'
 exit "${CODEX_FAKE_EXIT:-0}"
 EOF
   cat >"${BATS_TEST_TMPDIR}/fakebin/timeout" <<'EOF'
@@ -60,11 +62,15 @@ EOF
   [[ $output == *"sandbox_permissions"* ]]
 }
 
-@test "cog codex-runner run-exec captures output events and thread account" {
-  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first
-
+@test "cog codex-runner run-exec launches a durable job; finalize captures output, events, thread account" {
+  local st="${BATS_TEST_TMPDIR}/stage1.longrun.json"
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first --state "$st"
   assert_success
-  printf '%s\n' "$output" | jq -e '.status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium" and .access == "read-only"' >/dev/null
+  [[ $output == *"STATE_FILE=${st}"* ]]
+
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  printf '%s\n' "$output" | jq -e '.action == "run-exec" and .status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium" and .access == "read-only"' >/dev/null
   assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
 }
 
@@ -83,11 +89,17 @@ EOF
     [ ! -e "$CODEX_FAKE_LOG" ]
   done
 
-  run cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger.out" --events "${BATS_TEST_TMPDIR}/danger.jsonl"
+  local stw="${BATS_TEST_TMPDIR}/danger-write.longrun.json"
+  run cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger.out" --events "${BATS_TEST_TMPDIR}/danger.jsonl" --state "$stw"
+  assert_success
+  run cog codex-runner finalize --state "$stw" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.access == "write" and .status == "ok"' >/dev/null
 
-  run cog codex-runner run-exec --mode danger --access read-only --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger-read.out" --events "${BATS_TEST_TMPDIR}/danger-read.jsonl"
+  local str="${BATS_TEST_TMPDIR}/danger-read.longrun.json"
+  run cog codex-runner run-exec --mode danger --access read-only --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/danger-read.out" --events "${BATS_TEST_TMPDIR}/danger-read.jsonl" --state "$str"
+  assert_success
+  run cog codex-runner finalize --state "$str" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.access == "read-only" and .status == "ok"' >/dev/null
 }
@@ -99,13 +111,48 @@ EOF
   [[ $stderr == *"invalid run-exec access"* ]]
 }
 
-@test "cog codex-runner run-resume emits resume signal" {
+@test "cog codex-runner run-resume finalize emits resume signal" {
   export CODEX_FAKE_STDERR="warning: recovered owner"
+  local st="${BATS_TEST_TMPDIR}/resume.longrun.json"
 
-  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume.md" --events "${BATS_TEST_TMPDIR}/resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume.err"
-
+  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume.md" --events "${BATS_TEST_TMPDIR}/resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume.err" --state "$st"
   assert_success
-  printf '%s\n' "$output" | jq -e '.resume_signal == "recovered-owner" and .effort == "medium"' >/dev/null
+
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  printf '%s\n' "$output" | jq -e '.action == "run-resume" and .resume_signal == "recovered-owner" and .effort == "medium" and .thread_id == "thread-a"' >/dev/null
+}
+
+@test "cog codex-runner run-exec requires --state" {
+  run --separate-stderr cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/ns.out" --events "${BATS_TEST_TMPDIR}/ns.jsonl"
+  assert_failure
+  [[ $stderr == *"missing --state"* ]]
+}
+
+@test "cog codex-runner finalize reports a still-running job with exit 75 and never classifies it" {
+  export CODEX_FAKE_SLEEP=5
+  local st="${BATS_TEST_TMPDIR}/slow.longrun.json"
+  run cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/slow.out" --events "${BATS_TEST_TMPDIR}/slow.jsonl" --state "$st"
+  assert_success
+
+  # GR4: not done, not failed — signal EX_TEMPFAIL (75); the live job is never classified.
+  run --separate-stderr cog codex-runner finalize --state "$st"
+  [ "$status" -eq 75 ]
+  printf '%s\n' "$output" | jq -e '.state == "running" and .ok == false' >/dev/null
+  [[ $stderr == *"still running"* ]]
+  cog codex-runner cancel --state "$st" >/dev/null
+}
+
+@test "cog codex-runner finalize signals a failed codex job with exit 1" {
+  export CODEX_FAKE_EXIT=1
+  local st="${BATS_TEST_TMPDIR}/fail.longrun.json"
+  run cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/fail.out" --events "${BATS_TEST_TMPDIR}/fail.jsonl" --state "$st"
+  assert_success
+
+  # GR4: a finished-but-failed job signals exit 1; the body carries the classified status.
+  run --separate-stderr cog codex-runner finalize --state "$st" --max-wall 30
+  [ "$status" -eq 1 ]
+  printf '%s\n' "$output" | jq -e '.action == "run-exec" and .ok == false and .status == "nonzero" and .exit_code == 1' >/dev/null
 }
 
 @test "cog codex-runner run-exec rejects legacy --profile" {

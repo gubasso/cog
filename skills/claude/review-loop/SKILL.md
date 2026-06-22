@@ -94,13 +94,15 @@ The following guardrails are inlined here as critical safety constraints:
 - Never use `--approval-policy` or `-a` (not supported for `codex-session exec`).
 - Never use `codex-session review --uncommitted` (does not support `--json` or
   `--output-last-message`; output capture is unreliable).
-- **Run every Codex call in the foreground** with `run_in_background` false/omitted and a Bash-tool
-  `timeout` of `600000ms`; the call blocks until Codex exits. **Never background it.** `review-loop`
-  often runs in a headless / forked context (it carries `context: fork` and is handed off from executor-prex
-  stage 5) and may run as a nested subagent (Claude Code ≥ v2.1.172). In any headless host a
-  backgrounded Codex run is reaped ~5s after the turn's final result, silently losing the round's
-  review while the process still exits `0`. A review that cannot finish within 600s is a scope
-  problem, not a reason to detach; a genuine overrun surfaces as a `timeout-124`/`sigterm` status.
+- **Each round's Codex review is a cog-owned durable job.** Launch it with `cog codex-runner
+  run-exec --state`, then poll-and-classify with one verb, `cog codex-runner finalize --max-wall
+  <secs>`. The exit code is the signal: 0 = ok, 1 = failed, 75 = still running — re-run finalize
+  while it exits 75; duration is never judged. The job is detached by cog into its own session and
+  its state/artifacts are durable, so it survives even the headless/forked host this skill often runs
+  under (`context: fork`, handed off from executor-prex stage 5, possibly a nested subagent on Claude
+  Code ≥ v2.1.172): `finalize` reconstructs the round's outcome from the durable artifacts even if
+  the polling call is interrupted. A long review is never a scope problem. Keep the orchestrator's
+  own tool calls foreground.
 - `SANDBOX_MODE` is resolved by the Pre-flight: Check Codex and Sandbox section before round 1. If the
   calling workflow already set `SANDBOX_MODE`, the preflight will confirm or override it.
 - The runner always passes `< /dev/null` and captures stderr directly to `round-N-stderr.log` so the
@@ -224,12 +226,17 @@ cog codex-runner run-exec \
   --output "$RUN_DIR/round-N-findings.json" \
   --events "$RUN_DIR/round-N-events.jsonl" \
   --stderr "$RUN_DIR/round-N-stderr.log" \
+  --state "$RUN_DIR/round-N.longrun.json"
+# Re-run finalize while it exits 75 (still running); duration is never judged.
+# Exit code is the signal: 0 = ok, 1 = failed, 75 = still running.
+cog codex-runner finalize --state "$RUN_DIR/round-N.longrun.json" --max-wall 300 \
   > "$RUN_DIR/round-N-runner.json"
 ```
 
-Set the Bash tool timeout to `600000ms` and keep the call in the **foreground**
-(`run_in_background` false/omitted) — it blocks until Codex exits; never background it. Each round is
-independent — there is no `codex-session exec resume` and no review-thread-ID extraction.
+`run-exec` launches the durable job; `finalize --max-wall <secs>` polls-and-classifies in one verb,
+and the exit code is the signal (0 ok · 1 failed · 75 still running) — re-run finalize while it
+exits 75; duration is never judged. It writes the round's result JSON. Each round is independent —
+there is no `codex-session exec resume` and no review-thread-ID extraction.
 
 Validate the runner outcome and captured output before triaging:
 

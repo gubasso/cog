@@ -204,11 +204,10 @@ degrade flag is set or `--solo`.
    .implementation-plans/ or modify any repository files outside the output path.
    ```
 
-2. **Bash** — `cog codex-runner run-exec`, **foreground** (`run_in_background`
-   false/omitted), **timeout `600000`**, literal `RUN_DIR`/`SANDBOX_MODE`. The runner owns
-   native/fallback command construction,
-   `< /dev/null`, direct stderr capture, JSONL events, `--output-last-message`, and
-   empty/SIGTERM/non-zero/quota classification.
+2. **Bash** — `cog codex-runner run-exec --state`, literal `RUN_DIR`/`SANDBOX_MODE`. The runner owns
+   native/fallback command construction, `< /dev/null`, direct stderr capture, JSONL events,
+   `--output-last-message`, and empty/SIGTERM/non-zero/quota classification. `run-exec` launches a
+   cog-owned durable job and returns immediately, so it runs concurrently with the Claude-draft Agent.
 
    ```bash
    RUNNER_MODE="$SANDBOX_MODE"
@@ -220,6 +219,16 @@ degrade flag is set or `--solo`.
      --output "$RUN_DIR/codex-draft.md" \
      --events "$RUN_DIR/codex-events.jsonl" \
      --stderr "$RUN_DIR/codex-stderr.log" \
+     --state "$RUN_DIR/codex.longrun.json"
+   ```
+
+   After the Claude-draft Agent returns, poll-and-classify the Codex job with one verb,
+   `cog codex-runner finalize --max-wall <secs>`. The exit code is the signal (0 = ok · 1 = failed ·
+   75 = still running); re-run finalize while it exits 75. Duration is never judged.
+
+   ```bash
+   # Re-run while it exits 75 (still running); exit code is the signal (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
+   cog codex-runner finalize --state "$RUN_DIR/codex.longrun.json" --max-wall 300 \
      > "$RUN_DIR/codex-runner.json"
    ```
 
@@ -353,11 +362,12 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
   subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog review-plan-implementation-scan`,
   and `cog runner-queue-resolve-plan` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
-- Codex calls go through `cog codex-runner run-exec` with `--effort medium`, read-only
-  native/fallback sandboxing, `< /dev/null`, stderr→log, and Bash timeout `600000`, in the
-  **foreground** (`run_in_background` false/omitted) — never background a Codex call; a backgrounded
-  run is reaped ~5s after the turn in a headless host. Never call `codex exec` bare; never
-  `--approval-policy`/`-a`.
+- Codex calls go through `cog codex-runner run-exec --state` with `--effort medium`, read-only
+  native/fallback sandboxing, `< /dev/null`, and stderr→log. cog runs Codex as a durable job;
+  poll-and-classify it with one verb, `cog codex-runner finalize --max-wall <secs>` — the exit code
+  is the signal (0 = ok, 1 = failed, 75 = still running), re-run finalize while it exits 75, and
+  duration is never judged. Keep the orchestrator's own tool calls foreground; never call `codex
+  exec` bare; never `--approval-policy`/`-a`.
 - Never hard-fail on Codex unavailability — degrade to a Claude-only plan with the note.
 - Do not run git commands. Do not overwrite `.implementation-plans/README.md`; append-only on
   `queue-plans.yaml`.
