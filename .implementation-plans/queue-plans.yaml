@@ -19,11 +19,6 @@ plans:
     depends_on: []
     prompt: /executor-prex -ar @.implementation-plans/plans/review-lean-rename/
     notes: Rename review-code-deep -> review-lean + faithful single-pass review skill upgrade
-  - item: executor-single-2-phase-executor
-    status: todo
-    depends_on: []
-    prompt: /executor-prex -ar @.implementation-plans/plans/executor-single-2-phase-executor/
-    notes: Single-round L plan, executor-prex. Add executor-single 2-phase executor (plan->execute) as native twin pair + executor-single-codex launcher; decouple cog executor stage ordinals from phases via per-executor flow descriptor; rename --executor(skill)/--engine(agent), drop --plan-engine; phase-keyed artifacts/summary v2; migrate executor-lean trio; queue-prompts +2; ADR 0026.
   - item: robust-plan-slug-stopword-aware
     status: todo
     depends_on: []
@@ -39,3 +34,9 @@ plans:
     depends_on: []
     prompt: /executor-prex -ar @.implementation-plans/plans/scoped-gated-context-blind-review/
     notes: 'L, 3 heavy rounds, executor-prex. Scoped+gated+context-blind review boundary: rename review-implementation-plans-* -> review-plan-implementation-plans-* + --scope/-gate (R1); relocate/rewrite self-contained scoped/gated auto-applying skill + runner-queue integration + ADR superseding 0014 + caller-owns-context golden rule (R2); cog-skill-creator follows all rules + new cog-skill-reviewer (R3).'
+  - item: executor-single-2-phase-executor
+    status: todo
+    depends_on:
+      - re-grade-plan-review-effort
+    prompt: /executor-prex -ar @.implementation-plans/plans/executor-single-2-phase-executor/
+    notes: Single-round L plan, executor-prex. Add executor-single 2-phase executor (plan->execute) as native twin pair + executor-single-codex launcher; decouple cog executor stage ordinals from phases via per-executor flow descriptor; rename --executor(skill)/--engine(agent), drop --plan-engine; phase-keyed artifacts/summary v2; migrate executor-lean trio; queue-prompts +2; ADR 0026.
