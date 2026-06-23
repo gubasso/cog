@@ -32,6 +32,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0025: SoT executor delegation](decisions/0025-sot-executor-delegation.md)
 - [ADR-0026: Consumer skill producer-blindness](decisions/0026-consumer-skill-producer-blindness.md)
 - [ADR-0027: Review/verification effort rides the session default](decisions/0027-review-effort-rides-default.md)
+- [ADR-0028: Executor stage-phase decoupling](decisions/0028-executor-stage-phase-decoupling.md)
 
 ## Guides
 

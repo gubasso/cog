@@ -40,16 +40,11 @@ the gate stanza only for Claude skills carrying the plan-emitter marker.
 Delegate classification and run setup to `cog executor`:
 
 ```bash
-cog executor init --executor claude --input <prompt-or-plan> [--plan-engine claude] --json
+cog executor init --executor executor-lean --engine claude --input <prompt-or-plan> --json
 ```
 
-For prompt input, omit `--plan-engine`; `cog executor init` resolves
-`plan_engine=claude`, reviewer `/review-plan-lean`, and stages
-`stage1,stage2,stage3`.
-
-For plan input, pass `--plan-engine claude`. The path alone cannot prove which
-engine made the plan, and this executor handles Claude-made plans reviewed by
-Codex.
+`cog executor init` records `engine=claude`, reviewer `/review-plan-lean`, and
+the flow-driven stages for prompt or plan input.
 
 Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A
 supplied path that is not a readable regular `.md` file is prompt text according
@@ -200,7 +195,7 @@ After implementation, write the final implementation report to
 Emit an executor summary after Stage 3 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor claude --input-kind <prompt|plan> --plan-engine claude --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-lean --engine claude --input-kind <prompt|plan> --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Status rules:

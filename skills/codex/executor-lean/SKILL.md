@@ -22,15 +22,11 @@ plan path.
 Delegate classification and run setup to `cog executor`:
 
 ```bash
-cog executor init --executor codex-session --input <prompt-or-plan> [--plan-engine codex] --json
+cog executor init --executor executor-lean --engine codex --input <prompt-or-plan> --json
 ```
 
-For prompt input, omit `--plan-engine`; `cog executor init` resolves
-`plan_engine=codex`, reviewer `/review-plan-lean`, and stages
-`stage1,stage2,stage3`.
-
-For plan input, pass `--plan-engine codex`. The path alone cannot prove which engine
-made the plan, and this executor handles Codex-made plans reviewed by Claude.
+`cog executor init` records `engine=codex`, reviewer `/review-plan-lean`, and
+the flow-driven stages for prompt or plan input.
 
 Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A
 supplied path that is not a readable regular `.md` file is prompt text according to
@@ -150,7 +146,7 @@ orientation in the prompt itself.
 Emit an executor summary after Stage 3 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor codex-session --input-kind <prompt|plan> --plan-engine codex --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-lean --engine codex --input-kind <prompt|plan> --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Status rules:

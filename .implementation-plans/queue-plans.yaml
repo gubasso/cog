@@ -35,7 +35,7 @@ plans:
     prompt: /executor-prex -ar @.implementation-plans/plans/scoped-gated-context-blind-review/
     notes: 'L, 3 heavy rounds, executor-prex. Scoped+gated+context-blind review boundary: rename review-implementation-plans-* -> review-plan-implementation-plans-* + --scope/-gate (R1); relocate/rewrite self-contained scoped/gated auto-applying skill + runner-queue integration + ADR superseding 0014 + caller-owns-context golden rule (R2); cog-skill-creator follows all rules + new cog-skill-reviewer (R3).'
   - item: executor-single-2-phase-executor
-    status: todo
+    status: done
     depends_on:
       - re-grade-plan-review-effort
     prompt: /executor-prex -ar @.implementation-plans/plans/executor-single-2-phase-executor/

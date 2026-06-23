@@ -140,13 +140,38 @@ for the requested access mode.
 `cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner`
 classification.
 
+`cog executor init` creates a shared executor run directory for one prompt or plan. Its identity
+flags are split by responsibility:
+
+```bash
+cog executor init --executor <executor-lean|executor-single> --engine <claude|codex> --input <prompt-or-plan> [--json]
+```
+
+`--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
+removed `--plan-engine` flag is not accepted. `executor-lean` is the reviewed 3-phase flow
+(`stage1` plan, `stage2` review, `stage3` execution). `executor-single` is the unreviewed 2-phase
+flow (`stage1` plan, `stage2` execution). Existing readable `.md` input skips the plan phase.
+
+`cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a
+phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`, and `path`.
+
+`cog executor summary` writes `executor-summary.json` and emits
+`schema: "cog.executor.summary.v2"`:
+
+```bash
+cog executor summary --run-dir <dir> --executor <executor-lean|executor-single> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-lean> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]
+```
+
+Reviewed flows use reviewer `/review-plan-lean`; unreviewed flows use reviewer `none`.
+
 `cog executor queue-prompts` prints the queue-prompt recognition contract consumed by runner-queue
 integration. Its `match` object is the generic acceptance rule: any `/executor-*` prompt (matched by
 the prefix taxonomy via `cog::fn::skill::classify_prefix`, name shape `^[a-z0-9-]{1,64}$`) in
 `-ar <target-dir>` form is accepted. The `prompts` array
 lists known executors as examples, not a closed allowlist; a new `executor-*` skill needs no resolver
 change. Top-level `runner-queue` plan entries use `-ar <target-dir>` when resolving a main queue item
-to an inner queue.
+to an inner queue. Known examples include `/executor-prex`, `/executor-lean`,
+`/executor-lean-codex`, `/executor-single`, and `/executor-single-codex`.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.
@@ -175,5 +200,10 @@ plans:
     status: todo
     depends_on: [alpha]
     prompt: /executor-lean-codex -ar @.implementation-plans/plans/beta/
+    notes: ""
+  - item: gamma
+    status: todo
+    depends_on: [beta]
+    prompt: /executor-single -ar @.implementation-plans/plans/gamma/
     notes: ""
 ```

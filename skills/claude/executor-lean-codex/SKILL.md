@@ -32,11 +32,10 @@ artifact paths, Codex invocation, and summaries stay behind `cog`.
 Delegate classification and run setup to:
 
 ```bash
-cog executor init --executor codex-session --input <prompt-or-plan> [--plan-engine codex] --json
+cog executor init --executor executor-lean --engine codex --input <prompt-or-plan> --json
 ```
 
-For prompt input, omit `--plan-engine`. For plan input, pass `--plan-engine codex`. Use the returned
-run directory and artifact paths. If plan input skipped Stage 1, create a non-empty
+Use the returned run directory and artifact paths. If plan input skipped Stage 1, create a non-empty
 `<RUN_DIR>/request.md` that records the supplied plan source and original request context before
 Stage 2.
 
@@ -93,7 +92,7 @@ Verify `<RUN_DIR>/stage3-execution.md` exists and is non-empty.
 Emit the executor summary with the collapsed reviewer name:
 
 ```bash
-cog executor summary --run-dir <RUN_DIR> --executor codex-session --input-kind <prompt|plan> --plan-engine codex --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <RUN_DIR> --executor executor-lean --engine codex --input-kind <prompt|plan> --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Stop the chain on any failed stage, preserve the run directory artifacts, and still emit the summary

@@ -1,53 +1,152 @@
 # shellcheck shell=bash
 
-__cog_executor_summary_self_check='(.schema=="cog.executor.summary.v1") and (.ok|type=="boolean") and (.stages|type=="object")'
+__cog_executor_summary_self_check='(.schema=="cog.executor.summary.v2") and (.ok|type=="boolean") and (.stages|type=="object")'
 
-cog::fn::executor::artifact_name() {
+cog::fn::executor::flow_json() {
   case "${1:-}" in
-    stage1)
-      printf '%s\n' stage1-plan.md
+    executor-lean)
+      jq -cn '{
+        executor: "executor-lean",
+        reviewed: true,
+        phases: [
+          {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
+          {ordinal: "stage2", phase: "review", artifact: "stage2-reviewed-plan.md", skippable: false},
+          {ordinal: "stage3", phase: "execution", artifact: "stage3-execution.md", skippable: false}
+        ]
+      }'
       ;;
-    stage2)
-      printf '%s\n' stage2-reviewed-plan.md
-      ;;
-    stage3)
-      printf '%s\n' stage3-execution.md
-      ;;
-    summary)
-      printf '%s\n' executor-summary.json
+    executor-single)
+      jq -cn '{
+        executor: "executor-single",
+        reviewed: false,
+        phases: [
+          {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
+          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md", skippable: false}
+        ]
+      }'
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
-        "unknown executor artifact stage" "stage: ${1:-}" \
-        "expected stage1, stage2, stage3, or summary" ""
+        "unknown executor" "executor: ${1:-}" \
+        "expected executor-lean or executor-single" ""
+      ;;
+  esac
+}
+
+cog::fn::executor::validate_engine() {
+  case "${1:-}" in
+    claude | codex)
+      printf '%s\n' "$1"
+      ;;
+    *)
+      cog::fn::error_raise "InvalidInput" \
+        "unknown executor engine" "engine: ${1:-}" \
+        "expected claude or codex" ""
+      ;;
+  esac
+}
+
+cog::fn::executor::select_reviewer_json() {
+  local executor="${1:-}" engine="${2:-}" flow_json reviewed review_engine reviewer
+
+  flow_json="$(cog::fn::executor::flow_json "$executor")"
+  cog::fn::executor::validate_engine "$engine" >/dev/null
+  reviewed="$(jq -r '.reviewed' <<<"$flow_json")"
+
+  if [[ $reviewed == true ]]; then
+    case "$engine" in
+      claude) review_engine=codex ;;
+      codex) review_engine=claude ;;
+    esac
+    reviewer=/review-plan-lean
+  else
+    review_engine=none
+    reviewer=none
+  fi
+
+  jq -cn \
+    --arg plan_engine "$engine" \
+    --arg review_engine "$review_engine" \
+    --arg reviewer "$reviewer" \
+    '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
+}
+
+cog::fn::executor::artifact_name() {
+  local executor="${1:-}" ordinal="${2:-}" flow_json artifact
+
+  if [[ $# -eq 1 && $executor == summary ]]; then
+    printf '%s\n' executor-summary.json
+    return 0
+  fi
+  if [[ $ordinal == summary ]]; then
+    printf '%s\n' executor-summary.json
+    return 0
+  fi
+
+  [[ -n $executor && -n $ordinal ]] || cog::fn::error_raise "MissingArgument" \
+    "missing executor artifact argument" \
+    "function: cog::fn::executor::artifact_name" "" \
+    "pass executor name and stage ordinal"
+
+  flow_json="$(cog::fn::executor::flow_json "$executor")"
+  artifact="$(jq -r --arg ordinal "$ordinal" '.phases[] | select(.ordinal == $ordinal) | .artifact' <<<"$flow_json")"
+  [[ -n $artifact ]] || cog::fn::error_raise "InvalidInput" \
+    "unknown executor artifact stage" "executor: ${executor}, stage: ${ordinal}" \
+    "expected one of the executor flow ordinals or summary" ""
+  printf '%s\n' "$artifact"
+}
+
+cog::fn::executor::stages_json() {
+  local executor="${1:-}" input_kind="${2:-}" flow_json
+
+  flow_json="$(cog::fn::executor::flow_json "$executor")"
+  case "$input_kind" in
+    prompt)
+      jq -c '[.phases[].ordinal]' <<<"$flow_json"
+      ;;
+    plan)
+      jq -c '[.phases[] | select(.skippable != true) | .ordinal]' <<<"$flow_json"
+      ;;
+    *)
+      cog::fn::error_raise "InvalidInput" \
+        "invalid executor input kind" "input-kind: ${input_kind}" \
+        "expected prompt or plan" ""
       ;;
   esac
 }
 
 cog::fn::executor::artifacts_json() {
-  local run_dir="${1:-}"
-  local stage1 stage2 stage3 summary
+  local run_dir="${1:-}" executor_file executor flow_json phases_json summary
 
   [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
     "missing executor run directory" "function: cog::fn::executor::artifacts_json" "" \
     "pass a run directory"
+  [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
+    "executor run directory not found" "path: ${run_dir}" "" "check run directory"
 
-  stage1="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name stage1)")"
-  stage2="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name stage2)")"
-  stage3="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name stage3)")"
-  summary="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name summary)")"
+  executor_file="$(cog::fn::rundir_path "$run_dir" executor)"
+  [[ -s $executor_file ]] || cog::fn::error_raise "InvalidInput" \
+    "executor run directory is not initialized" "path: ${run_dir}" \
+    "missing state file: ${executor_file}" \
+    "initialize the run directory with 'cog executor init'"
+
+  executor="$(<"$executor_file")"
+  flow_json="$(cog::fn::executor::flow_json "$executor")"
+  phases_json="$(jq -c --arg run_dir "$run_dir" \
+    '[.phases[] | {ordinal, phase, artifact, path: ($run_dir + "/" + .artifact)}]' \
+    <<<"$flow_json")"
+  summary="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name "$executor" summary)")"
 
   jq -cn \
-    --arg stage1_plan "$stage1" \
-    --arg stage2_reviewed_plan "$stage2" \
-    --arg stage3_execution "$stage3" \
+    --arg schema "cog.executor.artifacts.v2" \
+    --arg executor "$executor" \
+    --argjson phases "$phases_json" \
     --arg summary "$summary" \
-    '{stage1_plan: $stage1_plan, stage2_reviewed_plan: $stage2_reviewed_plan,
-      stage3_execution: $stage3_execution, summary: $summary}'
+    '{schema: $schema, executor: $executor, phases: $phases, summary: $summary}'
 }
 
 cog::fn::executor::classify_input_json() {
-  local input="${1:-}" plan_path="" stages_json
+  local input="${1:-}" plan_path=""
 
   [[ -n $input ]] || cog::fn::error_raise "MissingArgument" \
     "missing executor input" "function: cog::fn::executor::classify_input_json" "" \
@@ -55,62 +154,18 @@ cog::fn::executor::classify_input_json() {
 
   if [[ $input == *.md && -f $input && -r $input ]]; then
     plan_path="$(realpath -- "$input")"
-    stages_json='["stage2","stage3"]'
     jq -cn \
       --arg kind plan \
       --arg value "$input" \
       --arg plan_path "$plan_path" \
-      --argjson stages "$stages_json" \
-      '{kind: $kind, value: $value, plan_path: $plan_path, stages: $stages}'
+      '{kind: $kind, value: $value, plan_path: $plan_path}'
     return 0
   fi
 
-  stages_json='["stage1","stage2","stage3"]'
   jq -cn \
     --arg kind prompt \
     --arg value "$input" \
-    --argjson stages "$stages_json" \
-    '{kind: $kind, value: $value, plan_path: null, stages: $stages}'
-}
-
-cog::fn::executor::plan_engine_for_executor() {
-  case "${1:-}" in
-    claude)
-      printf '%s\n' claude
-      ;;
-    codex-session)
-      printf '%s\n' codex
-      ;;
-    *)
-      cog::fn::error_raise "InvalidInput" \
-        "unknown executor" "executor: ${1:-}" \
-        "expected claude or codex-session" ""
-      ;;
-  esac
-}
-
-cog::fn::executor::select_reviewer_json() {
-  case "${1:-}" in
-    claude)
-      jq -cn \
-        --arg plan_engine claude \
-        --arg review_engine codex \
-        --arg reviewer /review-plan-lean \
-        '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
-      ;;
-    codex)
-      jq -cn \
-        --arg plan_engine codex \
-        --arg review_engine claude \
-        --arg reviewer /review-plan-lean \
-        '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
-      ;;
-    *)
-      cog::fn::error_raise "InvalidInput" \
-        "unknown plan engine" "plan-engine: ${1:-}" \
-        "expected claude or codex" ""
-      ;;
-  esac
+    '{kind: $kind, value: $value, plan_path: null}'
 }
 
 cog::fn::executor::queue_prompts_json() {
@@ -146,6 +201,22 @@ cog::fn::executor::queue_prompts_json() {
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
         stage_model: "executor-3-stage"
+      },
+      {
+        skill: "executor-single",
+        slash: "/executor-single",
+        aliases: [],
+        accepts: ["<prompt>", "<plan.md>"],
+        target_argument: null,
+        stage_model: "executor-2-stage"
+      },
+      {
+        skill: "executor-single-codex",
+        slash: "/executor-single-codex",
+        aliases: [],
+        accepts: ["<prompt>", "<plan.md>"],
+        target_argument: null,
+        stage_model: "executor-2-stage"
       }
     ]
   }'
@@ -163,52 +234,64 @@ cog::fn::executor::summary_self_check() {
 }
 
 cog::fn::executor::summary_json() {
-  local run_dir="${1:-}" executor="${2:-}" input_kind="${3:-}" plan_engine="${4:-}" reviewer="${5:-}"
-  local stage1_status="${6:-}" stage2_status="${7:-}" stage3_status="${8:-}"
-  local artifacts_json summary_path
+  local run_dir="${1:-}" executor="${2:-}" engine="${3:-}" input_kind="${4:-}" reviewer="${5:-}"
+  shift 5 || true
+  local flow_json reviewer_json review_engine artifacts_json summary_path statuses_json pair ordinal status stages_json
 
-  [[ -n $run_dir && -n $executor && -n $input_kind && -n $plan_engine && -n $reviewer ]] \
+  [[ -n $run_dir && -n $executor && -n $engine && -n $input_kind && -n $reviewer ]] \
     || cog::fn::error_raise "MissingArgument" \
       "missing executor summary argument" \
       "function: cog::fn::executor::summary_json" "" \
-      "pass run-dir, executor, input-kind, plan-engine, reviewer, and stage statuses"
+      "pass run-dir, executor, engine, input-kind, reviewer, and stage statuses"
 
+  flow_json="$(cog::fn::executor::flow_json "$executor")"
+  cog::fn::executor::validate_engine "$engine" >/dev/null
+  reviewer_json="$(cog::fn::executor::select_reviewer_json "$executor" "$engine")"
+  review_engine="$(jq -r '.review_engine' <<<"$reviewer_json")"
   artifacts_json="$(cog::fn::executor::artifacts_json "$run_dir")"
   summary_path="$(jq -r '.summary' <<<"$artifacts_json")"
+
+  statuses_json='{}'
+  for pair in "$@"; do
+    ordinal="${pair%%=*}"
+    status="${pair#*=}"
+    statuses_json="$(jq -c --arg ordinal "$ordinal" --arg status "$status" \
+      '. + {($ordinal): $status}' <<<"$statuses_json")"
+  done
+
+  stages_json="$(jq -c \
+    --argjson statuses "$statuses_json" \
+    '[.phases[] | {key: .ordinal, value: {status: ($statuses[.ordinal] // ""), phase: .phase, artifact: .artifact}}] | from_entries' \
+    <<<"$flow_json")"
 
   jq -cn \
     --argjson ok true \
     --arg executor "$executor" \
+    --arg engine "$engine" \
     --arg run_dir "$run_dir" \
     --arg input_kind "$input_kind" \
-    --arg plan_engine "$plan_engine" \
+    --arg plan_engine "$engine" \
+    --arg review_engine "$review_engine" \
     --arg reviewer "$reviewer" \
-    --arg stage1_status "$stage1_status" \
-    --arg stage2_status "$stage2_status" \
-    --arg stage3_status "$stage3_status" \
-    --arg stage1_artifact "$(jq -r '.stage1_plan' <<<"$artifacts_json")" \
-    --arg stage2_artifact "$(jq -r '.stage2_reviewed_plan' <<<"$artifacts_json")" \
-    --arg stage3_artifact "$(jq -r '.stage3_execution' <<<"$artifacts_json")" \
+    --argjson stages "$stages_json" \
     --arg summary "$summary_path" \
     '{
-      schema: "cog.executor.summary.v1",
+      schema: "cog.executor.summary.v2",
       ok: $ok,
       executor: $executor,
+      engine: $engine,
       run_dir: $run_dir,
       input_kind: $input_kind,
       plan_engine: $plan_engine,
+      review_engine: $review_engine,
       reviewer: $reviewer,
-      stages: {
-        stage1: {status: $stage1_status, artifact: $stage1_artifact},
-        stage2: {status: $stage2_status, artifact: $stage2_artifact},
-        stage3: {status: $stage3_status, artifact: $stage3_artifact}
-      },
+      stages: $stages,
       artifacts: {summary: $summary}
     }'
 }
 
 cog::fn::executor::write_summary_json() {
-  local run_dir="${1:-}" json summary_path
+  local json summary_path
 
   json="$(cog::fn::executor::summary_json "$@")"
   summary_path="$(jq -r '.artifacts.summary' <<<"$json")"

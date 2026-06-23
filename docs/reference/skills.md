@@ -96,7 +96,10 @@ Plan-review sub-namespace (`review-plan-*`):
 - skills/claude/executor-lean
 - skills/claude/executor-lean-codex
 - skills/claude/executor-prex
+- skills/claude/executor-single
+- skills/claude/executor-single-codex
 - skills/codex/executor-lean
+- skills/codex/executor-single
 
 ### runner-*
 
