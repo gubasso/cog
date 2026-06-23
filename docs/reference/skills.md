@@ -103,7 +103,8 @@ Plan-review sub-namespace (`review-plan-*`):
 
 ### runner-*
 
-- skills/claude/runner-queue
+- skills/claude/runner-all
+- skills/claude/runner-plan
 
 ### Other shipped skills and agents
 

@@ -2,7 +2,7 @@
 
 ## Context and Problem Statement
 
-cog's orchestration skills (`skills/claude/runner-queue`, `skills/claude/prex`) drive multi-step
+cog's orchestration skills (`runner-all`, `runner-plan`, and the historical `prex`) drive multi-step
 agentic work. The dotfiles ancestor drove each unit by shelling out to a headless `claude -p` process
 running `/prex`. Headless mode has no event loop after the model's final turn: a backgrounded
 Bash/Codex task is killed ~5 s after the result. So a unit that backgrounded its long Codex
@@ -38,4 +38,5 @@ Codex call" rule stays inline in every Codex-driving skill as the prose safeguar
 
 Accepted. Hook stance amended by ADR-0010 (env-first guarantee). Ported from dotfiles ADR-0001.
 Queue filename terminology amended by ADR-0011 (decisions/0011-directory-plan-queue-format.md).
+Runner dispatch semantics are amended by ADR-0030 (runner verbatim queue dispatch).
 Canon: `skill-refs/orchestration/in-session-vs-headless-delegation.md`.

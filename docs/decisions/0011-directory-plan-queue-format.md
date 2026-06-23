@@ -30,8 +30,9 @@ splits it into uncapped rounds. Queue files are named `queue-plans.yaml` at the 
 - Bad: existing producer, consumer, docs, tests, and live plan data must migrate away from the old
   `QUEUE.yaml` and single-file assumptions.
 - The flat-sibling layout is machine-enforced: plan directories must be direct children of `plans/`
-  (never nested). `cog plan-init`, `cog review-implementation-plans-scan`, and `cog runner-queue-resolve-plan`
-  fail closed on any nested plan; relationships and order live only in `depends_on`.
+  (never nested). `cog plan-init`, `cog review-plan-implementation-scan`, and
+  `cog runner-plan-setup` fail closed on invalid plan-directory structure; relationships and order
+  live only in `depends_on`.
 
 ## Status
 

@@ -167,6 +167,9 @@ The command list and short descriptions are sourced from command modules under
 *queue-graph-check*
 	Validate queue dependency graph references and cycles.
 
+*queue-prompt-set*
+	Set one queue item prompt with an expected-current-prompt guard.
+
 *queue-reorder*
 	Reorder mutable queue items by stable dependency topological sort.
 
@@ -224,14 +227,14 @@ The command list and short descriptions are sourced from command modules under
 *rundir*
 	Create a workflow run directory and optionally acquire its lock.
 
-*runner-queue-parse-commit*
-	Parse a runner-queue commit result.
+*runner-all-setup*
+	Parse runner-all arguments and create main queue run state.
 
-*runner-queue-resolve-plan*
-	Resolve a selected main queue plan entry to its executable form.
+*runner-commit-parse*
+	Parse runner commit result lines.
 
-*runner-queue-setup*
-	Parse runner-queue arguments and create run state.
+*runner-plan-setup*
+	Parse runner-plan arguments and create round queue run state.
 
 *skill-lint*
 	Lint SKILL.md files against the skill/script boundary.

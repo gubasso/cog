@@ -2,7 +2,7 @@
 name: review-plan-implementation
 description: >
   Reconcile implementation plans and queues with the current repository state
-  after a committed runner-queue item, before selecting the next item, so
+  after a committed queue item, before selecting the next item, so
   remaining plans stay coherent with implemented code. Adaptive and fail-closed.
 model: opus
 effort: low
@@ -17,7 +17,7 @@ disable-model-invocation: true
 # Review Implementation Plans
 
 Reconcile all implementation-plan queues and mutable plan files with the current repository state
-after a committed runner-queue item. This skill is adaptive and fail-closed: it updates remaining
+after a committed queue item. This skill is adaptive and fail-closed: it updates remaining
 work when the code has made parts obsolete, appends newly discovered gaps, and stops the parent runner
 if it cannot reach a verified committed state. Its Opus/low grade applies ADR-0013's no-Sonnet
 model/effort policy.
@@ -50,7 +50,7 @@ All deterministic mechanics live in `cog`:
 - Dependency changes: `cog queue-deps-set --queue <path> --schema <plans|rounds> --item <item> --depends-on <csv|""> [--expect <csv>] <out.json>`.
 - Deterministic ordering: `cog queue-reorder --queue <path> --schema <plans|rounds> <out.json>`.
 - Graph validation: `cog queue-graph-check --queue <path> --schema <plans|rounds> <out.json>`.
-- Commit parsing: `cog runner-queue-parse-commit <gc-output-file> --json`.
+- Commit parsing: `cog runner-commit-parse <gc-output-file> --json`.
 
 Never mutate a queue by direct editing. Use `queue-status-set` for guarded status flips and
 `queue-append` for new items. Use `queue-deps-set` for mutable dependency changes and
@@ -89,7 +89,7 @@ plan and round prose files.
 8. Read `$RUN_DIR/verify.json`. If reconciliation changed nothing, record `PLAN_REVIEW:
    NO_DRIFT`. If it changed work, run `/gc -a` in the foreground and capture its output in
    `$RUN_DIR/gc-plan-review.out`. Never background commit work. Parse the captured output with
-   `cog runner-queue-parse-commit`; if parsing fails, return `STATUS: FAILED`.
+   `cog runner-commit-parse`; if parsing fails, return `STATUS: FAILED`.
 
 9. Review queue execution order and dependencies for the main `plans` queue and each inner `rounds`
    queue. Apply model judgment only by changing `depends_on` for mutable (`todo`/`backlog`) items
@@ -103,7 +103,7 @@ plan and round prose files.
 
 11. Read `$RUN_DIR/verify-order.json`. If ordering review changed nothing, record `QUEUE_REVIEW:
     NO_DRIFT`. If it changed work, run `/gc -a` in the foreground and capture its output in
-    `$RUN_DIR/gc-queue-review.out`. Parse it with `cog runner-queue-parse-commit`; if parsing fails,
+    `$RUN_DIR/gc-queue-review.out`. Parse it with `cog runner-commit-parse`; if parsing fails,
     return `STATUS: FAILED`.
 
 12. Return `STATUS: OK` and a `RESULT:` line that reports both phases: `NO_DRIFT` for any phase that

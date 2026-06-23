@@ -100,6 +100,10 @@ what a skill does:
 
 Governing rule: a skill's prefix must match what it does.
 
+Queue dispatch rule: a `runner-*` skill selects a queue item and dispatches that item's `prompt:`
+verbatim to a queue-blind subagent. The dispatched subagent may be an executor or another runner and
+does not read the parent queue.
+
 `cog skill-lint` enforces this mechanically with the `skill-prefix-taxonomy` rule.
 
 This taxonomy is related accepted skill governance alongside [ADR-0013](../decisions/0013-model-effort-policy.md)
@@ -157,7 +161,8 @@ for a forbidden producer name as a whole skill-name token, in both the frontmatt
 text and body prose, while ignoring fenced code blocks. Current map entries:
 
 ```text
-runner-queue    -> plan-writer, plan-writer-multi
+runner-all      -> plan-writer, plan-writer-multi
+runner-plan     -> plan-writer, plan-writer-multi
 review-findings -> review-lean, review-loop
 ```
 

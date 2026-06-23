@@ -53,8 +53,8 @@ obtain Codex behavioral preambles from `cog codex-runner orientation <read-only|
 interpret runner statuses with `cog codex-runner explain-status <status>`.
 
 > **Execution discipline — env first; every Codex run is a durable job.** `/executor-prex` runs as an
-> **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by an orchestrator
-> such as `runner-queue`) or standalone in an interactive session. The Claude-harness no-backgrounding
+> **in-session delegated subagent** (dispatched via the `claude-delegate` subagent by a runner) or
+> standalone in an interactive session. The Claude-harness no-backgrounding
 > guarantee comes from the `claude-session` env layer: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`,
 > asserted by the `cog preflight claude-env` check below. Every Codex stage is a **cog-owned durable
 > job**: `cog codex-runner run-exec`/`run-resume` launch it with `--state` and return immediately,

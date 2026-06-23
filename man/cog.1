@@ -256,6 +256,11 @@ Replace one mutable queue item dependency list with a guarded graph check.\&
 Validate queue dependency graph references and cycles.\&
 .PP
 .RE
+\fBqueue-prompt-set\fR
+.RS 4
+Set one queue item prompt with an expected-current-prompt guard.\&
+.PP
+.RE
 \fBqueue-reorder\fR
 .RS 4
 Reorder mutable queue items by stable dependency topological sort.\&
@@ -351,19 +356,19 @@ Validate review findings JSON.\&
 Create a workflow run directory and optionally acquire its lock.\&
 .PP
 .RE
-\fBrunner-queue-parse-commit\fR
+\fBrunner-all-setup\fR
 .RS 4
-Parse a runner-queue commit result.\&
+Parse runner-all arguments and create main queue run state.\&
 .PP
 .RE
-\fBrunner-queue-resolve-plan\fR
+\fBrunner-commit-parse\fR
 .RS 4
-Resolve a selected main queue plan entry to its executable form.\&
+Parse runner commit result lines.\&
 .PP
 .RE
-\fBrunner-queue-setup\fR
+\fBrunner-plan-setup\fR
 .RS 4
-Parse runner-queue arguments and create run state.\&
+Parse runner-plan arguments and create round queue run state.\&
 .PP
 .RE
 \fBskill-lint\fR

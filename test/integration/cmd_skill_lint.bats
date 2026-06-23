@@ -772,10 +772,20 @@ EOF
 }
 
 @test "cog skill-lint flags a mapped consumer naming a producer in body prose" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-queue" runner-queue
-  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-all" runner-all
+  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint flags runner-plan naming a producer in body prose" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-plan" runner-plan
+  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
 
   assert_failure
   [[ $stderr == *"producer-blindness"* ]]
@@ -804,15 +814,15 @@ EOF
 }
 
 @test "cog skill-lint ignores a producer name inside a fenced block for a mapped consumer" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-queue" runner-queue
-  cat >>"${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md" <<'EOF'
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-all" runner-all
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md" <<'EOF'
 
 ```text
 plan-writer-multi
 ```
 EOF
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-queue/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
 
   assert_success
   [[ $stderr != *"producer-blindness"* ]]

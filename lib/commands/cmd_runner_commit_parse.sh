@@ -1,13 +1,13 @@
 # shellcheck shell=bash
-: 'desc: Parse a runner-queue commit result.'
+: 'desc: Parse runner commit result lines.'
 
-__cog_runner_queue_parse_commit_self_check='(.ok == true) and (.commits|type=="array")'
+__cog_runner_commit_parse_self_check='(.ok == true) and (.commits|type=="array")'
 
-__cog_runner_queue_parse_commit_usage() {
-  cog::fn::ui_data "Usage: cog runner-queue-parse-commit <gc-out-file> [--json]"
+__cog_runner_commit_parse_usage() {
+  cog::fn::ui_data "Usage: cog runner-commit-parse <gc-out-file> [--json]"
 }
 
-__cog_runner_queue_parse_commit_line_json() {
+__cog_runner_commit_parse_line_json() {
   local line="$1" rest sha repo=""
   rest="${line#* }"
   sha="${rest%% *}"
@@ -16,7 +16,7 @@ __cog_runner_queue_parse_commit_line_json() {
     '{repo: $repo, sha: $sha, line: $line}'
 }
 
-__cog_runner_queue_parse_commit_build_json() {
+__cog_runner_commit_parse_build_json() {
   local file="$1" line
   [[ -f $file ]] || cog::fn::error_raise "InputNotFound" \
     "commit output file not found" "path: ${file}" "" "check the output path"
@@ -36,17 +36,17 @@ __cog_runner_queue_parse_commit_build_json() {
   fi
 
   for line in "${ok_lines[@]}"; do
-    objs+=("$(__cog_runner_queue_parse_commit_line_json "$line")")
+    objs+=("$(__cog_runner_commit_parse_line_json "$line")")
   done
   jq -n --argjson commits "$(printf '%s\n' "${objs[@]}" | jq -s .)" '{ok: true, commits: $commits}'
 }
 
-cog::cmd::runner_queue_parse_commit() {
+cog::cmd::runner_commit_parse() {
   local mode=human file="" json
   while (($# > 0)); do
     case "$1" in
       -h | --help)
-        __cog_runner_queue_parse_commit_usage
+        __cog_runner_commit_parse_usage
         return 0
         ;;
       --json)
@@ -55,22 +55,22 @@ cog::cmd::runner_queue_parse_commit() {
         ;;
       -*)
         cog::fn::error_raise "InvalidInput" \
-          "unknown parse-commit option" "option: $1" "" "run 'cog runner-queue-parse-commit --help'"
+          "unknown parse-commit option" "option: $1" "" "run 'cog runner-commit-parse --help'"
         ;;
       *)
         [[ -z $file ]] || cog::fn::error_raise "TooManyArguments" \
-          "too many parse-commit files" "argument: $1" "" "run 'cog runner-queue-parse-commit --help'"
+          "too many parse-commit files" "argument: $1" "" "run 'cog runner-commit-parse --help'"
         file="$1"
         shift
         ;;
     esac
   done
   [[ -n $file ]] || cog::fn::error_raise "MissingArgument" \
-    "missing commit output file" "usage: cog runner-queue-parse-commit <gc-out-file> [--json]" "" \
-    "run 'cog runner-queue-parse-commit --help'"
-  json="$(__cog_runner_queue_parse_commit_build_json "$file")"
+    "missing commit output file" "usage: cog runner-commit-parse <gc-out-file> [--json]" "" \
+    "run 'cog runner-commit-parse --help'"
+  json="$(__cog_runner_commit_parse_build_json "$file")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
-    cog::fn::json_emit "$__cog_runner_queue_parse_commit_self_check" "$json"
+    cog::fn::json_emit "$__cog_runner_commit_parse_self_check" "$json"
   else
     jq -r '.commits[] | "COMMIT_SHA=" + .sha + (if .repo == "" then "" else " repo=" + .repo end)' <<<"$json"
   fi

@@ -61,6 +61,7 @@ _cog() {
     queue-bootstrap
     queue-deps-set
     queue-graph-check
+    queue-prompt-set
     queue-reorder
     queue-select
     queue-status-set
@@ -80,9 +81,9 @@ _cog() {
     review-tech-scope
     review-validate-findings
     rundir
-    runner-queue-parse-commit
-    runner-queue-resolve-plan
-    runner-queue-setup
+    runner-all-setup
+    runner-commit-parse
+    runner-plan-setup
     skill-lint
     skill-refs
     suckless-apply

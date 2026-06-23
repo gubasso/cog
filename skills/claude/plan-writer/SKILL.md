@@ -395,7 +395,7 @@ helper:
 
 - `item: <slug>` always names a directory.
 - `status: todo`, `depends_on` (other plan `item`s, or `[]`), and `notes`.
-- `prompt: /executor-prex -ar @.implementation-plans/plans/<slug>/`.
+- `prompt: /runner-plan -ar @.implementation-plans/plans/<slug>/`.
 - If Layer 1 produced multiple sibling directories, append one top-level entry per directory,
   sharing a slug prefix and wired with `depends_on` for ordering.
 
@@ -449,7 +449,8 @@ After writing all files, report to the user:
 5. The exact execution commands to run:
    - Single round: `/executor-prex -ar .implementation-plans/plans/<slug>/<topic>.md`
    - Sequential rounds: list each `/executor-prex -ar` command in order.
-   - Full directory: `/executor-prex -ar @.implementation-plans/plans/<slug>/`
+   - One plan directory: `/runner-plan -ar @.implementation-plans/plans/<slug>/`
+   - Full main queue: `/runner-all .implementation-plans/queue-plans.yaml`
 6. A reminder that **each `/executor-prex` invocation executes exactly one round** — even when pointing at
    the directory or `README.md`. The executor reads the plan's `queue-rounds.yaml`, picks the next
    `todo` round, executes it, and stops. A new `/executor-prex` session is required for each
@@ -470,7 +471,7 @@ ignores coordinator mode.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`). Never nest a plan directory inside another and
   never create subdirectories within a plan directory; relationships and order live only in
-  `depends_on`. `cog plan-init`, `cog review-plan-implementation-scan`, and `cog runner-queue-resolve-plan`
+  `depends_on`. `cog plan-init`, `cog review-plan-implementation-scan`, and `cog runner-plan-setup`
   fail closed on any nested plan.
 - Do not modify any existing files in the repository (only write to `.implementation-plans/`; in
   coordinator mode, write only to the given scratch `<output-path>`).

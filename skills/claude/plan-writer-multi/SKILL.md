@@ -323,12 +323,12 @@ cog queue-append --schema rounds --queue "$PLANS_DIR/$SLUG/queue-rounds.yaml" \
 
 Append one `queue-plans.yaml` entry per sibling directory. Use `depends_on` between top-level
 entries where the domain split has ordering, and use
-`/executor-prex -ar @.implementation-plans/plans/<slug>/` as the top-level prompt form.
+`/runner-plan -ar @.implementation-plans/plans/<slug>/` as the top-level prompt form.
 
 If the plan's rounds implement into a **satellite git repo** other than the one holding the plan
 (for example, extracting code into a target project or writing into a SoT docs repo), add an optional
 top-level `repos:` list to the inner `queue-rounds.yaml` — one absolute path per satellite, placed
-**before** `rounds:`. `/runner-queue` then guards every declared repo's clean tree and commits
+**before** `rounds:`. `/runner-plan` then guards every declared repo's clean tree and commits
 each one via `/gc -a --repo <sat>...`, so the round's artifacts are committed, not just the
 `queue-rounds.yaml` status flip.
 
@@ -360,7 +360,7 @@ Scratch artifacts (brief, both drafts, events, proofs) stay in `$RUN_DIR`.
 - **Flat layout is a hard constraint.** Every plan directory is a direct child of
   `.implementation-plans/plans/` (`plans/<slug>/`) — never nested and never containing plan
   subdirectories; ordering lives only in `depends_on`. `cog plan-init`, `cog review-plan-implementation-scan`,
-  and `cog runner-queue-resolve-plan` fail closed on any nested plan.
+  and `cog runner-plan-setup` fail closed on any nested plan.
 - Use the **Agent** tool (never `Skill`) for delegation; absolute `$HOME/.claude/skills/...` paths.
 - Codex calls go through `cog codex-runner run-exec --state` with `--effort medium`, read-only
   native/fallback sandboxing, `< /dev/null`, and stderr→log. cog runs Codex as a durable job;

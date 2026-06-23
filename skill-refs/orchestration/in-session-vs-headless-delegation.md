@@ -7,8 +7,8 @@ review, and a review loop).
 ## Decision
 
 Run delegated agentic work as **in-session foreground subagents**, not via a headless `claude -p`
-subprocess. A generic `claude-delegate` subagent is the reusable primitive; orchestrators (e.g.
-`runner-queue`) dispatch each unit to it via the **Agent tool**.
+subprocess. A generic `claude-delegate` subagent is the reusable primitive; orchestrators (for
+example `runner-all` and `runner-plan`) dispatch each unit to it via the **Agent tool**.
 
 ## Why headless `claude -p` was wrong
 
@@ -73,21 +73,12 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and
   being supported does not change this: the Agent tool is still the boundary. See
   `../skills-and-orchestration.md` (Dispatch vs Delegation).
 
-We initially shipped this as prose-only (architecture-only), reasoning that foreground blocking plus
-the orchestrator's deterministic completion check (re-reading `QUEUE.yaml` for `status == done`)
-made the reaping failure unlikely. That proved insufficient: under in-session delegation a delegate
-can still background its **own** Codex Bash call one level down and end its turn, getting the child
-SIGTERM-reaped (observed 2026-06-17, `runner-queue` → `claude-delegate` → `executor-prex` stage 3). The
-"option-2" guard is now **implemented** as a `PreToolUse(Bash)` hook —
-`agent-helper hook-guard codex-foreground` — which fires inside subagents too (confirmed: PreToolUse
-runs for subagent tool calls, carrying `agent_id`) and blocks any Codex call that is backgrounded or
-declares a Bash timeout below `600000ms` (the default ~120000ms also SIGTERMs Codex mid-run). Prose
-remains the rationale; the hook is the guarantee. Multi-level completion stays independently
-backstopped by the QUEUE-status check. The lock dir is a single source of truth (`rundir_lock_dir`)
-shared by the producer and the now-thin Stop-gate hook, so the two can no longer diverge.
+The current guarantee is env-first: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is asserted before
+orchestration work that depends on foreground execution. Multi-level completion stays independently
+backstopped by durable postcondition checks such as queue status, scan/verify artifacts, and parsed
+commit result lines.
 
 ## Status
 
-Accepted / Implemented (2026-06-17). Enacted in dotfiles by
-`claude/.claude/agents/claude-delegate.md`, `claude/.claude/skills/runner-queue/SKILL.md`, and
-`claude/.claude/skills/executor-prex/SKILL.md`. Mirrored as ADR-0001 in the dotfiles and `cog` repos.
+Accepted / Implemented (2026-06-17). Current queue orchestration uses `runner-all`, `runner-plan`,
+`claude-delegate`, and executor skills. Mirrored as ADR-0001 in the dotfiles and `cog` repos.

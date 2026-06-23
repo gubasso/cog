@@ -54,7 +54,8 @@ forbidden_scan_codex() {
     review-lean
     review-findings
     review-loop
-    runner-queue
+    runner-all
+    runner-plan
     suckless-patcher
     test-review
   )
@@ -120,20 +121,24 @@ forbidden_scan_codex() {
   done
 }
 
-@test "runner queue documents delegate multi-repo commit flow" {
-  local file="$repo_root/skills/claude/runner-queue/SKILL.md"
+@test "runner skills document delegate multi-repo commit flow" {
+  local file
+  for file in "$repo_root/skills/claude/runner-all/SKILL.md" "$repo_root/skills/claude/runner-plan/SKILL.md"; do
+    assert_file_contains "$file" "claude-delegate"
+    assert_file_contains "$file" "cog queue-select"
+    assert_file_contains "$file" "review-plan-implementation"
+    assert_file_contains "$file" "cog runner-commit-parse"
+    assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"
+    assert_file_contains "$file" "commits"
+    assert_file_contains "$file" "verbatim"
+  done
+}
 
-  assert_file_contains "$file" "claude-delegate"
-  assert_file_contains "$file" "cog queue-select"
-  assert_file_contains "$file" "Queue Modes"
-  assert_file_contains "$file" "review-plan-implementation"
-  assert_file_contains "$file" "cog queue-status-set"
-  assert_file_contains "$file" "runner-queue-resolve-plan"
-  assert_file_contains "$file" "DO NOT delegate the main loop"
-  assert_file_contains "$file" "repo"
-  assert_file_contains "$file" "repos:"
-  assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"
-  assert_file_contains "$file" "commits"
+@test "runner-all documents main reconcile and runner-plan documents round verify" {
+  assert_file_contains "$repo_root/skills/claude/runner-all/SKILL.md" "cog queue-status-set"
+  assert_file_contains "$repo_root/skills/claude/runner-all/SKILL.md" $'Main-plan `done`'
+  assert_file_contains "$repo_root/skills/claude/runner-plan/SKILL.md" "ROUND_STATUS"
+  assert_file_contains "$repo_root/skills/claude/runner-plan/SKILL.md" "repos:"
 }
 
 @test "plan writer multi documents satellite repos" {

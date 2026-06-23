@@ -34,6 +34,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0027: Review/verification effort rides the session default](decisions/0027-review-effort-rides-default.md)
 - [ADR-0028: Executor stage-phase decoupling](decisions/0028-executor-stage-phase-decoupling.md)
 - [ADR-0029: Plan-owned main-plan completion, runner-reconciled](decisions/0029-plan-owned-main-completion-runner-reconciled.md)
+- [ADR-0030: Runner verbatim queue dispatch](decisions/0030-runner-verbatim-queue-dispatch.md)
 
 ## Guides
 

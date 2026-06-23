@@ -2,7 +2,7 @@
 
 ## Context and Problem Statement
 
-`runner-queue` previously claimed sole ownership of the top-level `queue-plans.yaml` `done` flip and
+The historical `runner-queue` previously claimed sole ownership of the top-level `queue-plans.yaml` `done` flip and
 applied it with a strict `cog queue-status-set --schema plans --from todo --to done` guard. But the
 plan's final round step — authored by the plan producer and run by a queue-blind `executor-*` as
 opaque plan content — already flips that same top-level entry. The strict guard then failed because
@@ -39,7 +39,8 @@ queue — the flip is plan data it runs opaquely. It is orthogonal to the ADR-00
 Implemented
 
 - `lib/commands/cmd_queue_status_set.sh` (`--idempotent`)
-- `skills/claude/runner-queue/SKILL.md` (Main Queue Loop reconcile)
+- `skills/claude/runner-all/SKILL.md` (main queue reconcile after delegated `runner-plan`)
 
 Supersedes the prose-only "main-plan `done` is always runner-owned" claim previously asserted only in
-`runner-queue`; no prior ADR established it.
+the historical `runner-queue`; no prior ADR established it. ADR-0030 records the current split-runner
+dispatch shape.

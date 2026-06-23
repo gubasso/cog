@@ -4,8 +4,8 @@
 
 A consumer skill reads a structural input — a directory layout, a YAML queue, a findings JSON shape —
 and acts on it. Several consumer skills named the upstream skill that produced that input instead of
-describing the input contract structurally. `runner-queue` opened with "Drive a plan-writer
-implementation queue…", coupling the queue consumer to one producer even though it drives the
+describing the input contract structurally. The historical `runner-queue` opened with a producer
+name in its description, coupling the queue consumer to one producer even though it drove the
 `.implementation-plans/` directory to completion regardless of which skill wrote the queue. Both
 `review-findings` skills (Claude and Codex) named `review-lean` and `review-loop` as the
 producers of their findings input rather than describing the structured-findings contract they
@@ -13,8 +13,8 @@ actually consume.
 
 Naming the producer in consumer prose is a coupling leak: it implies the consumer only works with one
 upstream, it drifts when new producers appear, and it duplicates producer identity that the input
-contract already carries. The validation half of the rule was already satisfied — `runner-queue`
-delegates all input parsing to `cog` subcommands — but the prose still leaked producer identity.
+contract already carries. The validation half of the rule is satisfied by queue consumers delegating
+input parsing to `cog` subcommands.
 
 ## Considered Options
 
@@ -30,13 +30,14 @@ skill produced that input**. A consumer describes the contract it reads (e.g. th
 `.implementation-plans/` directory structure, the shared structured-findings contract), never the
 identity of the producing skill. All input validation and parsing is delegated to `cog`. Enforcement
 is the `producer-blindness` rule in `cog skill-lint`, driven by a curated consumer-to-producer map
-held in command code (`lib/commands/cmd_skill_lint.sh`), not by an in-skill marker — `runner-queue`'s
-`SKILL.md` already sits at the 500-line lint cap, and the map belongs with deterministic mechanics.
+held in command code (`lib/commands/cmd_skill_lint.sh`), not by an in-skill marker. The map belongs
+with deterministic mechanics.
 
 The initial map enforces:
 
 ```text
-runner-queue    -> plan-writer, plan-writer-multi
+runner-all      -> plan-writer, plan-writer-multi
+runner-plan     -> plan-writer, plan-writer-multi
 review-findings -> review-lean, review-loop
 ```
 
@@ -54,14 +55,15 @@ both frontmatter `description:` text and body prose, while ignoring fenced code 
 
 ## Status
 
-Implemented. The reference cases are `runner-queue` (queue consumer) and `review-findings` (findings
-consumer), with enforcement by the `producer-blindness` rule in `cog skill-lint`.
+Implemented. The reference cases are `runner-all` and `runner-plan` (queue consumers) plus
+`review-findings` (findings consumer), with enforcement by the `producer-blindness` rule in
+`cog skill-lint`.
 
 ## Related Decisions
 
 - ADR-0008: skills stay probabilistic; deterministic mechanics (input parsing, the lint map) live in
   `cog`.
-- ADR-0011: the directory plan-queue format is the structural input contract `runner-queue` consumes.
+- ADR-0011: the directory plan-queue format is the structural input contract queue runners consume.
 - ADR-0016: prefix taxonomy distinguishes producers (`plan-*`, `review-*`) from consumers
   (`runner-*`) and triage (`review-findings`).
 - ADR-0019: lean, positively framed prose — describe the input contract, not the producer.

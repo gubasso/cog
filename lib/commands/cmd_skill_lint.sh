@@ -616,7 +616,7 @@ __cog_skill_lint_scan_prose_file() {
 # Consumer skill name -> space-separated producer names it must not name in prose.
 __cog_skill_lint_producer_blind_producers() {
   case "$1" in
-    runner-queue) printf '%s' "plan-writer plan-writer-multi" ;;
+    runner-all | runner-plan) printf '%s' "plan-writer plan-writer-multi" ;;
     review-findings) printf '%s' "review-code-deep review-lean review-loop" ;;
     *) printf '%s' "" ;;
   esac

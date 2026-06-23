@@ -90,8 +90,8 @@ cog msg failed commit "<reason> repo=$ROOT log=<path>"   # COMMIT_FAILED ...
 cog msg failed commit-push "<reason> repo=$ROOT"         # COMMIT_PUSH_FAILED ...
 ```
 
-The parent `/runner-queue` reads these via
-`cog runner-queue-parse-commit`, which accepts one line per repo and fails
+Parent runners read these via
+`cog runner-commit-parse`, which accepts one line per repo and fails
 closed if any repo's line is `*_FAILED`.
 
 ## Workflow

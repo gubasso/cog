@@ -83,6 +83,7 @@ this reference table.
 | `queue-bootstrap` | Create and validate an implementation plan queue. |
 | `queue-deps-set` | Replace one mutable queue item dependency list with a guarded graph check. |
 | `queue-graph-check` | Validate queue dependency graph references and cycles. |
+| `queue-prompt-set` | Set one queue item prompt with an expected-current-prompt guard. |
 | `queue-reorder` | Reorder mutable queue items by stable dependency topological sort. |
 | `queue-select` | Select the next runnable implementation plan round. |
 | `queue-status-set` | Set one queue item status with an expected-current-status guard. |
@@ -107,9 +108,9 @@ this reference table.
 | `review-tech-scope` | Detect review technologies and bundled reference targets. |
 | `review-validate-findings` | Validate review findings JSON. |
 | `rundir` | Create a workflow run directory and optionally acquire its lock. |
-| `runner-queue-parse-commit` | Parse a runner-queue commit result. |
-| `runner-queue-resolve-plan` | Resolve a selected main queue plan entry to its executable form. |
-| `runner-queue-setup` | Parse runner-queue arguments and create run state. |
+| `runner-all-setup` | Parse runner-all arguments and create main queue run state. |
+| `runner-commit-parse` | Parse runner commit result lines. |
+| `runner-plan-setup` | Parse runner-plan arguments and create round queue run state. |
 | `skill-refs root` | Print the resolved skill-reference root. |
 | `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
@@ -164,14 +165,11 @@ cog executor summary --run-dir <dir> --executor <executor-lean|executor-single> 
 
 Reviewed flows use reviewer `/review-plan-lean`; unreviewed flows use reviewer `none`.
 
-`cog executor queue-prompts` prints the queue-prompt recognition contract consumed by runner-queue
-integration. Its `match` object is the generic acceptance rule: any `/executor-*` prompt (matched by
-the prefix taxonomy via `cog::fn::skill::classify_prefix`, name shape `^[a-z0-9-]{1,64}$`) in
-`-ar <target-dir>` form is accepted. The `prompts` array
-lists known executors as examples, not a closed allowlist; a new `executor-*` skill needs no resolver
-change. Top-level `runner-queue` plan entries use `-ar <target-dir>` when resolving a main queue item
-to an inner queue. Known examples include `/executor-prex`, `/executor-lean`,
-`/executor-lean-codex`, `/executor-single`, and `/executor-single-codex`.
+`cog executor queue-prompts` prints the queue-prompt examples used by inner `rounds:` queues. Any
+`/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`;
+the `prompts` array lists known executors as examples, not a closed allowlist. Top-level `plans:`
+queue entries dispatch nested runner prompts such as
+`/runner-plan -ar @.implementation-plans/plans/<slug>/` through `runner-all`.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.
@@ -184,7 +182,7 @@ Plan directories are flat siblings, a single level under `.implementation-plans/
 (`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
 filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
 `cog review-plan-implementation-scan` (revision inventory, via `cog::fn::review_plan_implementation_assert_flat`), and
-`cog runner-queue-resolve-plan` (a resolved target must be a direct child of `plans/`).
+`cog runner-plan-setup` (the invocation target must be a direct child of `plans/`).
 
 Top-level plan queue entries may select different executors while still targeting flat sibling plan
 directories:
@@ -194,16 +192,16 @@ plans:
   - item: alpha
     status: todo
     depends_on: []
-    prompt: /executor-lean -ar @.implementation-plans/plans/alpha/
+    prompt: /runner-plan -ar @.implementation-plans/plans/alpha/
     notes: ""
   - item: beta
     status: todo
     depends_on: [alpha]
-    prompt: /executor-lean-codex -ar @.implementation-plans/plans/beta/
+    prompt: /runner-plan -ar @.implementation-plans/plans/beta/
     notes: ""
   - item: gamma
     status: todo
     depends_on: [beta]
-    prompt: /executor-single -ar @.implementation-plans/plans/gamma/
+    prompt: /runner-plan -ar @.implementation-plans/plans/gamma/
     notes: ""
 ```

@@ -75,6 +75,7 @@ Commands:
   queue-bootstrap Create and validate an implementation plan queue.
   queue-deps-set Replace one mutable queue item dependency list with a guarded graph check.
   queue-graph-check Validate queue dependency graph references and cycles.
+  queue-prompt-set Set one queue item prompt with an expected-current-prompt guard.
   queue-reorder  Reorder mutable queue items by stable dependency topological sort.
   queue-select   Select the next runnable implementation plan round.
   queue-status-set Set one queue item status with an expected-current-status guard.
@@ -94,9 +95,9 @@ Commands:
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  runner-queue-parse-commit Parse a runner-queue commit result.
-  runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
-  runner-queue-setup Parse runner-queue arguments and create run state.
+  runner-all-setup Parse runner-all arguments and create main queue run state.
+  runner-commit-parse Parse runner commit result lines.
+  runner-plan-setup Parse runner-plan arguments and create round queue run state.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
   suckless-apply Check, apply, and build a suckless patch.
@@ -163,6 +164,7 @@ Commands:
   queue-bootstrap Create and validate an implementation plan queue.
   queue-deps-set Replace one mutable queue item dependency list with a guarded graph check.
   queue-graph-check Validate queue dependency graph references and cycles.
+  queue-prompt-set Set one queue item prompt with an expected-current-prompt guard.
   queue-reorder  Reorder mutable queue items by stable dependency topological sort.
   queue-select   Select the next runnable implementation plan round.
   queue-status-set Set one queue item status with an expected-current-status guard.
@@ -182,9 +184,9 @@ Commands:
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  runner-queue-parse-commit Parse a runner-queue commit result.
-  runner-queue-resolve-plan Resolve a selected main queue plan entry to its executable form.
-  runner-queue-setup Parse runner-queue arguments and create run state.
+  runner-all-setup Parse runner-all arguments and create main queue run state.
+  runner-commit-parse Parse runner commit result lines.
+  runner-plan-setup Parse runner-plan arguments and create round queue run state.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
   suckless-apply Check, apply, and build a suckless patch.

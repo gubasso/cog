@@ -16,7 +16,7 @@ ADR-0016 prefix taxonomy, and the marker was the escape hatch.
 The migration shims were: the `cog preflight claude-env --allow-legacy-session` advisory downgrade
 (an env-rollout grace path), the `cog plan-init` `legacy_plan_dir` detection of the obsolete `.plan`
 directory, the `superseded-by` lint facility itself (a skill-rename grace path), the `quick`/`deep`
-legacy Codex effort aliases mapped to native `low`/`high`, and the `cog runner-queue-parse-commit`
+legacy Codex effort aliases mapped to native `low`/`high`, and the runner commit parser's
 dual output shape (a single bare `COMMIT_OK <sha>` line emitted a legacy `{commit_sha, line}` JSON
 object instead of the multi-repo `{ok, commits[]}` shape used by every other input).
 
@@ -40,7 +40,7 @@ Chosen option: **remove all legacy and converge on the current contract.**
   strict/fail-closed), the `legacy_plan_dir` field, the `superseded-by` lint facility (the
   `cog::fn::skill::superseded_by` helper and the taxonomy escape hatch), and the `quick`/`deep`
   effort aliases (skills use native `minimal|low|medium|high`; escalation is `--effort high`).
-- `cog runner-queue-parse-commit` always emits the `{ok, commits[]}` JSON shape; the single-repo
+- The runner commit parser always emits the `{ok, commits[]}` JSON shape; the single-repo
   legacy `{commit_sha, line}` branch is gone. Human output is unchanged (a bare line still prints
   `COMMIT_SHA=<sha>`), and a bare single-repo line is still accepted as input.
 
