@@ -4,8 +4,8 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--thread first|last] [--print-command]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--thread first|last] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--print-command]"
   cog::fn::ui_data "Usage: cog codex-runner status --state <file>"
   cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>] [--poll <secs>]"
   cog::fn::ui_data "Usage: cog codex-runner cancel --state <file> [--signal TERM|KILL]"
@@ -33,12 +33,26 @@ __cog_codex_runner_label_for_state() {
   printf '%s\n' "$base"
 }
 
+# Resolve the durable-job working directory. Codex `exec` refuses with "not
+# inside a trusted directory" when its cwd is neither a git worktree nor a
+# configured trusted project, so the job must launch from the project repo
+# rather than the scratch RUN_DIR the observer may be sitting in. An explicit
+# --cwd wins; otherwise resolve the git repo root of $PWD; otherwise keep $PWD.
+__cog_codex_runner_resolve_cwd() {
+  local cwd="${1:-}"
+  if [[ -z $cwd ]]; then
+    cwd="$(cog::fn::git_root_for "$PWD" 2>/dev/null || true)"
+    [[ -n $cwd ]] || cwd="$PWD"
+  fi
+  printf '%s\n' "$cwd"
+}
+
 # run-exec is now a non-blocking LAUNCHER. Codex runs as a cog-owned durable job
 # (detached in its own session) so a Bash-tool 600s SIGTERM cannot kill it.
 # The result JSON is produced later by `finalize`, reconstructed from durable
 # artifacts; this call only starts the job and prints STATE_FILE=/JOB_PGID=.
 __cog_codex_runner_run_exec() {
-  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" print_command=false
+  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" cwd="" print_command=false
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
@@ -79,6 +93,10 @@ __cog_codex_runner_run_exec() {
         thread_selection="${2:-}"
         shift 2
         ;;
+      --cwd)
+        cwd="${2:-}"
+        shift 2
+        ;;
       --print-command)
         print_command=true
         shift
@@ -111,6 +129,8 @@ __cog_codex_runner_run_exec() {
   run_dir="$(dirname -- "$state")"
   [[ -n $stderr ]] || stderr="${run_dir}/${label}.stderr.log"
 
+  cwd="$(__cog_codex_runner_resolve_cwd "$cwd")"
+
   cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
   engine_meta="$(jq -cn \
     --arg engine_action run-exec --arg mode "$mode" --arg access "$access" \
@@ -118,7 +138,7 @@ __cog_codex_runner_run_exec() {
     '{engine_action: $engine_action, mode: $mode, access: $access, effort: $effort,
       thread_selection: $thread_selection, command: $command}')"
 
-  cog::fn::longrun::start --state "$state" --label "$label" \
+  cog::fn::longrun::start --state "$state" --label "$label" --cwd "$cwd" \
     --stdout "$events" --stderr "$stderr" --output "$output" \
     --engine codex --engine-meta "$engine_meta" -- "${argv[@]}"
   pgid="$(jq -r '.pgid' "$state" 2>/dev/null || true)"
@@ -127,7 +147,7 @@ __cog_codex_runner_run_exec() {
 }
 
 __cog_codex_runner_run_resume() {
-  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" print_command=false
+  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" cwd="" print_command=false
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
@@ -164,6 +184,10 @@ __cog_codex_runner_run_resume() {
         state="${2:-}"
         shift 2
         ;;
+      --cwd)
+        cwd="${2:-}"
+        shift 2
+        ;;
       --print-command)
         print_command=true
         shift
@@ -186,6 +210,8 @@ __cog_codex_runner_run_resume() {
   run_dir="$(dirname -- "$state")"
   [[ -n $stderr ]] || stderr="${run_dir}/${label}.stderr.log"
 
+  cwd="$(__cog_codex_runner_resolve_cwd "$cwd")"
+
   cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv
   engine_meta="$(jq -cn \
     --arg engine_action run-resume --arg account "$account" --arg thread_id "$thread_id" \
@@ -193,7 +219,7 @@ __cog_codex_runner_run_resume() {
     '{engine_action: $engine_action, account: $account, thread_id: $thread_id,
       effort: $effort, command: $command}')"
 
-  cog::fn::longrun::start --state "$state" --label "$label" \
+  cog::fn::longrun::start --state "$state" --label "$label" --cwd "$cwd" \
     --stdout "$events" --stderr "$stderr" --output "$output" \
     --engine codex --engine-meta "$engine_meta" -- "${argv[@]}"
   pgid="$(jq -r '.pgid' "$state" 2>/dev/null || true)"

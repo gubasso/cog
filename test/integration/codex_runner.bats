@@ -74,6 +74,39 @@ EOF
   assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
 }
 
+@test "cog codex-runner run-exec defaults the durable-job cwd to the git repo root" {
+  # Codex exec refuses in a non-git, non-trusted dir; the job must launch from
+  # the project repo root, not whatever scratch dir the observer sat in.
+  local repo="${BATS_TEST_TMPDIR}/gitproj"
+  mkdir -p "$repo/sub"
+  git -C "$repo" init -q
+  local root
+  root="$(git -C "$repo" rev-parse --show-toplevel)"
+  local st="${BATS_TEST_TMPDIR}/cwd-default.longrun.json"
+  cd "$repo/sub"
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-default.out" --events "${BATS_TEST_TMPDIR}/cwd-default.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-default.err" --state "$st"
+  assert_success
+  jq -e --arg c "$root" '.cwd == $c' "$st" >/dev/null
+}
+
+@test "cog codex-runner run-exec honors an explicit --cwd override" {
+  local repo="${BATS_TEST_TMPDIR}/explicit-proj"
+  mkdir -p "$repo"
+  local st="${BATS_TEST_TMPDIR}/cwd-explicit.longrun.json"
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-explicit.out" --events "${BATS_TEST_TMPDIR}/cwd-explicit.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-explicit.err" --cwd "$repo" --state "$st"
+  assert_success
+  jq -e --arg c "$repo" '.cwd == $c' "$st" >/dev/null
+}
+
+@test "cog codex-runner run-resume honors an explicit --cwd override" {
+  local repo="${BATS_TEST_TMPDIR}/resume-proj"
+  mkdir -p "$repo"
+  local st="${BATS_TEST_TMPDIR}/cwd-resume.longrun.json"
+  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-resume.out" --events "${BATS_TEST_TMPDIR}/cwd-resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-resume.err" --cwd "$repo" --state "$st"
+  assert_success
+  jq -e --arg c "$repo" '.cwd == $c' "$st" >/dev/null
+}
+
 @test "cog codex-runner run-exec enforces write access coherence" {
   local mode
   for mode in native fallback quick-auto; do
