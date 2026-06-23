@@ -4,7 +4,7 @@
 __cog_queue_status_set_self_check='(.ok == true) and (.queue_path|type=="string") and (.schema=="plans" or .schema=="rounds") and (.item|type=="string") and (.from|type=="string") and (.to|type=="string") and (.status_before|type=="string") and (.status_after|type=="string") and (.changed|type=="boolean")'
 
 __cog_queue_status_set_usage() {
-  cog::fn::ui_data "Usage: cog queue-status-set --queue <path> --schema <plans|rounds> --item <item> --from <status> --to <status> (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog queue-status-set --queue <path> --schema <plans|rounds> --item <item> --from <status> --to <status> [--idempotent] (<out.json>|--json)"
 }
 
 __cog_queue_status_set_verify_change() {
@@ -30,7 +30,7 @@ __cog_queue_status_set_verify_change() {
 }
 
 __cog_queue_status_set_build_json() {
-  local schema="$1" queue_path="$2" item="$3" from="$4" to="$5"
+  local schema="$1" queue_path="$2" item="$3" from="$4" to="$5" idempotent="${6:-false}"
   local key statuses status_count status_before status_after count_before count_after tmp before_json after_json changed=false
 
   [[ -n $schema && -n $queue_path && -n $item && -n $from && -n $to ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
@@ -57,6 +57,24 @@ __cog_queue_status_set_build_json() {
       cog::fn::error_raise "InvalidInput" "duplicate queue item" "item: ${item}" "path: ${queue_path}" "remove duplicate items"
       ;;
   esac
+  if [[ $idempotent == true && $status_before == "$to" ]]; then
+    # Reconciling ensure: the target status is already set (e.g. the executor
+    # already flipped it). Report a no-op success without touching the file.
+    jq -n \
+      --argjson ok true \
+      --arg queue_path "$queue_path" \
+      --arg schema "$key" \
+      --arg item "$item" \
+      --arg from "$from" \
+      --arg to "$to" \
+      --arg status_before "$status_before" \
+      --arg status_after "$status_before" \
+      --argjson changed false \
+      '{ok: $ok, queue_path: $queue_path, schema: $schema, item: $item, from: $from, to: $to,
+        status_before: $status_before, status_after: $status_after, changed: $changed}'
+    return 0
+  fi
+
   [[ $status_before == "$from" ]] || cog::fn::error_raise "InvalidInput" \
     "queue item status mismatch" "item: ${item}" "expected: ${from}; actual: ${status_before}" ""
 
@@ -101,7 +119,7 @@ __cog_queue_status_set_build_json() {
 }
 
 cog::cmd::queue_status_set() {
-  local schema="" queue_path="" item="" from="" to="" mode="" out="" json
+  local schema="" queue_path="" item="" from="" to="" mode="" out="" json idempotent=false
   while (($# > 0)); do
     case "$1" in
       -h | --help)
@@ -133,6 +151,10 @@ cog::cmd::queue_status_set() {
         to="$2"
         shift 2
         ;;
+      --idempotent)
+        idempotent=true
+        shift
+        ;;
       --json)
         [[ -z $mode ]] || cog::fn::error_raise_with_exit 2 "InvalidInput" "duplicate queue-status-set output mode" "" "" "choose either --json or an output path"
         mode="json"
@@ -153,7 +175,7 @@ cog::cmd::queue_status_set() {
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
     "missing queue-status-set output mode" "usage: cog queue-status-set ... (<out.json>|--json)" "" "run 'cog queue-status-set --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_queue_status_set_build_json "$schema" "$queue_path" "$item" "$from" "$to")"
+  json="$(__cog_queue_status_set_build_json "$schema" "$queue_path" "$item" "$from" "$to" "$idempotent")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_queue_status_set_self_check" "$json"
   else

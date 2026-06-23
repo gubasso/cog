@@ -234,7 +234,7 @@ Global flags:
   run cog gc-stage --help
 
   assert_success
-  assert_output "Usage: cog gc-stage [args]
+  assert_output "Usage: cog gc-stage --session-files <file> [--repo-root <dir>] (<out.json>|--json)
 
 Reconcile and stage explicit session files.
 
@@ -250,25 +250,20 @@ Global flags:
 @test "cog hook-guard --help resolves dashed command name" {
   run cog hook-guard --help
 
+  # hook-guard defines a rich multi-section usage block; assert its key markers
+  # plus the generated desc + global-flags framing rather than pinning the whole body.
   assert_success
-  assert_output "Usage: cog hook-guard [args]
-
-Deterministic Stop hook decisions for active workflows.
-
-Global flags:
-  -h, --help          Show help
-  -V, --version       Show version
-      --json          Request machine-readable output
-      --dry-run       Show what would happen without changing state
-      --print-config  Print resolved configuration and sources
-  -v, -vv, -vvv       Increase verbosity"
+  assert_output --partial "cog hook-guard executor-prex-stop --owner-pid <pid>"
+  assert_output --partial "EXIT CODES"
+  assert_output --partial "Deterministic Stop hook decisions for active workflows."
+  assert_output --partial "Global flags:"
 }
 
 @test "cog review-tech-scope --help resolves dashed command name" {
   run cog review-tech-scope --help
 
   assert_success
-  assert_output "Usage: cog review-tech-scope [args]
+  assert_output "Usage: cog review-tech-scope --scope <scope.json> [--classification <classification.json>] (<out.json>|--json)
 
 Detect review technologies and bundled reference targets.
 
@@ -287,9 +282,11 @@ Global flags:
   while IFS= read -r name; do
     run cog "$name" --help
 
+    # Every command's help names itself in a synopsis: either its own usage line
+    # (`Usage: cog <name> <flags>` / a richer block) or the generic `[args]` fallback.
     assert_success
-    expected="Usage: cog ${name} [args]"
-    [[ $output == *"$expected"* ]]
+    [[ $output == *"cog ${name}"* ]]
+    [[ $output == *"Global flags:"* ]]
   done < <(derived_commands)
 }
 

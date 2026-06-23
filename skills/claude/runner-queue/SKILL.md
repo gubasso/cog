@@ -22,20 +22,18 @@ orchestrating session at depth 0. In `rounds:` mode it preserves the existing pe
 select a runnable round, dispatch its exact `prompt` to a fresh `claude-delegate` subagent, verify
 the round flipped itself to `done`, commit with `/gc -a`, run revision, and continue. In `plans:`
 mode it selects main plans in order, resolves each one to an `inner_queue`, drives that inner queue,
-flips the main plan to `done`, commits, runs revision, and continues.
+reconciles the main plan to `done`, commits, runs revision, and continues.
 
 Dispatch each round and each commit through the **Agent tool** (foreground, blocking). Nested
-subagents (Claude Code >= v2.1.172) let `/executor-prex` spawn its own review-stage subagents from within the
-delegate, so `/executor-prex` no longer needs its own top-level process. The old requirement to run each
-round in a separate headless `claude -p` process is **obsolete and removed**; see the orchestration
-contract docs for the current foreground Agent shape.
+subagents (Claude Code >= v2.1.172) let `/executor-prex` spawn its own review-stage subagents from
+within the delegate, so each round runs in one foreground delegate rather than a separate headless
+process.
 
 A foreground Agent call blocks the orchestrator until the delegate's agentic loop completes and
 returns. The delegate's own Codex Bash calls, one level down, rely on the same session env guarantee
 as the parent: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` must be in force so Claude Code does not
 auto-background long-running Bash calls. `/executor-prex` asserts that env at bootstrap; the foreground
-discipline still applies to every Codex invocation. Multi-level round completion is independently
-guaranteed by the queue-status check below.
+discipline still applies to every Codex invocation.
 
 ## Queue Modes
 
@@ -44,7 +42,7 @@ guaranteed by the queue-status check below.
   revise, and loop.
 - `plans:` is main queue mode. Select runnable `todo` plan entries from the top-level main queue,
   resolve each selected plan to its executable form, drive the resolved inner queue to completion,
-  flip the main plan `done`, commit, revise, and loop.
+  reconcile the main plan `done`, commit, revise, and loop.
 
 `cog runner-queue-setup` auto-detects schema and writes `QUEUE_SCHEMA` to `RUN_DIR/ctx.env`. For
 `plans:` it also writes `MAIN_QUEUE_PATH`. A queue file with neither or both top-level schema keys
@@ -350,28 +348,29 @@ INNER_REPOS="$(jq -r '.repos[]? // empty' "$RUN_DIR/resolve-$SAFE_ITEM.json")"
 Then invoke **Drive an inner queue** until the inner selection state is `complete`. The inner
 procedure reads only `inner.env`; the `ctx.env` `QUEUE_PATH`/`QUEUE_SCHEMA`/`REPOS` still point at the
 **main** queue and stay intact for the next main `queue-select`. Verify the inner queue is complete
-before the main status flip.
+before the main status reconcile.
 
-Flip the main plan to `done` only through:
+Reconcile the main plan to `done` through this idempotent ensure:
 
 ```bash
 . "$RUN_DIR/ctx.env"
 : "${RUN_COUNT:=0}"
 PLAN_ITEM="$(jq -r '.selected.item' "$RUN_DIR/main-select-$RUN_COUNT.json")"
 cog queue-status-set --queue "$MAIN_QUEUE_PATH" --schema plans --item "$PLAN_ITEM" \
-  --from todo --to done "$RUN_DIR/main-status-$RUN_COUNT.json"
+  --from todo --to done --idempotent "$RUN_DIR/main-status-$RUN_COUNT.json"
+jq -e '.ok and .status_after == "done"' "$RUN_DIR/main-status-$RUN_COUNT.json" >/dev/null \
+  || { echo "ERROR: main plan '$PLAN_ITEM' not reconciled to done" >&2; exit 1; }
 ```
 
-Main-plan `done` is always runner-owned via this exact command. Inner-round `done` remains
-verify-only and is owned by the queued executor prompt.
+Main-plan `done` is plan-owned and runner-reconciled: the plan's final step flips it; the runner then
+ensures it idempotently — no-op if already flipped, `todo → done` if missed, fail-closed otherwise.
+Inner-round `done` stays verify-only, owned by the queued executor prompt.
 
-Commit the plan's accumulated work plus the main-queue status flip with the existing foreground
-`claude-delegate` `/gc -a` pattern. Build the `--repo` flags from `INNER_REPOS` (still in
-`inner.env`) so the commit covers the selected plan's satellites; `/gc -a` always commits `REPO_ROOT`
-itself, which carries the main-queue `done` flip. Parse with `cog runner-queue-parse-commit`,
-run **Review-Plan-Implementation Boundary**, increment the plan-level counter, honor `--max N`, and loop. In main
-mode an inner queue may run many rounds, but the plan-level `--max` counter increments only after the
-main plan is flipped, committed, and revision completes.
+Commit the plan's work plus the main-queue flip with the foreground `claude-delegate` `/gc -a`
+pattern, building `--repo` flags from `INNER_REPOS` so the commit covers the plan's satellites;
+`/gc -a` always commits `REPO_ROOT` (the main-queue `done` flip). Parse with
+`cog runner-queue-parse-commit`, run **Review-Plan-Implementation Boundary**, increment the
+plan-level counter, and honor `--max N` — which advances only after reconcile, commit, and revision.
 
 ## Dry Run And Max
 
@@ -467,7 +466,8 @@ postcondition.
   Writing run-scoped state files under `$RUN_DIR` (for example `inner.env`, mirroring setup's
   `ctx.env`) is not a queue edit and is allowed.
 - Inner-round `done` remains verify-only after the round delegate returns; it is owned by the queued executor prompt.
-- Main-plan `done` is set only by `cog queue-status-set --schema plans --from todo --to done`.
+- Main-plan `done` is plan-owned and runner-reconciled: the plan flips it; the runner ensures it with
+  `cog queue-status-set --schema plans --from todo --to done --idempotent` (fail-closed otherwise).
 - Revision queue mutations go only through `cog queue-status-set`, `cog queue-append`,
   `cog queue-deps-set`, and `cog queue-reorder`; graph validation goes through
   `cog queue-graph-check`.
@@ -490,9 +490,9 @@ Stop immediately on any failed guard or durable postcondition: setup rejecting i
 queue schema; invalid YAML; duplicate item; existing `doing`; dirty tree; blocked dependencies;
 `queue-select` failure; main-plan resolver failure or unsupported kind; inner queue not reaching
 `state: complete`; inner-round delegate returning while the round is not `done`; main
-`queue-status-set` guard failure because the item is no longer `todo`; missing or failed `COMMIT_*`;
-revision returning `STATUS: FAILED`, lacking a verified clean postcondition, or not proving
-`review-plan-implementation-verify` passed.
+`queue-status-set` reconcile failure because the main plan is in an unexpected state (neither `todo`
+nor `done`); missing or failed `COMMIT_*`; revision returning `STATUS: FAILED`, lacking a verified
+clean postcondition, or not proving `review-plan-implementation-verify` passed.
 
 An intentional `--max` stop is normal and reports remaining work. Dry-run never dispatches, flips
 status, commits, or runs revision. Report the run directory and the failing `claude-delegate`

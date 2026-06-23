@@ -21,6 +21,26 @@ __cog_help_desc_for() {
     "line 2 must be \": 'desc: ...'\"" ""
 }
 
+__cog_help_usage_for() {
+  local sub="$1" path="$2"
+  local derived="${sub//-/_}"
+  local fn="__cog_${derived}_usage"
+
+  # Surface the command's own usage/synopsis when it defines one. Source the
+  # module in a subshell so its function definitions never leak into the help
+  # process, and fall back to the generic synopsis when no usage function exists.
+  if (
+    # shellcheck source=/dev/null
+    source "$path" >/dev/null 2>&1 || exit 1
+    declare -F "$fn" >/dev/null 2>&1 || exit 1
+    "$fn"
+  ); then
+    return 0
+  fi
+
+  cog::fn::ui_dataf 'Usage: cog %s [args]\n' "$sub"
+}
+
 __cog_help_global_flags() {
   cog::fn::ui_data "Global flags:"
   cog::fn::ui_data "  -h, --help          Show help"
@@ -76,7 +96,7 @@ cog::fn::help_generate() {
       fi
 
       desc="$(__cog_help_desc_for "$path")" || return $?
-      cog::fn::ui_dataf 'Usage: cog %s [args]\n' "$sub"
+      __cog_help_usage_for "$sub" "$path"
       cog::fn::ui_data ""
       cog::fn::ui_data "$desc"
       cog::fn::ui_data ""

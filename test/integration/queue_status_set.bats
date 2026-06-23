@@ -63,6 +63,41 @@ EOF
   yq e -e '.rounds[0].status == "done" and .rounds[1].status == "done"' "$queue" >/dev/null
 }
 
+@test "cog queue-status-set --idempotent is a no-op when already at target" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_plans_queue "$queue"
+  local before
+  before="$(cat "$queue")"
+
+  run cog queue-status-set --queue "$queue" --schema plans --item first --from todo --to "done" --idempotent --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .changed == false and .status_before == "done" and .status_after == "done"' >/dev/null
+  [[ "$(cat "$queue")" == "$before" ]]
+}
+
+@test "cog queue-status-set --idempotent still flips from todo" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_plans_queue "$queue"
+
+  run cog queue-status-set --queue "$queue" --schema plans --item second --from todo --to "done" --idempotent --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .changed == true and .status_before == "todo" and .status_after == "done"' >/dev/null
+  yq e -e '.plans[1].status == "done"' "$queue" >/dev/null
+}
+
+@test "cog queue-status-set --idempotent fails closed on an unexpected current status" {
+  local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
+  write_plans_queue "$queue"
+  yq e -i '.plans[1].status = "doing"' "$queue"
+
+  run --separate-stderr cog queue-status-set --queue "$queue" --schema plans --item second --from todo --to "done" --idempotent --json
+  assert_failure
+  [[ $stderr == *"queue item status mismatch"* ]]
+  yq e -e '.plans[1].status == "doing"' "$queue" >/dev/null
+}
+
 @test "cog queue-status-set fails for missing item and wrong from status" {
   local queue="${BATS_TEST_TMPDIR}/queue-plans.yaml"
   write_plans_queue "$queue"
