@@ -42,7 +42,7 @@ EOF
 }
 
 make_inputs() {
-  printf '%s\n' "subject" >"${BATS_TEST_TMPDIR}/message.txt"
+  printf '%s\n' "feat(core): add the thing" >"${BATS_TEST_TMPDIR}/message.txt"
   printf '%s\n' "file one.txt" >"${BATS_TEST_TMPDIR}/paths.txt"
 }
 
@@ -94,6 +94,32 @@ make_inputs() {
 
   assert_failure
   [[ $stderr == *"err.kind: InputUnreadable"* ]]
+}
+
+@test "cog gc-commit blocks a non-conventional message before git commit" {
+  printf '%s\n' "just some words" >"${BATS_TEST_TMPDIR}/message.txt"
+  printf '%s\n' "file.txt" >"${BATS_TEST_TMPDIR}/paths.txt"
+
+  run cog gc-commit --message-file "${BATS_TEST_TMPDIR}/message.txt" --paths-file "${BATS_TEST_TMPDIR}/paths.txt" --json
+
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.ok == false and .lint.ok == false and (.lint.violations | length) > 0' >/dev/null
+  run ! grep -q "commit -F -" "$GIT_FAKE_LOG"
+}
+
+@test "cog gc-commit defers to a repo commit-msg hook" {
+  local repo="${BATS_TEST_TMPDIR}/hooked"
+  mkdir -p "$repo/.git/hooks"
+  printf '#!/bin/sh\nexit 0\n' >"$repo/.git/hooks/commit-msg"
+  chmod +x "$repo/.git/hooks/commit-msg"
+  printf '%s\n' "anything goes here" >"${BATS_TEST_TMPDIR}/message.txt"
+  printf '%s\n' "file.txt" >"${BATS_TEST_TMPDIR}/paths.txt"
+
+  run cog gc-commit --message-file "${BATS_TEST_TMPDIR}/message.txt" --paths-file "${BATS_TEST_TMPDIR}/paths.txt" --repo-root "$repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .lint.deferred == true and .lint.linter == "commit-msg-hook"' >/dev/null
+  assert_file_contains "$GIT_FAKE_LOG" ".*-C $repo commit -F -"
 }
 
 @test "cog gc-commit --help dispatches" {

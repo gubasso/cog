@@ -35,6 +35,7 @@ _cog() {
     executor-prex-parse-args
     gc-classify-failure
     gc-commit
+    gc-commit-lint
     gc-plan
     gc-push
     gc-stage

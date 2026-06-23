@@ -47,10 +47,15 @@ Mechanical commands:
 ```bash
 cog gc-plan --session-files "$SESSION_FILES_FILE" [--repo <dir>]... [--repo-set <file>] --json
 cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json
+cog gc-commit-lint --message-file "$MESSAGE_FILE" [--repo-root "<root>"] --json
 cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json
 cog gc-classify-failure --log "$LOG_FILE" --json
 cog gc-push --repo-root "<root>" --json
 ```
+
+`gc-commit` carries a `lint` object in its JSON (`{ok, deferred, linter, config,
+violations}`) from the pre-flight Conventional Commits gate; see "Commit message
+format".
 
 `--repo-root` makes `gc-stage`/`gc-commit`/`gc-push` target a specific repo without
 `cd`. Omit it for a single-repo commit in the current directory's repo.
@@ -74,6 +79,23 @@ cog gc-push --repo-root "<root>" --json
 Pass `--repo <dir>` or `--repo-set <file>` for repos an orchestrator explicitly
 declared; this turns the declared set into an allowlist. With no declared repos,
 every touched repo is accepted and committed by default.
+
+## Commit message format
+
+Every commit message is a Conventional Commit: `type(scope): description`.
+
+- **type**: one of `feat, fix, docs, style, refactor, perf, test, build, ci, chore,
+  revert`.
+- **scope** (optional, encouraged): a noun naming the area changed; may be
+  hierarchical, e.g. `module/sub-module`, `theme/sub-theme`.
+- **description**: imperative, lowercase, no trailing period; keep the subject ≤ 72
+  chars and put detail in the body after one blank line.
+- **breaking change**: add `!` before the colon (`feat(api)!: ...`) and/or a
+  `BREAKING CHANGE:` footer.
+
+`cog gc-commit-lint` checks this deterministically and `gc-commit` enforces it as a
+pre-flight gate. When the repo runs its own commit-message linter the check reports
+`deferred: true`; that linter prevails, so follow the project's rules.
 
 ## Result Line Contract
 
@@ -130,9 +152,14 @@ closed if any repo's line is `*_FAILED`.
    1. Write its `.paths` (repo-relative) to a per-repo `$PATHS_FILE`.
    2. `cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json`.
       If `ok` is not `true`, stop and ask before committing.
-   3. Draft the Conventional Commit message from **that** repo's staged diff,
-      following its `committed.toml` if present. Write it to `$MESSAGE_FILE`.
+   3. Draft the commit message from **that** repo's staged diff in the format under
+      "Commit message format", and write it to `$MESSAGE_FILE`. Validate it with
+      `cog gc-commit-lint --message-file "$MESSAGE_FILE" --repo-root "<root>" --json`;
+      if `ok` is `false` and `deferred` is `false`, revise per `violations` and
+      re-lint before committing.
    4. `cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json`.
+      `gc-commit` re-runs the same gate; on a `lint`-only failure (`git commit` not
+      attempted) revise the message and retry.
    5. If commit fails, classify the captured log and handle per the discipline below.
    6. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
 
@@ -150,7 +177,8 @@ cog gc-classify-failure --log "$LOG_FILE" --json
 
 - `setup-missing`: hard-fail. Do not run git config or setup commands.
 - `auto-fixer`: re-run `gc-stage` for that repo's session files and retry.
-- `commit-message`: revise only the message, then retry.
+- `commit-message`: revise only the message, then retry. This also covers a
+  `gc-commit` pre-flight `lint` failure — revise per `lint.violations` and retry.
 - `content-fix`: inspect hook output and fix only reported issues in that repo's
   session files. If a hook wants files outside scope or a semantic change, ask.
 - `stuck` or `unknown`: follow the progress-gate escalation and ask when no specific

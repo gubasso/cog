@@ -84,6 +84,9 @@ The command list and short descriptions are sourced from command modules under
 *gc-commit*
 	Commit with a message file and explicit pathspec.
 
+*gc-commit-lint*
+	Validate a commit message against Conventional Commits (or defer to the repo linter).
+
 *gc-plan*
 	Partition session files by owning repo and run safety scan.
 

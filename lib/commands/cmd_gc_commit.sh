@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Commit with a message file and explicit pathspec.'
 
-__cog_gc_commit_self_check='.ok != null and (.paths | type == "array") and (.log | type == "string") and (.exit_code | type == "number")'
+__cog_gc_commit_self_check='.ok != null and (.paths | type == "array") and (.log | type == "string") and (.exit_code | type == "number") and (.lint | type == "object")'
 
 __cog_gc_commit_usage() {
   cog::fn::ui_data "Usage: cog gc-commit --message-file <file> --paths-file <file> [--repo-root <dir>] (<out.json>|--json)"
@@ -74,7 +74,7 @@ __cog_gc_commit_build_json() {
   local message_file="$1"
   local paths_file="$2"
   local repo_root_flag="${3:-}"
-  local root log_file sha="" exit_code ok
+  local root log_file sha="" exit_code ok lint_json lint_ok
   local -a git_c=()
   local -a paths=()
 
@@ -90,7 +90,20 @@ __cog_gc_commit_build_json() {
   fi
   log_file="$(__cog_gc_commit_new_log_file "$(__cog_gc_commit_log_dir)")"
 
-  if git "${git_c[@]}" commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
+  # Conventional Commits pre-flight gate. A repo-native commit-message linter
+  # prevails (the check defers); otherwise a non-conforming message fails closed
+  # before git runs, surfacing violations for the skill to revise.
+  lint_json="$(cog::fn::git_commit_msg_lint "$message_file" "$root")"
+  lint_ok="$(jq -r '.ok' <<<"$lint_json")"
+
+  if [[ $lint_ok != true ]]; then
+    {
+      printf 'commit message rejected by the Conventional Commits check\n'
+      jq -r '.violations[] | "- [\(.code)] \(.message) -> \(.hint)"' <<<"$lint_json"
+    } >"$log_file"
+    ok=false
+    exit_code=1
+  elif git "${git_c[@]}" commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
     ok=true
     exit_code=0
     sha="$(git "${git_c[@]}" rev-parse --short HEAD)"
@@ -106,13 +119,15 @@ __cog_gc_commit_build_json() {
     --arg sha "$sha" \
     --arg log "$log_file" \
     --argjson exit_code "$exit_code" \
+    --argjson lint "$lint_json" \
     '{
       ok: $ok,
       repo_root: $repo_root,
       paths: $paths,
       sha: (if $ok then $sha else null end),
       log: $log,
-      exit_code: $exit_code
+      exit_code: $exit_code,
+      lint: $lint
     }'
 }
 

@@ -297,3 +297,242 @@ cog::fn::git_classify_failure_log() {
       recommended_action: $recommended_action
     }'
 }
+
+# --- Conventional Commits message validation ----------------------------------
+#
+# A deterministic Conventional Commits check that backstops the commit-message
+# judgment in the gc skill. The user's own commit-message linter always prevails:
+# when one governs the repo the check defers and applies no rules of its own. Rule
+# values (allowed types, length caps) come from `committed.toml` — the project's if
+# present, else the shipped template — keeping it the single source of truth.
+
+# Default rule values (mirror skill-refs/templates/pre-commit/committed.toml). Used
+# only as a last resort when no committed.toml resolves.
+__cog_cc_default_types=(feat fix docs style refactor perf test build ci chore revert)
+
+# Parse the committed.toml subset we use. Sets CC_ALLOWED_TYPES, CC_ALLOWED_SCOPES,
+# CC_LINE_LENGTH, CC_SUBJECT_CAPITALIZED, CC_SUBJECT_NOT_PUNCTUATED. Unset keys stay
+# empty so the caller can fall back to defaults. Returns 1 if the file is unreadable.
+__cog_git_read_committed_config() {
+  local file="$1"
+  CC_ALLOWED_TYPES=()
+  CC_ALLOWED_SCOPES=()
+  CC_LINE_LENGTH=""
+  CC_SUBJECT_CAPITALIZED=""
+  CC_SUBJECT_NOT_PUNCTUATED=""
+  [[ -r $file ]] || return 1
+
+  local nocomment
+  nocomment="$(sed -E 's/(^|[[:space:]])#.*$//' "$file")"
+
+  mapfile -t CC_ALLOWED_TYPES < <(
+    awk '/^[[:space:]]*allowed_types[[:space:]]*=/{f=1} f{print} f&&/\]/{exit}' "$file" \
+      | grep -oE '"[^"]+"' | tr -d '"'
+  )
+  mapfile -t CC_ALLOWED_SCOPES < <(
+    awk '/^[[:space:]]*allowed_scopes[[:space:]]*=/{f=1} f{print} f&&/\]/{exit}' "$file" \
+      | grep -oE '"[^"]+"' | tr -d '"'
+  )
+  CC_LINE_LENGTH="$(grep -E '^[[:space:]]*line_length[[:space:]]*=' <<<"$nocomment" | grep -oE '[0-9]+' | head -1)"
+  CC_SUBJECT_CAPITALIZED="$(grep -E '^[[:space:]]*subject_capitalized[[:space:]]*=' <<<"$nocomment" | grep -oE 'true|false' | head -1)"
+  CC_SUBJECT_NOT_PUNCTUATED="$(grep -E '^[[:space:]]*subject_not_punctuated[[:space:]]*=' <<<"$nocomment" | grep -oE 'true|false' | head -1)"
+  return 0
+}
+
+# Detect an existing commit-message linter that should prevail. Prints two lines:
+# the linter name (empty if none) and its config path (empty if none). Filesystem
+# only — a project `committed.toml` is NOT a deference trigger; its rules are used.
+__cog_git_detect_commit_linter() {
+  local root="$1"
+  local linter="" config=""
+  if [[ -n $root && -d $root ]]; then
+    if [[ -x $root/.git/hooks/commit-msg ]]; then
+      linter="commit-msg-hook"
+      config="$root/.git/hooks/commit-msg"
+    elif [[ -f $root/.pre-commit-config.yaml ]] \
+      && grep -Eq 'commit-msg|committed|commitlint|conventional-pre-commit|gitlint' "$root/.pre-commit-config.yaml"; then
+      linter="pre-commit"
+      config="$root/.pre-commit-config.yaml"
+    else
+      local f
+      for f in commitlint.config.js commitlint.config.cjs commitlint.config.mjs commitlint.config.ts \
+        .commitlintrc .commitlintrc.json .commitlintrc.yaml .commitlintrc.yml .commitlintrc.js .commitlintrc.cjs; do
+        if [[ -f $root/$f ]]; then
+          linter="commitlint"
+          config="$root/$f"
+          break
+        fi
+      done
+      [[ -z $linter && -f $root/.gitlint ]] && {
+        linter="gitlint"
+        config="$root/.gitlint"
+      }
+      [[ -z $linter && -f $root/.conform.yaml ]] && {
+        linter="conform"
+        config="$root/.conform.yaml"
+      }
+    fi
+  fi
+  printf '%s\n%s\n' "$linter" "$config"
+}
+
+__cog_cc_add_violation() {
+  CC_VIOLATIONS+=("$(jq -cn --arg c "$1" --arg m "$2" --arg h "$3" '{code: $c, message: $m, hint: $h}')")
+}
+
+# Validate a commit message file against Conventional Commits, deferring to a
+# repo-native linter when one is present. Emits:
+#   {ok, deferred, linter, config, violations: [{code, message, hint}]}
+cog::fn::git_commit_msg_lint() {
+  __cog_git_require_jq
+
+  local message_file="${1:-}" repo_root="${2:-}"
+  [[ -n $message_file ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+    "missing commit message path" "function: cog::fn::git_commit_msg_lint" "" ""
+  [[ -r $message_file ]] || cog::helpers::die "$EX_NOINPUT" "InputUnreadable" \
+    "commit message file is not readable" "path: ${message_file}" "" "check the message path"
+
+  local root=""
+  if [[ -n $repo_root ]]; then
+    root="$(cog::fn::git_root_for "$repo_root" 2>/dev/null)" || root=""
+  else
+    root="$(cog::fn::git_root 2>/dev/null)" || root=""
+  fi
+
+  local linter config
+  {
+    read -r linter
+    read -r config
+  } < <(__cog_git_detect_commit_linter "$root")
+  if [[ -n $linter ]]; then
+    jq -n --arg linter "$linter" --arg config "$config" \
+      '{ok: true, deferred: true, linter: $linter, config: $config, violations: []}'
+    return 0
+  fi
+
+  # Resolve rule source: project committed.toml, else the shipped template.
+  local config_file=""
+  if [[ -n $root && -f $root/committed.toml ]]; then
+    config_file="$root/committed.toml"
+  else
+    config_file="$(cog::fn::skill_refs_path templates/pre-commit/committed.toml 2>/dev/null || true)"
+  fi
+  local CC_ALLOWED_TYPES=() CC_ALLOWED_SCOPES=() CC_LINE_LENGTH="" CC_SUBJECT_CAPITALIZED="" CC_SUBJECT_NOT_PUNCTUATED=""
+  [[ -n $config_file ]] && __cog_git_read_committed_config "$config_file"
+  ((${#CC_ALLOWED_TYPES[@]} > 0)) || CC_ALLOWED_TYPES=("${__cog_cc_default_types[@]}")
+  [[ $CC_LINE_LENGTH =~ ^[0-9]+$ ]] || CC_LINE_LENGTH=72
+  [[ $CC_SUBJECT_CAPITALIZED == false || $CC_SUBJECT_CAPITALIZED == true ]] || CC_SUBJECT_CAPITALIZED=false
+  [[ $CC_SUBJECT_NOT_PUNCTUATED == true || $CC_SUBJECT_NOT_PUNCTUATED == false ]] || CC_SUBJECT_NOT_PUNCTUATED=true
+
+  local -a lines=()
+  mapfile -t lines <"$message_file"
+  local subject="${lines[0]:-}" second="${lines[1]:-}"
+  local types_list
+  types_list="$(
+    IFS=,
+    printf '%s' "${CC_ALLOWED_TYPES[*]}"
+  )"
+
+  local -a CC_VIOLATIONS=()
+
+  if [[ -z $subject ]]; then
+    __cog_cc_add_violation "empty-subject" "commit subject (first line) is empty" \
+      "write 'type(scope): description'"
+  elif [[ $subject != *:* ]]; then
+    __cog_cc_add_violation "missing-separator" "subject has no 'type: ' separator" \
+      "use 'type(scope): description', e.g. 'feat(api): add token refresh'"
+  else
+    local before="${subject%%:*}" after="${subject#*:}"
+    local desc
+
+    if [[ -z $after ]]; then
+      desc=""
+    elif [[ $after == " "* ]]; then
+      desc="${after# }"
+    else
+      desc="$after"
+      __cog_cc_add_violation "missing-space-after-colon" "no space after the ':' separator" \
+        "write 'type(scope): description' with one space after the colon"
+    fi
+
+    # Strip an optional breaking-change '!' before parsing the scope.
+    [[ $before == *"!" ]] && before="${before%!}"
+
+    local type="$before" scope=""
+    if [[ $before == *"("* || $before == *")"* ]]; then
+      if [[ $before =~ ^([A-Za-z0-9_-]+)\((.+)\)$ ]]; then
+        type="${BASH_REMATCH[1]}"
+        scope="${BASH_REMATCH[2]}"
+      else
+        type="${before%%(*}"
+        __cog_cc_add_violation "bad-scope" "malformed scope in '${before}'" \
+          "use 'type(scope): ...' with matching parens, e.g. 'fix(core/db): ...'"
+      fi
+    fi
+
+    if ! __cog_cc_contains "$type" "${CC_ALLOWED_TYPES[@]}"; then
+      __cog_cc_add_violation "unknown-type" "type '${type}' is not an allowed Conventional Commit type" \
+        "use one of: ${types_list}"
+    fi
+
+    if [[ -n $scope ]]; then
+      local -a segs=()
+      IFS='/' read -ra segs <<<"$scope"
+      local seg bad=0
+      for seg in "${segs[@]}"; do
+        [[ $seg =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || bad=1
+      done
+      ((bad == 0)) || __cog_cc_add_violation "bad-scope" "scope '${scope}' has an invalid segment" \
+        "use '/'-separated segments of [A-Za-z0-9._-], e.g. 'module/sub-module'"
+      if ((${#CC_ALLOWED_SCOPES[@]} > 0)) && ! __cog_cc_contains "$scope" "${CC_ALLOWED_SCOPES[@]}"; then
+        __cog_cc_add_violation "disallowed-scope" "scope '${scope}' is not in the project's allowed_scopes" \
+          "use one of the scopes configured in committed.toml"
+      fi
+    fi
+
+    if [[ -z $desc ]]; then
+      __cog_cc_add_violation "empty-description" "description after the type is empty" \
+        "add a short imperative description, e.g. 'feat(api): add token refresh'"
+    else
+      if [[ $CC_SUBJECT_CAPITALIZED == false && $desc =~ ^[A-Z] ]]; then
+        __cog_cc_add_violation "subject-capitalized" "description starts with an uppercase letter" \
+          "lowercase the first word, e.g. 'add ...' not 'Add ...'"
+      fi
+      if [[ $CC_SUBJECT_NOT_PUNCTUATED == true && $desc == *. ]]; then
+        __cog_cc_add_violation "subject-punctuated" "description ends with a period" \
+          "drop the trailing '.'"
+      fi
+    fi
+
+    if ((${#subject} > CC_LINE_LENGTH)); then
+      local prefix="${subject% *}"
+      [[ $prefix == "$subject" ]] && prefix=""
+      ((${#prefix} > CC_LINE_LENGTH)) && __cog_cc_add_violation "subject-too-long" \
+        "subject line is ${#subject} chars (limit ${CC_LINE_LENGTH})" \
+        "tighten the subject to <= ${CC_LINE_LENGTH} chars; move detail to the body"
+    fi
+  fi
+
+  if ((${#lines[@]} > 1)) && [[ -n $second ]]; then
+    __cog_cc_add_violation "no-blank-before-body" "no blank line between subject and body" \
+      "leave one empty line after the subject"
+  fi
+
+  local ok=true
+  ((${#CC_VIOLATIONS[@]} == 0)) || ok=false
+  jq -n \
+    --argjson ok "$ok" \
+    --argjson violations "$(__cog_git_json_object_array_from_lines "${CC_VIOLATIONS[@]}")" \
+    '{ok: $ok, deferred: false, linter: null, config: null, violations: $violations}'
+}
+
+# Membership test (word equality) used by the commit-message validator.
+__cog_cc_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [[ $item == "$needle" ]] && return 0
+  done
+  return 1
+}

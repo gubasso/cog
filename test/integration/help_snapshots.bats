@@ -49,6 +49,7 @@ Commands:
   executor-prex-parse-args Parse executor-prex arguments into run state.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
+  gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
@@ -138,6 +139,7 @@ Commands:
   executor-prex-parse-args Parse executor-prex arguments into run state.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
+  gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
