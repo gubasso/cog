@@ -1,6 +1,6 @@
 rounds:
   - item: rename-and-single-pass-upgrade
-    status: todo
+    status: done
     depends_on: []
     prompt: /executor-prex -ar .implementation-plans/plans/review-lean-rename/rename-and-single-pass-upgrade.md
-    notes: Rename review-code-deep -> review-lean across repo + single-pass content upgrade to both twins
+    notes: Rename review-lean across repo + single-pass content upgrade to both twins

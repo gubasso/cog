@@ -1,6 +1,6 @@
 # Review Process
 
-The four-phase workflow every `review-code-deep` invocation follows. Severity vocabulary, feedback
+The four-phase workflow every `review-lean` invocation follows. Severity vocabulary, feedback
 craft, and decision criteria live here so SKILL.md stays thin.
 
 ## Phase 1 — Context (2–3 min)

@@ -14,7 +14,7 @@ allowed-tools: Bash Read Write Edit Skill
 
 # Review Loop
 
-Each round invokes the Codex `review-code-deep` twin in orchestrator mode against the live diff.
+Each round invokes the Codex `review-lean` twin in orchestrator mode against the live diff.
 Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats
 until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
 
@@ -76,7 +76,7 @@ The Codex twin captures the live diff itself. The context file carries intent an
 
 ## Review Round
 
-Build `$RUN_DIR/round-N-prompt.txt` with `$review-code-deep <context> <output-marker>` and a
+Build `$RUN_DIR/round-N-prompt.txt` with `$review-lean <context> <output-marker>` and a
 read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort for round 1
 and `low` effort for later rounds. Use `finalize --max-wall <secs>` until it exits 0, 1, or 75;
 exit 75 means still running and should be polled again.

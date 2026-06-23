@@ -15,10 +15,10 @@ plans:
     prompt: /executor-lean -ar @.implementation-plans/plans/re-grade-plan-review-effort/
     notes: Re-grade review-plan-lean to session default; record verification-effort policy (ADR-0027)
   - item: review-lean-rename
-    status: todo
+    status: done
     depends_on: []
     prompt: /executor-prex -ar @.implementation-plans/plans/review-lean-rename/
-    notes: Rename review-code-deep -> review-lean + faithful single-pass review skill upgrade
+    notes: Rename review-lean + faithful single-pass review skill upgrade
   - item: robust-plan-slug-stopword-aware
     status: todo
     depends_on: []

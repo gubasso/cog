@@ -2,7 +2,7 @@
 
 Shared enums for review verdicts, finding severity, and finding categories. Used by
 `implementation-reviewer`, `plan-refactor-migration` (review mode), `review-plan-lean`, and
-`review-code-deep` (via `llm-review-discipline.md`).
+`review-lean` (via `llm-review-discipline.md`).
 
 ## Verdict Enum
 

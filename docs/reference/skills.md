@@ -78,11 +78,11 @@ below maps each currently shipped artifact to its taxonomy class.
 
 Code-review skills:
 
-- skills/claude/review-code-deep
+- skills/claude/review-lean
 - skills/claude/review-findings
 - skills/claude/review-loop
 - skills/codex/implementation-reviewer
-- skills/codex/review-code-deep
+- skills/codex/review-lean
 - skills/codex/review-findings
 
 Plan-review sub-namespace (`review-plan-*`):

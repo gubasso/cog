@@ -158,8 +158,12 @@ text and body prose, while ignoring fenced code blocks. Current map entries:
 
 ```text
 runner-queue    -> plan-writer, plan-writer-multi
-review-findings -> review-code-deep, review-loop
+review-findings -> review-lean, review-loop
 ```
+
+The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy producer name
+`review-code-deep` for `review-findings` so frozen fixtures keep matching; that compatibility token
+is intentional and omitted from the table above.
 
 ## Structural Lint Checks
 

@@ -25,7 +25,7 @@ returns.
 ## Decision Outcome
 
 Chosen option: **treat review/verification as exploration-tier**. Review and verification skills ride
-the session default and set no model/effort override, matching review-code-deep and review-loop.
+the session default and set no model/effort override, matching review-lean and review-loop.
 xhigh remains an exception tier requiring documented justification, reserved for reviews that span
 many subsystems, are security-critical, are expensive to reverse, or run as evaluations.
 review-plan-lean is re-graded to the default (override removed).

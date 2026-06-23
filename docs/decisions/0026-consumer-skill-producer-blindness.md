@@ -7,7 +7,7 @@ and acts on it. Several consumer skills named the upstream skill that produced t
 describing the input contract structurally. `runner-queue` opened with "Drive a plan-writer
 implementation queue…", coupling the queue consumer to one producer even though it drives the
 `.implementation-plans/` directory to completion regardless of which skill wrote the queue. Both
-`review-findings` skills (Claude and Codex) named `review-code-deep` and `review-loop` as the
+`review-findings` skills (Claude and Codex) named `review-lean` and `review-loop` as the
 producers of their findings input rather than describing the structured-findings contract they
 actually consume.
 
@@ -37,7 +37,7 @@ The initial map enforces:
 
 ```text
 runner-queue    -> plan-writer, plan-writer-multi
-review-findings -> review-code-deep, review-loop
+review-findings -> review-lean, review-loop
 ```
 
 The rule scans mapped consumer skills for forbidden producer names — as whole skill-name tokens — in

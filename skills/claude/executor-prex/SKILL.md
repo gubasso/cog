@@ -303,7 +303,7 @@ protocol.
 
 ## Stage 4: Review Implementation
 
-Delegate implementation review to `review-code-deep` via the **Agent tool**, validate proof, triage
+Delegate implementation review to `review-lean` via the **Agent tool**, validate proof, triage
 review and plan-conformance findings, and write `stage4-review.md`. Follow
 `references/stage-4-review-implementation.md` for command shapes, proof validation, and triage
 details.

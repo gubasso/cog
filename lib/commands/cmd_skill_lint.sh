@@ -251,7 +251,7 @@ __cog_skill_lint_is_skill_refs_runtime() {
 }
 
 # Runtime skill-refs are surfaced to skills (e.g. review-tech-scope feeds
-# code-review guides to review-code-deep), so the same self-containment golden
+# code-review guides to review-lean), so the same self-containment golden
 # rules that bind SKILL.md bodies bind the refs they load. Scan the whole file;
 # refs carry no frontmatter to skip.
 __cog_skill_lint_check_skill_refs_forbidden() {
@@ -617,7 +617,7 @@ __cog_skill_lint_scan_prose_file() {
 __cog_skill_lint_producer_blind_producers() {
   case "$1" in
     runner-queue) printf '%s' "plan-writer plan-writer-multi" ;;
-    review-findings) printf '%s' "review-code-deep review-loop" ;;
+    review-findings) printf '%s' "review-code-deep review-lean review-loop" ;;
     *) printf '%s' "" ;;
   esac
 }
