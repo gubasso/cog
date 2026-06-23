@@ -4,8 +4,6 @@ description: >
   Review one implementation plan before concrete implementation, using the
   persisted research shelf for reusable context and saving the annotated
   review through cog plan-review.
-model: opus
-effort: xhigh
 argument-hint: "<plan-path-abs> <request-path-abs> <output-path-abs>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob WebSearch WebFetch

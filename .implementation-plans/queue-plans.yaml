@@ -10,10 +10,10 @@ plans:
     prompt: /executor-lean -ar @.implementation-plans/plans/producer-blind-consumer-skills/
     notes: 'Producer-blind consumer skills: prose fixes + ADR 0026 + skill-lint producer-blindness rule'
   - item: re-grade-plan-review-effort
-    status: todo
+    status: done
     depends_on: []
     prompt: /executor-lean -ar @.implementation-plans/plans/re-grade-plan-review-effort/
-    notes: Re-grade review-plan-lean to session default; record verification-effort policy (ADR-0026)
+    notes: Re-grade review-plan-lean to session default; record verification-effort policy (ADR-0027)
   - item: review-lean-rename
     status: todo
     depends_on: []

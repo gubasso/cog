@@ -1,6 +1,6 @@
 rounds:
   - item: apply-effort-regrade
-    status: todo
+    status: done
     depends_on: []
     prompt: /executor-lean .implementation-plans/plans/re-grade-plan-review-effort/apply-effort-regrade.md
-    notes: Remove Claude override; refine policy refs; add ADR-0026; record shelf entry; validate
+    notes: Remove Claude override; refine policy refs; add ADR-0027; record shelf entry; validate

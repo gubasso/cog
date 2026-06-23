@@ -15,12 +15,16 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing design, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-code-deep", "cog-skill-creator"]
+examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-code-deep", "cog-skill-creator", "review-plan-lean"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Exploration and planning should ride the session default so genuinely open work keeps
 the strongest default model and effort budget. Pinning frontmatter would cap that work."""
-escalation = """A skill author may override per case, such as effort=xhigh for an unusually hard
-task, but the override must be justified in the skill or invocation context."""
+escalation = """A skill author may override per case when a task is genuinely harder than open
+exploration, and the override must be justified in the skill or invocation context. Reviewing or
+verifying an already-reasoned artifact (plan review, code review) rides the session default:
+generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of
+correctness judging, so opus+high is the right floor. Reserve effort=xhigh for reviews that span many
+subsystems, are security-critical, are expensive to reverse, or run as evaluations."""
 
 [tiers.procedural]
 model = "opus"
