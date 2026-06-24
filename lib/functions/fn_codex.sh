@@ -61,13 +61,13 @@ __cog_codex_map_effort() {
   local effort="${1:-}"
 
   case "$effort" in
-    minimal | low | medium | high)
+    minimal | low | medium | high | xhigh)
       printf '%s\n' "$effort"
       ;;
     *)
       cog::helpers::die "$EX_USAGE" "InvalidInput" \
         "invalid codex effort" "effort: ${effort}" \
-        "expected minimal, low, medium, or high" ""
+        "expected minimal, low, medium, high, or xhigh" ""
       ;;
   esac
 }
@@ -92,7 +92,7 @@ cog::fn::codex_exec_command() {
   __cog_codex_require_arg "$prompt_file" "prompt_file" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_exec_command"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
 
   case "$mode" in
     native)
@@ -158,7 +158,7 @@ cog::fn::codex_exec_argv() {
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_exec_argv"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_argv"
   __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_exec_argv"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
@@ -200,7 +200,7 @@ cog::fn::codex_resume_argv() {
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_resume_argv"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_argv"
   __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_resume_argv"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
@@ -225,7 +225,7 @@ cog::fn::codex_resume_command() {
   __cog_codex_require_arg "$prompt_file" "prompt_file" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_resume_command"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
 
   cat <<EOF
 codex-session --account "$account" exec -c model_reasoning_effort=$codex_effort resume "$thread_id" \\
@@ -253,7 +253,7 @@ cog::fn::codex_exec_run() {
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_exec_run"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_run"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_exec_run"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   case "$mode" in
@@ -330,7 +330,7 @@ cog::fn::codex_resume_run() {
   __cog_codex_require_prompt "$prompt_file" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_resume_run"
-  codex_effort="$(__cog_codex_map_effort "$effort")"
+  codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
 
   if [[ -n $stderr_file ]]; then

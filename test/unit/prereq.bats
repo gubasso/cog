@@ -72,3 +72,36 @@ setup() {
   assert_success
   assert_output "ok"
 }
+
+@test "prereq_collect_checks reports missing taplo as advisory" {
+  local fakebin="${BATS_TEST_TMPDIR}/fakebin"
+  local old_path="$PATH"
+  local -a checks=()
+  local overall="ok"
+  local hard_failure_kind=""
+  local checks_json
+  local dep
+  mkdir -p "$fakebin"
+  ln -s "$(command -v jq)" "$fakebin/jq"
+  ln -s "$(command -v mkdir)" "$fakebin/mkdir"
+  for dep in bash git find sed mktemp; do
+    ln -s "$(command -v "$dep")" "$fakebin/$dep"
+  done
+
+  PATH="$fakebin" cog::fn::prereq_collect_checks checks overall hard_failure_kind
+  PATH="$old_path"
+  checks_json="$(printf '%s\n' "${checks[@]}" | jq -s '.')"
+
+  [ "$overall" = "ok" ]
+  [ -z "$hard_failure_kind" ]
+  printf '%s\n' "$checks_json" | jq -e '
+    map(select(.name == "dependency:taplo"))[0]
+    | .status == "warn"
+    and (.detail | contains("sudo zypper install taplo"))
+  ' >/dev/null
+  printf '%s\n' "$checks_json" | jq -e '
+    (["bash", "jq", "git", "find", "sed", "mktemp"] -
+      [.[] | select(.name | startswith("dependency:")) | select(.status == "ok") | .name | sub("^dependency:"; "")])
+    | length == 0
+  ' >/dev/null
+}

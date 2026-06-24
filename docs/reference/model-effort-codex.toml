@@ -1,6 +1,6 @@
 # Model/effort policy data - Codex.
 # SoT for codex-session / cog codex-runner model+effort.
-# Evidence: docs/reference/models-reference-codex.md (Data collected: 2026-06-19).
+# Evidence: docs/reference/models-reference-codex.md (Data collected: 2026-06-24).
 schema_version = 1
 provider = "codex"
 session_default = { model = "gpt-5.5", effort = "medium" }
@@ -9,6 +9,28 @@ api_only_model_suffix = "-codex"
 api_only_model_rule = """Models ending in -codex are API-only and must never be pinned for
 subscription-auth Codex. cog codex-runner and codex-session pin only gpt-5.5, gpt-5.4, or
 gpt-5.4-mini under subscription auth."""
+# gpt-5.3-codex-spark is a ChatGPT Pro-only, text-only research preview (near-instant iteration).
+# Not pinned here: it is a preview, Pro-tier-gated, and outside the current working set.
+# Evidence: https://developers.openai.com/codex/models (verified 2026-06-24).
+
+# supported_efforts: the reasoning-effort enumeration for the Codex CLI `model_reasoning_effort`
+# config key that `cog codex-runner` sets (the layer cog actually drives). Evidence:
+# https://developers.openai.com/codex/config-reference -> `model_reasoning_effort` =
+# minimal | low | medium | high | xhigh (xhigh is model-dependent). Verified 2026-06-24.
+#
+# CROSS-SURFACE NUANCE (do not "fix" the lowest token without reading this): the OpenAI *API*
+# `reasoning_effort` parameter and the per-model pages use `none` (NOT `minimal`) for the lowest
+# tier, and `none` is the API default for gpt-5.4 and gpt-5.4-mini (gpt-5.5 defaults to medium).
+# The Codex `model_reasoning_effort` key does NOT accept `none`, so cog's lowest reachable Codex
+# tier is `minimal`; `none` and `minimal` denote the same ~0.1x lowest tier across the two
+# surfaces. The separate `plan_mode_reasoning_effort` key accepts the superset
+# `none | minimal | low | medium | high | xhigh`. cog's runtime validator
+# (lib/functions/fn_codex.sh `__cog_codex_map_effort`) correctly accepts the
+# `model_reasoning_effort` set and is the SoT for what cog can emit.
+[supported_efforts]
+"gpt-5.5" = ["minimal", "low", "medium", "high", "xhigh"]
+"gpt-5.4" = ["minimal", "low", "medium", "high", "xhigh"]
+"gpt-5.4-mini" = ["minimal", "low", "medium", "high", "xhigh"]
 
 [tiers.exploration]
 model = "(session default)"
@@ -50,8 +72,9 @@ signals = ["thin orchestration over cog subcommands", "no real reasoning", "fast
 anti_signals = ["any meaningful judgment", "multi-step design"]
 examples = ["gc"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
-rationale = """Use gpt-5.4-mini at medium as the chosen planning value for trivial work. NEEDS
-VERIFICATION: Round-1 evidence confirms gpt-5.4-mini pricing, credits, context, max output, and
-cutoff, but its exact effort enumeration, xhigh support, and default remain unconfirmed."""
-escalation = """If a routine starts needing judgment, promote it to gpt-5.5 at medium. Revalidate
-gpt-5.4-mini effort support before treating medium as confirmed model capability."""
+rationale = """Use gpt-5.4-mini at medium as the chosen planning value for trivial work. Verified
+2026-06-24 against OpenAI model docs: gpt-5.4-mini supports reasoning effort none/low/medium/high/
+xhigh at the API (default none) and minimal/low/medium/high/xhigh via the Codex
+model_reasoning_effort key; pricing ($0.75 in / $4.50 out per MTok), 400K context, and 128K max
+output are confirmed."""
+escalation = """If a routine starts needing judgment, promote it to gpt-5.5 at medium."""

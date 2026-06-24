@@ -56,6 +56,21 @@ EOF
   [[ $output == *"--dangerously-bypass-approvals-and-sandbox --json"* ]]
 }
 
+@test "codex_exec_command accepts xhigh and forwards unchanged" {
+  run cog::fn::codex_exec_command native xhigh prompt.md out.md events.jsonl stderr.log
+
+  assert_success
+  [[ $output == *"codex-session exec -c model_reasoning_effort=xhigh --sandbox read-only --json"* ]]
+}
+
+@test "codex_exec_command rejects unknown effort with updated allowlist" {
+  run --separate-stderr cog::fn::codex_exec_command native unknown prompt.md out.md events.jsonl stderr.log
+
+  assert_failure 64
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
+  [[ $stderr == *"expected minimal, low, medium, high, or xhigh"* ]]
+}
+
 @test "codex_mode_is_write_capable only allows danger" {
   run cog::fn::codex_mode_is_write_capable danger
   assert_success
@@ -256,6 +271,16 @@ EOF
   printf '%s\n' "${argv[*]}" | grep -q -- "--dangerously-bypass-approvals-and-sandbox"
   printf '%s\n' "${argv[*]}" | grep -q -- "--output-last-message"
   printf '%s\n' "${argv[*]}" | grep -qv -- "2>"
+}
+
+@test "codex_exec_argv accepts xhigh and forwards unchanged" {
+  local prompt="${BATS_TEST_TMPDIR}/p.md"
+  printf 'prompt\n' >"$prompt"
+  local -a argv=()
+
+  cog::fn::codex_exec_argv danger xhigh "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+
+  printf '%s\n' "${argv[*]}" | grep -q -- "model_reasoning_effort=xhigh"
 }
 
 @test "codex_resume_argv pins the account and resumes the thread" {

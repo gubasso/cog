@@ -14,7 +14,7 @@ entries:
       - docs/reference/model-effort-claude.toml
   - id: models-reference-codex
     path: docs/reference/models-reference-codex.md
-    last_checked: 2026-06-19
+    last_checked: 2026-06-24
     cadence_days: 90
     owner: model-effort policy
     why: "Codex-selectable GPT models, pricing, and effort multipliers change; the codex policy rests on them."

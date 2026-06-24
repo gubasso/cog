@@ -3,9 +3,9 @@
 A dated reference for Codex-selectable GPT model pricing, effort support, benchmarks, and
 subscription availability used by `cog`.
 
-Data collected: 2026-06-19
+Data collected: 2026-06-19; re-verified 2026-06-24 (effort enums, gpt-5.4-mini, gpt-5.3-codex-spark)
 
-Revalidate by: 2026-09-19, or sooner on any new model release, CLI availability change, or pricing
+Revalidate by: 2026-09-24, or sooner on any new model release, CLI availability change, or pricing
 change
 
 Sources:
@@ -31,7 +31,8 @@ Sources:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `gpt-5.5` | input $5.00; cached $0.50; output $30.00. Long-context sessions above 272K input apply 2x input and 1.5x output | input 125; cached 12.5; output 750 | 1,050,000 / 128,000 | `none`, `low`, `medium`, `high`, `xhigh`; default `medium` | SWE-bench Verified about 88.7% (MEDIUM/SECONDARY); Terminal-Bench 2.0 82.7% (MEDIUM/SECONDARY); SWE-bench Pro 58.6% (SECONDARY) | 2025-12-01 | HIGH/PRIMARY for pricing, credits, limits, effort, cutoff; benchmarks as tagged |
 | `gpt-5.4` | input $2.50; cached $0.25; output $15.00. Long-context sessions above 272K input apply 2x input and 1.5x output | input 62.5; cached 6.25; output 375 | 1,050,000 / 128,000 | `none`, `low`, `medium`, `high`, `xhigh`; default `none` | SWE-bench Pro about 57.7-59.1% at `xhigh` (SECONDARY); SWE-bench Verified about 80% (LOW-MEDIUM/SECONDARY) | 2025-08-31 | HIGH/PRIMARY for pricing, credits, limits, effort, cutoff; benchmarks as tagged |
-| `gpt-5.4-mini` | input $0.75; cached $0.075; output $4.50 | input 18.75; cached 1.875; output 113 | 400,000 / 128,000 | reasoning supported; exact level enumeration, `xhigh` support, and default NEEDS VERIFICATION | No published SWE-bench figure | 2025-08-31 | HIGH/PRIMARY for pricing, credits, limits, cutoff; effort enumeration NEEDS VERIFICATION |
+| `gpt-5.4-mini` | input $0.75; cached $0.075; output $4.50 | input 18.75; cached 1.875; output 113 | 400,000 / 128,000 | `none`, `low`, `medium`, `high`, `xhigh`; default `none` | No published SWE-bench figure | 2025-08-31 | HIGH/PRIMARY for pricing, credits, limits, effort, cutoff (effort verified 2026-06-24 against the OpenAI gpt-5.4-mini model page) |
+| `gpt-5.3-codex-spark` | NEEDS VERIFICATION (research preview; not on standard pricing page) | NEEDS VERIFICATION | NEEDS VERIFICATION | NEEDS VERIFICATION | Text-only, optimized for near-instant real-time coding iteration | NEEDS VERIFICATION | MEDIUM/PRIMARY availability (ChatGPT Pro-only research preview, https://developers.openai.com/codex/models); all numeric specs NEEDS VERIFICATION |
 
 ## Effort Token Multipliers
 
@@ -47,6 +48,30 @@ COMMUNITY-MEASURED, NOT official; SECONDARY/LOW. Values are relative to `medium 
 
 OpenAI does not publish official per-effort token multipliers. Treat this table as a planning aid
 for quota risk, not a billing guarantee.
+
+## Reasoning-effort surfaces: `none` vs `minimal` vs `xhigh`
+
+Three different OpenAI surfaces enumerate reasoning effort differently; conflating them causes the
+lowest-tier token to mismatch. Verified 2026-06-24 against official docs.
+
+| Surface | Key | Accepted values | Lowest-tier token | Source |
+| --- | --- | --- | --- | --- |
+| Codex CLI config (what `cog codex-runner` sets) | `model_reasoning_effort` | `minimal`, `low`, `medium`, `high`, `xhigh` | `minimal` (no `none`) | <https://developers.openai.com/codex/config-reference> |
+| Codex plan-mode override | `plan_mode_reasoning_effort` | `none`, `minimal`, `low`, `medium`, `high`, `xhigh` | `none` | <https://developers.openai.com/codex/config-reference> |
+| OpenAI API / per-model pages | `reasoning_effort` | `none`, `low`, `medium`, `high`, `xhigh` | `none` (no `minimal`) | <https://developers.openai.com/api/docs/guides/reasoning> + per-model pages |
+
+Implications for `cog`:
+
+- `cog codex-runner` drives `model_reasoning_effort`, so its reachable Codex effort set is
+  `minimal | low | medium | high | xhigh`. The runtime validator
+  `lib/functions/fn_codex.sh` (`__cog_codex_map_effort`) accepts exactly this set and is correct;
+  `none` is intentionally not emittable by cog.
+- `none` (API lowest tier / gpt-5.4 and gpt-5.4-mini default) and `minimal` (Codex lowest tier)
+  denote the same ~0.1x-burn lowest tier; they are surface-specific spellings, not different levels.
+- `xhigh` is model-dependent on every surface; it is documented for `gpt-5.5`, `gpt-5.4`, and
+  `gpt-5.4-mini`.
+- `docs/reference/model-effort-codex.toml` `[supported_efforts]` lists the Codex
+  (`model_reasoning_effort`) set on purpose, so the data SoT matches what cog can actually emit.
 
 ## Availability Caveats
 
@@ -90,8 +115,15 @@ sunset, and Codex CLI 0.141.0 are HIGH/PRIMARY from the orchestrator's 2026-06-1
 OpenAI sources.
 
 `gpt-5.4-mini` pricing, credits, context, max output, and knowledge cutoff are HIGH/PRIMARY. Its
-exact effort-level enumeration, `xhigh` support, and default are NEEDS VERIFICATION because the
-primary per-model page did not enumerate them.
+effort-level enumeration is now HIGH/PRIMARY as well: re-verified 2026-06-24 against the OpenAI
+gpt-5.4-mini model page, which lists `reasoning_effort` support `none` (default), `low`, `medium`,
+`high`, and `xhigh`. The earlier NEEDS VERIFICATION is resolved.
+
+`gpt-5.3-codex-spark` is a ChatGPT Pro-only, text-only research preview
+(<https://developers.openai.com/codex/models>); its availability is MEDIUM/PRIMARY, but pricing,
+context, max output, effort support, and cutoff are NEEDS VERIFICATION (not published on the
+standard model/pricing pages). It is intentionally not added to `subscription_auth_models` while it
+remains a Pro-gated preview.
 
 SWE-bench figures are SECONDARY where supplied by leaderboards or aggregators. OpenAI de-emphasized
 SWE-bench Verified in Feb 2026, so those figures should remain qualified even when useful for rough

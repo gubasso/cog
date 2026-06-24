@@ -3,7 +3,7 @@
 # Evidence: docs/reference/models-reference-claude.md (Data collected: 2026-06-19).
 schema_version = 1
 provider = "claude"
-forbidden_models = ["sonnet"]
+forbidden_models = ["sonnet", "fable"]
 sonnet_replacement = { model = "opus", effort = "low" }
 session_default = { model = "opus", effort = "high", note = "exploration/planning skills set no override and ride this" }
 
