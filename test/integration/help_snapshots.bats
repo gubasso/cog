@@ -68,6 +68,7 @@ Commands:
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  power-grade    Inspect and validate model/effort power grades.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.
@@ -158,6 +159,7 @@ Commands:
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plan-writer-multi-setup Parse plan-writer-multi arguments and create run state.
+  power-grade    Inspect and validate model/effort power grades.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   preflight      Run centralized orchestrator preflight checks.

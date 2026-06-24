@@ -54,6 +54,7 @@ _cog() {
     plan-review
     plan-slug
     plan-writer-multi-setup
+    power-grade
     precommit-apply-template
     precommit-detect
     preflight

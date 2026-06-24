@@ -76,6 +76,11 @@ this reference table.
 | `plan-review validate` | Validate one annotated plan review artifact. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
+| `power-grade` | Inspect and validate model/effort power grades. |
+| `power-grade validate` | Validate the Power Grade matrix schema and source-cited profiles. |
+| `power-grade cell --model <model> --effort <effort>` | Print one model/effort profile. |
+| `power-grade classify --grade <n>` | Print executable profiles that can handle a difficulty grade. |
+| `power-grade compound --passes <profile,profile,...>` | Compute compounded capability for a pass sequence. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |

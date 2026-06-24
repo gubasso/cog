@@ -1,0 +1,624 @@
+# Power Grade matrix v1.
+# Data collected: 2026-06-24
+# Revalidate by: 2026-09-24, or sooner on model, pricing, benchmark, effort, or policy changes.
+#
+# Committed schema:
+# - schema_version: integer schema marker.
+# - [scale]: single numeric grade scale; all profile grades must be inside min..max.
+# - [validation]: severity contract. Missing required executable profile fields are fatal;
+#   evidence_status = "needs_verification" is non-fatal when the profile is informational or the
+#   missing public data is explicitly cited in caveats.
+# - [compound]: single source of truth for compound-pass math. Shell helpers read these values.
+# - [[profiles]]: one profile per executable model/effort cell, plus informational verification rows.
+#   Required keys: id, slug, label, provider, model, effort, grade, executable,
+#   policy_selectable, evidence_status, confidence, source_refs, description, use_where, caveats.
+# - [[named_profiles]]: policy pairings that keep model-effort policy and this matrix aligned.
+schema_version = 1
+data_collected = "2026-06-24"
+revalidate_by = "2026-09-24"
+
+[scale]
+min = 1
+max = 10
+description = "Power Grade is a difficulty ceiling for a single model/effort profile. Higher numbers mean the profile can handle harder, more ambiguous, or higher-blast-radius work."
+grade_rule = "Assign grades from the sourced model benchmark, effort-support, pricing, and qualitative Power Grade input rows. Do not invent missing benchmark numbers; use evidence_status and confidence for gaps."
+
+[validation]
+needs_verification_is_fatal = false
+informational_profile_is_fatal = false
+unsupported_efforts_as_profiles = false
+required_profile_keys = [
+  "id",
+  "slug",
+  "label",
+  "provider",
+  "model",
+  "effort",
+  "grade",
+  "executable",
+  "policy_selectable",
+  "evidence_status",
+  "confidence",
+  "source_refs",
+  "description",
+  "use_where",
+  "caveats",
+]
+
+[compound]
+formula = "capped_max_plus_artifact_gain"
+description = "compound_grade = min(scale.max, max(pass grades) + sum(artifact_gain for pass 2..n))"
+# Partial-result contract: compound_grade is authoritative only when ok == true. When ok == false
+# (an unknown or non-executable pass appears in `errors`), base_grade/artifact_gain/compound_grade
+# are computed from the surviving executable passes only and must be treated as partial; read `ok`
+# and `errors` before consuming the number.
+result_is_authoritative_only_when_ok = true
+cap_to_scale_max = true
+first_pass_gain = 0
+subsequent_pass_artifact_gain = 1
+unknown_artifact_gain = 0
+
+[[profiles]]
+id = "claude-opus-4.8-low"
+slug = "opus48-low"
+label = "Opus 4.8 low"
+provider = "claude"
+model = "claude-opus-4-8"
+effort = "low"
+grade = 5
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:low", "docs/reference/model-effort-policy.md"]
+description = "Strong Opus model at reduced effort for bounded procedural work."
+use_where = ["structured implementation with known approach", "procedural execution with bounded judgment"]
+caveats = ["No published Claude per-effort numeric token multiplier is asserted."]
+
+[[profiles]]
+id = "claude-opus-4.8-medium"
+slug = "opus48-medium"
+label = "Opus 4.8 medium"
+provider = "claude"
+model = "claude-opus-4-8"
+effort = "medium"
+grade = 6
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:medium"]
+description = "Middle Opus 4.8 reasoning budget for moderately complex execution."
+use_where = ["moderate code edits", "plan execution with some judgment"]
+caveats = ["No published numeric low-to-medium quality delta is asserted."]
+
+[[profiles]]
+id = "claude-opus-4.8-high"
+slug = "opus48-high"
+label = "Opus 4.8 high"
+provider = "claude"
+model = "claude-opus-4-8"
+effort = "high"
+grade = 8
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "high"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:high", "docs/reference/model-effort-policy.md"]
+description = "Default Claude exploration/planning pairing."
+use_where = ["open-ended planning", "code review", "design judgment"]
+caveats = ["SWE-bench figure is secondary."]
+
+[[profiles]]
+id = "claude-opus-4.8-xhigh"
+slug = "opus48-xhigh"
+label = "Opus 4.8 xhigh"
+provider = "claude"
+model = "claude-opus-4-8"
+effort = "xhigh"
+grade = 9
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "high"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:xhigh", "docs/reference/model-effort-policy.md"]
+description = "Escalated Opus 4.8 reasoning for hard coding or agentic work."
+use_where = ["hard single-pass implementation", "high-ambiguity agentic coding"]
+caveats = ["Use as escalation, not routine default."]
+
+[[profiles]]
+id = "claude-opus-4.8-max"
+slug = "opus48-max"
+label = "Opus 4.8 max"
+provider = "claude"
+model = "claude-opus-4-8"
+effort = "max"
+grade = 10
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:max"]
+description = "Highest Opus 4.8 effort tier for exceptional difficulty."
+use_where = ["hardest tasks", "expensive-to-reverse work after explicit escalation"]
+caveats = ["Reserve because cost and latency increase directionally with more thinking/output."]
+
+[[profiles]]
+id = "claude-opus-4.7-low"
+slug = "opus47-low"
+label = "Opus 4.7 low"
+provider = "claude"
+model = "claude-opus-4-7"
+effort = "low"
+grade = 4
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:low"]
+description = "Previous-generation Opus at reduced effort."
+use_where = ["bounded procedural work when this model is explicitly selected"]
+caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-opus-4.7-medium"
+slug = "opus47-medium"
+label = "Opus 4.7 medium"
+provider = "claude"
+model = "claude-opus-4-7"
+effort = "medium"
+grade = 5
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:medium"]
+description = "Previous-generation Opus at middle effort."
+use_where = ["moderate work when this model is explicitly selected"]
+caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-opus-4.7-high"
+slug = "opus47-high"
+label = "Opus 4.7 high"
+provider = "claude"
+model = "claude-opus-4-7"
+effort = "high"
+grade = 7
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:high"]
+description = "Previous-generation Opus at regular high effort."
+use_where = ["open-ended work only when this model is explicitly selected"]
+caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-opus-4.7-xhigh"
+slug = "opus47-xhigh"
+label = "Opus 4.7 xhigh"
+provider = "claude"
+model = "claude-opus-4-7"
+effort = "xhigh"
+grade = 8
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:xhigh"]
+description = "Previous-generation Opus escalation effort."
+use_where = ["hard work only when this model is explicitly selected"]
+caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-opus-4.7-max"
+slug = "opus47-max"
+label = "Opus 4.7 max"
+provider = "claude"
+model = "claude-opus-4-7"
+effort = "max"
+grade = 9
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:max"]
+description = "Previous-generation Opus maximum effort."
+use_where = ["exceptional work only when this model is explicitly selected"]
+caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-haiku-4.5-none"
+slug = "haiku45-none"
+label = "Haiku 4.5"
+provider = "claude"
+model = "claude-haiku-4-5"
+effort = "none"
+grade = 2
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:haiku-4.5", "docs/reference/models-reference-claude.md#claude:haiku-4.5:none", "docs/reference/model-effort-policy.md"]
+description = "Fast routine Claude profile; effort must be omitted at runtime."
+use_where = ["thin orchestration", "simple deterministic routines"]
+caveats = ["No SWE-bench figure asserted; selectable effort is unsupported."]
+
+[[profiles]]
+id = "claude-fable-5-low"
+slug = "fable5-low"
+label = "Fable 5 low"
+provider = "claude"
+model = "claude-fable-5"
+effort = "low"
+grade = 6
+executable = true
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:low"]
+description = "High-cost reference model at low effort."
+use_where = ["reference comparison only"]
+caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-fable-5-medium"
+slug = "fable5-medium"
+label = "Fable 5 medium"
+provider = "claude"
+model = "claude-fable-5"
+effort = "medium"
+grade = 7
+executable = true
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:medium"]
+description = "High-cost reference model at middle effort."
+use_where = ["reference comparison only"]
+caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-fable-5-high"
+slug = "fable5-high"
+label = "Fable 5 high"
+provider = "claude"
+model = "claude-fable-5"
+effort = "high"
+grade = 9
+executable = true
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:high"]
+description = "Default Fable effort with always-on thinking."
+use_where = ["reference comparison only"]
+caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-fable-5-xhigh"
+slug = "fable5-xhigh"
+label = "Fable 5 xhigh"
+provider = "claude"
+model = "claude-fable-5"
+effort = "xhigh"
+grade = 10
+executable = true
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:xhigh"]
+description = "Escalated Fable reference profile."
+use_where = ["reference comparison only"]
+caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "claude-fable-5-max"
+slug = "fable5-max"
+label = "Fable 5 max"
+provider = "claude"
+model = "claude-fable-5"
+effort = "max"
+grade = 10
+executable = true
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:max"]
+description = "Maximum Fable reference profile."
+use_where = ["reference comparison only"]
+caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+
+[[profiles]]
+id = "codex-gpt-5.5-minimal"
+slug = "gpt55-minimal"
+label = "gpt-5.5 minimal"
+provider = "codex"
+model = "gpt-5.5"
+effort = "minimal"
+grade = 3
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:minimal"]
+description = "Lowest Codex CLI reasoning tier on the strongest selectable model."
+use_where = ["thin work on gpt-5.5", "cheap sanity checks"]
+caveats = ["Effort multipliers are community-measured and low confidence."]
+
+[[profiles]]
+id = "codex-gpt-5.5-low"
+slug = "gpt55-low"
+label = "gpt-5.5 low"
+provider = "codex"
+model = "gpt-5.5"
+effort = "low"
+grade = 5
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:low"]
+description = "Reduced reasoning budget on gpt-5.5."
+use_where = ["bounded execution", "lower-cost known tasks"]
+caveats = ["Effort multipliers are community-measured and low confidence."]
+
+[[profiles]]
+id = "codex-gpt-5.5-medium"
+slug = "gpt55-medium"
+label = "gpt-5.5 medium"
+provider = "codex"
+model = "gpt-5.5"
+effort = "medium"
+grade = 8
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "high"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:medium", "docs/reference/model-effort-policy.md"]
+description = "Balanced Codex session default and exploration pairing."
+use_where = ["planning", "code review", "open-ended implementation"]
+caveats = ["Headline benchmarks are secondary."]
+
+[[profiles]]
+id = "codex-gpt-5.5-high"
+slug = "gpt55-high"
+label = "gpt-5.5 high"
+provider = "codex"
+model = "gpt-5.5"
+effort = "high"
+grade = 9
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "high"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:high", "docs/reference/model-effort-policy.md"]
+description = "Escalated gpt-5.5 profile for unusually hard work."
+use_where = ["hard single-pass implementation", "stuck or high-stakes procedural work"]
+caveats = ["Community-measured burn is about 3-5x medium."]
+
+[[profiles]]
+id = "codex-gpt-5.5-xhigh"
+slug = "gpt55-xhigh"
+label = "gpt-5.5 xhigh"
+provider = "codex"
+model = "gpt-5.5"
+effort = "xhigh"
+grade = 10
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:xhigh"]
+description = "Exception-tier gpt-5.5 profile."
+use_where = ["hardest Codex tasks after explicit escalation"]
+caveats = ["Community-measured burn is about 8-15x medium."]
+
+[[profiles]]
+id = "codex-gpt-5.4-minimal"
+slug = "gpt54-minimal"
+label = "gpt-5.4 minimal"
+provider = "codex"
+model = "gpt-5.4"
+effort = "minimal"
+grade = 2
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:minimal"]
+description = "Lowest Codex CLI effort on gpt-5.4."
+use_where = ["very small tasks", "low-cost checks"]
+caveats = ["API default is none; Codex CLI emits minimal."]
+
+[[profiles]]
+id = "codex-gpt-5.4-low"
+slug = "gpt54-low"
+label = "gpt-5.4 low"
+provider = "codex"
+model = "gpt-5.4"
+effort = "low"
+grade = 4
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:low"]
+description = "Reduced effort on gpt-5.4."
+use_where = ["bounded low-cost tasks"]
+caveats = ["Benchmark evidence is weaker than gpt-5.5."]
+
+[[profiles]]
+id = "codex-gpt-5.4-medium"
+slug = "gpt54-medium"
+label = "gpt-5.4 medium"
+provider = "codex"
+model = "gpt-5.4"
+effort = "medium"
+grade = 6
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:medium"]
+description = "Middle gpt-5.4 effort."
+use_where = ["moderate tasks when gpt-5.5 is not selected"]
+caveats = ["SWE-bench Verified figure is low-medium/secondary."]
+
+[[profiles]]
+id = "codex-gpt-5.4-high"
+slug = "gpt54-high"
+label = "gpt-5.4 high"
+provider = "codex"
+model = "gpt-5.4"
+effort = "high"
+grade = 7
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:high", "docs/reference/model-effort-policy.md"]
+description = "High effort on gpt-5.4."
+use_where = ["non-default escalation when explicitly justified"]
+caveats = ["Policy warns this is an anti-pattern as a default cost-saving tier."]
+
+[[profiles]]
+id = "codex-gpt-5.4-xhigh"
+slug = "gpt54-xhigh"
+label = "gpt-5.4 xhigh"
+provider = "codex"
+model = "gpt-5.4"
+effort = "xhigh"
+grade = 8
+executable = true
+policy_selectable = true
+evidence_status = "sourced"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:xhigh"]
+description = "Highest gpt-5.4 effort with SWE-bench Pro evidence."
+use_where = ["reference comparison", "explicit non-default escalation"]
+caveats = ["Community-measured burn is about 8-15x medium."]
+
+[[profiles]]
+id = "codex-gpt-5.4-mini-minimal"
+slug = "gpt54mini-minimal"
+label = "gpt-5.4-mini minimal"
+provider = "codex"
+model = "gpt-5.4-mini"
+effort = "minimal"
+grade = 1
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:minimal"]
+description = "Lowest effort on the routine Codex model."
+use_where = ["very small deterministic tasks"]
+caveats = ["No published SWE-bench figure."]
+
+[[profiles]]
+id = "codex-gpt-5.4-mini-low"
+slug = "gpt54mini-low"
+label = "gpt-5.4-mini low"
+provider = "codex"
+model = "gpt-5.4-mini"
+effort = "low"
+grade = 2
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:low"]
+description = "Low effort on the routine Codex model."
+use_where = ["simple deterministic tasks"]
+caveats = ["No published SWE-bench figure."]
+
+[[profiles]]
+id = "codex-gpt-5.4-mini-medium"
+slug = "gpt54mini-medium"
+label = "gpt-5.4-mini medium"
+provider = "codex"
+model = "gpt-5.4-mini"
+effort = "medium"
+grade = 3
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "high"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:medium", "docs/reference/model-effort-policy.md"]
+description = "Routine Codex policy pairing."
+use_where = ["routine orchestration", "thin mechanical tasks"]
+caveats = ["No published SWE-bench figure."]
+
+[[profiles]]
+id = "codex-gpt-5.4-mini-high"
+slug = "gpt54mini-high"
+label = "gpt-5.4-mini high"
+provider = "codex"
+model = "gpt-5.4-mini"
+effort = "high"
+grade = 4
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "medium"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:high"]
+description = "Escalated effort on the routine Codex model."
+use_where = ["small tasks needing extra reasoning"]
+caveats = ["No published SWE-bench figure; do not treat as a gpt-5.5 replacement."]
+
+[[profiles]]
+id = "codex-gpt-5.4-mini-xhigh"
+slug = "gpt54mini-xhigh"
+label = "gpt-5.4-mini xhigh"
+provider = "codex"
+model = "gpt-5.4-mini"
+effort = "xhigh"
+grade = 5
+executable = true
+policy_selectable = true
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:xhigh"]
+description = "Highest effort on the routine Codex model."
+use_where = ["reference comparison", "small tasks with explicit escalation"]
+caveats = ["No published SWE-bench figure."]
+
+[[profiles]]
+id = "codex-gpt-5.3-codex-spark-needs-verification"
+slug = "gpt53codexspark-needs-verification"
+label = "gpt-5.3-codex-spark preview"
+provider = "codex"
+model = "gpt-5.3-codex-spark"
+effort = "needs-verification"
+grade = 1
+executable = false
+policy_selectable = false
+evidence_status = "needs_verification"
+confidence = "low"
+source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.3-codex-spark", "docs/reference/models-reference-codex.md#codex:gpt-5.3-codex-spark:needs-verification"]
+description = "Informational research-preview row until numeric specs and effort support are published."
+use_where = ["not executable by cog policy"]
+caveats = ["Pricing, context, effort support, cutoff, and benchmark data are NEEDS VERIFICATION."]
+
+[[named_profiles]]
+name = "exploration"
+claude_profile = "claude-opus-4.8-high"
+codex_profile = "codex-gpt-5.5-medium"
+use_when = "Open-ended reasoning, planning, review, and exploration."
+source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]
+
+[[named_profiles]]
+name = "single-pass-escalation"
+claude_profile = "claude-opus-4.8-xhigh"
+codex_profile = "codex-gpt-5.5-high"
+use_when = "Hard single-pass execution or explicit escalation."
+source_refs = ["docs/reference/model-effort-policy.md"]
+
+[[named_profiles]]
+name = "routine"
+claude_profile = "claude-haiku-4.5-none"
+codex_profile = "codex-gpt-5.4-mini-medium"
+use_when = "Thin deterministic orchestration and routine work."
+source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]

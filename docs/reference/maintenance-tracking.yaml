@@ -12,6 +12,7 @@ entries:
     references:
       - docs/reference/model-effort-policy.md
       - docs/reference/model-effort-claude.toml
+      - docs/reference/power-grade-matrix.toml
   - id: models-reference-codex
     path: docs/reference/models-reference-codex.md
     last_checked: 2026-06-24
@@ -22,6 +23,17 @@ entries:
     references:
       - docs/reference/model-effort-policy.md
       - docs/reference/model-effort-codex.toml
+      - docs/reference/power-grade-matrix.toml
+  - id: power-grade-matrix
+    path: docs/reference/power-grade-matrix.toml
+    last_checked: 2026-06-24
+    cadence_days: 90
+    owner: power-grade policy
+    why: "The matrix grades model/effort capability from model benchmarks, pricing, effort support, and policy defaults that can drift."
+    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date."
+    references:
+      - docs/reference/model-effort-policy.md
+      - docs/decisions/0032-power-grade-model.md
   - id: research-shelf
     path: docs/reference/research-shelf/index.jsonl
     last_checked: 2026-06-20

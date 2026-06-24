@@ -49,6 +49,40 @@ COMMUNITY-MEASURED, NOT official; SECONDARY/LOW. Values are relative to `medium 
 OpenAI does not publish official per-effort token multipliers. Treat this table as a planning aid
 for quota risk, not a billing guarantee.
 
+## Power Grade Inputs
+
+This section is the dated Codex/GPT evidence row set consumed by
+`docs/reference/power-grade-matrix.toml`. It consolidates existing sourced facts from this reference;
+it does not add newly researched benchmark numbers.
+
+| Source row id | Model | Effort axis for matrix | Coding benchmark input | Cost input | Effort-quality input | Effort-cost input | Power Grade caveats |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `codex:gpt-5.5` | `gpt-5.5` | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `medium` | SWE-bench Verified about 88.7% (MEDIUM/SECONDARY); Terminal-Bench 2.0 82.7% (MEDIUM/SECONDARY); SWE-bench Pro 58.6% (SECONDARY) | $5 input / $0.50 cached / $30 output per MTok; long-context multiplier above 272K input | OpenAI latest-model guidance names medium the balanced default; high/xhigh are escalation tiers | Community-measured effort burn: minimal about 0.1x, low about 0.3x, medium 1x, high about 3-5x, xhigh about 8-15x | Benchmarks are secondary; effort multipliers are COMMUNITY-MEASURED/LOW |
+| `codex:gpt-5.4` | `gpt-5.4` | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `none` | SWE-bench Pro about 57.7-59.1% at `xhigh` (SECONDARY); SWE-bench Verified about 80% (LOW-MEDIUM/SECONDARY) | $2.50 input / $0.25 cached / $15 output per MTok; long-context multiplier above 272K input | Defaults to lowest API effort; high is a large reasoning-budget leap | Community-measured effort burn table applies directionally | `gpt-5.4 @ high` is an anti-pattern as a default cost-saving tier |
+| `codex:gpt-5.4-mini` | `gpt-5.4-mini` | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `none` | No published SWE-bench figure | $0.75 input / $0.075 cached / $4.50 output per MTok | Supports the same effort enum as larger models; use as the routine tier at `medium` per policy | Community-measured effort burn table applies directionally | SWE-bench figure is `NEEDS VERIFICATION`; grade inputs rely on pricing, context, effort support, and routine-policy role |
+| `codex:gpt-5.3-codex-spark` | `gpt-5.3-codex-spark` | `NEEDS VERIFICATION` | Text-only, optimized for near-instant real-time coding iteration; no benchmark number asserted | `NEEDS VERIFICATION` | Effort support is `NEEDS VERIFICATION` | Effort-cost axis is `NEEDS VERIFICATION` | Research preview; informational profile only until numeric specs and effort support are published |
+
+### Codex model-effort qualitative inputs
+
+| Source row id | Effort | Qualitative Power Grade input |
+| --- | --- | --- |
+| `codex:gpt-5.5:minimal` | `minimal` | Lowest Codex CLI reasoning tier; useful only for thin work because community-measured burn is about 0.1x of medium. |
+| `codex:gpt-5.5:low` | `low` | Reduced reasoning budget; community-measured burn is about 0.3x of medium. |
+| `codex:gpt-5.5:medium` | `medium` | Balanced default and policy exploration pairing. |
+| `codex:gpt-5.5:high` | `high` | Escalation for unusually hard procedural or single-pass work; community-measured burn is about 3-5x medium. |
+| `codex:gpt-5.5:xhigh` | `xhigh` | Exception tier for the hardest Codex tasks; community-measured burn is about 8-15x medium. |
+| `codex:gpt-5.4:minimal` | `minimal` | Lowest Codex CLI reasoning tier on the lower-cost model; aligns with API `none` default. |
+| `codex:gpt-5.4:low` | `low` | Reduced reasoning budget on the lower-cost model. |
+| `codex:gpt-5.4:medium` | `medium` | Middle effort on the lower-cost model; benchmark evidence is weaker than `gpt-5.5`. |
+| `codex:gpt-5.4:high` | `high` | Documented policy anti-pattern as a default because effort burn can erase the lower model price. |
+| `codex:gpt-5.4:xhigh` | `xhigh` | Highest effort with SWE-bench Pro evidence; use as reference evidence, not a default. |
+| `codex:gpt-5.4-mini:minimal` | `minimal` | Lowest effort on the routine model; no SWE-bench number is published. |
+| `codex:gpt-5.4-mini:low` | `low` | Reduced effort on the routine model; no SWE-bench number is published. |
+| `codex:gpt-5.4-mini:medium` | `medium` | Routine policy pairing; pricing, context, and effort support are verified. |
+| `codex:gpt-5.4-mini:high` | `high` | Escalated routine model effort; no SWE-bench number is published, so avoid treating it as a replacement for `gpt-5.5`. |
+| `codex:gpt-5.4-mini:xhigh` | `xhigh` | Highest effort on the routine model; no SWE-bench number is published. |
+| `codex:gpt-5.3-codex-spark:needs-verification` | `needs-verification` | Informational preview row only; numeric specs, pricing, effort support, and benchmark data remain `NEEDS VERIFICATION`. |
+
 ## Reasoning-effort surfaces: `none` vs `minimal` vs `xhigh`
 
 Three different OpenAI surfaces enumerate reasoning effort differently; conflating them causes the

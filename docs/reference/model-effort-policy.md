@@ -7,6 +7,11 @@ The machine-readable policy data lives in:
 
 - [`model-effort-claude.toml`](model-effort-claude.toml)
 - [`model-effort-codex.toml`](model-effort-codex.toml)
+- [`power-grade-matrix.toml`](power-grade-matrix.toml)
+
+The provider TOML files define policy tier selection. `power-grade-matrix.toml` is the source of
+truth for profile capability grades, source-cited profile evidence, named policy pairings, validation
+severity, and compound-pass math.
 
 ## Hard Rule
 
@@ -49,6 +54,20 @@ this table as the human-readable rationale:
 Do not pin `-codex` models for subscription-auth Codex. The Codex policy pins only `gpt-5.5`,
 `gpt-5.4`, or `gpt-5.4-mini` for that path.
 
+## Power Grade Profiles
+
+Power Grade profiles are model/effort capability cells used by `cog power-grade`. The matrix defines
+a 1-10 difficulty-ceiling scale, one executable profile per supported model/effort cell, non-fatal
+`needs_verification` evidence markers for genuine public-data gaps, and named policy pairings:
+
+- `exploration`: Opus 4.8 at high effort / `gpt-5.5` at medium effort.
+- `single-pass-escalation`: Opus 4.8 at xhigh effort / `gpt-5.5` at high effort.
+- `routine`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
+
+Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one profile, `classify`
+to find policy-selectable profiles that can handle a grade (reference-only cells such as Fable are
+excluded), and `compound` to compute pass-sequence capability from the matrix-owned formula.
+
 ## Review And Verification Work
 
 Reviewing or verifying an already-reasoned artifact (plan review, code review) is exploration-tier
@@ -64,7 +83,9 @@ research-shelf entry tagged `verifier-asymmetry`.
 This policy is backed by dated reference files:
 
 - [`models-reference-claude.md`](models-reference-claude.md), data collected `2026-06-19`.
-- [`models-reference-codex.md`](models-reference-codex.md), data collected `2026-06-19`.
+- [`models-reference-codex.md`](models-reference-codex.md), data collected `2026-06-19`, re-verified
+  `2026-06-24`.
+- [`power-grade-matrix.toml`](power-grade-matrix.toml), data collected `2026-06-24`.
 
 Revalidate this policy when those evidence files are revalidated, or sooner on model, pricing,
 availability, or effort-support changes.

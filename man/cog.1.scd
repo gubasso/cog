@@ -141,6 +141,9 @@ The command list and short descriptions are sourced from command modules under
 *plan-writer-multi-setup*
 	Parse plan-writer-multi arguments and create run state.
 
+*power-grade*
+	Inspect and validate model/effort power grades.
+
 *precommit-apply-template*
 	Apply a pre-commit template to a project.
 

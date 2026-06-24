@@ -67,6 +67,8 @@ source "${LIB_DIR}/functions/fn_plan_review.sh"
 source "${LIB_DIR}/functions/fn_tracking.sh"
 # shellcheck source=../lib/functions/fn_toml.sh
 source "${LIB_DIR}/functions/fn_toml.sh"
+# shellcheck source=../lib/functions/fn_power_grade.sh
+source "${LIB_DIR}/functions/fn_power_grade.sh"
 # shellcheck source=../lib/functions/fn_review_plan_implementation.sh
 source "${LIB_DIR}/functions/fn_review_plan_implementation.sh"
 # shellcheck source=../lib/functions/fn_codex.sh

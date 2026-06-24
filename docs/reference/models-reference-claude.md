@@ -58,6 +58,40 @@ Fable 5 supports `low`, `medium`, `high`, `xhigh`, and `max`, with default `high
 always on and cannot be disabled. Raw chain of thought is never returned; use summarized thinking
 output where available.
 
+## Power Grade Inputs
+
+This section is the dated Claude evidence row set consumed by
+`docs/reference/power-grade-matrix.toml`. It consolidates existing sourced facts from this reference;
+it does not add newly researched benchmark numbers.
+
+| Source row id | Model | Effort axis for matrix | Coding benchmark input | Cost input | Effort-quality input | Effort-cost input | Power Grade caveats |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `claude:opus-4.8` | Opus 4.8 (`claude-opus-4-8`) | `low`, `medium`, `high`, `xhigh`, `max`; default `high` | SWE-bench Verified about 88.6% (SECONDARY); Online-Mind2Web 84% (MEDIUM/PRIMARY) | $5 input / $0.50 cache read / $25 output per MTok; cache-write and batch prices in Model Catalog | Anthropic effort docs support tiered reasoning; default `high`; use `xhigh` for coding or agentic work that needs more reasoning; reserve `max` for hardest tasks | Published exact per-effort token multipliers are not asserted in this Claude reference; cost increases directionally with more thinking/output | SWE-bench figure is SECONDARY; effort deltas are qualitative, not numeric |
+| `claude:opus-4.7` | Opus 4.7 (`claude-opus-4-7`) | `low`, `medium`, `high`, `xhigh`, `max`; default `high` | Previous-generation comparison row; no new benchmark asserted here | $5 input / $0.50 cache read / $25 output per MTok; cache-write and batch prices in Model Catalog | Same supported effort set as Opus 4.8; `xhigh` is the Claude Code default for that generation | Published exact per-effort token multipliers are not asserted in this Claude reference | Benchmark and cutoff are `NEEDS VERIFICATION`; do not infer Opus 4.8 benchmark numbers for this row |
+| `claude:haiku-4.5` | Haiku 4.5 (`claude-haiku-4-5`) | no selectable effort; matrix uses a single `none` cell | No SWE-bench figure asserted here | $1 input / $0.10 cache read / $5 output per MTok; cache-write and batch prices in Model Catalog | `effort` is unsupported and returns an error; there is no effort-quality axis | There is no effort-cost axis because effort must be omitted | Coding benchmark is `NEEDS VERIFICATION`; unsupported efforts must not be emitted as executable cells |
+| `claude:fable-5` | Fable 5 (`claude-fable-5`) | `low`, `medium`, `high`, `xhigh`, `max`; default `high`; thinking always on | SWE-bench Verified about 95% (SECONDARY); SWE-bench Pro about 80.3% (SECONDARY) | $10 input / $1 cache read / $50 output per MTok; cache-write and batch prices in Model Catalog | Effort tiers are supported but thinking is always on; default `high` | Published exact per-effort token multipliers are not asserted in this Claude reference | Cutoff is `NEEDS VERIFICATION`; Fable is forbidden by policy and appears only as reference/matrix evidence |
+
+### Claude model-effort qualitative inputs
+
+| Source row id | Effort | Qualitative Power Grade input |
+| --- | --- | --- |
+| `claude:opus-4.8:low` | `low` | Strong model at reduced effort; use for bounded procedural work when Opus quality is desired and the task is already structured. |
+| `claude:opus-4.8:medium` | `medium` | Middle reasoning budget for moderately complex execution; no published numeric delta from low/high is asserted here. |
+| `claude:opus-4.8:high` | `high` | Default exploration/planning effort; strongest regular policy pairing before escalation. |
+| `claude:opus-4.8:xhigh` | `xhigh` | Escalation for coding or agentic work that needs more reasoning. |
+| `claude:opus-4.8:max` | `max` | Highest effort tier; reserve for hardest tasks because cost/latency increase directionally with more thinking/output. |
+| `claude:opus-4.7:low` | `low` | Previous-generation Opus at reduced effort; benchmark evidence is `NEEDS VERIFICATION`. |
+| `claude:opus-4.7:medium` | `medium` | Previous-generation middle effort; benchmark evidence is `NEEDS VERIFICATION`. |
+| `claude:opus-4.7:high` | `high` | Previous-generation regular high effort; benchmark evidence is `NEEDS VERIFICATION`. |
+| `claude:opus-4.7:xhigh` | `xhigh` | Previous-generation Claude Code default; benchmark evidence is `NEEDS VERIFICATION`. |
+| `claude:opus-4.7:max` | `max` | Highest previous-generation effort; benchmark evidence is `NEEDS VERIFICATION`. |
+| `claude:haiku-4.5:none` | `none` | Single executable Haiku cell; effort must be omitted. |
+| `claude:fable-5:low` | `low` | High-cost, high-capability reference model at lowest selectable effort; policy forbids Fable selection. |
+| `claude:fable-5:medium` | `medium` | High-cost, high-capability reference model at middle effort; policy forbids Fable selection. |
+| `claude:fable-5:high` | `high` | Default Fable effort with always-on thinking; policy forbids Fable selection. |
+| `claude:fable-5:xhigh` | `xhigh` | Escalated Fable effort; policy forbids Fable selection. |
+| `claude:fable-5:max` | `max` | Highest Fable effort; policy forbids Fable selection and cutoff is `NEEDS VERIFICATION`. |
+
 ## Policy-Forward Note
 
 `sonnet` is never selected by `cog` policy. Sonnet 4.6 appears in this reference only for comparison
