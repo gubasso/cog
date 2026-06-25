@@ -149,6 +149,7 @@ __cog_skill_lint_input_fidelity_required() {
   local name="$1" runtime="$2"
   case "${runtime}:${name}" in
     claude:plan-multi | \
+      claude:plan-vetted | \
       claude:plan-writer-multi | \
       claude:review-plan-multi | \
       claude:ask | \

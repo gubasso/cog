@@ -18,6 +18,20 @@ cog::fn::executor::flow_json() {
           {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md"}
         ],
         prepare_producers: {
+          "needs-plan": {skill: "/plan-vetted", engine_rule: "claude"},
+          "good-input": {skill: "/plan-vetted", engine_rule: "claude"}
+        }
+      }'
+      ;;
+    plan-vetted)
+      jq -cn '{
+        executor: "plan-vetted",
+        family: "vetted",
+        engine_scope: "claude",
+        phases: [
+          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"}
+        ],
+        prepare_producers: {
           "needs-plan": {skill: "/plan-multi", engine_rule: "claude"},
           "good-input": {skill: "/review-plan-multi", engine_rule: "claude"}
         }
@@ -41,7 +55,7 @@ cog::fn::executor::flow_json() {
     *)
       cog::fn::error_raise "InvalidInput" \
         "unknown executor" "executor: ${1:-}" \
-        "expected executor-vetted or executor-oneshot" ""
+        "expected executor-vetted, executor-oneshot, or plan-vetted" ""
       ;;
   esac
 }
@@ -197,6 +211,28 @@ cog::fn::executor::adopt_prepared_json() {
 
   jq -cn --arg from "$from" --arg path "$dest" \
     '{schema: "cog.executor.adopt-prepared.v1", ok: true, from: $from, path: $path}'
+}
+
+# Export the canonical prepared-plan.md to a caller-supplied output path. A
+# plan-only producer (plan-vetted) builds its vetted plan in its own run dir,
+# then hands it back to the executor (or a standalone caller) that named the
+# destination, keeping prepared-plan.md the single canonical prepare artifact.
+cog::fn::executor::export_prepared_json() {
+  local run_dir="${1:-}" output="${2:-}" src
+
+  [[ -n $run_dir && -n $output ]] || cog::fn::error_raise "MissingArgument" \
+    "missing export-prepared argument" "function: cog::fn::executor::export_prepared_json" "" \
+    "pass a run directory and an output path"
+  [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
+    "executor run directory not found" "path: ${run_dir}" "" "check the run directory"
+
+  src="$(cog::fn::rundir_path "$run_dir" prepared-plan.md)"
+  cog::fn::rundir_require_file "$src" "prepared plan"
+  cp -- "$src" "$output" || cog::fn::error_raise "JsonWriteFailed" \
+    "could not export prepared plan" "from: ${src}, to: ${output}" "" "check output path permissions"
+
+  jq -cn --arg from "$src" --arg path "$output" \
+    '{schema: "cog.executor.export-prepared.v1", ok: true, from: $from, path: $path}'
 }
 
 cog::fn::executor::classify_input_json() {

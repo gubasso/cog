@@ -7,12 +7,14 @@ __cog_executor_artifacts_self_check='(.schema=="cog.executor.artifacts.v2") and 
 __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and has("plan_path") and (has("stages")|not)'
 __cog_executor_prepare_step_self_check='(.schema=="cog.executor.prepare-step.v1") and (.producer|type=="string") and (.prepare_engine|type=="string") and (.lane|type=="string")'
 __cog_executor_adopt_prepared_self_check='(.schema=="cog.executor.adopt-prepared.v1") and (.ok==true) and (.path|type=="string")'
+__cog_executor_export_prepared_self_check='(.schema=="cog.executor.export-prepared.v1") and (.ok==true) and (.path|type=="string")'
 
 __cog_executor_usage() {
-  cog::fn::ui_data "Usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan> [--json]"
+  cog::fn::ui_data "Usage: cog executor init --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --input <prompt-or-plan> [--json]"
   cog::fn::ui_data "Usage: cog executor classify-input <input> [--json]"
-  cog::fn::ui_data "Usage: cog executor prepare-step --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> [--json]"
+  cog::fn::ui_data "Usage: cog executor prepare-step --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --route <needs-plan|good-input> [--json]"
   cog::fn::ui_data "Usage: cog executor adopt-prepared --run-dir <dir> --from <path> [--json]"
+  cog::fn::ui_data "Usage: cog executor export-prepared --run-dir <dir> --output <path> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
   cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> [--json]"
   cog::fn::ui_data "Usage: cog executor queue-prompts [--json]"
@@ -103,7 +105,7 @@ __cog_executor_init() {
 
   [[ -n $executor && -n $engine && -n $input ]] || cog::fn::error_raise "MissingArgument" \
     "missing executor init argument" \
-    "usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan>" "" \
+    "usage: cog executor init --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --input <prompt-or-plan>" "" \
     "run 'cog executor --help'"
   flow_json="$(cog::fn::executor::flow_json "$executor")"
   cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
@@ -263,6 +265,48 @@ __cog_executor_adopt_prepared() {
   result="$(cog::fn::executor::adopt_prepared_json "$run_dir" "$from")"
   if [[ $json == true ]]; then
     cog::fn::json_emit "$__cog_executor_adopt_prepared_self_check" "$result"
+  else
+    cog::fn::ui_data "PREPARED_PLAN=$(jq -r '.path' <<<"$result")"
+  fi
+}
+
+__cog_executor_export_prepared() {
+  local run_dir="" output="" json="${COG_UI_JSON:-false}" result
+
+  while (($# > 0)); do
+    case "$1" in
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog executor --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --output)
+        [[ $# -ge 2 && -n ${2:-} && -z $output ]] || cog::fn::error_raise "MissingArgument" \
+          "missing output path" "option: --output" "" "run 'cog executor --help'"
+        output="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" "unknown export-prepared option" "option: $1" "" "run 'cog executor --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" "too many export-prepared arguments" "argument: $1" "" "run 'cog executor --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir && -n $output ]] || cog::fn::error_raise "MissingArgument" \
+    "missing export-prepared argument" \
+    "usage: cog executor export-prepared --run-dir <dir> --output <path>" "" \
+    "run 'cog executor --help'"
+  result="$(cog::fn::executor::export_prepared_json "$run_dir" "$output")"
+  if [[ $json == true ]]; then
+    cog::fn::json_emit "$__cog_executor_export_prepared_self_check" "$result"
   else
     cog::fn::ui_data "PREPARED_PLAN=$(jq -r '.path' <<<"$result")"
   fi
@@ -447,6 +491,10 @@ cog::cmd::executor() {
       shift
       __cog_executor_adopt_prepared "$@"
       ;;
+    export-prepared)
+      shift
+      __cog_executor_export_prepared "$@"
+      ;;
     artifacts)
       shift
       __cog_executor_artifacts "$@"
@@ -461,7 +509,7 @@ cog::cmd::executor() {
       ;;
     "")
       cog::fn::error_raise "MissingArgument" \
-        "missing executor mode" "usage: cog executor init|classify-input|prepare-step|adopt-prepared|artifacts|summary|queue-prompts" "" \
+        "missing executor mode" "usage: cog executor init|classify-input|prepare-step|adopt-prepared|export-prepared|artifacts|summary|queue-prompts" "" \
         "run 'cog executor --help'"
       ;;
     *)

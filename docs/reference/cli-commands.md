@@ -154,24 +154,28 @@ classification.
 flags are split by responsibility:
 
 ```bash
-cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan> [--json]
+cog executor init --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --input <prompt-or-plan> [--json]
 ```
 
 `--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
-removed `--plan-engine` flag is not accepted. Both executors share the gated 2-phase flow (`stage1`
-prepare, `stage2` execution): the prepare stage produces or reviews the plan depending on the
+removed `--plan-engine` flag is not accepted. The executor flows share the gated 2-phase shape
+(`stage1` prepare, `stage2` execution): the prepare stage produces or reviews the plan depending on the
 input-quality route, then the plan is executed. `executor-vetted` is Claude-only (`--engine codex` is
-rejected); its prepare producers are the dual-engine `/plan-multi` and `/review-plan-multi`.
-`executor-oneshot` runs on either engine; its prepare producers are `/plan-oneshot` (generate) and
-`/review-plan-oneshot` (review, run on the opposite engine for independence). Input classification
-(`.md` path vs. prompt) is a hint only; the route comes from the `assess-input` verdict.
+rejected); it delegates the whole prepare stage to `/plan-vetted`. `executor-oneshot` runs on either
+engine; its prepare producers are `/plan-oneshot` (generate) and `/review-plan-oneshot` (review, run on
+the opposite engine for independence). The `plan-vetted` flow is a Claude-only, single prepare phase
+(no execution): its producers are the dual-engine `/plan-multi` (generate) and `/review-plan-multi`
+(review). Input classification (`.md` path vs. prompt) is a hint only; the route comes from the
+`assess-input` verdict.
 
 `cog executor classify-input <input> --json` reports whether the input is a readable `.md` plan or a
 prompt. `cog executor prepare-step --executor <e> --engine <eng> --route <needs-plan|good-input>
 --json` resolves the prepare-stage producer skill, the engine it runs on, and the invocation lane.
 `cog executor adopt-prepared --run-dir <dir> --from <path> --json` copies a producer artifact whose
 output path the executor does not control (the `review-plan-multi` review) into the canonical
-`prepared-plan.md` slot.
+`prepared-plan.md` slot. `cog executor export-prepared --run-dir <dir> --output <path> --json` copies
+that canonical `prepared-plan.md` out to a caller-supplied path (used by `plan-vetted` to hand its
+vetted plan back through `--output`).
 
 `cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a
 phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`, and `path`.

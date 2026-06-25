@@ -49,6 +49,7 @@ forbidden_scan_codex() {
     gc
     osc-obs
     plan-multi
+    plan-vetted
     plan-writer
     plan-writer-multi
     pre-commit

@@ -20,8 +20,8 @@ setup() {
      .stages == ["stage1","stage2"] and
      .flow.family == "vetted" and
      .flow.engine_scope == "claude" and
-     .flow.prepare_producers["needs-plan"].skill == "/plan-multi" and
-     .flow.prepare_producers["good-input"].skill == "/review-plan-multi" and
+     .flow.prepare_producers["needs-plan"].skill == "/plan-vetted" and
+     .flow.prepare_producers["good-input"].skill == "/plan-vetted" and
      (.phases | length) == 2 and
      .phases[0].artifact == "prepared-plan.md" and
      .phases[1].artifact == "stage2-execution.md" and
@@ -99,16 +99,61 @@ setup() {
     '.producer == "/review-plan-oneshot" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
 }
 
-@test "cog executor prepare-step resolves vetted multi producers on claude" {
+@test "cog executor prepare-step resolves the vetted-plan producer on claude" {
   run cog executor prepare-step --executor executor-vetted --engine claude --route needs-plan --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/plan-vetted" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
 
   run cog executor prepare-step --executor executor-vetted --engine claude --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/review-plan-multi" and .prepare_engine == "claude"' >/dev/null
+    '.producer == "/plan-vetted" and .prepare_engine == "claude"' >/dev/null
+}
+
+@test "cog executor prepare-step resolves plan-vetted's multi producers on claude" {
+  run cog executor prepare-step --executor plan-vetted --engine claude --route needs-plan --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.producer == "/plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+
+  run cog executor prepare-step --executor plan-vetted --engine claude --route good-input --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.producer == "/review-plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+}
+
+@test "cog executor plan-vetted flow is a single prepare phase and rejects codex" {
+  run cog executor init --executor plan-vetted --engine claude --input "Implement thing" --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.executor == "plan-vetted" and
+     .stages == ["stage1"] and
+     (.phases | length) == 1 and
+     .phases[0].artifact == "prepared-plan.md"' >/dev/null
+
+  run --separate-stderr cog executor init --executor plan-vetted --engine codex --input "x"
+  assert_failure
+}
+
+@test "cog executor export-prepared copies prepared-plan.md to a caller output" {
+  local run_dir
+  run_dir="$(cog executor init --executor plan-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+  printf '# vetted plan\n' >"${run_dir}/prepared-plan.md"
+  local dest="${BATS_TEST_TMPDIR}/out.md"
+
+  run cog executor export-prepared --run-dir "$run_dir" --output "$dest" --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.export-prepared.v1" and .ok == true and (.path | endswith("/out.md"))' >/dev/null
+  assert_file_contains "$dest" "vetted plan"
+}
+
+@test "cog executor export-prepared rejects a missing prepared plan" {
+  local run_dir
+  run_dir="$(cog executor init --executor plan-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+  run --separate-stderr cog executor export-prepared --run-dir "$run_dir" --output "${BATS_TEST_TMPDIR}/out.md"
+  assert_failure
 }
 
 @test "cog executor prepare-step rejects an invalid route" {
@@ -210,7 +255,7 @@ setup() {
      .executor == "executor-vetted" and
      .engine == "claude" and
      .route == "needs-plan" and
-     .producer == "/plan-multi" and
+     .producer == "/plan-vetted" and
      .prepare_engine == "claude" and
      .input_kind == "prompt" and
      .stages.stage1.status == "done" and

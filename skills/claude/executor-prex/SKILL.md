@@ -1,10 +1,10 @@
 ---
 name: executor-prex
 description: >
-  Automated staged workflow: Codex plans, Claude reviews the plan, Codex implements,
+  Automated staged workflow: plan-vetted produces a vetted plan, Codex implements it,
   Claude reviews the implementation, and an optional review loop can validate the result.
-  Use this when the user wants a dual-agent plan-review-execute flow, asks to have
-  Codex plan and implement while Claude validates, or refers to a staged adversarial
+  Use this when the user wants a dual-agent plan-review-execute flow, asks to have a vetted
+  plan implemented by Codex while Claude validates, or refers to a staged adversarial
   workflow between Claude Code and Codex. Accepts CLI-style flags: `-a`/`--auto`
   for auto-approve and `-ar`/`--auto-review` for auto-approve + review-loop.
 argument-hint: "[-a|-ar] <task description>"
@@ -27,13 +27,13 @@ researching, interviewing, delegating, or writing. Tell the user in one line to 
 
 Run a staged dual-agent workflow inside Claude Code:
 
-1. Codex creates the implementation plan.
-2. Claude reviews and corrects the plan.
-3. Codex implements the reviewed plan.
-4. Claude reviews the implementation and fixes minor issues.
-5. An optional review loop validates the result via iterative Codex review and Claude fixes.
+1. `plan-vetted` produces a vetted implementation plan (evaluate the input, then generate or
+   multi-review it through dual-engine planning).
+2. Codex implements the vetted plan.
+3. Claude reviews the implementation and fixes minor issues.
+4. An optional review loop validates the result via iterative Codex review and Claude fixes.
 
-Stage 2 plan review and stage 5 review-loop handoff are delegated via the **Agent tool**
+Stage 4 implementation review and stage 5 review-loop handoff are delegated via the **Agent tool**
 (`subagent_type: general-purpose`), not the Skill tool — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 parent workflow owns sequencing, proof checks, lock handling, and failure handling. These Agent-tool
@@ -59,7 +59,7 @@ interpret runner statuses with `cog codex-runner explain-status <status>`.
 > standalone in an interactive session. The Claude-harness no-backgrounding
 > guarantee comes from the `claude-session` env layer: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`,
 > asserted by the `cog preflight claude-env` check below. Every Codex stage is a **cog-owned durable
-> job**: `cog codex-runner run-exec`/`run-resume` launch it with `--state` and return immediately,
+> job**: `cog codex-runner run-exec` launches it with `--state` and returns immediately,
 > and `cog codex-runner finalize --max-wall <secs>` polls-and-classifies in one verb: it waits up to
 > `<secs>`, then reports via its exit code — **0 = done & ok, 1 = done & failed, 75 = still running**.
 > Re-run `finalize` while it exits 75; **duration is never judged**, and a long run is never a reason
@@ -81,13 +81,13 @@ The workflow needs:
 1. A task description. Sources, in order of precedence: `$ARGUMENTS`; otherwise the current
    conversation context.
 2. A repository context summary sufficient for Codex to plan and implement.
-3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch, resume,
+3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch,
    finalize/cancel/status, orientation, status explanation, account-aware wrapper setup, and effort
-   selection (`high` for stage 1 planning via `/plan-oneshot`, `medium` for stage 3 implementation;
-   escalate stage 3 to `high` only when the user asks for it).
+   selection (`medium` for stage 3 implementation; escalate to `high` only when the user asks for
+   it). Stage 1-2 planning runs inside `plan-vetted`, which owns its own dual-engine effort.
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
-ask one focused clarifying question before starting stage 1.
+ask one focused clarifying question before starting the vetted plan.
 
 ## Bootstrap: Run Directory and Lock
 
@@ -99,7 +99,7 @@ command -v cog >/dev/null || {
   echo "executor-prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args || {
+cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args executor assess-input || {
   echo "executor-prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
@@ -147,11 +147,7 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `stage1-plan.md` (plan artifact, written by `/plan-oneshot`)
-- `stage1-codex-output.md` (Codex final message)
-- `stage1-events.jsonl`
-- `stage1.longrun.json` (durable job state)
-- `stage2-reviewed-plan.md`
+- `stage2-reviewed-plan.md` (the vetted plan, written by `plan-vetted` via `--output`)
 - `stage3-impl-report.txt`
 - `stage3-events.jsonl`
 - `stage3.longrun.json` (durable job state)
@@ -166,11 +162,11 @@ stage outputs under `RUN_DIR` using these names:
 
 Mode is selected via CLI-style flags on `$ARGUMENTS`. Supported modes:
 
-| Mode                       | Flag                   | Stage 2 approval                                                 | Stage 5 trigger                                                         |
-| -------------------------- | ---------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `manual` (default)         | (none)                 | Wait for explicit user approval                                  | User decides / auto-trigger heuristic                                   |
-| `auto-approve`             | `-a`, `--auto`         | Display the complete reviewed plan, then proceed without waiting | User decides / auto-trigger heuristic                                   |
-| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete reviewed plan, then proceed without waiting | Always run after stage 4 once all `NEEDS_DISCUSSION` items are resolved |
+| Mode                       | Flag                   | Vetted-plan approval (stage 1-2)                              | Stage 5 trigger                                                        |
+| -------------------------- | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `manual` (default)         | (none)                 | Wait for explicit user approval                              | User decides / auto-trigger heuristic                                 |
+| `auto-approve`             | `-a`, `--auto`         | Display the complete vetted plan, then proceed without waiting | User decides / auto-trigger heuristic                                |
+| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete vetted plan, then proceed without waiting | Always run after stage 4 once all `NEEDS_DISCUSSION` items are resolved |
 
 Parse the flags with one deterministic call, **after `RUN_DIR` is created** (Bootstrap above) and
 **before any other workflow step**. Substitute the literal `$RUN_DIR` path and pass the raw
@@ -216,94 +212,33 @@ cog codex-runner gate codex "$RUN_DIR/preflight.json" || {
 `codex_session.available` is `true` and `health` is `ok`. On non-zero exit, release the lock and
 stop — do not continue to stage 1.
 
-## Stage 1: Plan
+## Stage 1-2: Vetted Plan
 
-Delegate planning to Codex's own `/plan-oneshot` skill. The parent orchestrator does **not** invoke
-`/plan-oneshot` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
-`$RUN_DIR/stage1-prompt.md` and passes that prompt through `cog codex-runner run-exec`.
+Produce the vetted implementation plan with `plan-vetted`, which fills the old plan and plan-review
+stages in one step: it evaluates the input, then generates a plan (`needs-plan`) or multi-reviews it
+(`good-input`) through dual-engine planning. Inline-chain it in the current context (read
+`$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it), passing the task plus `--output
+"$RUN_DIR/stage2-reviewed-plan.md"`. The delegation input is an enrichment-only superset of the
+original task: include it verbatim and in full, plus relevant repo constraints, and never replace it
+with a summary.
 
-The Stage 1 prompt must tell Codex to run `/plan-oneshot`, save the lean plan to
-`$RUN_DIR/stage1-plan.md`, and produce a numbered, reviewable implementation plan with assumptions,
-ambiguities, dependencies, and risks. The prompt is an enrichment-only superset of the original
-input: include the original task verbatim and in full, plus relevant repo constraints, and never
-replace the task with a summary. The only permitted write during this planning stage is the plan
-artifact under `RUN_DIR`.
-
-Keep the prompt-file rule: write the complete Stage 1 prompt to `RUN_DIR` first, then pass it via
-`--prompt`; never inline multi-line prompts directly in the Bash command.
+`plan-vetted` writes the vetted plan to `$RUN_DIR/stage2-reviewed-plan.md` and returns the output path
+and the route. Verify the artifact before continuing:
 
 ```bash
-cog codex-runner run-exec \
-  --mode danger \
-  --access write \
-  --effort high \
-  --prompt "$RUN_DIR/stage1-prompt.md" \
-  --output "$RUN_DIR/stage1-codex-output.md" \
-  --events "$RUN_DIR/stage1-events.jsonl" \
-  --stderr "$RUN_DIR/stage1-stderr.log" \
-  --thread last \
-  --state "$RUN_DIR/stage1.longrun.json"
+[ -s "$RUN_DIR/stage2-reviewed-plan.md" ] || { echo "ERROR: stage2-reviewed-plan.md is empty" >&2; cog lock release "$LOCK_FILE"; exit 1; }
 ```
 
-`--output` captures Codex's final message in `stage1-codex-output.md`; the plan artifact itself is
-`stage1-plan.md`, written by `/plan-oneshot` through `cog plan-doc`. They are separate files, so the
-runner output never overwrites the plan.
-
-`run-exec` launches the Codex run as a cog-owned durable job and returns immediately. Poll-and-classify
-it in one verb with `cog codex-runner finalize --max-wall <secs>`: the exit code is the signal
-(0 = ok · 1 = failed · 75 = still running). Re-run finalize while it exits 75; duration is never judged:
-
-```bash
-# Re-run while this exits 75 (still running); exit code is the signal:
-# 0 = done & ok, 1 = done & failed, 75 = still running. Duration is never judged.
-cog codex-runner finalize --state "$RUN_DIR/stage1.longrun.json" --max-wall 300 \
-  > "$RUN_DIR/stage1-runner.json"
-```
-
-Extract the planning thread ID and the planning account:
-
-```bash
-PLAN_THREAD_ID="$(jq -r '.thread_id' "$RUN_DIR/stage1-runner.json")"
-printf '%s\n' "$PLAN_THREAD_ID" > "$RUN_DIR/plan-thread-id"
-
-PLAN_ACCOUNT="$(jq -r '.account' "$RUN_DIR/stage1-runner.json")"
-printf '%s\n' "$PLAN_ACCOUNT" > "$RUN_DIR/plan-account"
-```
-
-Use `tail -1`, not `head -1`: when the wrapper rotates accounts mid-run (429 failover), the events
-stream carries one `thread.started` per attempt and only the **last** thread is the one that
-completed the planning turn.
-
-The `PLAN_THREAD_ID` and `PLAN_ACCOUNT` pair is reused in stage 3 to resume this session for
-implementation pinned to its owning account. If stage 3 runs in a later Bash invocation, re-read
-both from `$RUN_DIR/plan-thread-id` and `$RUN_DIR/plan-account` (or re-extract from
-`stage1-events.jsonl`) before calling `cog codex-runner run-resume`.
-
-Read `stage1-plan.md`, summarize the result briefly for the user, and move directly to stage 2.
-
-## Stage 2: Review Plan
-
-Delegate plan review via the **Agent tool** to `/review-plan-oneshot`, using its three-absolute-path
-orchestrator contract:
-
-1. plan path: `$RUN_DIR/stage1-plan.md`
-2. request path: `$RUN_DIR/request.md`
-3. output path: `$RUN_DIR/stage2-reviewed-plan.md`
-
-`request.md` is the Bootstrap task file and is created before Stage 1. The parent
-workflow owns the snapshot-pre/post proof check, `verify-proof`, lock release/reacquire, and
-approval loop. Follow `references/stage-2-review-plan.md` for the Stage 2 command shapes and
-failure handling.
+The parent workflow owns lock release/reacquire and the approval loop. Follow
+`references/stage-1-2-vetted-plan.md` for the inline-chain delegation shape and the approval loop.
 
 ## Stage 3: Implement
 
-Resume the Stage 1 Codex planning thread/account and implement the reviewed plan with Codex. The
-reviewed plan supersedes Codex's original draft. Stage 3 uses native Codex effort
-(`cog codex-runner run-resume --effort medium`, no `--profile`) pinned with
-`--account "$PLAN_ACCOUNT"` and `--thread-id "$PLAN_THREAD_ID"`; branch only on the runner-emitted
-`status`/`resume_signal`. Follow `references/stage-3-implement.md` for exact command shapes, the
-resume decision table, the Resume Fallback, and the prompt-file rule plus the durable-job poll
-protocol.
+Implement the vetted plan with Codex as a fresh durable `exec`, inlining the full plan and request so
+the run is self-contained (the vetted plan carries all planning context; there is no Codex planning
+thread to resume). Stage 3 uses native Codex effort (`cog codex-runner run-exec --effort medium`, no
+`--profile`). Follow `references/stage-3-implement.md` for the exact command shapes, the inlined-prompt
+contract, and the prompt-file rule plus the durable-job poll protocol.
 
 ## Stage 4: Review Implementation
 
@@ -340,17 +275,16 @@ End with a concise summary covering:
 
 ## Guardrails
 
-- Do not skip stage 2 approval unless the mode is `auto-approve` or `auto-approve-review-loop`.
-- Stage 3 must first attempt to resume the planning session with
-  `--dangerously-bypass-approvals-and-sandbox` for write access; if the resume call fails for the
-  documented reasons, run the fresh-`exec` Resume Fallback with fully inlined context.
+- Do not skip the stage 1-2 vetted-plan approval unless the mode is `auto-approve` or
+  `auto-approve-review-loop`.
+- Stage 3 implements via a fresh durable `exec` with the vetted plan and request inlined; there is no
+  planning thread to resume.
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort high` at the stage 1 `/plan-oneshot` planning call site and `--effort medium` at the
-  stage 3 implementation call sites; escalate to `--effort high` only when the user explicitly asks
-  to push a stage harder (stuck/looping runs, novel design, security-critical changes). Do not pass
-  `-m`/`-c model_reasoning_effort`.
+  `--effort medium` at the stage 3 implementation call site; escalate to `--effort high` only when the
+  user explicitly asks to push it harder (stuck/looping runs, novel design, security-critical
+  changes). Do not pass `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference
   file.
 - Codex may run read-only git inspection commands needed to review the diff (`git diff`,
@@ -363,20 +297,23 @@ End with a concise summary covering:
 
 ## Error Handling
 
-After each Codex call, validate the output file is non-empty:
+After the vetted-plan stage, validate the plan artifact is non-empty:
 
 ```bash
-[ -s "$RUN_DIR/stage1-plan.md" ] || echo "ERROR: stage1-plan.md is empty"
+[ -s "$RUN_DIR/stage2-reviewed-plan.md" ] || echo "ERROR: stage2-reviewed-plan.md is empty"
 ```
 
-If stage 3's `finalize` reports a failed status (non-zero exit, empty output file, bwrap error, or a
-resume-mechanics signal), follow the documented **Resume Fallback** before reporting final failure.
+After the stage 3 Codex call, validate the implementation report is non-empty:
 
-If any other Codex call fails, or if the stage 3 fresh-`exec` fallback also fails:
+```bash
+[ -s "$RUN_DIR/stage3-impl-report.txt" ] || echo "ERROR: stage3-impl-report.txt is empty"
+```
+
+If any stage fails:
 
 1. Report the error to the user, including any stderr output.
 2. Remove the workflow lock: `cog lock release "$LOCK_FILE"`
-3. Do not retry automatically after the documented stage 3 fallback is exhausted.
+3. Do not retry automatically.
 4. Ask the user whether to retry the failed stage, skip it, or abort the workflow.
 5. If the user approves a retry, reacquire the lock before re-running the stage:
    `cog lock acquire "$RUN_DIR" --owner-pid "$PPID"`
