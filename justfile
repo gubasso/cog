@@ -40,6 +40,12 @@ install-sync:
 	@printf '             (~/.claude/skills, ~/.claude/agents, ~/.agents/skills).\n'
 	@printf '             Any file there NOT shipped by cog is DELETED.\n'
 	@printf '\n'
+	@printf '\033[1;31m==>\033[0m Type \033[1myes\033[0m to proceed: '; \
+	read -r reply; \
+	if [ "$reply" != "yes" ]; then \
+		printf '\033[1;33m==>\033[0m Aborted.\n'; \
+		exit 1; \
+	fi
 	@COG_INSTALL_MIRROR=1 ./install.sh
 	@printf '\n'
 	@printf '\033[1;32m==>\033[0m Done. Make sure \033[1m%s\033[0m is on your PATH.\n' "${PREFIX:-$HOME/.local}/bin"
