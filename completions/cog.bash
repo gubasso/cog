@@ -21,6 +21,7 @@ _cog() {
     -vvv
   )
   local -a commands=(
+    assess-input
     classify-project
     claudemd-audit
     codex-runner

@@ -39,6 +39,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0032: Power Grade Model](decisions/0032-power-grade-model.md)
 - [ADR-0033: Benchmark Source Tiers](decisions/0033-benchmark-source-tiers.md)
 - [ADR-0034: Power Grade Source ID Enforcement](decisions/0034-power-grade-source-id-enforcement.md)
+- [ADR-0035: Input-fidelity enrichment-only briefs](decisions/0035-input-fidelity-enrichment-only-briefs.md)
+- [ADR-0036: Executor input-quality gate](decisions/0036-executor-input-quality-gate.md)
 
 ## Guides
 

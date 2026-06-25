@@ -8,69 +8,34 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_RUNTIME_DIR"
 }
 
-@test "cog executor init classifies lean prompt input and returns three stages" {
-  run cog executor init --executor executor-vetted --engine codex --input "Implement thing" --json
+@test "cog executor init classifies prompt input and returns the gated 2-stage flow" {
+  run cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.init.v1" and
+    '.schema == "cog.executor.init.v2" and
      .input == {kind: "prompt", value: "Implement thing", plan_path: null} and
      .executor == "executor-vetted" and
-     .engine == "codex" and
-     .plan_engine == "codex" and
-     .stages == ["stage1","stage2","stage3"] and
-     .review_engine == "claude" and
-     .reviewer == "/review-plan-oneshot" and
-     .flow.reviewed == true and
-     (.phases | length) == 3 and
+     .engine == "claude" and
+     .stages == ["stage1","stage2"] and
+     .flow.family == "vetted" and
+     .flow.engine_scope == "claude" and
+     .flow.prepare_producers["needs-plan"].skill == "/plan-multi" and
+     .flow.prepare_producers["good-input"].skill == "/review-plan-multi" and
+     (.phases | length) == 2 and
+     .phases[0].artifact == "prepared-plan.md" and
+     .phases[1].artifact == "stage2-execution.md" and
      .artifacts.schema == "cog.executor.artifacts.v2"' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   [ -d "$run_dir" ]
   assert_file_exists "${run_dir}/request.md"
   assert_file_contains "${run_dir}/executor" "executor-vetted"
-  assert_file_contains "${run_dir}/engine" "codex"
+  assert_file_contains "${run_dir}/engine" "claude"
+  assert_file_contains "${run_dir}/input-kind" "prompt"
 }
 
-@test "cog executor init classifies lean plan input and skips stage1" {
-  local plan="${BATS_TEST_TMPDIR}/plan.md"
-  printf '%s\n' "# a plan" >"$plan"
-
-  run cog executor init --executor executor-vetted --engine claude --input "$plan" --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e \
-    '.input.kind == "plan" and
-     .executor == "executor-vetted" and
-     .engine == "claude" and
-     .stages == ["stage2","stage3"] and
-     .review_engine == "codex" and
-     .reviewer == "/review-plan-oneshot"' >/dev/null
-  local run_dir
-  run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
-  assert_file_contains "${run_dir}/plan-source" "$plan"
-  [ ! -e "${run_dir}/stage1-plan.md" ]
-}
-
-@test "cog executor init classifies single prompt input and returns two stages" {
-  run cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.init.v1" and
-     .executor == "executor-oneshot" and
-     .engine == "codex" and
-     .plan_engine == "codex" and
-     .review_engine == "none" and
-     .reviewer == "none" and
-     .flow.reviewed == false and
-     .stages == ["stage1","stage2"] and
-     .phases[1].phase == "execution" and
-     .phases[1].artifact == "stage2-execution.md" and
-     .artifacts.schema == "cog.executor.artifacts.v2"' >/dev/null
-}
-
-@test "cog executor init classifies single plan input and skips plan phase" {
+@test "cog executor init records plan input but still runs the prepare stage" {
   local plan="${BATS_TEST_TMPDIR}/plan.md"
   printf '%s\n' "# a plan" >"$plan"
 
@@ -80,10 +45,33 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.input.kind == "plan" and
      .executor == "executor-oneshot" and
-     .engine == "claude" and
-     .stages == ["stage2"] and
-     .reviewer == "none" and
-     .phases[1].artifact == "stage2-execution.md"' >/dev/null
+     .stages == ["stage1","stage2"]' >/dev/null
+  local run_dir
+  run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
+  assert_file_contains "${run_dir}/plan-source" "$plan"
+  [ ! -e "${run_dir}/request.md" ]
+}
+
+@test "cog executor init oneshot prompt returns the gated oneshot flow" {
+  run cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.init.v2" and
+     .executor == "executor-oneshot" and
+     .engine == "codex" and
+     .flow.family == "oneshot" and
+     .flow.prepare_producers["needs-plan"].skill == "/plan-oneshot" and
+     .flow.prepare_producers["good-input"].skill == "/review-plan-oneshot" and
+     .stages == ["stage1","stage2"] and
+     .phases[1].phase == "execution"' >/dev/null
+}
+
+@test "cog executor init rejects a codex engine for the Claude-only vetted executor" {
+  run --separate-stderr cog executor init --executor executor-vetted --engine codex --input "x"
+
+  assert_failure
+  [[ $stderr == *"Claude-only"* ]]
 }
 
 @test "cog executor init rejects removed plan-engine option" {
@@ -94,29 +82,40 @@ setup() {
   [[ $stderr == *"--plan-engine"* ]]
 }
 
-@test "cog executor select-reviewer applies flow and engine table" {
-  run cog executor select-reviewer --executor executor-vetted --engine claude --json
+@test "cog executor prepare-step resolves oneshot producers with cross-engine review" {
+  run cog executor prepare-step --executor executor-oneshot --engine claude --route needs-plan --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.plan_engine == "claude" and .review_engine == "codex" and .reviewer == "/review-plan-oneshot"' >/dev/null
+    '.producer == "/plan-oneshot" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
 
-  run cog executor select-reviewer --executor executor-vetted --engine codex --json
+  run cog executor prepare-step --executor executor-oneshot --engine claude --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.plan_engine == "codex" and .review_engine == "claude" and .reviewer == "/review-plan-oneshot"' >/dev/null
+    '.producer == "/review-plan-oneshot" and .prepare_engine == "codex" and .lane == "codex-runner"' >/dev/null
 
-  run cog executor select-reviewer --executor executor-oneshot --engine codex --json
+  run cog executor prepare-step --executor executor-oneshot --engine codex --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.plan_engine == "codex" and .review_engine == "none" and .reviewer == "none"' >/dev/null
+    '.producer == "/review-plan-oneshot" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
 }
 
-@test "cog executor select-reviewer rejects removed plan-engine option" {
-  run --separate-stderr cog executor select-reviewer --plan-engine claude --json
+@test "cog executor prepare-step resolves vetted multi producers on claude" {
+  run cog executor prepare-step --executor executor-vetted --engine claude --route needs-plan --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.producer == "/plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+
+  run cog executor prepare-step --executor executor-vetted --engine claude --route good-input --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.producer == "/review-plan-multi" and .prepare_engine == "claude"' >/dev/null
+}
+
+@test "cog executor prepare-step rejects an invalid route" {
+  run --separate-stderr cog executor prepare-step --executor executor-oneshot --engine claude --route maybe --json
 
   assert_failure
-  [[ $stderr == *"unknown select-reviewer option"* ]]
-  [[ $stderr == *"--plan-engine"* ]]
+  [[ $stderr == *"invalid executor route"* ]]
 }
 
 @test "cog executor classify-input treats missing md path as prompt without stages" {
@@ -127,7 +126,7 @@ setup() {
     '.kind == "prompt" and .value == "missing.md" and .plan_path == null and (has("stages") | not)' >/dev/null
 }
 
-@test "cog executor artifacts returns lean phase-keyed canonical paths" {
+@test "cog executor artifacts returns the gated phase-keyed canonical paths" {
   local run_dir
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
@@ -137,25 +136,8 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.artifacts.v2" and
      .executor == "executor-vetted" and
-     (.phases | length) == 3 and
-     .phases[0].path == "'"${run_dir}"'/stage1-plan.md" and
-     .phases[1].path == "'"${run_dir}"'/stage2-reviewed-plan.md" and
-     .phases[2].path == "'"${run_dir}"'/stage3-execution.md" and
-     .summary == "'"${run_dir}"'/executor-summary.json"' >/dev/null
-}
-
-@test "cog executor artifacts returns single phase-keyed canonical paths" {
-  local run_dir
-  run_dir="$(cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
-
-  run cog executor artifacts "$run_dir" --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.artifacts.v2" and
-     .executor == "executor-oneshot" and
      (.phases | length) == 2 and
-     .phases[0].path == "'"${run_dir}"'/stage1-plan.md" and
+     .phases[0].path == "'"${run_dir}"'/prepared-plan.md" and
      .phases[1].path == "'"${run_dir}"'/stage2-execution.md" and
      .summary == "'"${run_dir}"'/executor-summary.json"' >/dev/null
 }
@@ -171,65 +153,87 @@ setup() {
   [[ $stderr == *"not initialized"* ]]
 }
 
-@test "cog executor queue-prompts emits recognition data" {
+@test "cog executor adopt-prepared copies a producer artifact into prepared-plan.md" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+  source="${BATS_TEST_TMPDIR}/review.md"
+  printf '%s\n' "# reviewed plan" >"$source"
+
+  run cog executor adopt-prepared --run-dir "$run_dir" --from "$source" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.adopt-prepared.v1" and .ok == true and (.path | endswith("/prepared-plan.md"))' >/dev/null
+  assert_file_contains "${run_dir}/prepared-plan.md" "reviewed plan"
+}
+
+@test "cog executor adopt-prepared rejects an empty source" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+  source="${BATS_TEST_TMPDIR}/empty.md"
+  : >"$source"
+
+  run --separate-stderr cog executor adopt-prepared --run-dir "$run_dir" --from "$source"
+
+  assert_failure
+  [[ $stderr == *"missing or empty"* ]]
+}
+
+@test "cog executor queue-prompts emits recognition data without the removed vetted twins" {
   run cog executor queue-prompts --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.queue-prompts.v1" and (.prompts | length) == 5' >/dev/null
+    '.schema == "cog.executor.queue-prompts.v1" and (.prompts | length) == 4' >/dev/null
   printf '%s\n' "$output" | jq -e \
     '[.prompts[].slash] as $s |
      ($s | index("/executor-prex")) and
      ($s | index("/executor-vetted")) and
-     ($s | index("/executor-vetted-codex")) and
      ($s | index("/executor-oneshot")) and
-     ($s | index("/executor-oneshot-codex"))' >/dev/null
+     ($s | index("/executor-oneshot-codex")) and
+     ($s | index("/executor-vetted-codex") | not)' >/dev/null
   printf '%s\n' "$output" | jq -e \
     '.match.namespace == "executor" and .match.target_argument == "-ar" and (.match.aliases | length) == 0' >/dev/null
 }
 
-@test "cog executor summary writes lean v2 JSON in json mode" {
+@test "cog executor summary writes v3 JSON with route and producer for vetted" {
   local run_dir
-  run_dir="$(cog executor init --executor executor-vetted --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
-  run cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine codex \
-    --input-kind prompt --reviewer /review-plan-oneshot \
-    --stage1 "done" --stage2 "done" --stage3 "done" --json
+  run cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
+    --route needs-plan --stage1 "done" --stage2 "done" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.summary.v2" and
+    '.schema == "cog.executor.summary.v3" and
      .ok == true and
      .executor == "executor-vetted" and
-     .engine == "codex" and
-     .review_engine == "claude" and
+     .engine == "claude" and
+     .route == "needs-plan" and
+     .producer == "/plan-multi" and
+     .prepare_engine == "claude" and
+     .input_kind == "prompt" and
      .stages.stage1.status == "done" and
-     .stages.stage2.phase == "review" and
-     .stages.stage3.artifact == "stage3-execution.md" and
-     .reviewer == "/review-plan-oneshot"' >/dev/null
-  assert_file_exists "${run_dir}/executor-summary.json"
-}
-
-@test "cog executor summary writes single v2 JSON in json mode" {
-  local run_dir
-  run_dir="$(cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
-
-  run cog executor summary --run-dir "$run_dir" --executor executor-oneshot --engine codex \
-    --input-kind prompt --reviewer none \
-    --stage1 "done" --stage2 "done" --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e \
-    '.schema == "cog.executor.summary.v2" and
-     .ok == true and
-     .executor == "executor-oneshot" and
-     .engine == "codex" and
-     .review_engine == "none" and
-     .reviewer == "none" and
-     .stages.stage1.phase == "plan" and
+     .stages.stage1.phase == "prepare" and
      .stages.stage2.phase == "execution" and
      .stages.stage2.artifact == "stage2-execution.md"' >/dev/null
   assert_file_exists "${run_dir}/executor-summary.json"
+}
+
+@test "cog executor summary records cross-engine review for oneshot good-input" {
+  local run_dir
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+
+  run cog executor summary --run-dir "$run_dir" --executor executor-oneshot --engine claude \
+    --route good-input --stage1 "done" --stage2 "done" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.summary.v3" and
+     .route == "good-input" and
+     .producer == "/review-plan-oneshot" and
+     .prepare_engine == "codex" and
+     .execute_engine == "claude"' >/dev/null
 }
 
 @test "cog executor summary prints RESOLVED in non-JSON mode" {
@@ -237,36 +241,32 @@ setup() {
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
-    --input-kind prompt --reviewer /review-plan-oneshot \
-    --stage1 "done" --stage2 "done" --stage3 "done"
+    --route needs-plan --stage1 "done" --stage2 "done"
 
   assert_success
   [[ $output == *"RESOLVED ${run_dir}/executor-summary.json"* ]]
 }
 
-@test "cog executor summary rejects an unknown reviewer" {
+@test "cog executor summary rejects an invalid route" {
   local run_dir
-  run_dir="$(cog executor init --executor executor-vetted --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
-  run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine codex \
-    --input-kind prompt --reviewer /review-plan-other \
-    --stage1 "done" --stage2 "done" --stage3 "done"
+  run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
+    --route maybe --stage1 "done" --stage2 "done"
 
   assert_failure
-  [[ $stderr == *"invalid executor reviewer"* ]]
+  [[ $stderr == *"invalid executor route"* ]]
 }
 
-@test "cog executor summary rejects removed plan-engine option" {
+@test "cog executor summary rejects the removed reviewer option" {
   local run_dir
-  run_dir="$(cog executor init --executor executor-vetted --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
-  run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine codex \
-    --input-kind prompt --plan-engine codex --reviewer /review-plan-oneshot \
-    --stage1 "done" --stage2 "done" --stage3 "done"
+  run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
+    --route needs-plan --reviewer /review-plan-oneshot --stage1 "done" --stage2 "done"
 
   assert_failure
   [[ $stderr == *"unknown summary option"* ]]
-  [[ $stderr == *"--plan-engine"* ]]
 }
 
 @test "cog executor --help dispatches" {

@@ -47,6 +47,8 @@ source "${LIB_DIR}/functions/fn_rundir.sh"
 source "${LIB_DIR}/functions/fn_longrun.sh"
 # shellcheck source=../lib/functions/fn_executor.sh
 source "${LIB_DIR}/functions/fn_executor.sh"
+# shellcheck source=../lib/functions/fn_assess_input.sh
+source "${LIB_DIR}/functions/fn_assess_input.sh"
 # shellcheck source=../lib/functions/fn_review_loop_input.sh
 source "${LIB_DIR}/functions/fn_review_loop_input.sh"
 # shellcheck source=../lib/functions/fn_git.sh

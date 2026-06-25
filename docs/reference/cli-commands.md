@@ -158,21 +158,39 @@ cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude
 ```
 
 `--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
-removed `--plan-engine` flag is not accepted. `executor-vetted` is the reviewed 3-phase flow
-(`stage1` plan, `stage2` review, `stage3` execution). `executor-oneshot` is the unreviewed 2-phase
-flow (`stage1` plan, `stage2` execution). Existing readable `.md` input skips the plan phase.
+removed `--plan-engine` flag is not accepted. Both executors share the gated 2-phase flow (`stage1`
+prepare, `stage2` execution): the prepare stage produces or reviews the plan depending on the
+input-quality route, then the plan is executed. `executor-vetted` is Claude-only (`--engine codex` is
+rejected); its prepare producers are the dual-engine `/plan-multi` and `/review-plan-multi`.
+`executor-oneshot` runs on either engine; its prepare producers are `/plan-oneshot` (generate) and
+`/review-plan-oneshot` (review, run on the opposite engine for independence). Input classification
+(`.md` path vs. prompt) is a hint only; the route comes from the `assess-input` verdict.
+
+`cog executor classify-input <input> --json` reports whether the input is a readable `.md` plan or a
+prompt. `cog executor prepare-step --executor <e> --engine <eng> --route <needs-plan|good-input>
+--json` resolves the prepare-stage producer skill, the engine it runs on, and the invocation lane.
+`cog executor adopt-prepared --run-dir <dir> --from <path> --json` copies a producer artifact whose
+output path the executor does not control (the `review-plan-multi` review) into the canonical
+`prepared-plan.md` slot.
 
 `cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a
 phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`, and `path`.
 
 `cog executor summary` writes `executor-summary.json` and emits
-`schema: "cog.executor.summary.v2"`:
+`schema: "cog.executor.summary.v3"`:
 
 ```bash
-cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-oneshot> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]
+cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> [--json]
 ```
 
-Reviewed flows use reviewer `/review-plan-oneshot`; unreviewed flows use reviewer `none`.
+The summary records the route, the resolved producer, and the prepare/execute engines.
+
+`cog assess-input` owns the deterministic side of the executor input-evaluation gate: `facts
+[--input-file <p>] [--file <p> ...] --json` extracts structural plan-quality signals; `record
+--run-dir <dir> --route <needs-plan|good-input> --confidence <high|medium|low> --rationale <text>
+[--signal <k=v> ...] --json` persists and validates the verdict (`schema:
+"cog.assess-input.v1"`); `validate <path>` checks an existing verdict. The judgment itself lives in
+the `assess-input` skill.
 
 `cog executor queue-prompts` prints the queue-prompt examples used by inner `rounds:` queues. Any
 `/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`;

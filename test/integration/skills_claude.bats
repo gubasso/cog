@@ -43,6 +43,7 @@ forbidden_scan_codex() {
 @test "all Claude skills have valid frontmatter" {
   local skills=(
     ask
+    assess-input
     ast-grep
     claudemd
     gc
@@ -75,6 +76,7 @@ forbidden_scan_codex() {
 @test "all Codex skills have valid frontmatter" {
   local skills=(
     ask
+    assess-input
     ast-grep
     gc
     implementation-reviewer

@@ -1,28 +1,41 @@
 # shellcheck shell=bash
 
-__cog_executor_summary_self_check='(.schema=="cog.executor.summary.v2") and (.ok|type=="boolean") and (.stages|type=="object")'
+__cog_executor_summary_self_check='(.schema=="cog.executor.summary.v3") and (.ok|type=="boolean") and (.route|type=="string") and (.stages|type=="object")'
 
+# Executor flows are gated 2-phase pipelines: a route-dependent prepare stage
+# (the input-quality verdict picks plan generation vs. plan review) followed by
+# execution. The verdict itself is probabilistic and lives in the assess-input
+# skill; cog owns the deterministic flow, producer resolution, and summary.
 cog::fn::executor::flow_json() {
   case "${1:-}" in
     executor-vetted)
       jq -cn '{
         executor: "executor-vetted",
-        reviewed: true,
+        family: "vetted",
+        engine_scope: "claude",
         phases: [
-          {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
-          {ordinal: "stage2", phase: "review", artifact: "stage2-reviewed-plan.md", skippable: false},
-          {ordinal: "stage3", phase: "execution", artifact: "stage3-execution.md", skippable: false}
-        ]
+          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"},
+          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md"}
+        ],
+        prepare_producers: {
+          "needs-plan": {skill: "/plan-multi", engine_rule: "claude"},
+          "good-input": {skill: "/review-plan-multi", engine_rule: "claude"}
+        }
       }'
       ;;
     executor-oneshot)
       jq -cn '{
         executor: "executor-oneshot",
-        reviewed: false,
+        family: "oneshot",
+        engine_scope: "any",
         phases: [
-          {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
-          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md", skippable: false}
-        ]
+          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"},
+          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md"}
+        ],
+        prepare_producers: {
+          "needs-plan": {skill: "/plan-oneshot", engine_rule: "same"},
+          "good-input": {skill: "/review-plan-oneshot", engine_rule: "other"}
+        }
       }'
       ;;
     *)
@@ -46,29 +59,60 @@ cog::fn::executor::validate_engine() {
   esac
 }
 
-cog::fn::executor::select_reviewer_json() {
-  local executor="${1:-}" engine="${2:-}" flow_json reviewed review_engine reviewer
-
-  flow_json="$(cog::fn::executor::flow_json "$executor")"
+# executor-vetted is a Claude-only orchestrator (its multi producers are
+# Claude-only); reject a codex engine for a claude-scoped flow.
+cog::fn::executor::validate_engine_for_executor() {
+  local executor="${1:-}" engine="${2:-}" scope
   cog::fn::executor::validate_engine "$engine" >/dev/null
-  reviewed="$(jq -r '.reviewed' <<<"$flow_json")"
-
-  if [[ $reviewed == true ]]; then
-    case "$engine" in
-      claude) review_engine=codex ;;
-      codex) review_engine=claude ;;
-    esac
-    reviewer=/review-plan-oneshot
-  else
-    review_engine=none
-    reviewer=none
+  scope="$(cog::fn::executor::flow_json "$executor" | jq -r '.engine_scope')"
+  if [[ $scope == claude && $engine != claude ]]; then
+    cog::fn::error_raise "InvalidInput" \
+      "executor is Claude-only" "executor: ${executor}, engine: ${engine}" \
+      "expected engine claude" "pass --engine claude"
   fi
+}
+
+cog::fn::executor::validate_route() {
+  case "${1:-}" in
+    needs-plan | good-input) return 0 ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid executor route" "route: ${1:-}" \
+      "expected needs-plan or good-input" "" ;;
+  esac
+}
+
+# Resolve the prepare-stage producer skill, the engine it runs on, and the
+# invocation lane for an (executor, engine, route) triple.
+cog::fn::executor::prepare_step_json() {
+  local executor="${1:-}" engine="${2:-}" route="${3:-}"
+  local flow producer skill engine_rule prepare_engine lane artifact
+
+  cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
+  cog::fn::executor::validate_route "$route"
+  flow="$(cog::fn::executor::flow_json "$executor")"
+  producer="$(jq -c --arg r "$route" '.prepare_producers[$r]' <<<"$flow")"
+  skill="$(jq -r '.skill' <<<"$producer")"
+  engine_rule="$(jq -r '.engine_rule' <<<"$producer")"
+  artifact="$(jq -r '.phases[] | select(.phase == "prepare") | .artifact' <<<"$flow")"
+
+  case "$engine_rule" in
+    same) prepare_engine="$engine" ;;
+    other) [[ $engine == claude ]] && prepare_engine=codex || prepare_engine=claude ;;
+    claude) prepare_engine=claude ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid producer engine rule" "engine_rule: ${engine_rule}" \
+      "expected same, other, or claude" "" ;;
+  esac
+  [[ $prepare_engine == codex ]] && lane=codex-runner || lane=agent
 
   jq -cn \
-    --arg plan_engine "$engine" \
-    --arg review_engine "$review_engine" \
-    --arg reviewer "$reviewer" \
-    '{plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer}'
+    --arg executor "$executor" \
+    --arg engine "$engine" \
+    --arg route "$route" \
+    --arg producer "$skill" \
+    --arg prepare_engine "$prepare_engine" \
+    --arg lane "$lane" \
+    --arg artifact "$artifact" \
+    '{schema: "cog.executor.prepare-step.v1", executor: $executor, engine: $engine, route: $route,
+      producer: $producer, prepare_engine: $prepare_engine, lane: $lane, artifact: $artifact}'
 }
 
 cog::fn::executor::artifact_name() {
@@ -96,23 +140,12 @@ cog::fn::executor::artifact_name() {
   printf '%s\n' "$artifact"
 }
 
+# The prepare stage always runs (it produces or reviews the plan), so the stage
+# list is the full phase list regardless of input kind.
 cog::fn::executor::stages_json() {
-  local executor="${1:-}" input_kind="${2:-}" flow_json
-
+  local executor="${1:-}" flow_json
   flow_json="$(cog::fn::executor::flow_json "$executor")"
-  case "$input_kind" in
-    prompt)
-      jq -c '[.phases[].ordinal]' <<<"$flow_json"
-      ;;
-    plan)
-      jq -c '[.phases[] | select(.skippable != true) | .ordinal]' <<<"$flow_json"
-      ;;
-    *)
-      cog::fn::error_raise "InvalidInput" \
-        "invalid executor input kind" "input-kind: ${input_kind}" \
-        "expected prompt or plan" ""
-      ;;
-  esac
+  jq -c '[.phases[].ordinal]' <<<"$flow_json"
 }
 
 cog::fn::executor::artifacts_json() {
@@ -143,6 +176,27 @@ cog::fn::executor::artifacts_json() {
     --argjson phases "$phases_json" \
     --arg summary "$summary" \
     '{schema: $schema, executor: $executor, phases: $phases, summary: $summary}'
+}
+
+# Adopt a producer artifact whose output path the executor does not control (the
+# review-plan-multi coordinator writes to its own run dir) into the canonical
+# prepared-plan.md slot, so the prepare-stage postcondition stays uniform.
+cog::fn::executor::adopt_prepared_json() {
+  local run_dir="${1:-}" from="${2:-}" dest
+
+  [[ -n $run_dir && -n $from ]] || cog::fn::error_raise "MissingArgument" \
+    "missing adopt-prepared argument" "function: cog::fn::executor::adopt_prepared_json" "" \
+    "pass a run directory and a source path"
+  [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
+    "executor run directory not found" "path: ${run_dir}" "" "check the run directory"
+  cog::fn::rundir_require_file "$from" "prepared plan source"
+
+  dest="$(cog::fn::rundir_path "$run_dir" prepared-plan.md)"
+  cp -- "$from" "$dest" || cog::fn::error_raise "JsonWriteFailed" \
+    "could not adopt prepared plan" "from: ${from}, to: ${dest}" "" "check run directory permissions"
+
+  jq -cn --arg from "$from" --arg path "$dest" \
+    '{schema: "cog.executor.adopt-prepared.v1", ok: true, from: $from, path: $path}'
 }
 
 cog::fn::executor::classify_input_json() {
@@ -192,15 +246,7 @@ cog::fn::executor::queue_prompts_json() {
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
-        stage_model: "executor-3-stage"
-      },
-      {
-        skill: "executor-vetted-codex",
-        slash: "/executor-vetted-codex",
-        aliases: [],
-        accepts: ["<prompt>", "<plan.md>"],
-        target_argument: null,
-        stage_model: "executor-3-stage"
+        stage_model: "executor-gated-2-stage"
       },
       {
         skill: "executor-oneshot",
@@ -208,7 +254,7 @@ cog::fn::executor::queue_prompts_json() {
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
-        stage_model: "executor-2-stage"
+        stage_model: "executor-gated-2-stage"
       },
       {
         skill: "executor-oneshot-codex",
@@ -216,7 +262,7 @@ cog::fn::executor::queue_prompts_json() {
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
-        stage_model: "executor-2-stage"
+        stage_model: "executor-gated-2-stage"
       }
     ]
   }'
@@ -234,22 +280,29 @@ cog::fn::executor::summary_self_check() {
 }
 
 cog::fn::executor::summary_json() {
-  local run_dir="${1:-}" executor="${2:-}" engine="${3:-}" input_kind="${4:-}" reviewer="${5:-}"
-  shift 5 || true
-  local flow_json reviewer_json review_engine artifacts_json summary_path statuses_json pair ordinal status stages_json
+  local run_dir="${1:-}" executor="${2:-}" engine="${3:-}" route="${4:-}"
+  shift 4 || true
+  local flow_json prepare_step producer prepare_engine artifacts_json summary_path
+  local statuses_json pair ordinal status stages_json input_kind input_kind_file
 
-  [[ -n $run_dir && -n $executor && -n $engine && -n $input_kind && -n $reviewer ]] \
+  [[ -n $run_dir && -n $executor && -n $engine && -n $route ]] \
     || cog::fn::error_raise "MissingArgument" \
       "missing executor summary argument" \
       "function: cog::fn::executor::summary_json" "" \
-      "pass run-dir, executor, engine, input-kind, reviewer, and stage statuses"
+      "pass run-dir, executor, engine, route, and stage statuses"
 
   flow_json="$(cog::fn::executor::flow_json "$executor")"
-  cog::fn::executor::validate_engine "$engine" >/dev/null
-  reviewer_json="$(cog::fn::executor::select_reviewer_json "$executor" "$engine")"
-  review_engine="$(jq -r '.review_engine' <<<"$reviewer_json")"
+  cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
+  cog::fn::executor::validate_route "$route"
+  prepare_step="$(cog::fn::executor::prepare_step_json "$executor" "$engine" "$route")"
+  producer="$(jq -r '.producer' <<<"$prepare_step")"
+  prepare_engine="$(jq -r '.prepare_engine' <<<"$prepare_step")"
   artifacts_json="$(cog::fn::executor::artifacts_json "$run_dir")"
   summary_path="$(jq -r '.summary' <<<"$artifacts_json")"
+
+  input_kind="unknown"
+  input_kind_file="$(cog::fn::rundir_path "$run_dir" input-kind)"
+  [[ -r $input_kind_file ]] && input_kind="$(<"$input_kind_file")"
 
   statuses_json='{}'
   for pair in "$@"; do
@@ -269,22 +322,24 @@ cog::fn::executor::summary_json() {
     --arg executor "$executor" \
     --arg engine "$engine" \
     --arg run_dir "$run_dir" \
+    --arg route "$route" \
     --arg input_kind "$input_kind" \
-    --arg plan_engine "$engine" \
-    --arg review_engine "$review_engine" \
-    --arg reviewer "$reviewer" \
+    --arg producer "$producer" \
+    --arg prepare_engine "$prepare_engine" \
+    --arg execute_engine "$engine" \
     --argjson stages "$stages_json" \
     --arg summary "$summary_path" \
     '{
-      schema: "cog.executor.summary.v2",
+      schema: "cog.executor.summary.v3",
       ok: $ok,
       executor: $executor,
       engine: $engine,
       run_dir: $run_dir,
+      route: $route,
       input_kind: $input_kind,
-      plan_engine: $plan_engine,
-      review_engine: $review_engine,
-      reviewer: $reviewer,
+      producer: $producer,
+      prepare_engine: $prepare_engine,
+      execute_engine: $execute_engine,
       stages: $stages,
       artifacts: {summary: $summary}
     }'

@@ -2,7 +2,8 @@
 name: executor-oneshot-codex
 description: >
   Execute one prompt or implementation plan through the Codex-backed single
-  executor flow from Claude: Codex plans when needed, then Codex implements.
+  executor flow from Claude: evaluate the input, prepare a good plan (Codex plans
+  when thin, Claude reviews when already detailed), then Codex implements.
 model: opus
 effort: low
 argument-hint: "<prompt-or-plan-path>"
@@ -10,7 +11,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Agent Grep Glob
 ---
 
-<!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex plans and implements without plan review" -->
+<!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex prepares and implements one plan" -->
 <!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
 <!-- cog-plan-mode-gate -->
@@ -23,9 +24,10 @@ If Claude Code plan mode is active, STOP before parsing args, creating artifacts
 invoking Codex. Tell the user to exit plan mode with `Shift+Tab` and re-invoke
 `/executor-oneshot-codex`.
 
-Execute one prompt or plan through the Codex-backed two-stage executor flow. Codex plans when needed,
-then Codex implements the plan. This launcher owns sequencing and postcondition checks;
-deterministic run setup, artifact paths, Codex invocation, and summaries stay behind `cog`.
+Execute one prompt or plan through the Codex-backed gated 2-stage executor flow: an input-evaluation
+gate guarantees a good plan, then Codex implements it. This launcher owns sequencing and postcondition
+checks; deterministic run setup, the quality verdict, producer resolution, artifact paths, Codex
+invocation, and summaries stay behind `cog`.
 
 ## Bootstrap
 
@@ -35,37 +37,58 @@ Delegate classification and run setup to:
 cog executor init --executor executor-oneshot --engine codex --input <prompt-or-plan> --json
 ```
 
-Use the returned run directory and artifact paths. If plan input skipped Stage 1, create a non-empty
-`<RUN_DIR>/request.md` that records the supplied plan source and original request context before
-Stage 2.
+Use the returned run directory and canonical artifact paths (`prepared-plan.md`, `stage2-execution.md`,
+`executor-summary.json`). For prompt input it writes `request.md`; for plan input it writes
+`plan-source` with the supplied plan path.
 
-## Stage 1: Plan With Codex
+## Input Evaluation (gate)
 
-Run only for prompt input. Write `<RUN_DIR>/stage1-prompt.md` with `$plan-oneshot`, the write
-orientation from `cog codex-runner orientation write`, `--output <RUN_DIR>/stage1-plan.md`, and the
-original request. The prompt is an enrichment-only superset of the original input: include the
-original request verbatim and in full, plus relevant repo constraints, and never replace it with a
-summary. Then launch the durable Codex job and poll-and-classify with `cog codex-runner finalize
---max-wall <secs>`; the exit code is the signal (0 ok, 1 failed, 75 still running), re-run finalize
-while it exits 75, and duration is never judged:
+Determine whether the input already carries a good plan or needs one built. Delegate the verdict to the
+canonical `assess-input` skill through the **Agent tool** (`subagent_type: general-purpose`): the
+delegation prompt instructs the subagent to read `$HOME/.claude/skills/assess-input/SKILL.md` and
+follow it, passing `--run-dir <RUN_DIR>` and the original input verbatim and in full. Read the route
+from `<RUN_DIR>/assess-input.json` and confirm with `cog assess-input validate
+<RUN_DIR>/assess-input.json`. Resolve the prepare-stage producer:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --thread last --state <RUN_DIR>/stage1.longrun.json
-cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300
+cog executor prepare-step --executor executor-oneshot --engine codex --route <needs-plan|good-input> --json
 ```
 
-`--output` captures Codex's final message; the plan artifact `<RUN_DIR>/stage1-plan.md` is written by
-`$plan-oneshot`. Verify it exists and is non-empty before Stage 2.
+## Stage 1: Prepare The Plan
+
+Write the prepared plan to `<RUN_DIR>/prepared-plan.md`.
+
+- **`needs-plan` → Codex plans (`/plan-oneshot`).** Write `<RUN_DIR>/stage1-prompt.md` with the
+  write orientation from `cog codex-runner orientation write`, `$plan-oneshot`, `--output
+  <RUN_DIR>/prepared-plan.md`, and the original request — an enrichment-only superset of the original
+  input (verbatim and in full, plus relevant repo constraints, never a summary). Launch the durable
+  Codex job and poll-and-classify (exit code is the signal: 0 ok, 1 failed, 75 still running; re-run
+  finalize while it exits 75; duration is never judged):
+
+  ```bash
+  cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --state <RUN_DIR>/stage1.longrun.json
+  cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300
+  ```
+
+- **`good-input` → Claude reviews (`/review-plan-oneshot`, cross-engine).** Ensure `<RUN_DIR>/request.md`
+  exists (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing
+  the supplied-plan source context verbatim and in full, with only enriching repo constraints).
+  Delegate to a Claude subagent through the Agent tool that reads
+  `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follows its Orchestrator Invocation Contract
+  with three absolute paths — plan-path (the supplied plan path, or `<RUN_DIR>/request.md` for
+  inline-plan prompt input), request-path `<RUN_DIR>/request.md`, output-path
+  `<RUN_DIR>/prepared-plan.md`.
+
+Verify `<RUN_DIR>/prepared-plan.md` exists and is non-empty before Stage 2.
 
 ## Stage 2: Implement With Codex
 
-Write `<RUN_DIR>/stage2-prompt.md` with the write orientation, the plan input verbatim, the original
-request or supplied-plan context verbatim and in full, the active repository constraints, and a
-required final report covering files changed, deviations, commands run, and unresolved risks. The
-stage prompt is an enrichment-only superset and must not replace original input with a summary. Then
-launch the durable Codex job and poll-and-classify with `cog codex-runner finalize --max-wall
-<secs>`; the exit code is the signal (0 ok, 1 failed, 75 still running), re-run finalize while it
-exits 75, and duration is never judged:
+Write `<RUN_DIR>/stage2-prompt.md` with the write orientation, the prepared plan from
+`<RUN_DIR>/prepared-plan.md` verbatim (when it is an annotated review, implement the reconciled plan —
+apply APPROVED/MODIFIED/ADDED, skip REMOVED), the original request or supplied-plan context verbatim
+and in full, the active repository constraints, and a required final report covering files changed,
+deviations, commands run, and unresolved risks. The stage prompt is an enrichment-only superset and
+must not replace original input with a summary. Launch the durable Codex job and poll-and-classify:
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/stage2-prompt.md --output <RUN_DIR>/stage2-execution.md --events <RUN_DIR>/stage2-events.jsonl --stderr <RUN_DIR>/stage2-stderr.log --state <RUN_DIR>/stage2.longrun.json
@@ -76,10 +99,10 @@ Verify `<RUN_DIR>/stage2-execution.md` exists and is non-empty.
 
 ## Summary
 
-Emit the executor summary with reviewer `none`:
+Emit the executor summary:
 
 ```bash
-cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> --json
 ```
 
 Stop the chain on any failed stage, preserve the run directory artifacts, and still emit the summary
@@ -91,4 +114,5 @@ when enough stage status is known.
   `cog codex-runner finalize --max-wall <secs>`.
 - Use native Codex effort through `--effort`; never use legacy profiles.
 - Do not run git commands.
-- Keep deterministic mechanics behind `cog executor` and `cog codex-runner`.
+- Keep deterministic mechanics behind `cog executor`, `cog assess-input`, `cog codex-runner`,
+  `/plan-oneshot`, and `/review-plan-oneshot`.

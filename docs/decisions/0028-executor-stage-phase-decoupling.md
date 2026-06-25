@@ -49,4 +49,6 @@ Artifacts and summaries use phase-keyed v2 schemas:
 
 ## Status
 
-Accepted
+Accepted. The descriptor mechanism stands; the specific per-executor flow definitions and the
+`cog.executor.summary.v2` schema are superseded by
+[ADR-0036](0036-executor-input-quality-gate.md) (gated 2-phase flow, summary v3).

@@ -1,66 +1,31 @@
 # shellcheck shell=bash
 : 'desc: Manage shared executor run contracts and stage artifacts.'
 
-__cog_executor_init_self_check='(.schema=="cog.executor.init.v1") and (.ok==true) and (.run_dir|type=="string") and (.executor|type=="string") and (.engine|type=="string") and (.plan_engine|type=="string") and (.review_engine|type=="string") and (.reviewer|type=="string") and (.flow|type=="object") and (.stages|type=="array") and (.phases|type=="array") and (.artifacts.schema=="cog.executor.artifacts.v2")'
+__cog_executor_init_self_check='(.schema=="cog.executor.init.v2") and (.ok==true) and (.run_dir|type=="string") and (.executor|type=="string") and (.engine|type=="string") and (.flow|type=="object") and (.stages|type=="array") and (.phases|type=="array") and (.artifacts.schema=="cog.executor.artifacts.v2")'
 __cog_executor_queue_prompts_self_check='(.schema=="cog.executor.queue-prompts.v1") and (.prompts|type=="array")'
 __cog_executor_artifacts_self_check='(.schema=="cog.executor.artifacts.v2") and (.phases|type=="array") and (.summary|type=="string")'
 __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and has("plan_path") and (has("stages")|not)'
-__cog_executor_reviewer_self_check='(.plan_engine|type=="string") and (.review_engine|type=="string") and (.reviewer|type=="string")'
+__cog_executor_prepare_step_self_check='(.schema=="cog.executor.prepare-step.v1") and (.producer|type=="string") and (.prepare_engine|type=="string") and (.lane|type=="string")'
+__cog_executor_adopt_prepared_self_check='(.schema=="cog.executor.adopt-prepared.v1") and (.ok==true) and (.path|type=="string")'
 
 __cog_executor_usage() {
   cog::fn::ui_data "Usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan> [--json]"
   cog::fn::ui_data "Usage: cog executor classify-input <input> [--json]"
-  cog::fn::ui_data "Usage: cog executor select-reviewer --executor <executor-vetted|executor-oneshot> --engine <claude|codex> [--json]"
+  cog::fn::ui_data "Usage: cog executor prepare-step --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> [--json]"
+  cog::fn::ui_data "Usage: cog executor adopt-prepared --run-dir <dir> --from <path> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
-  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-oneshot> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]"
+  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> [--json]"
   cog::fn::ui_data "Usage: cog executor queue-prompts [--json]"
-  cog::fn::ui_data "Input classification: an existing readable regular .md file is a plan; everything else, including a missing .md path, is a prompt."
+  cog::fn::ui_data "Input classification: an existing readable regular .md file is a plan; everything else, including a missing .md path, is a prompt. The input-quality route (needs-plan|good-input) is the assess-input verdict, independent of input kind."
 }
 
-__cog_executor_validate_executor() {
-  cog::fn::executor::flow_json "${1:-}" >/dev/null
-}
-
-__cog_executor_validate_input_kind() {
-  case "${1:-}" in
-    prompt | plan) return 0 ;;
-    *) cog::fn::error_raise "InvalidInput" "invalid executor input kind" "input-kind: ${1:-}" "expected prompt or plan" "" ;;
+__cog_executor_validate_stage_status() {
+  local ordinal="$1" value="${2:-}"
+  case "$value" in
+    done | failed) return 0 ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid executor stage status" "${ordinal}: ${value}" \
+      "expected done or failed" "" ;;
   esac
-}
-
-__cog_executor_validate_stage_status_for_phase() {
-  local ordinal="$1" phase="$2" value="${3:-}"
-
-  case "$phase" in
-    plan)
-      case "$value" in
-        skipped | done | failed) return 0 ;;
-        *) cog::fn::error_raise "InvalidInput" "invalid executor stage status" "${ordinal}: ${value}" "expected skipped, done, or failed" "" ;;
-      esac
-      ;;
-    *)
-      case "$value" in
-        done | failed) return 0 ;;
-        *) cog::fn::error_raise "InvalidInput" "invalid executor stage status" "${ordinal}: ${value}" "expected done or failed" "" ;;
-      esac
-      ;;
-  esac
-}
-
-__cog_executor_validate_reviewer() {
-  local executor="$1" engine="$2" reviewer="${3:-}" expected_reviewer
-
-  case "$reviewer" in
-    none | /review-plan-oneshot) ;;
-    *) cog::fn::error_raise "InvalidInput" "invalid executor reviewer" "reviewer: ${reviewer}" "expected none or /review-plan-oneshot" "" ;;
-  esac
-
-  expected_reviewer="$(cog::fn::executor::select_reviewer_json "$executor" "$engine" | jq -r '.reviewer')"
-  [[ $reviewer == "$expected_reviewer" ]] || cog::fn::error_raise "InvalidInput" \
-    "reviewer does not match executor flow" \
-    "executor: ${executor}, engine: ${engine}, reviewer: ${reviewer}" \
-    "expected ${expected_reviewer}" \
-    "pass --reviewer ${expected_reviewer}"
 }
 
 __cog_executor_emit_stages_line() {
@@ -101,7 +66,7 @@ __cog_executor_init_write_state() {
 
 __cog_executor_init() {
   local executor="" engine="" input="" json="${COG_UI_JSON:-false}"
-  local classify_json input_kind run_dir reviewer_json reviewer review_engine artifacts_json init_json flow_json stages_json phases_json
+  local classify_json input_kind run_dir artifacts_json init_json flow_json stages_json phases_json
 
   while (($# > 0)); do
     case "$1" in
@@ -141,35 +106,28 @@ __cog_executor_init() {
     "usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan>" "" \
     "run 'cog executor --help'"
   flow_json="$(cog::fn::executor::flow_json "$executor")"
-  cog::fn::executor::validate_engine "$engine" >/dev/null
+  cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
   classify_json="$(cog::fn::executor::classify_input_json "$input")"
   input_kind="$(jq -r '.kind' <<<"$classify_json")"
-  stages_json="$(cog::fn::executor::stages_json "$executor" "$input_kind")"
-  reviewer_json="$(cog::fn::executor::select_reviewer_json "$executor" "$engine")"
-  reviewer="$(jq -r '.reviewer' <<<"$reviewer_json")"
-  review_engine="$(jq -r '.review_engine' <<<"$reviewer_json")"
+  stages_json="$(cog::fn::executor::stages_json "$executor")"
   run_dir="$(cog::fn::rundir_create "${executor}-${engine}")"
   __cog_executor_init_write_state "$run_dir" "$executor" "$engine" "$classify_json"
   artifacts_json="$(cog::fn::executor::artifacts_json "$run_dir")"
   phases_json="$(jq -c '.phases' <<<"$artifacts_json")"
   init_json="$(jq -cn \
-    --arg schema "cog.executor.init.v1" \
+    --arg schema "cog.executor.init.v2" \
     --argjson ok true \
     --arg action init \
     --arg executor "$executor" \
     --arg engine "$engine" \
     --arg run_dir "$run_dir" \
     --argjson input_obj "$(jq -c '{kind, value, plan_path}' <<<"$classify_json")" \
-    --arg plan_engine "$engine" \
-    --arg review_engine "$review_engine" \
-    --arg reviewer "$reviewer" \
     --argjson flow "$flow_json" \
     --argjson stages "$stages_json" \
     --argjson phases "$phases_json" \
     --argjson artifacts "$artifacts_json" \
     '{schema: $schema, ok: $ok, action: $action, executor: $executor, engine: $engine, run_dir: $run_dir,
-      input: $input_obj, plan_engine: $plan_engine, review_engine: $review_engine, reviewer: $reviewer,
-      flow: $flow, stages: $stages, phases: $phases, artifacts: $artifacts}')"
+      input: $input_obj, flow: $flow, stages: $stages, phases: $phases, artifacts: $artifacts}')"
 
   if [[ $json == true ]]; then
     cog::fn::json_emit "$__cog_executor_init_self_check" "$init_json"
@@ -178,9 +136,6 @@ __cog_executor_init() {
     cog::fn::ui_data "INPUT_KIND=${input_kind}"
     cog::fn::ui_data "EXECUTOR=${executor}"
     cog::fn::ui_data "ENGINE=${engine}"
-    cog::fn::ui_data "PLAN_ENGINE=${engine}"
-    cog::fn::ui_data "REVIEW_ENGINE=${review_engine}"
-    cog::fn::ui_data "REVIEWER=${reviewer}"
     cog::fn::ui_data "STAGES=$(__cog_executor_emit_stages_line "$init_json")"
     cog::fn::ui_data "SUMMARY_PATH=$(jq -r '.summary' <<<"$artifacts_json")"
   fi
@@ -220,8 +175,8 @@ __cog_executor_classify_input() {
   fi
 }
 
-__cog_executor_select_reviewer() {
-  local executor="" engine="" json="${COG_UI_JSON:-false}" result
+__cog_executor_prepare_step() {
+  local executor="" engine="" route="" json="${COG_UI_JSON:-false}" result
 
   while (($# > 0)); do
     case "$1" in
@@ -237,30 +192,79 @@ __cog_executor_select_reviewer() {
         engine="$2"
         shift 2
         ;;
+      --route)
+        [[ $# -ge 2 && -n ${2:-} && -z $route ]] || cog::fn::error_raise "MissingArgument" \
+          "missing route" "option: --route" "" "run 'cog executor --help'"
+        route="$2"
+        shift 2
+        ;;
       --json)
         json=true
         shift
         ;;
       -*)
-        cog::fn::error_raise "InvalidInput" "unknown select-reviewer option" "option: $1" "" "run 'cog executor --help'"
+        cog::fn::error_raise "InvalidInput" "unknown prepare-step option" "option: $1" "" "run 'cog executor --help'"
         ;;
       *)
-        cog::fn::error_raise "TooManyArguments" "too many select-reviewer arguments" "argument: $1" "" "run 'cog executor --help'"
+        cog::fn::error_raise "TooManyArguments" "too many prepare-step arguments" "argument: $1" "" "run 'cog executor --help'"
         ;;
     esac
   done
 
-  [[ -n $executor && -n $engine ]] || cog::fn::error_raise "MissingArgument" \
-    "missing reviewer selection argument" \
-    "usage: cog executor select-reviewer --executor <executor-vetted|executor-oneshot> --engine <claude|codex>" "" \
+  [[ -n $executor && -n $engine && -n $route ]] || cog::fn::error_raise "MissingArgument" \
+    "missing prepare-step argument" \
+    "usage: cog executor prepare-step --executor <executor> --engine <engine> --route <needs-plan|good-input>" "" \
     "run 'cog executor --help'"
-  result="$(cog::fn::executor::select_reviewer_json "$executor" "$engine")"
+  result="$(cog::fn::executor::prepare_step_json "$executor" "$engine" "$route")"
   if [[ $json == true ]]; then
-    cog::fn::json_emit "$__cog_executor_reviewer_self_check" "$result"
+    cog::fn::json_emit "$__cog_executor_prepare_step_self_check" "$result"
   else
-    cog::fn::ui_data "PLAN_ENGINE=$(jq -r '.plan_engine' <<<"$result")"
-    cog::fn::ui_data "REVIEW_ENGINE=$(jq -r '.review_engine' <<<"$result")"
-    cog::fn::ui_data "REVIEWER=$(jq -r '.reviewer' <<<"$result")"
+    cog::fn::ui_data "PRODUCER=$(jq -r '.producer' <<<"$result")"
+    cog::fn::ui_data "PREPARE_ENGINE=$(jq -r '.prepare_engine' <<<"$result")"
+    cog::fn::ui_data "LANE=$(jq -r '.lane' <<<"$result")"
+    cog::fn::ui_data "ARTIFACT=$(jq -r '.artifact' <<<"$result")"
+  fi
+}
+
+__cog_executor_adopt_prepared() {
+  local run_dir="" from="" json="${COG_UI_JSON:-false}" result
+
+  while (($# > 0)); do
+    case "$1" in
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog executor --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --from)
+        [[ $# -ge 2 && -n ${2:-} && -z $from ]] || cog::fn::error_raise "MissingArgument" \
+          "missing source path" "option: --from" "" "run 'cog executor --help'"
+        from="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" "unknown adopt-prepared option" "option: $1" "" "run 'cog executor --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" "too many adopt-prepared arguments" "argument: $1" "" "run 'cog executor --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir && -n $from ]] || cog::fn::error_raise "MissingArgument" \
+    "missing adopt-prepared argument" \
+    "usage: cog executor adopt-prepared --run-dir <dir> --from <path>" "" \
+    "run 'cog executor --help'"
+  result="$(cog::fn::executor::adopt_prepared_json "$run_dir" "$from")"
+  if [[ $json == true ]]; then
+    cog::fn::json_emit "$__cog_executor_adopt_prepared_self_check" "$result"
+  else
+    cog::fn::ui_data "PREPARED_PLAN=$(jq -r '.path' <<<"$result")"
   fi
 }
 
@@ -300,8 +304,8 @@ __cog_executor_artifacts() {
 }
 
 __cog_executor_summary() {
-  local run_dir="" executor="" engine="" input_kind="" reviewer="" stage1="" stage2="" stage3=""
-  local json="${COG_UI_JSON:-false}" flow_json summary_json summary_path expected
+  local run_dir="" executor="" engine="" route="" stage1="" stage2=""
+  local json="${COG_UI_JSON:-false}" flow_json summary_json summary_path
   local -a summary_args=()
 
   while (($# > 0)); do
@@ -324,16 +328,10 @@ __cog_executor_summary() {
         engine="$2"
         shift 2
         ;;
-      --input-kind)
-        [[ $# -ge 2 && -n ${2:-} && -z $input_kind ]] || cog::fn::error_raise "MissingArgument" \
-          "missing input kind" "option: --input-kind" "" "run 'cog executor --help'"
-        input_kind="$2"
-        shift 2
-        ;;
-      --reviewer)
-        [[ $# -ge 2 && -n ${2:-} && -z $reviewer ]] || cog::fn::error_raise "MissingArgument" \
-          "missing reviewer" "option: --reviewer" "" "run 'cog executor --help'"
-        reviewer="$2"
+      --route)
+        [[ $# -ge 2 && -n ${2:-} && -z $route ]] || cog::fn::error_raise "MissingArgument" \
+          "missing route" "option: --route" "" "run 'cog executor --help'"
+        route="$2"
         shift 2
         ;;
       --stage1)
@@ -346,12 +344,6 @@ __cog_executor_summary() {
         [[ $# -ge 2 && -n ${2:-} && -z $stage2 ]] || cog::fn::error_raise "MissingArgument" \
           "missing stage2 status" "option: --stage2" "" "run 'cog executor --help'"
         stage2="$2"
-        shift 2
-        ;;
-      --stage3)
-        [[ $# -ge 2 && -n ${2:-} && -z $stage3 ]] || cog::fn::error_raise "MissingArgument" \
-          "missing stage3 status" "option: --stage3" "" "run 'cog executor --help'"
-        stage3="$2"
         shift 2
         ;;
       --json)
@@ -367,49 +359,40 @@ __cog_executor_summary() {
     esac
   done
 
-  [[ -n $run_dir && -n $executor && -n $engine && -n $input_kind && -n $reviewer ]] \
+  [[ -n $run_dir && -n $executor && -n $engine && -n $route ]] \
     || cog::fn::error_raise "MissingArgument" \
       "missing summary argument" \
-      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --input-kind <prompt|plan> --reviewer <reviewer> --stage1 <status> --stage2 <status> [--stage3 <status>]" "" \
+      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --route <needs-plan|good-input> --stage1 <status> --stage2 <status>" "" \
       "run 'cog executor --help'"
   [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
     "executor run directory not found" "path: ${run_dir}" "" "check --run-dir"
   flow_json="$(cog::fn::executor::flow_json "$executor")"
-  cog::fn::executor::validate_engine "$engine" >/dev/null
-  __cog_executor_validate_input_kind "$input_kind"
-  __cog_executor_validate_reviewer "$executor" "$engine" "$reviewer"
+  cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
+  cog::fn::executor::validate_route "$route"
 
-  while IFS=$'\t' read -r ordinal phase; do
+  while IFS= read -r ordinal; do
     case "$ordinal" in
-      stage1) expected="$stage1" ;;
-      stage2) expected="$stage2" ;;
-      stage3) expected="$stage3" ;;
-      *) expected="" ;;
+      stage1) status="$stage1" ;;
+      stage2) status="$stage2" ;;
+      *) status="" ;;
     esac
-    [[ -n $expected ]] || cog::fn::error_raise "MissingArgument" \
+    [[ -n $status ]] || cog::fn::error_raise "MissingArgument" \
       "missing executor stage status" "stage: ${ordinal}" \
       "required by executor ${executor}" \
       "pass --${ordinal} <status>"
-    __cog_executor_validate_stage_status_for_phase "$ordinal" "$phase" "$expected"
-    summary_args+=("${ordinal}=${expected}")
-  done < <(jq -r '.phases[] | [.ordinal, .phase] | @tsv' <<<"$flow_json")
-
-  if [[ -n $stage3 && $(jq -r '[.phases[].ordinal] | index("stage3") != null' <<<"$flow_json") != true ]]; then
-    cog::fn::error_raise "InvalidInput" \
-      "unexpected executor stage status" "stage: stage3" \
-      "executor ${executor} does not have stage3" \
-      "remove --stage3"
-  fi
+    __cog_executor_validate_stage_status "$ordinal" "$status"
+    summary_args+=("${ordinal}=${status}")
+  done < <(jq -r '.phases[].ordinal' <<<"$flow_json")
 
   if [[ $json == true ]]; then
     # File-first write still happens, but stdout must be pure JSON: suppress the
     # RESOLVED line that write_summary_json (via json_write_fragment) prints.
-    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$input_kind" "$reviewer" "${summary_args[@]}" >/dev/null
+    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "${summary_args[@]}" >/dev/null
     summary_path="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name "$executor" summary)")"
     summary_json="$(<"$summary_path")"
     cog::fn::json_emit "$(cog::fn::executor::summary_self_check)" "$summary_json"
   else
-    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$input_kind" "$reviewer" "${summary_args[@]}"
+    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "${summary_args[@]}"
   fi
 }
 
@@ -456,9 +439,13 @@ cog::cmd::executor() {
       shift
       __cog_executor_classify_input "$@"
       ;;
-    select-reviewer)
+    prepare-step)
       shift
-      __cog_executor_select_reviewer "$@"
+      __cog_executor_prepare_step "$@"
+      ;;
+    adopt-prepared)
+      shift
+      __cog_executor_adopt_prepared "$@"
       ;;
     artifacts)
       shift
@@ -474,7 +461,7 @@ cog::cmd::executor() {
       ;;
     "")
       cog::fn::error_raise "MissingArgument" \
-        "missing executor mode" "usage: cog executor init|classify-input|select-reviewer|artifacts|summary|queue-prompts" "" \
+        "missing executor mode" "usage: cog executor init|classify-input|prepare-step|adopt-prepared|artifacts|summary|queue-prompts" "" \
         "run 'cog executor --help'"
       ;;
     *)

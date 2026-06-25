@@ -96,12 +96,13 @@ Plan-review sub-namespace (`review-plan-*`):
 ### executor-*
 
 - skills/claude/executor-vetted
-- skills/claude/executor-vetted-codex
 - skills/claude/executor-prex
 - skills/claude/executor-oneshot
 - skills/claude/executor-oneshot-codex
-- skills/codex/executor-vetted
 - skills/codex/executor-oneshot
+
+`executor-vetted` is a Claude-only orchestrator (its `plan-multi` / `review-plan-multi` producers run
+Claude and Codex together), so it has no Codex twin or `-codex` delegation launcher.
 
 ### runner-*
 
@@ -112,6 +113,8 @@ Plan-review sub-namespace (`review-plan-*`):
 
 Utility skills outside the four governed behavioral prefixes, plus shipped agents:
 
+- skills/claude/assess-input
+- skills/codex/assess-input
 - skills/claude/ask
 - skills/claude/ast-grep
 - skills/claude/claudemd

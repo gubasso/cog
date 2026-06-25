@@ -1,9 +1,10 @@
 ---
 name: executor-vetted
 description: >
-  Execute one prompt or implementation plan through the Claude executor flow:
-  Claude plans when needed, Codex reviews Claude-made plans, then Claude implements
-  the reviewed plan natively in session.
+  Execute one prompt or implementation plan through the Claude vetted executor
+  flow: evaluate the input, prepare a vetted plan with dual-engine planning
+  (generate when thin, multi-review when already detailed), then implement it
+  natively in session.
 model: opus
 effort: low
 argument-hint: "<prompt-or-plan-path>"
@@ -11,32 +12,21 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
-<!-- trigger-tests: "executor-vetted", "execute one prompt through Claude", "execute one plan through Claude" -->
+<!-- trigger-tests: "executor-vetted", "execute one prompt through Claude vetted flow", "execute one plan through Claude vetted flow" -->
 <!-- cog-skill: input-fidelity -->
 
-# Executor Claude
+# Executor Vetted
 
-Execute one prompt or one implementation plan through the shared 3-stage executor flow:
-Claude plans when needed, Codex reviews the Claude-made plan, then Claude implements
-the reviewed plan natively in the current session. This skill owns sequencing and
-judgment. Run directory setup, input classification, canonical artifact paths,
-OTHER-engine reviewer selection, Codex invocation, and executor summaries stay
-behind `cog`.
-
-Stage 3 is native Claude implementation in the current session.
-
-This skill uses the `executor-*` taxonomy prefix and does not carry the
-`cog-skill` plan-emitter marker or the `cog-plan-mode-gate` Phase 0 marker.
-All plan emission is delegated to `/plan-oneshot` via the Agent tool (Stage 1),
-which carries its own Phase 0 plan-mode gate. Per
-`docs/decisions/0015-plan-skills-not-in-plan-mode.md` and
-`docs/reference/skill-contract.md` ("Plan-mode gate"), `cog skill-lint` requires
-the gate stanza only for Claude skills carrying the plan-emitter marker.
+Execute one prompt or one implementation plan through the gated 2-stage executor flow: an
+input-evaluation gate guarantees a vetted plan via dual-engine planning, then Claude implements it
+natively in the current session. This skill owns sequencing and judgment. Run directory setup, input
+classification, the quality verdict, producer resolution, canonical artifact paths, and executor
+summaries stay behind `cog`. This is a Claude-only orchestrator: its multi producers run Claude and
+Codex together, so it has no Codex twin.
 
 ## Inputs
 
-`$ARGUMENTS` is either a prompt/task description or an existing readable regular
-`.md` plan path.
+`$ARGUMENTS` is either a prompt/task description or an existing readable regular `.md` plan path.
 
 Delegate classification and run setup to `cog executor`:
 
@@ -44,202 +34,105 @@ Delegate classification and run setup to `cog executor`:
 cog executor init --executor executor-vetted --engine claude --input <prompt-or-plan> --json
 ```
 
-`cog executor init` records `engine=claude`, reviewer `/review-plan-oneshot`, and
-the flow-driven stages for prompt or plan input.
+Use the run directory and canonical artifact paths it returns (`prepared-plan.md`,
+`stage2-execution.md`, `executor-summary.json`). For prompt input it writes `request.md`; for plan
+input it writes `plan-source` with the supplied plan path.
 
-Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A
-supplied path that is not a readable regular `.md` file is prompt text according
-to `cog executor`; do not reimplement that check.
+## Input Evaluation (gate)
 
-## Execution Discipline
-
-The Stage 2 Codex review is a cog-owned durable job: launch it with `cog codex-runner run-exec
---state`, then poll-and-classify with one verb, `cog codex-runner finalize --max-wall <secs>`. The
-exit code is the signal (0 ok · 1 failed · 75 still running); re-run finalize while it exits 75.
-Duration is never judged. Keep Claude implementation, subagent work, and orchestration foreground;
-never background them. Native effort is passed with `--effort`; do not use legacy profile-based
-invocation.
-
-Stage 2 runs Codex through `cog codex-runner run-exec --mode danger --access write --effort
-high`; the write-capable `danger` sandbox is required because `/review-plan-oneshot`
-writes its reviewed-plan artifact through `cog plan-review`, and the read-only
-`native`/`fallback`/`quick-auto` sandboxes block that write (the run directory
-also lives outside the workspace, so only full-access `danger` can write there).
-Stage 3 is implemented by Claude in the current session, not through
-`cog codex-runner`.
-
-Stage boundaries must verify durable postconditions before advancing. An output
-artifact must exist and be non-empty before the next stage starts.
-
-Do not run git commands unless the orchestrator or user explicitly authorizes
-them.
-
-## Bootstrap
-
-Use the run directory and artifact paths returned by `cog executor init`. When
-needed, confirm canonical paths with:
+Determine whether the input already carries a good plan or needs one built. Delegate the verdict to the
+canonical `assess-input` skill through the **Agent tool** (`subagent_type: general-purpose`): the
+delegation prompt instructs the subagent to read `$HOME/.claude/skills/assess-input/SKILL.md` and
+follow it, passing `--run-dir <run-dir>` and the original input verbatim and in full. Read the route
+from `<run-dir>/assess-input.json` and confirm with `cog assess-input validate
+<run-dir>/assess-input.json`. Resolve the prepare-stage producer:
 
 ```bash
-cog executor artifacts <run-dir> --json
+cog executor prepare-step --executor executor-vetted --engine claude --route <needs-plan|good-input> --json
 ```
 
-Canonical artifacts for this executor are:
+Both producers are dual-engine Claude coordinators delegated through the Agent tool. A dual-engine plan
+(two strong models drafting independently, then a synthesized best-of-both) is itself the vetting, so
+neither route needs a separate review pass.
 
-```text
-stage1-plan.md
-stage2-reviewed-plan.md
-stage3-execution.md
-executor-summary.json
-```
+## Stage 1: Prepare The Plan
 
-For prompt input, `cog executor init` writes `request.md` under the run
-directory.
+Write the prepared plan to `<run-dir>/prepared-plan.md`.
 
-For plan input, `cog executor init` writes `plan-source`, containing the
-supplied plan path, and does not create `request.md`. Before building the Stage
-2 prompt, create a non-empty `<run-dir>/request.md` that captures the original
-task or supplied-plan source context verbatim and in full, with only enriching
-repo constraints added. This run-scoped request artifact satisfies
-`/review-plan-oneshot`'s orchestrator contract and must not replace original
-input with a summary. All other deterministic artifact path mechanics come from
-`cog`.
+- **`needs-plan` → generate (`/plan-multi`).** Delegate to a foreground Claude subagent through the
+  Agent tool (`subagent_type: general-purpose`) that reads `$HOME/.claude/skills/plan-multi/SKILL.md`
+  and follows it, passing `--output <run-dir>/prepared-plan.md` and the original request as
+  orientation. The delegation prompt is an enrichment-only superset of the original input: include the
+  original request verbatim and in full, plus relevant repo constraints, and never replace it with a
+  summary. The subagent runs non-interactively, treating every interview decision as a best default,
+  and runs both engines (not `--solo`). It returns the output path.
 
-The Stage 2 Codex runner files are run-scoped capture files, not canonical
-executor artifacts returned by `cog executor artifacts`:
+- **`good-input` → multi-review (`/review-plan-multi`).** Delegate to a foreground Claude subagent
+  through the Agent tool that reads `$HOME/.claude/skills/review-plan-multi/SKILL.md` and follows it,
+  passing the original input as its plan-plus-context argument (the supplied plan path for plan input,
+  or `<run-dir>/request.md` for prompt input). The subagent runs both engines and returns the absolute
+  path of its definitive vetted review. Adopt that review as the prepared plan:
 
-```text
-stage2-prompt.md
-stage2-codex-output.md
-stage2-events.jsonl
-stage2-stderr.log
-```
+  ```bash
+  cog executor adopt-prepared --run-dir <run-dir> --from <returned-review-path> --json
+  ```
 
-## Stage 1: Plan
+After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
 
-Run this stage only when input kind is `prompt`.
+## Stage 2: Implement
 
-Delegate plan generation to a foreground Claude subagent through the **Agent
-tool** (`subagent_type: general-purpose`), not the Skill tool — see
-`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
-`/plan-oneshot` carries `disable-model-invocation: true`, so the Skill tool
-refuses it; Agent-tool delegation loads the skill body via `Read` and is the
-supported lane.
-
-The delegation prompt instructs the subagent to read
-`$HOME/.claude/skills/plan-oneshot/SKILL.md` and follow it end-to-end, passing
-`--output <run-dir>/stage1-plan.md` and using the original request as the
-orientation. The delegation prompt is an enrichment-only superset of the
-original input: include the original request verbatim and in full, plus relevant
-repo constraints, and never replace it with a summary. The subagent runs the
-interview non-interactively: it treats every interview decision as a
-skill-chosen best-default and records it (a subagent cannot prompt the user
-mid-run). The generated plan must include assumptions, ambiguities, dependencies,
-and risks.
-
-The Stage 2 plan input is:
-
-- Prompt input: `<run-dir>/stage1-plan.md`.
-- Plan input: the supplied plan path recorded by `cog executor init`.
-
-After Stage 1, verify that `<run-dir>/stage1-plan.md` exists and is non-empty
-before continuing.
-
-## Stage 2: Review Plan
-
-Claude-made plans are reviewed by Codex via `/review-plan-oneshot`. Use the
-reviewer returned by `cog executor init`; for this executor, it must be
-`/review-plan-oneshot`.
-
-Build a prompt file under the run directory that instructs Codex to invoke
-`/review-plan-oneshot` with exactly three absolute paths:
-
-```text
-1. plan-path: <stage1-plan.md or the supplied plan path>
-2. request-path: <run-dir>/request.md
-3. output-path: <run-dir>/stage2-reviewed-plan.md
-```
-
-The reviewer reads shared filesystem artifacts. Do not inline the full plan
-into the prompt unless recovery requires it.
-
-Launch Codex as a durable job at native effort `high` with the write-capable
-`danger` sandbox (the reviewer writes `stage2-reviewed-plan.md` through
-`cog plan-review`, so a read-only sandbox cannot be used here), then poll-and-classify:
-
-```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage2-prompt.md> --output <stage2-codex-output.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log> --state <stage2.longrun.json>
-# Re-run while it exits 75 (still running). Duration is never judged; exit code is the signal: 0 ok, 1 failed, 75 still running.
-cog codex-runner finalize --state <stage2.longrun.json> --max-wall 300
-```
-
-Treat `<run-dir>/stage2-reviewed-plan.md` as the authoritative review artifact.
-The runner output is only Codex transcript/final-message capture. After the
-Codex review returns, verify that `<run-dir>/stage2-reviewed-plan.md` exists and
-is non-empty before continuing.
-
-## Stage 3: Implement
-
-Implement natively in the current Claude session. Read and follow
-`<run-dir>/stage2-reviewed-plan.md` verbatim.
+Implement natively in the current Claude session. Read and follow `<run-dir>/prepared-plan.md`; when it
+is an annotated review, implement the reconciled plan it specifies (apply APPROVED/MODIFIED/ADDED
+guidance, skip REMOVED).
 
 Carry only relevant session context:
 
-- The reviewed plan from `<run-dir>/stage2-reviewed-plan.md`, verbatim.
-- The original request or supplied-plan source context, verbatim and in full,
-  with only enriching repo constraints added.
-- A short statement that the reviewed plan supersedes any earlier plan.
-- Current session constraints: do not run git commands unless explicitly
-  authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the reviewed
-  plan.
-- A required final implementation report covering files changed, commands run,
-  deviations, and unresolved risks.
+- The prepared plan, verbatim.
+- The original request or supplied-plan source context, verbatim and in full, with only enriching
+  repo constraints added.
+- A short statement that the prepared plan supersedes any earlier plan.
+- Current session constraints: do not run git commands unless explicitly authorized, follow
+  `AGENTS.md` and `CLAUDE.md`, and stay inside the prepared plan.
+- A required final implementation report covering files changed, commands run, deviations, and
+  unresolved risks.
 
-After implementation, write the final implementation report to
-`<run-dir>/stage3-execution.md`. Verify that it exists and is non-empty.
+After implementation, write the final implementation report to `<run-dir>/stage2-execution.md`. Verify
+that it exists and is non-empty.
 
 ## Summary
 
-Emit an executor summary after Stage 3 or after a terminal stage failure:
+Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-vetted --engine claude --input-kind <prompt|plan> --reviewer /review-plan-oneshot --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-vetted --engine claude --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> --json
 ```
 
 Status rules:
 
-- Prompt input with successful planning uses `--stage1 done`.
-- Plan input uses `--stage1 skipped`.
-- If Stage 1 fails, do not run Stage 2 or Stage 3; emit the summary with
-  failure statuses.
-- If Stage 2 fails, do not run Stage 3.
-- If Stage 3 fails, still emit the summary with `--stage3 failed`.
+- The prepare stage always runs; report `--stage1 done` on success.
+- If Stage 1 fails, do not run Stage 2; emit the summary with failure statuses.
+- If Stage 2 fails, still emit the summary with `--stage2 failed`.
 
 ## Error Handling
 
 At every boundary, verify the durable postcondition before advancing:
 
-- Stage 1, when run: `stage1-plan.md` exists and is non-empty.
-- Plan input: the supplied plan path exists and is readable before delegation.
-- Plan input: `<run-dir>/request.md` exists and is non-empty before building the
-  Stage 2 prompt.
-- Stage 2: `stage2-reviewed-plan.md` exists and is non-empty.
-- Stage 3: `stage3-execution.md` exists and is non-empty.
+- Gate: `<run-dir>/assess-input.json` exists and validates; the route is `needs-plan` or `good-input`.
+- Stage 1: `prepared-plan.md` exists and is non-empty.
+- Plan input: the supplied plan path exists and is readable before review or implementation.
+- Stage 2: `stage2-execution.md` exists and is non-empty.
 - Summary: `executor-summary.json` is written by `cog executor summary`.
 
-On failure, stop the chain, preserve the run directory artifacts, and still emit
-the executor summary using the status rules above. Do not infer status from
-prose when a `cog` command reports structured output.
+On failure, stop the chain, preserve the run directory artifacts, and still emit the executor summary
+using the status rules above. Do not infer status from prose when a `cog` command reports structured
+output.
 
 ## Guardrails
 
-- Foreground only; never background the Codex review, Claude implementation, or
-  orchestration work.
-- Native Codex effort only, via `--effort`.
-- No legacy profile-based invocation anywhere.
-- Do not instruct a runtime read of maintenance-reference conventions.
-- Deterministic mechanics stay behind `cog executor`, `cog codex-runner`,
-  `/plan-oneshot`, and `/review-plan-oneshot`.
-- Do not use inline shell functions, loops, or text-parsing routines.
+- Keep the gate, plan preparation, Claude implementation, and orchestration foreground; never
+  background them.
+- Native Codex effort only, via `--effort`, inside the delegated multi coordinators.
 - Do not run git commands unless explicitly authorized.
-- This skill executes one prompt or plan. It does not modify `cog executor`,
-  `cog codex-runner`, the Codex sibling, or queue integration.
+- Deterministic mechanics stay behind `cog executor`, `cog assess-input`, `/plan-multi`, and
+  `/review-plan-multi`.
+- This skill executes one prompt or plan.

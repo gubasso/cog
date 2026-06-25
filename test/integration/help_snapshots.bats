@@ -35,6 +35,7 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  assess-input   Extract input-quality signals and persist the executor gate verdict.
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
@@ -129,6 +130,7 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  assess-input   Extract input-quality signals and persist the executor gate verdict.
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
