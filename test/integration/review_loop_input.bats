@@ -12,8 +12,8 @@ write_required_inputs() {
   local run_dir="$1"
   mkdir -p "$run_dir"
   printf '%s' "task text" >"${run_dir}/request.md"
-  printf '%s' "reviewed plan text" >"${run_dir}/stage2-reviewed-plan.md"
-  printf '%s' "stage 4 review text" >"${run_dir}/stage4-review.md"
+  printf '%s' "reviewed plan text" >"${run_dir}/vetted-plan.md"
+  printf '%s' "stage 4 review text" >"${run_dir}/review.md"
 }
 
 write_thread_ids() {
@@ -34,7 +34,7 @@ write_thread_ids() {
   jq -e \
     '.task == "task text" and
      .reviewed_plan == "reviewed plan text" and
-     .stage4_review == "stage 4 review text" and
+     .implementation_review == "stage 4 review text" and
      .plan_thread_id == "plan-thread-1" and
      .impl_thread_id == "impl-thread-1"' \
     "${run_dir}/review_loop_input.json" >/dev/null
@@ -50,7 +50,7 @@ write_thread_ids() {
   assert_success
   [ ! -e "${run_dir}/review_loop_input.json" ]
   printf '%s\n' "$output" | jq -e \
-    'has("task") and has("reviewed_plan") and has("stage4_review") and
+    'has("task") and has("reviewed_plan") and has("implementation_review") and
      has("plan_thread_id") and has("impl_thread_id")' >/dev/null
 }
 
@@ -69,7 +69,7 @@ write_thread_ids() {
 @test "cog review-loop-input build fails when required file is missing" {
   local run_dir="${BATS_TEST_TMPDIR}/run"
   write_required_inputs "$run_dir"
-  rm -f "${run_dir}/stage4-review.md"
+  rm -f "${run_dir}/review.md"
 
   run --separate-stderr cog review-loop-input build --run-dir "$run_dir"
 
@@ -80,7 +80,7 @@ write_thread_ids() {
 @test "cog review-loop-input build fails when required file is empty" {
   local run_dir="${BATS_TEST_TMPDIR}/run"
   write_required_inputs "$run_dir"
-  : >"${run_dir}/stage2-reviewed-plan.md"
+  : >"${run_dir}/vetted-plan.md"
 
   run --separate-stderr cog review-loop-input build --run-dir "$run_dir"
 
@@ -114,11 +114,11 @@ write_thread_ids() {
   jq -n \
     --arg task "task text" \
     --arg reviewed_plan "reviewed plan text" \
-    --arg stage4_review "stage 4 review text" \
+    --arg implementation_review "stage 4 review text" \
     '{
       task: $task,
       reviewed_plan: $reviewed_plan,
-      stage4_review: $stage4_review,
+      implementation_review: $implementation_review,
       plan_thread_id: "",
       impl_thread_id: null
     }' >"$input"
@@ -134,11 +134,11 @@ write_thread_ids() {
   jq -n \
     --arg task "task text" \
     --arg reviewed_plan "reviewed plan text" \
-    --arg stage4_review "stage 4 review text" \
+    --arg implementation_review "stage 4 review text" \
     '{
       task: $task,
       reviewed_plan: $reviewed_plan,
-      stage4_review: $stage4_review,
+      implementation_review: $implementation_review,
       plan_thread_id: "bad id",
       impl_thread_id: null
     }' >"$input"

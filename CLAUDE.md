@@ -31,6 +31,12 @@ platform-token suffixes are reserved for delegation launchers that run the other
 hood. See docs/decisions/0021-twin-skill-naming-and-delegation-hints.md and
 docs/reference/skill-contract.md ("Twin and delegation skill naming").
 
+Non-negotiable: machine-facing skill identifiers are stage-agnostic: run-dir artifact filenames,
+skill reference filenames, handoff/JSON fields, CLI flags, and executor ordinal values are named for
+role or content, not stage number. Enforced by cog skill-lint (stage-agnostic-identifiers). See
+docs/decisions/0040-stage-agnostic-identifiers.md and docs/reference/skill-contract.md
+("Stage-agnostic identifiers").
+
 Non-negotiable: the plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan or
 review workers. Every Claude executor-*/runner- skill carries a Phase 0 plan-mode gate
 (cog-plan-mode-gate marker); every other Claude skill must not. The gate wording is a single source of

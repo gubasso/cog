@@ -42,7 +42,7 @@ cog executor init --executor executor-vetted --engine claude --input <prompt-or-
 ```
 
 Use the run directory and canonical artifact paths it returns (`prepared-plan.md`,
-`stage2-execution.md`, `executor-summary.json`). For prompt input it writes `request.md`; for plan
+`execution-report.md`, `executor-summary.json`). For prompt input it writes `request.md`; for plan
 input it writes `plan-source` with the supplied plan path.
 
 ## Stage 1: Prepare The Plan
@@ -78,7 +78,7 @@ Carry only relevant session context:
 - A required final implementation report covering files changed, commands run, deviations, and
   unresolved risks.
 
-After implementation, write the final implementation report to `<run-dir>/stage2-execution.md`. Verify
+After implementation, write the final implementation report to `<run-dir>/execution-report.md`. Verify
 that it exists and is non-empty.
 
 ## Summary
@@ -86,14 +86,14 @@ that it exists and is non-empty.
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-vetted --engine claude --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-vetted --engine claude --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 Status rules:
 
-- The prepare stage always runs; report `--stage1 done` on success.
+- The prepare stage always runs; report `--prepare done` on success.
 - If Stage 1 fails, do not run Stage 2; emit the summary with failure statuses.
-- If Stage 2 fails, still emit the summary with `--stage2 failed`.
+- If Stage 2 fails, still emit the summary with `--execution failed`.
 
 ## Error Handling
 
@@ -102,7 +102,7 @@ At every boundary, verify the durable postcondition before advancing:
 - Stage 1: `prepared-plan.md` exists and is non-empty; the returned route is `needs-plan` or
   `good-input`.
 - Plan input: the supplied plan path exists and is readable before review or implementation.
-- Stage 2: `stage2-execution.md` exists and is non-empty.
+- Stage 2: `execution-report.md` exists and is non-empty.
 - Summary: `executor-summary.json` is written by `cog executor summary`.
 
 On failure, stop the chain, preserve the run directory artifacts, and still emit the executor summary

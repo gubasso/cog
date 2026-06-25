@@ -17,14 +17,14 @@ setup() {
      .input == {kind: "prompt", value: "Implement thing", plan_path: null} and
      .executor == "executor-vetted" and
      .engine == "claude" and
-     .stages == ["stage1","stage2"] and
+     .stages == ["prepare","execution"] and
      .flow.family == "vetted" and
      .flow.engine_scope == "claude" and
      .flow.prepare_producers["needs-plan"].skill == "/plan-vetted" and
      .flow.prepare_producers["good-input"].skill == "/plan-vetted" and
      (.phases | length) == 2 and
      .phases[0].artifact == "prepared-plan.md" and
-     .phases[1].artifact == "stage2-execution.md" and
+     .phases[1].artifact == "execution-report.md" and
      .artifacts.schema == "cog.executor.artifacts.v2"' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
@@ -45,7 +45,7 @@ setup() {
   printf '%s\n' "$output" | jq -e \
     '.input.kind == "plan" and
      .executor == "executor-oneshot" and
-     .stages == ["stage1","stage2"]' >/dev/null
+     .stages == ["prepare","execution"]' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   assert_file_contains "${run_dir}/plan-source" "$plan"
@@ -63,7 +63,7 @@ setup() {
      .flow.family == "oneshot" and
      .flow.prepare_producers["needs-plan"].skill == "/plan-oneshot" and
      .flow.prepare_producers["good-input"].skill == "/review-plan-oneshot" and
-     .stages == ["stage1","stage2"] and
+     .stages == ["prepare","execution"] and
      .phases[1].phase == "execution"' >/dev/null
 }
 
@@ -128,7 +128,7 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.executor == "plan-vetted" and
-     .stages == ["stage1"] and
+     .stages == ["prepare"] and
      (.phases | length) == 1 and
      .phases[0].artifact == "prepared-plan.md"' >/dev/null
 
@@ -183,7 +183,7 @@ setup() {
      .executor == "executor-vetted" and
      (.phases | length) == 2 and
      .phases[0].path == "'"${run_dir}"'/prepared-plan.md" and
-     .phases[1].path == "'"${run_dir}"'/stage2-execution.md" and
+     .phases[1].path == "'"${run_dir}"'/execution-report.md" and
      .summary == "'"${run_dir}"'/executor-summary.json"' >/dev/null
 }
 
@@ -246,7 +246,7 @@ setup() {
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
-    --route needs-plan --stage1 "done" --stage2 "done" --json
+    --route needs-plan --prepare "done" --execution "done" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
@@ -258,10 +258,10 @@ setup() {
      .producer == "/plan-vetted" and
      .prepare_engine == "claude" and
      .input_kind == "prompt" and
-     .stages.stage1.status == "done" and
-     .stages.stage1.phase == "prepare" and
-     .stages.stage2.phase == "execution" and
-     .stages.stage2.artifact == "stage2-execution.md"' >/dev/null
+     .stages.prepare.status == "done" and
+     .stages.prepare.phase == "prepare" and
+     .stages.execution.phase == "execution" and
+     .stages.execution.artifact == "execution-report.md"' >/dev/null
   assert_file_exists "${run_dir}/executor-summary.json"
 }
 
@@ -270,7 +270,7 @@ setup() {
   run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run cog executor summary --run-dir "$run_dir" --executor executor-oneshot --engine claude \
-    --route good-input --stage1 "done" --stage2 "done" --json
+    --route good-input --prepare "done" --execution "done" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
@@ -286,7 +286,7 @@ setup() {
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
-    --route needs-plan --stage1 "done" --stage2 "done"
+    --route needs-plan --prepare "done" --execution "done"
 
   assert_success
   [[ $output == *"RESOLVED ${run_dir}/executor-summary.json"* ]]
@@ -297,7 +297,7 @@ setup() {
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
-    --route maybe --stage1 "done" --stage2 "done"
+    --route maybe --prepare "done" --execution "done"
 
   assert_failure
   [[ $stderr == *"invalid executor route"* ]]
@@ -308,7 +308,7 @@ setup() {
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
 
   run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
-    --route needs-plan --reviewer /review-plan-oneshot --stage1 "done" --stage2 "done"
+    --route needs-plan --reviewer /review-plan-oneshot --prepare "done" --execution "done"
 
   assert_failure
   [[ $stderr == *"unknown summary option"* ]]

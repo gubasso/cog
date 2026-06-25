@@ -239,6 +239,30 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint rejects stage-numbered identifiers in skill references" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  local n=1
+  local ref_dir="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/references"
+  mkdir -p "$ref_dir"
+  printf '%s\n' "bad reference" >"${ref_dir}/stage${n}-foo.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"stage-agnostic-identifiers"* ]]
+}
+
+@test "cog skill-lint accepts stage prose and agnostic reference names" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  local ref_dir="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/references"
+  mkdir -p "$ref_dir"
+  printf '%s\n' "Stage 1 prose is allowed." >"${ref_dir}/plan.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
 @test "cog skill-lint accepts pure cog command and skill-refs resolution blocks" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'

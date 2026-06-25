@@ -110,8 +110,8 @@ it constructs a JSON file and delegates via the Agent tool.
 ```json
 {
   "task": "<contents of request.md>",
-  "reviewed_plan": "<contents of stage2-reviewed-plan.md>",
-  "stage4_review": "<contents of stage4-review.md>",
+  "reviewed_plan": "<contents of vetted-plan.md>",
+  "implementation_review": "<contents of review.md>",
   "plan_thread_id": "<PLAN_THREAD_ID or null>",
   "impl_thread_id": "<IMPL_THREAD_ID or null>"
 }

@@ -301,6 +301,56 @@ __cog_skill_lint_check_forbidden_runtime_refs() {
   return "$failed"
 }
 
+__cog_skill_lint_line_has_stage_identifier() {
+  local line="$1"
+  [[ $line =~ stage[0-9]+[-_.] ]] && return 0
+  [[ $line =~ --stage[0-9]+ ]] && return 0
+  [[ $line =~ stage[0-9]+[\"\`\)\'] ]] && return 0
+  return 1
+}
+
+__cog_skill_lint_check_stage_agnostic_file() {
+  local file="$1" failed=0 line line_no=0
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+    if __cog_skill_lint_line_has_stage_identifier "$line"; then
+      __cog_skill_lint_finding "$file" "$line_no" "stage-agnostic-identifiers" \
+        "stage-numbered machine identifier present" \
+        "name machine-facing files, fields, flags, and ordinal values for their role or content"
+      failed=1
+    fi
+  done <"$file"
+  return "$failed"
+}
+
+__cog_skill_lint_check_stage_agnostic() {
+  local file="$1" failed=0 ref ref_name
+  if ! __cog_skill_lint_check_stage_agnostic_file "$file"; then
+    failed=1
+  fi
+
+  local ref_dir
+  ref_dir="$(dirname -- "$file")/references"
+  [[ -d $ref_dir ]] || return "$failed"
+
+  while IFS= read -r ref; do
+    [[ -n $ref ]] || continue
+    ref_name="$(basename -- "$ref")"
+    if __cog_skill_lint_line_has_stage_identifier "$ref_name"; then
+      __cog_skill_lint_finding "$ref" 1 "stage-agnostic-identifiers" \
+        "stage-numbered reference filename present" \
+        "rename the reference for its role or content"
+      failed=1
+    fi
+    if [[ -f $ref && -r $ref ]] && ! __cog_skill_lint_check_stage_agnostic_file "$ref"; then
+      failed=1
+    fi
+  done < <(find "$ref_dir" -type f -print 2>/dev/null | sort)
+
+  return "$failed"
+}
+
 # A runtime skill-refs file is any file under skill-refs/ that is loaded by a
 # skill at runtime via `cog skill-refs path`. The templates/ subtree is a
 # deploy payload copied into user projects, not a runtime ref, so it is exempt.
@@ -762,6 +812,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_forbidden_runtime_refs "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_stage_agnostic "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then

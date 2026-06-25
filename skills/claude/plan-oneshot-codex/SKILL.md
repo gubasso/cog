@@ -35,12 +35,12 @@ the Codex prompt.
 
 Create a workflow run directory with `cog rundir plan-oneshot-codex`. Use the returned `RUN_DIR`
 literal in every later command. If the user supplied `--output`, use it as the plan path; otherwise
-use `<RUN_DIR>/stage1-plan.md`.
+use `<RUN_DIR>/plan.md`.
 
 Gate Codex before writing the prompt with `cog codex-runner gate sandbox <RUN_DIR>/preflight.json`.
 Stop on failure and report the preflight path.
 
-Write `<RUN_DIR>/stage1-prompt.md` with:
+Write `<RUN_DIR>/plan-prompt.md` with:
 
 - The literal first line `$plan-oneshot`.
 - The write orientation from `cog codex-runner orientation write`.
@@ -57,12 +57,12 @@ Launch the durable Codex job, then poll-and-classify it with one verb, `cog code
 re-run finalize while it exits 75. Duration is never judged.
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --thread last --state <RUN_DIR>/stage1.longrun.json
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/plan-prompt.md --output <RUN_DIR>/plan-codex-output.md --events <RUN_DIR>/plan-events.jsonl --stderr <RUN_DIR>/plan-stderr.log --thread last --state <RUN_DIR>/plan.longrun.json
 # Re-run while it exits 75 (still running); exit code is the signal (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
-cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300 > <RUN_DIR>/stage1-runner.json
+cog codex-runner finalize --state <RUN_DIR>/plan.longrun.json --max-wall 300 > <RUN_DIR>/plan-runner.json
 ```
 
-`finalize` writes the runner JSON to `<RUN_DIR>/stage1-runner.json`. Treat the plan path, not the
+`finalize` writes the runner JSON to `<RUN_DIR>/plan-runner.json`. Treat the plan path, not the
 runner output, as the authoritative artifact. Verify the plan path exists and is non-empty before
 reporting success.
 

@@ -160,7 +160,7 @@ cog executor init --executor <executor-vetted|executor-oneshot|plan-vetted> --en
 
 `--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
 removed `--plan-engine` flag is not accepted. The executor flows share the gated 2-phase shape
-(`stage1` prepare, `stage2` execution): the prepare stage produces or reviews the plan depending on the
+(`prepare`, `execution`): the prepare stage produces or reviews the plan depending on the
 input-quality route, then the plan is executed. `executor-vetted` is Claude-only (`--engine codex` is
 rejected); it delegates the whole prepare stage to `/plan-vetted`. `executor-oneshot` runs on either
 engine; its prepare producers are `/plan-oneshot` (generate) and `/review-plan-oneshot` (review, run on
@@ -185,7 +185,7 @@ phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`
 `schema: "cog.executor.summary.v3"`:
 
 ```bash
-cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> [--json]
+cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--json]
 ```
 
 The summary records the route, the resolved producer, and the prepare/execute engines.

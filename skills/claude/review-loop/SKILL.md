@@ -30,7 +30,7 @@ Handoff mode: `$ARGUMENTS` is a `review_loop_input.json` path. Validate it first
 cog review-loop-input validate --input "$ARGUMENTS"
 ```
 
-Use `task`, `reviewed_plan`, and `stage4_review` as context. `plan_thread_id` and `impl_thread_id`
+Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id`
 are informational.
 
 Standalone mode: use `$ARGUMENTS`, conversation context, and read-only git inspection commands to

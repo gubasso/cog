@@ -63,7 +63,7 @@ EOF
 }
 
 @test "cog codex-runner run-exec launches a durable job; finalize captures output, events, thread account" {
-  local st="${BATS_TEST_TMPDIR}/stage1.longrun.json"
+  local st="${BATS_TEST_TMPDIR}/job.longrun.json"
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first --state "$st"
   assert_success
   [[ $output == *"STATE_FILE=${st}"* ]]

@@ -33,13 +33,13 @@ Run a staged dual-agent workflow inside Claude Code:
 3. Claude reviews the implementation and fixes minor issues.
 4. An optional review loop validates the result via iterative Codex review and Claude fixes.
 
-Stage 4 implementation review and stage 5 review-loop handoff are delegated via the **Agent tool**
+Stage 3 implementation review and stage 4 review-loop handoff are delegated via the **Agent tool**
 (`subagent_type: general-purpose`), not the Skill tool — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 parent workflow owns sequencing, proof checks, lock handling, and failure handling. These Agent-tool
 delegations work even when `/executor-prex` itself runs as a subagent: Claude Code supports nested
 subagents (≥ v2.1.172), so a delegated `/executor-prex` (e.g. under `claude-delegate`) spawns its
-stage 2/4/5 reviewers as foreground nested subagents.
+stage 3/4 reviewers as foreground nested subagents.
 
 This skill is a **thin orchestrator**: every deterministic mechanic (run-dir + lock setup, flag
 parsing, codex-session preflight gating, delegation-proof validation) is a versioned
@@ -83,8 +83,8 @@ The workflow needs:
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch,
    finalize/cancel/status, orientation, status explanation, account-aware wrapper setup, and effort
-   selection (`medium` for stage 3 implementation; escalate to `high` only when the user asks for
-   it). Stage 1-2 planning runs inside `plan-vetted`, which owns its own dual-engine effort.
+   selection (`medium` for stage 2 implementation; escalate to `high` only when the user asks for
+   it). Stage 1 planning runs inside `plan-vetted`, which owns its own dual-engine effort.
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
 ask one focused clarifying question before starting the vetted plan.
@@ -147,26 +147,26 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `stage2-reviewed-plan.md` (the vetted plan, written by `plan-vetted` via `--output`)
-- `stage3-impl-report.txt`
-- `stage3-events.jsonl`
-- `stage3.longrun.json` (durable job state)
-- `stage4-context.md`
-- `stage4-findings.json`
-- `stage4-proof.diff`
-- `stage4-review.md`
-- `review_loop_input.json` (produced only if stage 5 runs)
+- `vetted-plan.md` (the vetted plan, written by `plan-vetted` via `--output`)
+- `impl-report.txt`
+- `impl-events.jsonl`
+- `impl.longrun.json` (durable job state)
+- `review-context.md`
+- `review-findings.json`
+- `review-proof.diff`
+- `review.md`
+- `review_loop_input.json` (produced only if stage 4 runs)
 - `preflight.json` (codex gate output)
 
 ## Workflow Mode
 
 Mode is selected via CLI-style flags on `$ARGUMENTS`. Supported modes:
 
-| Mode                       | Flag                   | Vetted-plan approval (stage 1-2)                              | Stage 5 trigger                                                        |
+| Mode                       | Flag                   | Vetted-plan approval (stage 1)                                | Stage 4 trigger                                                        |
 | -------------------------- | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
 | `manual` (default)         | (none)                 | Wait for explicit user approval                              | User decides / auto-trigger heuristic                                 |
 | `auto-approve`             | `-a`, `--auto`         | Display the complete vetted plan, then proceed without waiting | User decides / auto-trigger heuristic                                |
-| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete vetted plan, then proceed without waiting | Always run after stage 4 once all `NEEDS_DISCUSSION` items are resolved |
+| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete vetted plan, then proceed without waiting | Always run after stage 3 once all `NEEDS_DISCUSSION` items are resolved |
 
 Parse the flags with one deterministic call, **after `RUN_DIR` is created** (Bootstrap above) and
 **before any other workflow step**. Substitute the literal `$RUN_DIR` path and pass the raw
@@ -212,77 +212,77 @@ cog codex-runner gate codex "$RUN_DIR/preflight.json" || {
 `codex_session.available` is `true` and `health` is `ok`. On non-zero exit, release the lock and
 stop — do not continue to stage 1.
 
-## Stage 1-2: Vetted Plan
+## Stage 1: Vetted Plan
 
 Produce the vetted implementation plan with `plan-vetted`, which fills the old plan and plan-review
 stages in one step: it evaluates the input, then generates a plan (`needs-plan`) or multi-reviews it
 (`good-input`) through dual-engine planning. Inline-chain it in the current context (read
 `$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it), passing the task plus `--output
-"$RUN_DIR/stage2-reviewed-plan.md"`. The delegation input is an enrichment-only superset of the
+"$RUN_DIR/vetted-plan.md"`. The delegation input is an enrichment-only superset of the
 original task: include it verbatim and in full, plus relevant repo constraints, and never replace it
 with a summary.
 
-`plan-vetted` writes the vetted plan to `$RUN_DIR/stage2-reviewed-plan.md` and returns the output path
+`plan-vetted` writes the vetted plan to `$RUN_DIR/vetted-plan.md` and returns the output path
 and the route. Verify the artifact before continuing:
 
 ```bash
-[ -s "$RUN_DIR/stage2-reviewed-plan.md" ] || { echo "ERROR: stage2-reviewed-plan.md is empty" >&2; cog lock release "$LOCK_FILE"; exit 1; }
+[ -s "$RUN_DIR/vetted-plan.md" ] || { echo "ERROR: vetted-plan.md is empty" >&2; cog lock release "$LOCK_FILE"; exit 1; }
 ```
 
 The parent workflow owns lock release/reacquire and the approval loop. Follow
-`references/stage-1-2-vetted-plan.md` for the inline-chain delegation shape and the approval loop.
+`references/vetted-plan.md` for the inline-chain delegation shape and the approval loop.
 
-## Stage 3: Implement
+## Stage 2: Implement
 
 Implement the vetted plan with Codex as a fresh durable `exec`, inlining the full plan and request so
 the run is self-contained (the vetted plan carries all planning context; there is no Codex planning
-thread to resume). Stage 3 uses native Codex effort (`cog codex-runner run-exec --effort medium`, no
-`--profile`). Follow `references/stage-3-implement.md` for the exact command shapes, the inlined-prompt
+thread to resume). Stage 2 uses native Codex effort (`cog codex-runner run-exec --effort medium`, no
+`--profile`). Follow `references/implement.md` for the exact command shapes, the inlined-prompt
 contract, and the prompt-file rule plus the durable-job poll protocol.
 
-## Stage 4: Review Implementation
+## Stage 3: Review Implementation
 
 Delegate implementation review to `review-oneshot` via the **Agent tool**, validate proof, triage
-review and plan-conformance findings, and write `stage4-review.md`. Follow
-`references/stage-4-review-implementation.md` for command shapes, proof validation, and triage
+review and plan-conformance findings, and write `review.md`. Follow
+`references/review-implementation.md` for command shapes, proof validation, and triage
 details.
 
-## Stage 5: Optional Review Loop
+## Stage 4: Optional Review Loop
 
-Run the optional `review-loop` handoff only after all Stage 4 `NEEDS_DISCUSSION` items are resolved
+Run the optional `review-loop` handoff only after all Stage 3 `NEEDS_DISCUSSION` items are resolved
 and the mode or task complexity calls for it. The handoff input is assembled and validated by
 `cog review-loop-input`, and the child run-dir is located via `cog rundir snapshot-children` +
-`cog rundir locate-child`; follow `references/stage-5-review-loop.md` for the handoff build, child
+`cog rundir locate-child`; follow `references/review-loop.md` for the handoff build, child
 run-dir proof, and summary handling.
 
 ## Final Output
 
-If stage 5 was not run, remove the workflow lock before presenting the summary:
+If stage 4 was not run, remove the workflow lock before presenting the summary:
 
 ```bash
 cog lock release "$LOCK_FILE"
 ```
 
-(If stage 5 ran, the lock was already released before the `review-loop` handoff.)
+(If stage 4 ran, the lock was already released before the `review-loop` handoff.)
 
 End with a concise summary covering:
 
-- Whether each stage completed (including whether stage 5 review loop ran).
+- Whether each stage completed (including whether stage 4 review loop ran).
 - Files changed in the repo.
 - How many findings were fixed, acknowledged, dismissed, or still need discussion.
-- If stage 5 ran: include the review-loop's round count and outcome.
+- If stage 4 ran: include the review-loop's round count and outcome.
 - Any remaining risks or follow-up items.
 
 ## Guardrails
 
-- Do not skip the stage 1-2 vetted-plan approval unless the mode is `auto-approve` or
+- Do not skip the stage 1 vetted-plan approval unless the mode is `auto-approve` or
   `auto-approve-review-loop`.
-- Stage 3 implements via a fresh durable `exec` with the vetted plan and request inlined; there is no
+- Stage 2 implements via a fresh durable `exec` with the vetted plan and request inlined; there is no
   planning thread to resume.
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort medium` at the stage 3 implementation call site; escalate to `--effort high` only when the
+  `--effort medium` at the stage 2 implementation call site; escalate to `--effort high` only when the
   user explicitly asks to push it harder (stuck/looping runs, novel design, security-critical
   changes). Do not pass `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference
@@ -300,13 +300,13 @@ End with a concise summary covering:
 After the vetted-plan stage, validate the plan artifact is non-empty:
 
 ```bash
-[ -s "$RUN_DIR/stage2-reviewed-plan.md" ] || echo "ERROR: stage2-reviewed-plan.md is empty"
+[ -s "$RUN_DIR/vetted-plan.md" ] || echo "ERROR: vetted-plan.md is empty"
 ```
 
-After the stage 3 Codex call, validate the implementation report is non-empty:
+After the stage 2 Codex call, validate the implementation report is non-empty:
 
 ```bash
-[ -s "$RUN_DIR/stage3-impl-report.txt" ] || echo "ERROR: stage3-impl-report.txt is empty"
+[ -s "$RUN_DIR/impl-report.txt" ] || echo "ERROR: impl-report.txt is empty"
 ```
 
 If any stage fails:

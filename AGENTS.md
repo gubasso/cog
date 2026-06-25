@@ -47,6 +47,12 @@ suffixes are reserved for delegation launchers that run the other platform under
 `docs/decisions/0021-twin-skill-naming-and-delegation-hints.md` and `docs/reference/skill-contract.md`
 ("Twin and delegation skill naming").
 
+Machine-facing skill identifiers are stage-agnostic: run-dir artifact filenames, skill reference
+filenames, handoff/JSON fields, CLI flags, and executor ordinal values are named for role or content,
+not stage number. Enforcement is the `stage-agnostic-identifiers` rule in `cog skill-lint`. See
+`docs/decisions/0040-stage-agnostic-identifiers.md` and `docs/reference/skill-contract.md`
+("Stage-agnostic identifiers").
+
 The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers: the
 caller a user launches gates once at entry (plan mode is read-only and blocks writes), then delegates to
 gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a Phase 0 plan-mode gate marked

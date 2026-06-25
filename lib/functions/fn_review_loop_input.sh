@@ -6,10 +6,10 @@
 __cog_review_loop_input_filter='
 def nonempty: type == "string" and length > 0;
 def thread_id: (. == null) or (type == "string" and test("^[A-Za-z0-9._:-]+$"));
-([keys] == [["impl_thread_id","plan_thread_id","reviewed_plan","stage4_review","task"]]) and
+([keys] == [["impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]]) and
 (.task | nonempty) and
 (.reviewed_plan | nonempty) and
-(.stage4_review | nonempty) and
+(.implementation_review | nonempty) and
 (.plan_thread_id | thread_id) and
 (.impl_thread_id | thread_id)
 '
@@ -61,28 +61,28 @@ __cog_review_loop_input_read_thread_id() {
 
 cog::fn::review_loop_input_build() {
   local run_dir="${1:-}"
-  local task_file reviewed_plan_file stage4_review_file plan_file impl_file
+  local task_file reviewed_plan_file implementation_review_file plan_file impl_file
   local plan_tid="" impl_tid="" plan_present=false impl_present=false
 
   [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
     "missing run directory" "function: cog::fn::review_loop_input_build" "" "pass a run directory"
 
   task_file="$(cog::fn::rundir_path "$run_dir" request.md)"
-  reviewed_plan_file="$(cog::fn::rundir_path "$run_dir" stage2-reviewed-plan.md)"
-  stage4_review_file="$(cog::fn::rundir_path "$run_dir" stage4-review.md)"
+  reviewed_plan_file="$(cog::fn::rundir_path "$run_dir" vetted-plan.md)"
+  implementation_review_file="$(cog::fn::rundir_path "$run_dir" review.md)"
   plan_file="$(cog::fn::rundir_path "$run_dir" plan-thread-id)"
   impl_file="$(cog::fn::rundir_path "$run_dir" impl-thread-id)"
 
   cog::fn::rundir_require_file "$task_file" "request.md"
-  cog::fn::rundir_require_file "$reviewed_plan_file" "stage2-reviewed-plan.md"
-  cog::fn::rundir_require_file "$stage4_review_file" "stage4-review.md"
+  cog::fn::rundir_require_file "$reviewed_plan_file" "vetted-plan.md"
+  cog::fn::rundir_require_file "$implementation_review_file" "review.md"
   __cog_review_loop_input_read_thread_id "$plan_file" "plan-thread-id" plan_tid plan_present
   __cog_review_loop_input_read_thread_id "$impl_file" "impl-thread-id" impl_tid impl_present
 
   jq -n \
     --rawfile task "$task_file" \
     --rawfile reviewed_plan "$reviewed_plan_file" \
-    --rawfile stage4_review "$stage4_review_file" \
+    --rawfile implementation_review "$implementation_review_file" \
     --arg plan_tid "$plan_tid" \
     --argjson plan_present "$plan_present" \
     --arg impl_tid "$impl_tid" \
@@ -90,7 +90,7 @@ cog::fn::review_loop_input_build() {
     '{
       task: $task,
       reviewed_plan: $reviewed_plan,
-      stage4_review: $stage4_review,
+      implementation_review: $implementation_review,
       plan_thread_id: (if $plan_present then $plan_tid else null end),
       impl_thread_id: (if $impl_present then $impl_tid else null end)
     }'
@@ -110,6 +110,6 @@ cog::fn::review_loop_input_validate_file() {
     "review-loop input is not valid JSON" "path: ${json_file}" "" "fix the JSON and retry"
   jq -e "$__cog_review_loop_input_filter" "$json_file" >/dev/null || cog::fn::error_raise "InvalidInput" \
     "review-loop input failed schema validation" "path: ${json_file}" \
-    "expected task, reviewed_plan, stage4_review, plan_thread_id, impl_thread_id" \
+    "expected task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id" \
     "fix the handoff JSON and retry"
 }

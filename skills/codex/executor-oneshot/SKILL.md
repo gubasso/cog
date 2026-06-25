@@ -26,7 +26,7 @@ cog executor init --executor executor-oneshot --engine codex --input <prompt-or-
 ```
 
 Use the run directory and canonical artifact paths it returns (`prepared-plan.md`,
-`stage2-execution.md`, `executor-summary.json`). For prompt input it writes `request.md`; for plan
+`execution-report.md`, `executor-summary.json`). For prompt input it writes `request.md`; for plan
 input it writes `plan-source` with the supplied plan path.
 
 ## Execution Discipline
@@ -68,8 +68,8 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`.
   poll-and-classify:
 
   ```bash
-  cog codex-runner run-exec --mode danger --access write --effort high --prompt <stage1-prompt.md> --output <stage1-codex-output.md> --events <stage1-events.jsonl> --stderr <stage1-stderr.log> --state <stage1.longrun.json>
-  cog codex-runner finalize --state <stage1.longrun.json> --max-wall 300
+  cog codex-runner run-exec --mode danger --access write --effort high --prompt <prepare-prompt.md> --output <prepare-codex-output.md> --events <prepare-events.jsonl> --stderr <prepare-stderr.log> --state <prepare.longrun.json>
+  cog codex-runner finalize --state <prepare.longrun.json> --max-wall 300
   ```
 
 - **`good-input` → review (`/review-plan-oneshot`, Claude, cross-engine).** The existing plan is
@@ -103,25 +103,25 @@ Run Codex with the write-capable `danger` sandbox; implementation must create an
 the durable job, then poll-and-classify:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort medium --prompt <stage2-prompt.md> --output <stage2-execution.md> --events <stage2-events.jsonl> --stderr <stage2-stderr.log> --state <stage2.longrun.json>
-cog codex-runner finalize --state <stage2.longrun.json> --max-wall 300
+cog codex-runner run-exec --mode danger --access write --effort medium --prompt <execution-prompt.md> --output <execution-report.md> --events <execution-events.jsonl> --stderr <execution-stderr.log> --state <execution.longrun.json>
+cog codex-runner finalize --state <execution.longrun.json> --max-wall 300
 ```
 
-Verify `<run-dir>/stage2-execution.md` exists and is non-empty.
+Verify `<run-dir>/execution-report.md` exists and is non-empty.
 
 ## Summary
 
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 Status rules:
 
-- The prepare stage always runs; report `--stage1 done` on success.
+- The prepare stage always runs; report `--prepare done` on success.
 - If Stage 1 fails, do not run Stage 2; emit the summary with failure statuses.
-- If Stage 2 fails, still emit the summary with `--stage2 failed`.
+- If Stage 2 fails, still emit the summary with `--execution failed`.
 
 ## Error Handling
 
@@ -130,7 +130,7 @@ At every boundary, verify the durable postcondition before advancing:
 - Gate: `<run-dir>/assess-input.json` exists and validates; the route is `needs-plan` or `good-input`.
 - Stage 1: `prepared-plan.md` exists and is non-empty.
 - Plan input: the supplied plan path exists and is readable before review or implementation.
-- Stage 2: `stage2-execution.md` exists and is non-empty.
+- Stage 2: `execution-report.md` exists and is non-empty.
 - Summary: `executor-summary.json` is written by `cog executor summary`.
 
 On failure, stop the chain, preserve the run directory artifacts, and still emit the executor summary

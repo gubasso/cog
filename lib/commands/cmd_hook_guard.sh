@@ -76,10 +76,9 @@ __cog_hook_guard_executor_prex_stop() {
     fi
 
     local missing=()
-    [[ -s "$run_dir/stage1-plan.txt" ]] || missing+=("Stage 1: Plan")
-    [[ -s "$run_dir/stage2-reviewed-plan.md" ]] || missing+=("Stage 2: Reviewed plan")
-    [[ -s "$run_dir/stage3-impl-report.txt" ]] || missing+=("Stage 3: Implementation report")
-    [[ -s "$run_dir/stage4-review.md" ]] || missing+=("Stage 4: Implementation review")
+    [[ -s "$run_dir/vetted-plan.md" ]] || missing+=("Stage 1: Vetted plan")
+    [[ -s "$run_dir/impl-report.txt" ]] || missing+=("Stage 2: Implementation report")
+    [[ -s "$run_dir/review.md" ]] || missing+=("Stage 3: Implementation review")
     if ((${#missing[@]} > 0)); then
       all_missing+=("$(IFS=', ' && printf '%s' "${flag##*/}: remaining — ${missing[*]}")")
     fi

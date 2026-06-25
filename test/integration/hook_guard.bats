@@ -51,10 +51,9 @@ acquire() {
 
 @test "executor-prex-stop allows once all required artifacts exist" {
   acquire "$$"
-  printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
-  printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
-  printf '%s\n' x >"$RUN_DIR/stage3-impl-report.txt"
-  printf '%s\n' x >"$RUN_DIR/stage4-review.md"
+  printf '%s\n' x >"$RUN_DIR/vetted-plan.md"
+  printf '%s\n' x >"$RUN_DIR/impl-report.txt"
+  printf '%s\n' x >"$RUN_DIR/review.md"
 
   run guard_stop "$$"
 
@@ -62,16 +61,15 @@ acquire() {
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 
-@test "executor-prex-stop blocks when stage3 artifact is missing" {
+@test "executor-prex-stop blocks when implementation artifact is missing" {
   acquire "$$"
-  printf '%s\n' x >"$RUN_DIR/stage1-plan.txt"
-  printf '%s\n' x >"$RUN_DIR/stage2-reviewed-plan.md"
-  printf '%s\n' x >"$RUN_DIR/stage4-review.md"
+  printf '%s\n' x >"$RUN_DIR/vetted-plan.md"
+  printf '%s\n' x >"$RUN_DIR/review.md"
 
   run --separate-stderr guard_stop "$$"
 
   [ "$status" -eq 2 ]
-  [[ $stderr == *"Stage 3: Implementation report"* ]]
+  [[ $stderr == *"Stage 2: Implementation report"* ]]
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 

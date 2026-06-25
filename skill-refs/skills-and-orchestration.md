@@ -151,7 +151,7 @@ Additional repo-specific notes:
    (`executor-prex`) must be invoked directly by the user — see **Invocation Patterns** below.
 
    ```bash
-   [ -s "$NEW_RUN_DIR/stage2-reviewed-plan.md" ] || {
+   [ -s "$NEW_RUN_DIR/vetted-plan.md" ] || {
      echo "ERROR: missing proof of delegation"
      exit 1
    }
@@ -323,8 +323,7 @@ NEW_RUN_DIR="$(comm -13 "$RUN_DIR/pre-dirs.snap" "$RUN_DIR/post-dirs.snap" | tai
 Fail closed unless the expected artifacts exist:
 
 ```bash
-[ -s "$NEW_RUN_DIR/stage1-plan.txt" ] || { echo "ERROR: missing stage1-plan.txt"; exit 1; }
-[ -s "$NEW_RUN_DIR/stage2-reviewed-plan.md" ] || { echo "ERROR: missing stage2-reviewed-plan.md"; exit 1; }
+[ -s "$NEW_RUN_DIR/vetted-plan.md" ] || { echo "ERROR: missing vetted-plan.md"; exit 1; }
 ```
 
 Only after both checks pass may this orchestrator continue.
@@ -482,9 +481,9 @@ prompts passed as an inline argument to `codex exec`. Always write the full Code
 inside `$RUN_DIR` first, then invoke Codex one of these two ways:
 
 ```bash
-codex exec ... "$(cat "$RUN_DIR/codex-stage1-prompt.txt")"
+codex exec ... "$(cat "$RUN_DIR/codex-plan-prompt.txt")"
 # or
-codex exec ... - < "$RUN_DIR/codex-stage1-prompt.txt"
+codex exec ... - < "$RUN_DIR/codex-plan-prompt.txt"
 ```
 
 The second form (stdin) is the more robust default for large prompts.

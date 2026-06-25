@@ -14,8 +14,8 @@ cog::fn::executor::flow_json() {
         family: "vetted",
         engine_scope: "claude",
         phases: [
-          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"},
-          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md"}
+          {ordinal: "prepare", phase: "prepare", artifact: "prepared-plan.md"},
+          {ordinal: "execution", phase: "execution", artifact: "execution-report.md"}
         ],
         prepare_producers: {
           "needs-plan": {skill: "/plan-vetted", engine_rule: "claude"},
@@ -29,7 +29,7 @@ cog::fn::executor::flow_json() {
         family: "vetted",
         engine_scope: "claude",
         phases: [
-          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"}
+          {ordinal: "prepare", phase: "prepare", artifact: "prepared-plan.md"}
         ],
         prepare_producers: {
           "needs-plan": {skill: "/plan-multi", engine_rule: "claude"},
@@ -43,8 +43,8 @@ cog::fn::executor::flow_json() {
         family: "oneshot",
         engine_scope: "any",
         phases: [
-          {ordinal: "stage1", phase: "prepare", artifact: "prepared-plan.md"},
-          {ordinal: "stage2", phase: "execution", artifact: "stage2-execution.md"}
+          {ordinal: "prepare", phase: "prepare", artifact: "prepared-plan.md"},
+          {ordinal: "execution", phase: "execution", artifact: "execution-report.md"}
         ],
         prepare_producers: {
           "needs-plan": {skill: "/plan-oneshot", engine_rule: "same"},

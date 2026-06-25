@@ -37,7 +37,7 @@ Delegate classification and run setup to:
 cog executor init --executor executor-oneshot --engine codex --input <prompt-or-plan> --json
 ```
 
-Use the returned run directory and canonical artifact paths (`prepared-plan.md`, `stage2-execution.md`,
+Use the returned run directory and canonical artifact paths (`prepared-plan.md`, `execution-report.md`,
 `executor-summary.json`). For prompt input it writes `request.md`; for plan input it writes
 `plan-source` with the supplied plan path.
 
@@ -58,7 +58,7 @@ cog executor prepare-step --executor executor-oneshot --engine codex --route <ne
 
 Write the prepared plan to `<RUN_DIR>/prepared-plan.md`.
 
-- **`needs-plan` → Codex plans (`/plan-oneshot`).** Write `<RUN_DIR>/stage1-prompt.md` with the
+- **`needs-plan` → Codex plans (`/plan-oneshot`).** Write `<RUN_DIR>/prepare-prompt.md` with the
   write orientation from `cog codex-runner orientation write`, `$plan-oneshot`, `--output
   <RUN_DIR>/prepared-plan.md`, and the original request — an enrichment-only superset of the original
   input (verbatim and in full, plus relevant repo constraints, never a summary). Launch the durable
@@ -66,8 +66,8 @@ Write the prepared plan to `<RUN_DIR>/prepared-plan.md`.
   finalize while it exits 75; duration is never judged):
 
   ```bash
-  cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --state <RUN_DIR>/stage1.longrun.json
-  cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300
+  cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/prepare-prompt.md --output <RUN_DIR>/prepare-codex-output.md --events <RUN_DIR>/prepare-events.jsonl --stderr <RUN_DIR>/prepare-stderr.log --state <RUN_DIR>/prepare.longrun.json
+  cog codex-runner finalize --state <RUN_DIR>/prepare.longrun.json --max-wall 300
   ```
 
 - **`good-input` → Claude reviews (`/review-plan-oneshot`, cross-engine).** Ensure `<RUN_DIR>/request.md`
@@ -83,7 +83,7 @@ Verify `<RUN_DIR>/prepared-plan.md` exists and is non-empty before Stage 2.
 
 ## Stage 2: Implement With Codex
 
-Write `<RUN_DIR>/stage2-prompt.md` with the write orientation, the prepared plan from
+Write `<RUN_DIR>/execution-prompt.md` with the write orientation, the prepared plan from
 `<RUN_DIR>/prepared-plan.md` verbatim (when it is an annotated review, implement the reconciled plan —
 apply APPROVED/MODIFIED/ADDED, skip REMOVED), the original request or supplied-plan context verbatim
 and in full, the active repository constraints, and a required final report covering files changed,
@@ -91,18 +91,18 @@ deviations, commands run, and unresolved risks. The stage prompt is an enrichmen
 must not replace original input with a summary. Launch the durable Codex job and poll-and-classify:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/stage2-prompt.md --output <RUN_DIR>/stage2-execution.md --events <RUN_DIR>/stage2-events.jsonl --stderr <RUN_DIR>/stage2-stderr.log --state <RUN_DIR>/stage2.longrun.json
-cog codex-runner finalize --state <RUN_DIR>/stage2.longrun.json --max-wall 300
+cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/execution-prompt.md --output <RUN_DIR>/execution-report.md --events <RUN_DIR>/execution-events.jsonl --stderr <RUN_DIR>/execution-stderr.log --state <RUN_DIR>/execution.longrun.json
+cog codex-runner finalize --state <RUN_DIR>/execution.longrun.json --max-wall 300
 ```
 
-Verify `<RUN_DIR>/stage2-execution.md` exists and is non-empty.
+Verify `<RUN_DIR>/execution-report.md` exists and is non-empty.
 
 ## Summary
 
 Emit the executor summary:
 
 ```bash
-cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 Stop the chain on any failed stage, preserve the run directory artifacts, and still emit the summary

@@ -16,7 +16,7 @@ __cog_executor_usage() {
   cog::fn::ui_data "Usage: cog executor adopt-prepared --run-dir <dir> --from <path> [--json]"
   cog::fn::ui_data "Usage: cog executor export-prepared --run-dir <dir> --output <path> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
-  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --stage1 <done|failed> --stage2 <done|failed> [--json]"
+  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--json]"
   cog::fn::ui_data "Usage: cog executor queue-prompts [--json]"
   cog::fn::ui_data "Input classification: an existing readable regular .md file is a plan; everything else, including a missing .md path, is a prompt. The input-quality route (needs-plan|good-input) is the assess-input verdict, independent of input kind."
 }
@@ -348,7 +348,7 @@ __cog_executor_artifacts() {
 }
 
 __cog_executor_summary() {
-  local run_dir="" executor="" engine="" route="" stage1="" stage2=""
+  local run_dir="" executor="" engine="" route="" prepare="" execution=""
   local json="${COG_UI_JSON:-false}" flow_json summary_json summary_path
   local -a summary_args=()
 
@@ -378,16 +378,16 @@ __cog_executor_summary() {
         route="$2"
         shift 2
         ;;
-      --stage1)
-        [[ $# -ge 2 && -n ${2:-} && -z $stage1 ]] || cog::fn::error_raise "MissingArgument" \
-          "missing stage1 status" "option: --stage1" "" "run 'cog executor --help'"
-        stage1="$2"
+      --prepare)
+        [[ $# -ge 2 && -n ${2:-} && -z $prepare ]] || cog::fn::error_raise "MissingArgument" \
+          "missing prepare status" "option: --prepare" "" "run 'cog executor --help'"
+        prepare="$2"
         shift 2
         ;;
-      --stage2)
-        [[ $# -ge 2 && -n ${2:-} && -z $stage2 ]] || cog::fn::error_raise "MissingArgument" \
-          "missing stage2 status" "option: --stage2" "" "run 'cog executor --help'"
-        stage2="$2"
+      --execution)
+        [[ $# -ge 2 && -n ${2:-} && -z $execution ]] || cog::fn::error_raise "MissingArgument" \
+          "missing execution status" "option: --execution" "" "run 'cog executor --help'"
+        execution="$2"
         shift 2
         ;;
       --json)
@@ -406,7 +406,7 @@ __cog_executor_summary() {
   [[ -n $run_dir && -n $executor && -n $engine && -n $route ]] \
     || cog::fn::error_raise "MissingArgument" \
       "missing summary argument" \
-      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --route <needs-plan|good-input> --stage1 <status> --stage2 <status>" "" \
+      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --route <needs-plan|good-input> --prepare <status> --execution <status>" "" \
       "run 'cog executor --help'"
   [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
     "executor run directory not found" "path: ${run_dir}" "" "check --run-dir"
@@ -416,8 +416,8 @@ __cog_executor_summary() {
 
   while IFS= read -r ordinal; do
     case "$ordinal" in
-      stage1) status="$stage1" ;;
-      stage2) status="$stage2" ;;
+      prepare) status="$prepare" ;;
+      execution) status="$execution" ;;
       *) status="" ;;
     esac
     [[ -n $status ]] || cog::fn::error_raise "MissingArgument" \

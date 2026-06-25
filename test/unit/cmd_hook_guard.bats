@@ -53,19 +53,18 @@ guard_stop_direct() {
   rm -rf "$run_dir" "$lock_file"
 }
 
-@test "hook_guard executor-prex-stop blocks when stage3 artifact is missing" {
-  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-stage3-missing"
+@test "hook_guard executor-prex-stop blocks when implementation artifact is missing" {
+  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-impl-missing"
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
-  printf '%s\n' x >"$run_dir/stage1-plan.txt"
-  printf '%s\n' x >"$run_dir/stage2-reviewed-plan.md"
-  printf '%s\n' x >"$run_dir/stage4-review.md"
+  printf '%s\n' x >"$run_dir/vetted-plan.md"
+  printf '%s\n' x >"$run_dir/review.md"
 
   run --separate-stderr guard_stop_direct "$$"
 
   assert_failure 2
-  [[ $stderr == *"Stage 3: Implementation report"* ]]
+  [[ $stderr == *"Stage 2: Implementation report"* ]]
   rm -rf "$run_dir" "$lock_file"
 }
 
@@ -74,10 +73,9 @@ guard_stop_direct() {
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
-  printf '%s\n' x >"$run_dir/stage1-plan.txt"
-  printf '%s\n' x >"$run_dir/stage2-reviewed-plan.md"
-  printf '%s\n' x >"$run_dir/stage3-impl-report.txt"
-  printf '%s\n' x >"$run_dir/stage4-review.md"
+  printf '%s\n' x >"$run_dir/vetted-plan.md"
+  printf '%s\n' x >"$run_dir/impl-report.txt"
+  printf '%s\n' x >"$run_dir/review.md"
 
   run guard_stop_direct "$$"
 

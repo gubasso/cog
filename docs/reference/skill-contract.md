@@ -125,6 +125,20 @@ This rule is recorded in
 [ADR-0021](../decisions/0021-twin-skill-naming-and-delegation-hints.md) and complements the prefix
 taxonomy above.
 
+## Stage-agnostic identifiers
+
+Machine-facing identifiers in skills are named for role or content, not stage number. This covers
+run-dir artifact filenames, skill `references/` filenames, cross-skill handoff and JSON field names,
+CLI flags, and executor ordinal values.
+
+The linted banned forms are identifier patterns such as `stage[0-9]+[-_.]`, `--stage[0-9]+`, and
+`stage[0-9]+` followed by a closing identifier delimiter. Human prose forms with a word boundary and
+space, such as `Stage N` or `stage N`, are allowed for sequence descriptions.
+
+`cog skill-lint` enforces this with the `stage-agnostic-identifiers` rule over runtime `SKILL.md`
+bodies plus each skill's `references/` filenames and contents. See
+[ADR-0040](../decisions/0040-stage-agnostic-identifiers.md).
+
 ## Lean positive prose
 
 Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what
@@ -211,6 +225,9 @@ wording remains prose judgment in the skill body.
 - `input-fidelity`: a mapped brief-building delegator is missing the
   `<!-- cog-skill: input-fidelity -->` marker. The rule is scoped to the curated runtime-aware
   delegator set in `lib/commands/cmd_skill_lint.sh`. See "Input fidelity (enrichment-only briefs)".
+- `stage-agnostic-identifiers`: a runtime skill body or skill `references/` filename/content uses a
+  stage-numbered machine identifier matching the banned identifier patterns. Human prose forms like
+  `Stage N` and `stage N` are allowed. See "Stage-agnostic identifiers".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring

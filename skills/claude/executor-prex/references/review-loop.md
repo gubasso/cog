@@ -1,17 +1,17 @@
-## Stage 5: Optional Review Loop
+## Stage 4: Optional Review Loop
 
 This stage delegates to the leaned `review-loop` skill instead of calling Codex review directly. The
 `review-loop` skill validates the handoff input through `cog review-loop-input validate`, creates its
 own run directory, handles Codex invocation, multi-round triage, and fix application autonomously,
 and writes its final summary to `<child-run-dir>/summary.md`.
 
-Run this stage only after all stage 4 `NEEDS_DISCUSSION` items have been resolved, when any of the
+Run this stage only after all stage 3 `NEEDS_DISCUSSION` items have been resolved, when any of the
 following is true:
 
 - The mode is `auto-approve-review-loop`.
 - The user requests it (e.g., "deep review", "review loop", "keep reviewing").
 - The task is clearly complex.
-- Stage 4 found issues substantial enough to justify an extra adversarial pass.
+- Stage 3 found issues substantial enough to justify an extra adversarial pass.
 
 ### Handoff to `review-loop`
 
@@ -22,8 +22,8 @@ cog lock release "$LOCK_FILE"
 ```
 
 Assemble and validate the handoff input. `cog review-loop-input` owns the handoff schema; `build`
-reads `request.md`, `stage2-reviewed-plan.md`, `stage4-review.md`, and the optional thread-id files
-from `$RUN_DIR`, assembles `{task, reviewed_plan, stage4_review, plan_thread_id, impl_thread_id}`,
+reads `request.md`, `vetted-plan.md`, `review.md`, and the optional thread-id files
+from `$RUN_DIR`, assembles `{task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id}`,
 and validates the result before it is written:
 
 ```bash
@@ -32,8 +32,9 @@ cog review-loop-input build \
   --out "$RUN_DIR/review_loop_input.json"
 ```
 
-When stage 3 resumes the stage 1 session, `impl_thread_id` equals `plan_thread_id`; both fields are
-kept in the handoff JSON for backward compatibility and may be null. The schema and its
+Stage 2 runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id`
+records the implementation exec when available. Both fields are kept in the handoff JSON and may be
+null. The schema and its
 required-field contract are owned and enforced by `cog review-loop-input`; do not restate or
 hand-format the JSON here.
 
@@ -45,7 +46,7 @@ writes the sorted snapshot:
 ```bash
 cog rundir snapshot-children \
   --prefix review-loop \
-  --out "$RUN_DIR/stage5-pre-rl.snap"
+  --out "$RUN_DIR/review-loop-pre.snap"
 ```
 
 **Invoke the Agent tool now with:**
@@ -65,7 +66,7 @@ cog rundir snapshot-children \
   containing that run directory path.
   ```
 
-Do NOT use the `Skill` tool for this call — see the stage 2 note and
+Do NOT use the `Skill` tool for this call — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
 `Agent` tool is the only mechanism that produces a real fork with a structured return.
 
@@ -76,11 +77,11 @@ new `review-loop-*` directory. Both snapshots scan the identical `cog rundir` ba
 ```bash
 cog rundir snapshot-children \
   --prefix review-loop \
-  --out "$RUN_DIR/stage5-post-rl.snap"
+  --out "$RUN_DIR/review-loop-post.snap"
 cog rundir locate-child \
-  --pre "$RUN_DIR/stage5-pre-rl.snap" \
-  --post "$RUN_DIR/stage5-post-rl.snap" \
-  --proof "$RUN_DIR/stage5-proof.diff"
+  --pre "$RUN_DIR/review-loop-pre.snap" \
+  --post "$RUN_DIR/review-loop-post.snap" \
+  --proof "$RUN_DIR/review-loop-proof.diff"
 ```
 
 `cog rundir locate-child` prints one result line:
@@ -95,15 +96,15 @@ record the child run dir:
 
 ```bash
 cog codex-runner verify-proof \
-  --proof "$RUN_DIR/stage5-proof.diff" \
+  --proof "$RUN_DIR/review-loop-proof.diff" \
   --artifact "$RL_RUN_DIR/summary.md" || exit 1
-printf '%s\n' "$RL_RUN_DIR" > "$RUN_DIR/stage5-rl-run-dir.txt"
+printf '%s\n' "$RL_RUN_DIR" > "$RUN_DIR/review-loop-run-dir.txt"
 ```
 
 `cog rundir locate-child` writes the snapshot diff and identifies the new `review-loop-*` directory
 (proof that delegation actually ran); `verify-proof` then fails closed unless the snapshot diff is
 non-empty **and** the child wrote `summary.md`. Do not retry automatically. Report the failure and
-ask the user whether to retry, skip stage 5, or abort the workflow.
+ask the user whether to retry, skip stage 4, or abort the workflow.
 
 The review-loop skill parses the validated JSON for task context, the reviewed plan, and prior
 findings, then captures the live git diff independently.
