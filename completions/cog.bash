@@ -80,6 +80,7 @@ _cog() {
     review-normalize-findings
     review-plan-implementation-scan
     review-plan-implementation-verify
+    review-plan-multi-setup
     review-scope
     review-tech-scope
     review-validate-findings

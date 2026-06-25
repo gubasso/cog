@@ -224,6 +224,9 @@ The command list and short descriptions are sourced from command modules under
 *review-plan-implementation-verify*
 	Verify a review-plan-implementation run against a before/after scan.
 
+*review-plan-multi-setup*
+	Parse review-plan-multi arguments and create run state.
+
 *review-scope*
 	Detect changed-file review scope.
 

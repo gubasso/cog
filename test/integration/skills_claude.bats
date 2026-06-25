@@ -54,6 +54,7 @@ forbidden_scan_codex() {
     review-oneshot
     review-findings
     review-loop
+    review-plan-multi
     runner-all
     runner-plan
     suckless-patcher

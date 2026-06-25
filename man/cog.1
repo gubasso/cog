@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "cog" "1" "2026-06-22"
+.TH "cog" "1" "2026-06-25"
 .PP
 .SH NAME
 .PP
@@ -99,6 +99,16 @@ Stamp digest frontmatter from source files.\&
 \fBdoctor\fR
 .RS 4
 Check cog runtime health and installation prerequisites.\&
+.PP
+.RE
+\fBeditorconfig-apply\fR
+.RS 4
+Apply an editorconfig template to a project.\&
+.PP
+.RE
+\fBeditorconfig-detect\fR
+.RS 4
+Detect editorconfig template type.\&
 .PP
 .RE
 \fBexecutor\fR
@@ -216,6 +226,11 @@ Derive and validate an implementation plan slug.\&
 Parse plan-writer-multi arguments and create run state.\&
 .PP
 .RE
+\fBpower-grade\fR
+.RS 4
+Inspect and validate model/effort power grades.\&
+.PP
+.RE
 \fBprecommit-apply-template\fR
 .RS 4
 Apply a pre-commit template to a project.\&
@@ -326,6 +341,11 @@ Build and validate review-loop handoff input JSON.\&
 Compare review findings across loop rounds.\&
 .PP
 .RE
+\fBreview-loop-summary\fR
+.RS 4
+Assemble and validate the review-loop terminal summary.\&
+.PP
+.RE
 \fBreview-normalize-findings\fR
 .RS 4
 Validate, sort, and severity-filter review findings JSON.\&
@@ -339,6 +359,11 @@ Inventory all implementation-plan queues and repo/plan fingerprints.\&
 \fBreview-plan-implementation-verify\fR
 .RS 4
 Verify a review-plan-implementation run against a before/after scan.\&
+.PP
+.RE
+\fBreview-plan-multi-setup\fR
+.RS 4
+Parse review-plan-multi arguments and create run state.\&
 .PP
 .RE
 \fBreview-scope\fR

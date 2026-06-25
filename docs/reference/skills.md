@@ -88,6 +88,7 @@ Code-review skills:
 Plan-review sub-namespace (`review-plan-*`):
 
 - skills/claude/review-plan-oneshot
+- skills/claude/review-plan-multi
 - skills/codex/review-plan-oneshot
 - .claude/skills/review-plan-implementation
 

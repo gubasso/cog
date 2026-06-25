@@ -76,6 +76,7 @@ this reference table.
 | `plan-review validate` | Validate one annotated plan review artifact. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
+| `review-plan-multi-setup` | Parse review-plan-multi arguments and create run state. |
 | `power-grade` | Inspect and validate model/effort power grades. |
 | `power-grade validate` | Validate the Power Grade matrix schema and source-cited profiles. |
 | `power-grade cell --model <model> --effort <effort>` | Print one model/effort profile. |
