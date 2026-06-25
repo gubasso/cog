@@ -1,6 +1,6 @@
 ## Stage 4: Review Implementation
 
-Delegate findings-gathering to the Claude `review-lean` skill via the **Agent tool**
+Delegate findings-gathering to the Claude `review-oneshot` skill via the **Agent tool**
 (`subagent_type: general-purpose`), then triage the structured JSON output in this orchestrator.
 This mirrors the stage 2 Agent-delegation proof pattern: snapshot, delegate, validate proof, then
 fail closed if the artifact is missing or invalid.
@@ -17,7 +17,7 @@ Write `$RUN_DIR/stage4-context.md` containing, in this order:
 - The approved reviewed plan (verbatim contents of `$RUN_DIR/stage2-reviewed-plan.md`).
 
 The reviewed plan source is load-bearing: use `$RUN_DIR/stage2-reviewed-plan.md`, not the original
-Stage 1 plan, so `review-lean` can perform plan-conformance review from the approved plan.
+Stage 1 plan, so `review-oneshot` can perform plan-conformance review from the approved plan.
 
 ### Step 2: Snapshot and clear prior artifacts
 
@@ -27,7 +27,7 @@ cog codex-runner snapshot-pre "$RUN_DIR" "$RUN_DIR/stage4-pre.snap" \
 rm -f "$RUN_DIR/stage4-findings.json" "$RUN_DIR/stage4-proof.diff"
 ```
 
-### Step 3: Delegate to `review-lean`
+### Step 3: Delegate to `review-oneshot`
 
 **Invoke the Agent tool now with:**
 
@@ -36,7 +36,7 @@ rm -f "$RUN_DIR/stage4-findings.json" "$RUN_DIR/stage4-proof.diff"
 - `prompt` (substitute the literal value of `$RUN_DIR` before sending):
 
   ```text
-  Read the skill file at $HOME/.claude/skills/review-lean/SKILL.md and
+  Read the skill file at $HOME/.claude/skills/review-oneshot/SKILL.md and
   follow its "Orchestrator Invocation Contract" mode. Your two path arguments
   are:
 
@@ -76,7 +76,7 @@ the child response text.
 
 Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the executor-prex status vocabulary:
 
-| `review-lean` finding                                     | executor-prex status                    |
+| `review-oneshot` finding                                     | executor-prex status                    |
 | --------------------------------------------------------- | --------------------------------------- |
 | `severity: blocking` or `important`, `confidence: high`   | `FIXED` if the fix is minor and obvious |
 | `severity: blocking` or `important`, complex / unclear    | `NEEDS_DISCUSSION`                      |
@@ -88,7 +88,7 @@ Parse `$RUN_DIR/stage4-findings.json` and translate each finding to the executor
 For each `FIXED`, apply the change directly with Edit/Write. For `NEEDS_DISCUSSION`, pause and
 involve the user before continuing.
 
-Plan-conformance gaps arrive as ordinary `review-lean` findings because Step 1 includes the
+Plan-conformance gaps arrive as ordinary `review-oneshot` findings because Step 1 includes the
 approved reviewed plan in `$RUN_DIR/stage4-context.md`. Apply the same status mapping to
 plan-conformance findings as to code-quality findings: blocking or important gaps are `FIXED` only
 when the fix is minor and obvious; otherwise they are `NEEDS_DISCUSSION`.
@@ -102,7 +102,7 @@ artifact name and format — do not rename it. Include:
 
 - One-line summary.
 - Triage table (finding → status → action).
-- Plan-conformance findings summary, if any, sourced from `review-lean` findings.
+- Plan-conformance findings summary, if any, sourced from `review-oneshot` findings.
 - Open `NEEDS_DISCUSSION` and `QUESTION` items, if any.
 
 After stage 4, decide whether to run stage 5:

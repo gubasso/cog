@@ -4,9 +4,9 @@ __cog_executor_summary_self_check='(.schema=="cog.executor.summary.v2") and (.ok
 
 cog::fn::executor::flow_json() {
   case "${1:-}" in
-    executor-lean)
+    executor-vetted)
       jq -cn '{
-        executor: "executor-lean",
+        executor: "executor-vetted",
         reviewed: true,
         phases: [
           {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
@@ -15,9 +15,9 @@ cog::fn::executor::flow_json() {
         ]
       }'
       ;;
-    executor-single)
+    executor-oneshot)
       jq -cn '{
-        executor: "executor-single",
+        executor: "executor-oneshot",
         reviewed: false,
         phases: [
           {ordinal: "stage1", phase: "plan", artifact: "stage1-plan.md", skippable: true},
@@ -28,7 +28,7 @@ cog::fn::executor::flow_json() {
     *)
       cog::fn::error_raise "InvalidInput" \
         "unknown executor" "executor: ${1:-}" \
-        "expected executor-lean or executor-single" ""
+        "expected executor-vetted or executor-oneshot" ""
       ;;
   esac
 }
@@ -58,7 +58,7 @@ cog::fn::executor::select_reviewer_json() {
       claude) review_engine=codex ;;
       codex) review_engine=claude ;;
     esac
-    reviewer=/review-plan-lean
+    reviewer=/review-plan-oneshot
   else
     review_engine=none
     reviewer=none
@@ -187,32 +187,32 @@ cog::fn::executor::queue_prompts_json() {
         stage_model: "executor-prex"
       },
       {
-        skill: "executor-lean",
-        slash: "/executor-lean",
+        skill: "executor-vetted",
+        slash: "/executor-vetted",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
         stage_model: "executor-3-stage"
       },
       {
-        skill: "executor-lean-codex",
-        slash: "/executor-lean-codex",
+        skill: "executor-vetted-codex",
+        slash: "/executor-vetted-codex",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
         stage_model: "executor-3-stage"
       },
       {
-        skill: "executor-single",
-        slash: "/executor-single",
+        skill: "executor-oneshot",
+        slash: "/executor-oneshot",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,
         stage_model: "executor-2-stage"
       },
       {
-        skill: "executor-single-codex",
-        slash: "/executor-single-codex",
+        skill: "executor-oneshot-codex",
+        slash: "/executor-oneshot-codex",
         aliases: [],
         accepts: ["<prompt>", "<plan.md>"],
         target_argument: null,

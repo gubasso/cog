@@ -1,5 +1,5 @@
 ---
-name: plan-one-lean
+name: plan-oneshot
 description: >
   Build one lean implementation plan with Codex, using the persisted research
   shelf for reusable context and saving the final plan through cog plan-doc.
@@ -56,7 +56,7 @@ When relevant research is missing, stale, or too broad for the task, refresh it 
 current sources and record the finding through the shelf:
 
 ```bash
-cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "plan-one-lean,plan-one-lean-codex" --json
+cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "plan-oneshot,plan-oneshot-codex" --json
 ```
 
 The optional `--id <id>` and `--recorded-date <date>` flags may be used when deliberately recording a

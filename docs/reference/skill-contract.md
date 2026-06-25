@@ -139,7 +139,7 @@ it isn't. See [ADR-0019](../decisions/0019-lean-positive-skill-prose.md).
   (`skills/claude/<name>/SKILL.md`, `skills/codex/<name>/SKILL.md`, or the stale twin shape
   `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's
   installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead.
-  Reference sibling skills by their runtime name (`/plan-one-lean`, `$plan-writer`).
+  Reference sibling skills by their runtime name (`/plan-oneshot`, `$plan-writer`).
 
 Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), project-local runtime
 paths (`.claude/skills/<name>/SKILL.md`), `cog skill-refs path ...` resolvers, and authoring
@@ -163,7 +163,7 @@ text and body prose, while ignoring fenced code blocks. Current map entries:
 ```text
 runner-all      -> plan-writer, plan-writer-multi
 runner-plan     -> plan-writer, plan-writer-multi
-review-findings -> review-lean, review-loop
+review-findings -> review-oneshot, review-loop
 ```
 
 The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy producer name

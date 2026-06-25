@@ -1,5 +1,5 @@
 ---
-name: plan-one-lean
+name: plan-oneshot
 description: >
   Build one lean implementation plan interactively with Claude, using the
   persisted research shelf for reusable context and saving the final plan
@@ -11,7 +11,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob AskUserQuestion
 ---
 
-<!-- trigger-tests: "plan-one-lean", "build a lean implementation plan", "save one plan through plan-doc" -->
+<!-- trigger-tests: "plan-oneshot", "build a lean implementation plan", "save one plan through plan-doc" -->
 <!-- cog-skill: plan-emitter -->
 
 # Plan Claude
@@ -75,7 +75,7 @@ When relevant research is missing, stale, or too broad for the task, refresh it 
 current sources and record the finding through the shelf:
 
 ```bash
-cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "plan-one-lean,plan-one-lean-codex" --json
+cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "plan-oneshot,plan-oneshot-codex" --json
 ```
 
 The optional `--id <id>` and `--recorded-date <date>` flags may be used when deliberately recording a

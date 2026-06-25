@@ -8,11 +8,11 @@ __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and has("
 __cog_executor_reviewer_self_check='(.plan_engine|type=="string") and (.review_engine|type=="string") and (.reviewer|type=="string")'
 
 __cog_executor_usage() {
-  cog::fn::ui_data "Usage: cog executor init --executor <executor-lean|executor-single> --engine <claude|codex> --input <prompt-or-plan> [--json]"
+  cog::fn::ui_data "Usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan> [--json]"
   cog::fn::ui_data "Usage: cog executor classify-input <input> [--json]"
-  cog::fn::ui_data "Usage: cog executor select-reviewer --executor <executor-lean|executor-single> --engine <claude|codex> [--json]"
+  cog::fn::ui_data "Usage: cog executor select-reviewer --executor <executor-vetted|executor-oneshot> --engine <claude|codex> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
-  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-lean|executor-single> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-lean> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]"
+  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-oneshot> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]"
   cog::fn::ui_data "Usage: cog executor queue-prompts [--json]"
   cog::fn::ui_data "Input classification: an existing readable regular .md file is a plan; everything else, including a missing .md path, is a prompt."
 }
@@ -51,8 +51,8 @@ __cog_executor_validate_reviewer() {
   local executor="$1" engine="$2" reviewer="${3:-}" expected_reviewer
 
   case "$reviewer" in
-    none | /review-plan-lean) ;;
-    *) cog::fn::error_raise "InvalidInput" "invalid executor reviewer" "reviewer: ${reviewer}" "expected none or /review-plan-lean" "" ;;
+    none | /review-plan-oneshot) ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid executor reviewer" "reviewer: ${reviewer}" "expected none or /review-plan-oneshot" "" ;;
   esac
 
   expected_reviewer="$(cog::fn::executor::select_reviewer_json "$executor" "$engine" | jq -r '.reviewer')"
@@ -138,7 +138,7 @@ __cog_executor_init() {
 
   [[ -n $executor && -n $engine && -n $input ]] || cog::fn::error_raise "MissingArgument" \
     "missing executor init argument" \
-    "usage: cog executor init --executor <executor-lean|executor-single> --engine <claude|codex> --input <prompt-or-plan>" "" \
+    "usage: cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan>" "" \
     "run 'cog executor --help'"
   flow_json="$(cog::fn::executor::flow_json "$executor")"
   cog::fn::executor::validate_engine "$engine" >/dev/null
@@ -252,7 +252,7 @@ __cog_executor_select_reviewer() {
 
   [[ -n $executor && -n $engine ]] || cog::fn::error_raise "MissingArgument" \
     "missing reviewer selection argument" \
-    "usage: cog executor select-reviewer --executor <executor-lean|executor-single> --engine <claude|codex>" "" \
+    "usage: cog executor select-reviewer --executor <executor-vetted|executor-oneshot> --engine <claude|codex>" "" \
     "run 'cog executor --help'"
   result="$(cog::fn::executor::select_reviewer_json "$executor" "$engine")"
   if [[ $json == true ]]; then

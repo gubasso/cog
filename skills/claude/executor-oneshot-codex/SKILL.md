@@ -1,5 +1,5 @@
 ---
-name: executor-single-codex
+name: executor-oneshot-codex
 description: >
   Execute one prompt or implementation plan through the Codex-backed single
   executor flow from Claude: Codex plans when needed, then Codex implements.
@@ -10,7 +10,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Agent Grep Glob
 ---
 
-<!-- trigger-tests: "executor-single-codex", "execute one prompt through Codex single flow from Claude", "Codex plans and implements without plan review" -->
+<!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex plans and implements without plan review" -->
 <!-- cog-skill: plan-emitter -->
 <!-- cog-plan-mode-gate -->
 
@@ -20,7 +20,7 @@ allowed-tools: Bash Read Write Agent Grep Glob
 
 If Claude Code plan mode is active, STOP before parsing args, creating artifacts, delegating, or
 invoking Codex. Tell the user to exit plan mode with `Shift+Tab` and re-invoke
-`/executor-single-codex`.
+`/executor-oneshot-codex`.
 
 Execute one prompt or plan through the Codex-backed two-stage executor flow. Codex plans when needed,
 then Codex implements the plan. This launcher owns sequencing and postcondition checks;
@@ -31,7 +31,7 @@ deterministic run setup, artifact paths, Codex invocation, and summaries stay be
 Delegate classification and run setup to:
 
 ```bash
-cog executor init --executor executor-single --engine codex --input <prompt-or-plan> --json
+cog executor init --executor executor-oneshot --engine codex --input <prompt-or-plan> --json
 ```
 
 Use the returned run directory and artifact paths. If plan input skipped Stage 1, create a non-empty
@@ -40,7 +40,7 @@ Stage 2.
 
 ## Stage 1: Plan With Codex
 
-Run only for prompt input. Write `<RUN_DIR>/stage1-prompt.md` with `$plan-one-lean`, the write
+Run only for prompt input. Write `<RUN_DIR>/stage1-prompt.md` with `$plan-oneshot`, the write
 orientation from `cog codex-runner orientation write`, `--output <RUN_DIR>/stage1-plan.md`, and the
 original request. Then launch the durable Codex job and poll-and-classify with
 `cog codex-runner finalize --max-wall <secs>`; the exit code is the signal (0 ok, 1 failed, 75 still
@@ -52,7 +52,7 @@ cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300
 ```
 
 `--output` captures Codex's final message; the plan artifact `<RUN_DIR>/stage1-plan.md` is written by
-`$plan-one-lean`. Verify it exists and is non-empty before Stage 2.
+`$plan-oneshot`. Verify it exists and is non-empty before Stage 2.
 
 ## Stage 2: Implement With Codex
 
@@ -75,7 +75,7 @@ Verify `<RUN_DIR>/stage2-execution.md` exists and is non-empty.
 Emit the executor summary with reviewer `none`:
 
 ```bash
-cog executor summary --run-dir <RUN_DIR> --executor executor-single --engine codex --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
 ```
 
 Stop the chain on any failed stage, preserve the run directory artifacts, and still emit the summary

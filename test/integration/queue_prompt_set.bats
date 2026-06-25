@@ -14,7 +14,7 @@ plans:
     status: backlog
     depends_on:
       - first
-    prompt: /executor-lean -ar @plans/second/
+    prompt: /executor-vetted -ar @plans/second/
     notes: note two
 EOF
 }
@@ -32,7 +32,7 @@ EOF
     .plans[0].depends_on == [] and
     .plans[0].notes == "note one" and
     .plans[1].item == "second" and
-    .plans[1].prompt == "/executor-lean -ar @plans/second/"
+    .plans[1].prompt == "/executor-vetted -ar @plans/second/"
   ' >/dev/null
 }
 

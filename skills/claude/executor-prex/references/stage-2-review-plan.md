@@ -1,7 +1,7 @@
 ## Stage 2: Review Plan
 
 Review the Codex plan by delegating the work to a real subagent via the **Agent tool**. The subagent
-runs `/review-plan-lean` in orchestrator mode with three absolute paths and writes the reviewed
+runs `/review-plan-oneshot` in orchestrator mode with three absolute paths and writes the reviewed
 plan to a known path under `$RUN_DIR`.
 
 Do NOT use the `Skill` tool for this delegation. `Skill` loads a skill's body inline into the
@@ -11,7 +11,7 @@ itself with the child's completion message and stop mid-workflow. The `Agent` to
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation).
 
 Pass file paths in the prompt, not inlined file contents: the subagent shares the filesystem and can
-read the run-dir artifacts directly. `review-plan-lean` owns the `cog plan-review orchestrator`
+read the run-dir artifacts directly. `review-plan-oneshot` owns the `cog plan-review orchestrator`
 scaffold/write/validate mechanics and writes a reviewed plan with `APPROVED` / `MODIFIED` /
 `REMOVED` / `ADDED` annotations to the output path specified in the prompt. The parent must not
 pre-create or pre-format `stage2-reviewed-plan.md`; it only clears a stale artifact before
@@ -36,8 +36,8 @@ rm -f "$RUN_DIR/stage2-proof.diff" "$RUN_DIR/stage2-reviewed-plan.md"
 - `prompt` (substitute the literal value of `$RUN_DIR` before sending):
 
   ```text
-  Read the skill file at $HOME/.claude/skills/review-plan-lean/SKILL.md
-  and run /review-plan-lean in orchestrator mode. Its three absolute path
+  Read the skill file at $HOME/.claude/skills/review-plan-oneshot/SKILL.md
+  and run /review-plan-oneshot in orchestrator mode. Its three absolute path
   arguments are:
 
   1. plan-path:   <RUN_DIR>/stage1-plan.md
@@ -45,8 +45,8 @@ rm -f "$RUN_DIR/stage2-proof.diff" "$RUN_DIR/stage2-reviewed-plan.md"
   3. output-path: <RUN_DIR>/stage2-reviewed-plan.md
 
   The request path is the Bootstrap task file created before
-  Stage 1. Follow review-plan-lean's Orchestrator Invocation Contract:
-  review the plan, let review-plan-lean call cog plan-review orchestrator
+  Stage 1. Follow review-plan-oneshot's Orchestrator Invocation Contract:
+  review the plan, let review-plan-oneshot call cog plan-review orchestrator
   for scaffold/write/validate mechanics, and write the final reviewed plan
   verbatim to the output path. Return a one-line confirmation containing the
   output path once the file is written. Do not modify any repository files

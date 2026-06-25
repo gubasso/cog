@@ -40,7 +40,7 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing design, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-lean", "review-plan-lean"]
+examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-oneshot", "review-plan-oneshot"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """Exploration rides the Codex session default: gpt-5.5 at medium effort. Round-1
 evidence treats this as the quality default and balanced recommendation."""

@@ -1,5 +1,5 @@
 ---
-name: review-plan-lean
+name: review-plan-oneshot
 description: >
   Review one implementation plan before concrete implementation, using the
   persisted research shelf for reusable context and saving the annotated
@@ -9,7 +9,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob WebSearch WebFetch
 ---
 
-<!-- trigger-tests: "review-plan-lean", "review this plan before implementation", "validate one implementation plan" -->
+<!-- trigger-tests: "review-plan-oneshot", "review this plan before implementation", "validate one implementation plan" -->
 <!-- cog-skill: plan-emitter -->
 
 # Review Plan Claude
@@ -85,7 +85,7 @@ When relevant research is missing, stale, or too broad for the task, refresh it 
 current sources and record the finding through the shelf:
 
 ```bash
-cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "review-plan-lean,executor-lean,executor-lean-codex,executor-prex" --json
+cog research-shelf record --topic-tags "$TAGS" --source-json "$SOURCE_JSON" --summary "$SUMMARY" --revalidate-after "$DATE" --consuming-skills "review-plan-oneshot,executor-vetted,executor-vetted-codex,executor-prex" --json
 ```
 
 Do not copy old web findings into the skill body as permanent facts.

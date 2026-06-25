@@ -152,12 +152,12 @@ classification.
 flags are split by responsibility:
 
 ```bash
-cog executor init --executor <executor-lean|executor-single> --engine <claude|codex> --input <prompt-or-plan> [--json]
+cog executor init --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input <prompt-or-plan> [--json]
 ```
 
 `--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
-removed `--plan-engine` flag is not accepted. `executor-lean` is the reviewed 3-phase flow
-(`stage1` plan, `stage2` review, `stage3` execution). `executor-single` is the unreviewed 2-phase
+removed `--plan-engine` flag is not accepted. `executor-vetted` is the reviewed 3-phase flow
+(`stage1` plan, `stage2` review, `stage3` execution). `executor-oneshot` is the unreviewed 2-phase
 flow (`stage1` plan, `stage2` execution). Existing readable `.md` input skips the plan phase.
 
 `cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a
@@ -167,10 +167,10 @@ phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`
 `schema: "cog.executor.summary.v2"`:
 
 ```bash
-cog executor summary --run-dir <dir> --executor <executor-lean|executor-single> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-lean> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]
+cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --input-kind <prompt|plan> --reviewer <none|/review-plan-oneshot> --stage1 <skipped|done|failed> --stage2 <done|failed> [--stage3 <done|failed>] [--json]
 ```
 
-Reviewed flows use reviewer `/review-plan-lean`; unreviewed flows use reviewer `none`.
+Reviewed flows use reviewer `/review-plan-oneshot`; unreviewed flows use reviewer `none`.
 
 `cog executor queue-prompts` prints the queue-prompt examples used by inner `rounds:` queues. Any
 `/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`;

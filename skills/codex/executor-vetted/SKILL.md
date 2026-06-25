@@ -1,5 +1,5 @@
 ---
-name: executor-lean
+name: executor-vetted
 description: >
   Execute one prompt or implementation plan through the Codex-session executor flow:
   Codex plans when needed, Claude reviews Codex-made plans, then Codex implements the
@@ -22,10 +22,10 @@ plan path.
 Delegate classification and run setup to `cog executor`:
 
 ```bash
-cog executor init --executor executor-lean --engine codex --input <prompt-or-plan> --json
+cog executor init --executor executor-vetted --engine codex --input <prompt-or-plan> --json
 ```
 
-`cog executor init` records `engine=codex`, reviewer `/review-plan-lean`, and
+`cog executor init` records `engine=codex`, reviewer `/review-plan-oneshot`, and
 the flow-driven stages for prompt or plan input.
 
 Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A
@@ -67,20 +67,20 @@ For prompt input, `cog executor init` writes `request.md` under the run director
 For plan input, `cog executor init` writes `plan-source`, containing the supplied plan
 path, and does not create `request.md`. Before Stage 2, create a non-empty
 `<run-dir>/request.md` that captures the original task or supplied-plan source context.
-This run-scoped request artifact satisfies `/review-plan-lean`'s orchestrator
+This run-scoped request artifact satisfies `/review-plan-oneshot`'s orchestrator
 contract. All other deterministic artifact path mechanics come from `cog`.
 
 ## Stage 1: Plan
 
 Run this stage only when input kind is `prompt`.
 
-Build a prompt file under the run directory whose literal first line is `$plan-one-lean`,
+Build a prompt file under the run directory whose literal first line is `$plan-oneshot`,
 followed by `--output <run-dir>/stage1-plan.md`, the original task, and the request to
-report any assumptions, ambiguities, dependencies, and risks. `$plan-one-lean` saves its
+report any assumptions, ambiguities, dependencies, and risks. `$plan-oneshot` saves its
 own plan artifact to `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 
 Use native effort with the write-capable `danger` sandbox through `cog codex-runner`.
-`$plan-one-lean` saves its plan artifact through `cog plan-doc`, which a read-only sandbox
+`$plan-oneshot` saves its plan artifact through `cog plan-doc`, which a read-only sandbox
 blocks. The runner's `--output` captures Codex's final message in a separate
 `<run-dir>/stage1-codex-output.md` file, leaving the plan artifact untouched. Launch the durable job,
 then poll-and-classify:
@@ -98,8 +98,8 @@ The Stage 2 plan input is:
 
 ## Stage 2: Review Plan
 
-Codex-made plans are reviewed by Claude via `/review-plan-lean`. Use the reviewer
-returned by `cog executor init`; for this executor, it must be `/review-plan-lean`.
+Codex-made plans are reviewed by Claude via `/review-plan-oneshot`. Use the reviewer
+returned by `cog executor init`; for this executor, it must be `/review-plan-oneshot`.
 This is a foreground Claude subagent delegation through Task/Agent, not a
 `cog codex-runner` call.
 
@@ -146,7 +146,7 @@ orientation in the prompt itself.
 Emit an executor summary after Stage 3 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-lean --engine codex --input-kind <prompt|plan> --reviewer /review-plan-lean --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-vetted --engine codex --input-kind <prompt|plan> --reviewer /review-plan-oneshot --stage1 <skipped|done|failed> --stage2 <done|failed> --stage3 <done|failed> --json
 ```
 
 Status rules:
@@ -178,6 +178,6 @@ executor summary using the status rules above. Do not infer status from prose wh
 - No legacy profile-based invocation anywhere.
 - Do not instruct a runtime read of maintenance-reference conventions.
 - Deterministic mechanics stay behind `cog executor`, `cog codex-runner`, and
-  `/review-plan-lean`.
-- This skill executes one prompt or plan. It does not author `/executor-lean`, wire
+  `/review-plan-oneshot`.
+- This skill executes one prompt or plan. It does not author `/executor-vetted`, wire
   queue prompts, or implement runner integration.

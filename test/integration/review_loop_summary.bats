@@ -132,7 +132,6 @@ write_body() {
   assert_success
   grep -q '^- Round 1: total findings: 2$' "${run_dir}/summary.md"
   run ! grep -q '^- Round 1:.*new:' "${run_dir}/summary.md"
-  assert_success
   grep -q '^- Round 2: total findings: 2; new: 1; recurring: 1; resolved: 1$' "${run_dir}/summary.md"
 }
 

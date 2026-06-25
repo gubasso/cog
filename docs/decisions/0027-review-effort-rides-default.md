@@ -3,7 +3,7 @@
 ## Context and Problem Statement
 
 ADR-0013 set the model/effort policy: exploration/planning skills ride the session default,
-procedural skills use opus+low, and overrides must be justified. The `review-plan-lean` skill drifted
+procedural skills use opus+low, and overrides must be justified. The `review-plan-oneshot` skill drifted
 to `model: opus` + `effort: xhigh` — the only `xhigh` skill in the repo — with no inline
 justification, which the escalation clause requires. This raised the question of what effort a
 plan/code review (verifying an already-reasoned artifact) actually warrants.
@@ -18,23 +18,23 @@ returns.
 
 ## Considered Options
 
-- Keep review-plan-lean at opus+xhigh.
-- Pin review-plan-lean to opus+high explicitly.
+- Keep review-plan-oneshot at opus+xhigh.
+- Pin review-plan-oneshot to opus+high explicitly.
 - Treat review/verification as exploration-tier: ride the session default (opus+high), no override.
 
 ## Decision Outcome
 
 Chosen option: **treat review/verification as exploration-tier**. Review and verification skills ride
-the session default and set no model/effort override, matching review-lean and review-loop.
+the session default and set no model/effort override, matching review-oneshot and review-loop.
 xhigh remains an exception tier requiring documented justification, reserved for reviews that span
 many subsystems, are security-critical, are expensive to reverse, or run as evaluations.
-review-plan-lean is re-graded to the default (override removed).
+review-plan-oneshot is re-graded to the default (override removed).
 
 This extends ADR-0013; it does not supersede it.
 
 ## Consequences
 
-- Good: review-plan-lean matches its sibling review skills and the policy's exploration tier.
+- Good: review-plan-oneshot matches its sibling review skills and the policy's exploration tier.
 - Good: the verifier-asymmetry rationale is recorded once, with external evidence on the research
   shelf, to guide future review skills.
 - Neutral: if the Claude session default ever drops below high, review skills follow it; that is the

@@ -1,5 +1,5 @@
 ---
-name: executor-single
+name: executor-oneshot
 description: >
   Execute one prompt or implementation plan through the Claude single executor
   flow: Claude plans when needed, then Claude implements the plan natively in
@@ -11,7 +11,7 @@ disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
-<!-- trigger-tests: "executor-single", "execute one prompt through Claude single flow", "execute one plan through Claude single flow" -->
+<!-- trigger-tests: "executor-oneshot", "execute one prompt through Claude single flow", "execute one plan through Claude single flow" -->
 
 # Executor Single
 
@@ -27,7 +27,7 @@ and executor summaries stay behind `cog`.
 Delegate classification and run setup to `cog executor`:
 
 ```bash
-cog executor init --executor executor-single --engine claude --input <prompt-or-plan> --json
+cog executor init --executor executor-oneshot --engine claude --input <prompt-or-plan> --json
 ```
 
 Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A supplied path that
@@ -63,7 +63,7 @@ Run this stage only when input kind is `prompt`.
 
 Delegate plan generation to a foreground Claude subagent through the Agent tool
 (`subagent_type: general-purpose`). The delegation prompt instructs the subagent to read
-`$HOME/.claude/skills/plan-one-lean/SKILL.md` and follow it end-to-end, passing
+`$HOME/.claude/skills/plan-oneshot/SKILL.md` and follow it end-to-end, passing
 `--output <run-dir>/stage1-plan.md` and using the original request as the orientation. The subagent
 runs non-interactively: it treats every interview decision as a skill-chosen best default and records
 it. The generated plan must include assumptions, ambiguities, dependencies, and risks.
@@ -96,7 +96,7 @@ Verify that it exists and is non-empty.
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-single --engine claude --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine claude --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
 ```
 
 Status rules:
@@ -123,5 +123,5 @@ output.
 
 - Keep Claude implementation and orchestration foreground.
 - Do not run git commands unless explicitly authorized.
-- Deterministic mechanics stay behind `cog executor` and `/plan-one-lean`.
+- Deterministic mechanics stay behind `cog executor` and `/plan-oneshot`.
 - This skill executes one prompt or plan.

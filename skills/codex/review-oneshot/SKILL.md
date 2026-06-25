@@ -1,5 +1,5 @@
 ---
-name: review-lean
+name: review-oneshot
 description: >
   Performs a thorough single-pass review of any language or framework detected in the
   diff. Delegates deterministic scope, technology detection, findings normalization,
@@ -21,7 +21,7 @@ Default severity is `praise`, the permissive floor for deterministic filtering. 
 ## Phase 0: Mechanical Setup
 
 ```bash
-RUN_DIR="$(cog review-init review-lean | sed -n 's/^RUN_DIR=//p')"
+RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^RUN_DIR=//p')"
 . "$RUN_DIR/paths.env"
 cog review-scope "$SCOPE_JSON"
 cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"

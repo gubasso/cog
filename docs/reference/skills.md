@@ -65,12 +65,12 @@ below maps each currently shipped artifact to its taxonomy class.
 
 ### plan-*
 
-- skills/claude/plan-one-lean-codex
-- skills/claude/plan-one-lean
+- skills/claude/plan-oneshot-codex
+- skills/claude/plan-oneshot
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
 - skills/claude/plan-refactor-migration
-- skills/codex/plan-one-lean
+- skills/codex/plan-oneshot
 - skills/codex/plan-writer
 - skills/codex/plan-refactor-migration
 
@@ -78,28 +78,28 @@ below maps each currently shipped artifact to its taxonomy class.
 
 Code-review skills:
 
-- skills/claude/review-lean
+- skills/claude/review-oneshot
 - skills/claude/review-findings
 - skills/claude/review-loop
 - skills/codex/implementation-reviewer
-- skills/codex/review-lean
+- skills/codex/review-oneshot
 - skills/codex/review-findings
 
 Plan-review sub-namespace (`review-plan-*`):
 
-- skills/claude/review-plan-lean
-- skills/codex/review-plan-lean
+- skills/claude/review-plan-oneshot
+- skills/codex/review-plan-oneshot
 - .claude/skills/review-plan-implementation
 
 ### executor-*
 
-- skills/claude/executor-lean
-- skills/claude/executor-lean-codex
+- skills/claude/executor-vetted
+- skills/claude/executor-vetted-codex
 - skills/claude/executor-prex
-- skills/claude/executor-single
-- skills/claude/executor-single-codex
-- skills/codex/executor-lean
-- skills/codex/executor-single
+- skills/claude/executor-oneshot
+- skills/claude/executor-oneshot-codex
+- skills/codex/executor-vetted
+- skills/codex/executor-oneshot
 
 ### runner-*
 

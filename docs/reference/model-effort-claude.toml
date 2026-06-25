@@ -15,7 +15,7 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing design, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-lean", "cog-skill-creator", "review-plan-lean"]
+examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-oneshot", "cog-skill-creator", "review-plan-oneshot"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Exploration and planning should ride the session default so genuinely open work keeps
 the strongest default model and effort budget. Pinning frontmatter would cap that work."""

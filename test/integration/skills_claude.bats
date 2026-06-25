@@ -51,7 +51,7 @@ forbidden_scan_codex() {
     plan-writer-multi
     pre-commit
     plan-refactor-migration
-    review-lean
+    review-oneshot
     review-findings
     review-loop
     runner-all
@@ -78,7 +78,7 @@ forbidden_scan_codex() {
     implementation-reviewer
     plan-writer
     plan-refactor-migration
-    review-lean
+    review-oneshot
     suckless-patcher
     test-review
   )

@@ -1,5 +1,5 @@
 ---
-name: executor-single
+name: executor-oneshot
 description: >
   Execute one prompt or implementation plan through the Codex single executor
   flow: Codex plans when needed, then Codex implements the plan via
@@ -20,7 +20,7 @@ summaries stay behind `cog`.
 Delegate classification and run setup to `cog executor`:
 
 ```bash
-cog executor init --executor executor-single --engine codex --input <prompt-or-plan> --json
+cog executor init --executor executor-oneshot --engine codex --input <prompt-or-plan> --json
 ```
 
 Stage 1 is skipped exactly when the init JSON reports `.input.kind` as `plan`. A supplied path that
@@ -65,9 +65,9 @@ original task or supplied-plan source context.
 
 Run this stage only when input kind is `prompt`.
 
-Build a prompt file under the run directory whose literal first line is `$plan-one-lean`, followed
+Build a prompt file under the run directory whose literal first line is `$plan-oneshot`, followed
 by `--output <run-dir>/stage1-plan.md`, the original task, and the request to report any assumptions,
-ambiguities, dependencies, and risks. `$plan-one-lean` saves its own plan artifact to
+ambiguities, dependencies, and risks. `$plan-oneshot` saves its own plan artifact to
 `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 
 Use native effort with the write-capable `danger` sandbox through `cog codex-runner`. Launch the
@@ -112,7 +112,7 @@ Verify `<run-dir>/stage2-execution.md` exists and is non-empty.
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-single --engine codex --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine codex --input-kind <prompt|plan> --reviewer none --stage1 <skipped|done|failed> --stage2 <done|failed> --json
 ```
 
 Status rules:

@@ -81,7 +81,7 @@ The workflow needs:
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch, resume,
    finalize/cancel/status, orientation, status explanation, account-aware wrapper setup, and effort
-   selection (`high` for stage 1 planning via `/plan-one-lean`, `medium` for stage 3 implementation;
+   selection (`high` for stage 1 planning via `/plan-oneshot`, `medium` for stage 3 implementation;
    escalate stage 3 to `high` only when the user asks for it).
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
@@ -145,7 +145,7 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `stage1-plan.md` (plan artifact, written by `/plan-one-lean`)
+- `stage1-plan.md` (plan artifact, written by `/plan-oneshot`)
 - `stage1-codex-output.md` (Codex final message)
 - `stage1-events.jsonl`
 - `stage1.longrun.json` (durable job state)
@@ -216,11 +216,11 @@ stop — do not continue to stage 1.
 
 ## Stage 1: Plan
 
-Delegate planning to Codex's own `/plan-one-lean` skill. The parent orchestrator does **not** invoke
-`/plan-one-lean` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
+Delegate planning to Codex's own `/plan-oneshot` skill. The parent orchestrator does **not** invoke
+`/plan-oneshot` as a Claude skill or Agent delegation; it writes a thin Codex prompt to
 `$RUN_DIR/stage1-prompt.md` and passes that prompt through `cog codex-runner run-exec`.
 
-The Stage 1 prompt must tell Codex to run `/plan-one-lean`, save the lean plan to
+The Stage 1 prompt must tell Codex to run `/plan-oneshot`, save the lean plan to
 `$RUN_DIR/stage1-plan.md`, and produce a numbered, reviewable implementation plan with assumptions,
 ambiguities, dependencies, and risks. Include the original task and relevant repo constraints. The
 only permitted write during this planning stage is the plan artifact under `RUN_DIR`.
@@ -242,7 +242,7 @@ cog codex-runner run-exec \
 ```
 
 `--output` captures Codex's final message in `stage1-codex-output.md`; the plan artifact itself is
-`stage1-plan.md`, written by `/plan-one-lean` through `cog plan-doc`. They are separate files, so the
+`stage1-plan.md`, written by `/plan-oneshot` through `cog plan-doc`. They are separate files, so the
 runner output never overwrites the plan.
 
 `run-exec` launches the Codex run as a cog-owned durable job and returns immediately. Poll-and-classify
@@ -279,7 +279,7 @@ Read `stage1-plan.md`, summarize the result briefly for the user, and move direc
 
 ## Stage 2: Review Plan
 
-Delegate plan review via the **Agent tool** to `/review-plan-lean`, using its three-absolute-path
+Delegate plan review via the **Agent tool** to `/review-plan-oneshot`, using its three-absolute-path
 orchestrator contract:
 
 1. plan path: `$RUN_DIR/stage1-plan.md`
@@ -303,7 +303,7 @@ protocol.
 
 ## Stage 4: Review Implementation
 
-Delegate implementation review to `review-lean` via the **Agent tool**, validate proof, triage
+Delegate implementation review to `review-oneshot` via the **Agent tool**, validate proof, triage
 review and plan-conformance findings, and write `stage4-review.md`. Follow
 `references/stage-4-review-implementation.md` for command shapes, proof validation, and triage
 details.
@@ -343,7 +343,7 @@ End with a concise summary covering:
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort high` at the stage 1 `/plan-one-lean` planning call site and `--effort medium` at the
+  `--effort high` at the stage 1 `/plan-oneshot` planning call site and `--effort medium` at the
   stage 3 implementation call sites; escalate to `--effort high` only when the user explicitly asks
   to push a stage harder (stuck/looping runs, novel design, security-critical changes). Do not pass
   `-m`/`-c model_reasoning_effort`.
