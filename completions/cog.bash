@@ -37,6 +37,7 @@ _cog() {
     gc-classify-failure
     gc-commit
     gc-commit-lint
+    gc-loop-progress
     gc-plan
     gc-push
     gc-stage

@@ -298,6 +298,73 @@ cog::fn::git_classify_failure_log() {
     }'
 }
 
+# --- Round-loop progress ------------------------------------------------------
+#
+# Extract a stable set of failure signatures from one commit/push report so two
+# consecutive round reports can be diffed. A failing pre-commit hook prints a
+# `- hook id: <id>` line; the hook id is a stable identifier free of volatile
+# paths or line numbers. When a report carries no hook ids (a git-native or
+# commit-message failure) the failure class stands in as the signature.
+cog::fn::git_loop_signatures() {
+  __cog_git_require_jq
+
+  local log_file="${1:-}"
+  [[ -n $log_file ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+    "missing failure log path" "function: cog::fn::git_loop_signatures" "" ""
+  [[ -r $log_file ]] || cog::helpers::die "$EX_NOINPUT" "InputUnreadable" \
+    "failure log is not readable" "path: ${log_file}" "" "check the log path"
+
+  local -a sigs=()
+  local id
+  while IFS= read -r id; do
+    [[ -n $id ]] || continue
+    sigs+=("hook:$id")
+  done < <(grep -Eo '^[[:space:]]*-[[:space:]]*hook id:[[:space:]]*[A-Za-z0-9._-]+' "$log_file" \
+    | sed -E 's/.*hook id:[[:space:]]*//' | awk '!seen[$0]++')
+
+  if [[ ${#sigs[@]} -eq 0 ]]; then
+    local class
+    class="$(cog::fn::git_classify_failure_log "$log_file" | jq -r '.class')"
+    [[ $class == unknown ]] || sigs+=("class:$class")
+  fi
+
+  __cog_git_json_array_from_lines "${sigs[@]}"
+}
+
+cog::fn::git_loop_progress() {
+  __cog_git_require_jq
+
+  local current_file="${1:-}" previous_file="${2:-}" current previous
+  [[ -n $current_file && -n $previous_file ]] || cog::helpers::die "$EX_USAGE" \
+    "MissingArgument" "missing loop-progress log path" \
+    "function: cog::fn::git_loop_progress" "" ""
+
+  current="$(cog::fn::git_loop_signatures "$current_file")"
+  previous="$(cog::fn::git_loop_signatures "$previous_file")"
+
+  jq -n --argjson current "$current" --argjson previous "$previous" '
+    (($current | unique)) as $cur |
+    (($previous | unique)) as $prev |
+    ($cur - $prev) as $new |
+    ($cur - ($cur - $prev)) as $recurring |
+    ($prev - $cur) as $resolved |
+    (($cur | length) + ($prev | length) | if . == 0 then 1 else . end) as $denom |
+    {
+      new: $new,
+      recurring: $recurring,
+      resolved: $resolved,
+      churn_ratio: ((($new | length) + ($resolved | length)) / $denom),
+      counts: {
+        current: ($cur | length),
+        previous: ($prev | length),
+        new: ($new | length),
+        recurring: ($recurring | length),
+        resolved: ($resolved | length)
+      }
+    }
+  '
+}
+
 # --- Conventional Commits message validation ----------------------------------
 #
 # A deterministic Conventional Commits check that backstops the commit-message

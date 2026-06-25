@@ -43,6 +43,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0036: Executor input-quality gate](decisions/0036-executor-input-quality-gate.md)
 - [ADR-0037: Plan-mode gate canonical render](decisions/0037-plan-mode-gate-canonical-render.md)
 - [ADR-0038: Extract plan-vetted as a reusable vetted-plan producer](decisions/0038-plan-vetted-extraction.md)
+- [ADR-0039: gc fix-all commit round loop with delegated opus@low fixer](decisions/0039-gc-fix-all-round-loop.md)
 
 ## Guides
 

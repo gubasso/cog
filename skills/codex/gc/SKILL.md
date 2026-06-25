@@ -50,12 +50,18 @@ cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json
 cog gc-commit-lint --message-file "$MESSAGE_FILE" [--repo-root "<root>"] --json
 cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json
 cog gc-classify-failure --log "$LOG_FILE" --json
+cog gc-loop-progress --current "$LOG_FILE" --previous "$PREV_LOG_FILE" --json
 cog gc-push --repo-root "<root>" --json
 ```
 
 `gc-commit` carries a `lint` object in its JSON (`{ok, deferred, linter, config,
 violations}`) from the pre-flight Conventional Commits gate; see "Commit message
 format".
+
+`gc-loop-progress` diffs two consecutive round reports and emits
+`{new, recurring, resolved, churn_ratio, counts}` keyed on failing-hook (or
+failure-class) signatures. It is the deterministic signal for the stuck-loop
+judgment in the round loop below.
 
 `--repo-root` makes `gc-stage`/`gc-commit`/`gc-push` target a specific repo without
 `cd`. Omit it for a single-repo commit in the current directory's repo.
@@ -157,36 +163,62 @@ closed if any repo's line is `*_FAILED`.
       `cog gc-commit-lint --message-file "$MESSAGE_FILE" --repo-root "<root>" --json`;
       if `ok` is `false` and `deferred` is `false`, revise per `violations` and
       re-lint before committing.
-   4. `cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json`.
-      `gc-commit` re-runs the same gate; on a `lint`-only failure (`git commit` not
-      attempted) revise the message and retry.
-   5. If commit fails, classify the captured log and handle per the discipline below.
-   6. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
+   4. Run the commit round loop below until that repo commits clean or the loop stops.
+   5. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
 
 6. Emit one result line per committed repo (see the result line contract), with the
    `repo=` suffix in multi-repo mode and the bare line for a single repo. Emit
    exactly this trailing block and nothing after it.
 
-### Per-Repo Failure Handling
+### Per-Repo Commit Round Loop
 
-For each repo, classify a commit failure:
+Each repo commits through a bounded round loop. Every round fixes the **whole** report
+at once, then retries — never one error per round.
 
-```bash
-cog gc-classify-failure --log "$LOG_FILE" --json
-```
+Round R:
 
-- `setup-missing`: hard-fail. Do not run git config or setup commands.
-- `auto-fixer`: re-run `gc-stage` for that repo's session files and retry.
-- `commit-message`: revise only the message, then retry. This also covers a
-  `gc-commit` pre-flight `lint` failure — revise per `lint.violations` and retry.
-- `content-fix`: inspect hook output and fix only reported issues in that repo's
-  session files. If a hook wants files outside scope or a semantic change, ask.
-- `stuck` or `unknown`: follow the progress-gate escalation and ask when no specific
-  safe repair is clear.
+1. Attempt the commit:
 
-For `push-hook`, fix reported hook issues with the same session-file discipline,
-create a normal follow-up commit through `gc-commit`, and retry. For
-`push-setup-missing` or `push-non-hook`, report the failure and stop.
+   ```bash
+   cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json
+   ```
+
+   `gc-commit` saves the full hook and git output to the file named by its `.log`;
+   that file is round R's report. Keep the previous round's `.log` as `$PREV_LOG_FILE`.
+
+2. If `ok` is `true`, the repo is committed. Leave the round loop and emit its result
+   line.
+
+3. Otherwise classify the report:
+
+   ```bash
+   cog gc-classify-failure --log "$LOG_FILE" --json
+   ```
+
+   - `commit-message` (and any `gc-commit` pre-flight `lint`-only failure where
+     `git commit` was not attempted): revise the message per `lint.violations` and
+     retry.
+   - `auto-fixer` or `content-fix`: read the entire report and fix every reported issue
+     at once within the repo's session file scope, re-stage with `gc-stage`, and retry
+     (round R+1). If a hook wants a file outside scope or a semantic change, ask.
+   - `push-hook`: fix the reported hook issues the same way, create a normal follow-up
+     commit through `gc-commit`, and retry.
+   - `setup-missing`, `push-setup-missing`, `push-non-hook`: report the failure and
+     stop; do not run git config or setup commands.
+
+4. Stuck check. Before retrying into round 4 and every round after, compare the two
+   most recent reports:
+
+   ```bash
+   cog gc-loop-progress --current "$LOG_FILE" --previous "$PREV_LOG_FILE" --json
+   ```
+
+   When `recurring` holds the same signatures with `resolved` empty and `churn_ratio`
+   at or near `0`, the loop is stuck. Redirect to a better path: broaden the fix scope,
+   address the root cause the earlier rounds skirted, or take on a class the loop kept
+   deferring. If a redirected round still leaves the same `recurring` signatures with no
+   progress, stop and emit `COMMIT_FAILED` with the recurring signatures and the
+   round-log paths.
 
 A failure in one repo does not roll back commits already made in earlier repos. Report
 each repo's actual outcome; the parent runner treats any `*_FAILED` line as a hard

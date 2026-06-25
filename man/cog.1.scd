@@ -90,6 +90,9 @@ The command list and short descriptions are sourced from command modules under
 *gc-commit-lint*
 	Validate a commit message against Conventional Commits (or defer to the repo linter).
 
+*gc-loop-progress*
+	Compare commit failure reports across round-loop rounds.
+
 *gc-plan*
 	Partition session files by owning repo and run safety scan.
 
