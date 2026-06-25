@@ -12,6 +12,7 @@ allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
 <!-- trigger-tests: "executor-vetted", "execute one prompt through Claude", "execute one plan through Claude" -->
+<!-- cog-skill: input-fidelity -->
 
 # Executor Claude
 
@@ -97,9 +98,11 @@ directory.
 For plan input, `cog executor init` writes `plan-source`, containing the
 supplied plan path, and does not create `request.md`. Before building the Stage
 2 prompt, create a non-empty `<run-dir>/request.md` that captures the original
-task or supplied-plan source context. This run-scoped request artifact satisfies
-`/review-plan-oneshot`'s orchestrator contract. All other deterministic artifact
-path mechanics come from `cog`.
+task or supplied-plan source context verbatim and in full, with only enriching
+repo constraints added. This run-scoped request artifact satisfies
+`/review-plan-oneshot`'s orchestrator contract and must not replace original
+input with a summary. All other deterministic artifact path mechanics come from
+`cog`.
 
 The Stage 2 Codex runner files are run-scoped capture files, not canonical
 executor artifacts returned by `cog executor artifacts`:
@@ -125,10 +128,13 @@ supported lane.
 The delegation prompt instructs the subagent to read
 `$HOME/.claude/skills/plan-oneshot/SKILL.md` and follow it end-to-end, passing
 `--output <run-dir>/stage1-plan.md` and using the original request as the
-orientation. The subagent runs the interview non-interactively: it treats every
-interview decision as a skill-chosen best-default and records it (a subagent
-cannot prompt the user mid-run). The generated plan must include assumptions,
-ambiguities, dependencies, and risks.
+orientation. The delegation prompt is an enrichment-only superset of the
+original input: include the original request verbatim and in full, plus relevant
+repo constraints, and never replace it with a summary. The subagent runs the
+interview non-interactively: it treats every interview decision as a
+skill-chosen best-default and records it (a subagent cannot prompt the user
+mid-run). The generated plan must include assumptions, ambiguities, dependencies,
+and risks.
 
 The Stage 2 plan input is:
 
@@ -179,7 +185,8 @@ Implement natively in the current Claude session. Read and follow
 Carry only relevant session context:
 
 - The reviewed plan from `<run-dir>/stage2-reviewed-plan.md`, verbatim.
-- The original request or supplied-plan source context.
+- The original request or supplied-plan source context, verbatim and in full,
+  with only enriching repo constraints added.
 - A short statement that the reviewed plan supersedes any earlier plan.
 - Current session constraints: do not run git commands unless explicitly
   authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the reviewed

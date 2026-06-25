@@ -87,6 +87,16 @@ input validation and parsing is delegated to `cog`. Enforcement is the `producer
 See `docs/decisions/0026-consumer-skill-producer-blindness.md` and `docs/reference/skill-contract.md`
 ("Producer-blind consumers").
 
+## Input-Fidelity Delegators
+
+A brief-building delegator passes an enrichment-only superset of the original input to fresh-context
+workers: original prompt/request verbatim and in full, plus enriching context, interview Q&A, raw code
+excerpts, and constraints. The coordinator's own verdict or proposed solution is the deliberate
+omission for bias isolation. Enforcement is the `input-fidelity` rule in `cog skill-lint`, keyed off a
+curated delegator set and marker. See
+`docs/decisions/0035-input-fidelity-enrichment-only-briefs.md` and `docs/reference/skill-contract.md`
+("Input fidelity (enrichment-only briefs)").
+
 ## Orchestration Guards
 
 - Use env-first no-backgrounding; never rely on `PreToolUse` for runtime backgrounding.

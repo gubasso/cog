@@ -121,6 +121,44 @@ __cog_skill_lint_check_plan_gate() {
   return "$failed"
 }
 
+__cog_skill_lint_input_fidelity_required() {
+  local name="$1" runtime="$2"
+  case "${runtime}:${name}" in
+    claude:plan-multi | \
+      claude:plan-writer-multi | \
+      claude:review-plan-multi | \
+      claude:ask | \
+      claude:executor-prex | \
+      claude:executor-oneshot | \
+      claude:executor-vetted | \
+      claude:executor-oneshot-codex | \
+      claude:executor-vetted-codex | \
+      claude:plan-oneshot-codex | \
+      codex:executor-oneshot | \
+      codex:executor-vetted)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+__cog_skill_lint_check_input_fidelity() {
+  local file="$1" runtime name failed=0
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ -n $runtime ]] || return 0
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  if __cog_skill_lint_input_fidelity_required "$name" "$runtime" \
+    && ! cog::fn::skill::has_input_fidelity_marker "$file"; then
+    __cog_skill_lint_finding "$file" 1 "input-fidelity" \
+      "brief-building delegator missing input-fidelity marker" \
+      "add <!-- cog-skill: input-fidelity --> and keep delegated input enrichment-only"
+    failed=1
+  fi
+  return "$failed"
+}
+
 __cog_skill_lint_check_prefix_taxonomy() {
   # Prefix taxonomy is a hard-fail structural contract for Claude skills with
   # governed declared intent.
@@ -689,6 +727,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_plan_gate "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_input_fidelity "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_prefix_taxonomy "$file"; then

@@ -67,6 +67,7 @@ below maps each currently shipped artifact to its taxonomy class.
 
 - skills/claude/plan-oneshot-codex
 - skills/claude/plan-oneshot
+- skills/claude/plan-multi
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
 - skills/claude/plan-refactor-migration

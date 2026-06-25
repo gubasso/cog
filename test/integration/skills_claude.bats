@@ -47,6 +47,7 @@ forbidden_scan_codex() {
     claudemd
     gc
     osc-obs
+    plan-multi
     plan-writer
     plan-writer-multi
     pre-commit

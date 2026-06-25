@@ -14,6 +14,7 @@ allowed-tools: Bash Read Write Edit Agent Skill
 
 <!-- trigger-tests: "executor-prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: input-fidelity -->
 <!-- cog-plan-mode-gate -->
 
 # Plan Review Execute
@@ -222,8 +223,10 @@ Delegate planning to Codex's own `/plan-oneshot` skill. The parent orchestrator 
 
 The Stage 1 prompt must tell Codex to run `/plan-oneshot`, save the lean plan to
 `$RUN_DIR/stage1-plan.md`, and produce a numbered, reviewable implementation plan with assumptions,
-ambiguities, dependencies, and risks. Include the original task and relevant repo constraints. The
-only permitted write during this planning stage is the plan artifact under `RUN_DIR`.
+ambiguities, dependencies, and risks. The prompt is an enrichment-only superset of the original
+input: include the original task verbatim and in full, plus relevant repo constraints, and never
+replace the task with a summary. The only permitted write during this planning stage is the plan
+artifact under `RUN_DIR`.
 
 Keep the prompt-file rule: write the complete Stage 1 prompt to `RUN_DIR` first, then pass it via
 `--prompt`; never inline multi-line prompts directly in the Bash command.

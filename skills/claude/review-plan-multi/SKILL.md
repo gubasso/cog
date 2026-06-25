@@ -15,6 +15,7 @@ allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 
 <!-- trigger-tests: "review-plan-multi", "dual-engine plan review", "review this plan with codex", "two reviews then synthesize" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: input-fidelity -->
 
 # Review Plan Multi
 
@@ -109,14 +110,16 @@ Produce the **single, identical pair of inputs** both workers receive.
   `PLAN_UNDER_REVIEW`, preserving each file's heading and content.
 - `MODE=inline` — read `RAW_INPUT_FILE`; separate the plan portion into `PLAN_UNDER_REVIEW`.
 
-**`REQUEST_FILE`** — the goal and context the plan is reviewed **against**: the original request,
-decisions and their reasoning, hard constraints, and the relevant codebase facts (absolute paths and
-quoted excerpts). Draw it from the input and the live conversation, kept **raw and minimally
-paraphrased** ("as if prompting Codex directly"), so both engines start neutral.
+**`REQUEST_FILE`** — the goal and context the plan is reviewed **against**: the original request
+verbatim and in full, decisions and their reasoning, hard constraints, and relevant codebase facts
+(absolute paths and quoted excerpts). Draw it from the input and the live conversation as an
+enrichment-only superset of the original input, never a summary or lossy rewrite. Quote the user's
+words, include interview Q&A verbatim when present, preserve raw plan/request excerpts, and favor
+over-inclusion when unsure.
 
 **Keep your own verdict out of both files.** The brief is raw context + requirements; the plan is the
 material under review. Injecting your own critique or proposed fixes biases the workers and defeats
-the independent second opinion. Scope to relevance, but favor fidelity over brevity.
+the independent second opinion.
 
 If `--solo` (`SOLO=1`), skip Phase 3 and the Codex half of Phase 4; go straight to the Claude review
 then Phase 5.

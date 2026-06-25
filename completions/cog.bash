@@ -51,6 +51,7 @@ _cog() {
     osc-probe-binary
     plan-doc
     plan-init
+    plan-multi-setup
     plan-review
     plan-slug
     plan-writer-multi-setup

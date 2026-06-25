@@ -70,6 +70,7 @@ this reference table.
 | `plan-doc save` | Write one lean plan artifact. |
 | `plan-doc validate` | Validate one lean plan artifact. |
 | `plan-init` | Bootstrap implementation plan root files. |
+| `plan-multi-setup` | Parse plan-multi arguments and create run state. |
 | `plan-review` | Write and validate annotated plan review artifacts. |
 | `plan-review save` | Write one annotated plan review artifact. |
 | `plan-review orchestrator` | Write a review artifact from absolute orchestrator input paths. |

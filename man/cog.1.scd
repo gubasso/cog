@@ -132,6 +132,9 @@ The command list and short descriptions are sourced from command modules under
 *plan-init*
 	Bootstrap implementation plan root files.
 
+*plan-multi-setup*
+	Parse plan-multi arguments and create run state.
+
 *plan-review*
 	Write and validate annotated plan review artifacts.
 

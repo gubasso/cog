@@ -6,6 +6,8 @@ description: >
   reviewed plan via cog codex-runner.
 ---
 
+<!-- cog-skill: input-fidelity -->
+
 # Executor Codex Session
 
 Execute one prompt or one implementation plan through the shared 3-stage executor flow:
@@ -66,9 +68,11 @@ For prompt input, `cog executor init` writes `request.md` under the run director
 
 For plan input, `cog executor init` writes `plan-source`, containing the supplied plan
 path, and does not create `request.md`. Before Stage 2, create a non-empty
-`<run-dir>/request.md` that captures the original task or supplied-plan source context.
-This run-scoped request artifact satisfies `/review-plan-oneshot`'s orchestrator
-contract. All other deterministic artifact path mechanics come from `cog`.
+`<run-dir>/request.md` that captures the original task or supplied-plan source context
+verbatim and in full, with only enriching repo constraints added. This run-scoped request
+artifact is an enrichment-only superset, must not replace original input with a summary,
+and satisfies `/review-plan-oneshot`'s orchestrator contract. All other deterministic artifact path
+mechanics come from `cog`.
 
 ## Stage 1: Plan
 
@@ -76,8 +80,10 @@ Run this stage only when input kind is `prompt`.
 
 Build a prompt file under the run directory whose literal first line is `$plan-oneshot`,
 followed by `--output <run-dir>/stage1-plan.md`, the original task, and the request to
-report any assumptions, ambiguities, dependencies, and risks. `$plan-oneshot` saves its
-own plan artifact to `<run-dir>/stage1-plan.md` through `cog plan-doc`.
+report any assumptions, ambiguities, dependencies, and risks. The prompt is an
+enrichment-only superset of the original input: include the original task verbatim and in
+full, plus relevant repo constraints, and never replace it with a summary. `$plan-oneshot`
+saves its own plan artifact to `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 
 Use native effort with the write-capable `danger` sandbox through `cog codex-runner`.
 `$plan-oneshot` saves its plan artifact through `cog plan-doc`, which a read-only sandbox
@@ -121,7 +127,8 @@ Run implementation through `cog codex-runner` with native effort. Build a Stage 
 under the run directory that carries only relevant session context:
 
 - The reviewed plan from `<run-dir>/stage2-reviewed-plan.md`, verbatim.
-- The original request or supplied-plan source context.
+- The original request or supplied-plan source context, verbatim and in full, with only
+  enriching repo constraints added.
 - A short statement that the reviewed plan supersedes any earlier plan.
 - Current session constraints: do not run git commands unless explicitly authorized,
   follow `AGENTS.md` and `CLAUDE.md`, and stay inside the reviewed plan.

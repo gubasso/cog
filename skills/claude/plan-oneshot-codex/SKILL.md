@@ -12,6 +12,7 @@ allowed-tools: Bash Read Write AskUserQuestion
 
 <!-- trigger-tests: "plan-oneshot-codex", "have Codex write one lean plan", "plan with Codex under the hood" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: input-fidelity -->
 <!-- cog-plan-mode-gate -->
 
 # Plan One Lean Codex
@@ -50,9 +51,12 @@ Write `<RUN_DIR>/stage1-prompt.md` with:
 - The literal first line `$plan-oneshot`.
 - The write orientation from `cog codex-runner orientation write`.
 - `--output <plan-path>` plus any forwarded `--research-root`.
-- The complete user orientation.
+- The complete user orientation, verbatim and in full, plus only enriching constraints.
 - The instruction that Codex must save exactly one lean plan through `cog plan-doc`, print the plan,
   and report assumptions, ambiguities, dependencies, and risks.
+
+The prompt is an enrichment-only superset of the original input and must not replace the user
+orientation with a summary.
 
 Launch the durable Codex job, then poll-and-classify it with one verb, `cog codex-runner finalize
 --max-wall <secs>`. The exit code is the signal (0 = ok · 1 = failed · 75 = still running);

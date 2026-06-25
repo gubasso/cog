@@ -50,3 +50,11 @@ which skill produced that input; it never names the producer in prose, and all i
 delegated to cog. Enforced by cog skill-lint (producer-blindness) via a curated consumer->producer
 map. See docs/decisions/0026-consumer-skill-producer-blindness.md and
 docs/reference/skill-contract.md ("Producer-blind consumers").
+
+Non-negotiable: a brief-building delegator passes an enrichment-only superset of the original input
+to fresh-context workers: original prompt/request verbatim and in full, plus enriching context,
+interview Q&A, raw code excerpts, and constraints. The coordinator's own verdict or proposed solution
+is the deliberate omission for bias isolation. Enforced by cog skill-lint (input-fidelity) via a
+curated delegator set and marker. See
+docs/decisions/0035-input-fidelity-enrichment-only-briefs.md and docs/reference/skill-contract.md
+("Input fidelity (enrichment-only briefs)").

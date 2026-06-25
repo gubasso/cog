@@ -133,6 +133,40 @@ EOF
   [[ $stderr == *"trigger-tests"* ]]
 }
 
+@test "cog skill-lint rejects mapped delegators without input-fidelity marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/ask" ask claude
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/ask/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"input-fidelity"* ]]
+}
+
+@test "cog skill-lint accepts mapped delegators with input-fidelity marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/ask" ask claude
+  sed -i '/trigger-tests/a <!-- cog-skill: input-fidelity -->' "${BATS_TEST_TMPDIR}/skills/claude/ask/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/ask/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint accepts non-delegators without input-fidelity marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint does not require input-fidelity marker on Codex ask worker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/ask" ask codex
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/ask/SKILL.md"
+
+  assert_success
+}
+
 @test "cog skill-lint rejects deterministic for loops" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
@@ -668,7 +702,7 @@ EOF
 @test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\n# Plan Review Execute\n' >>"$file"
+  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n<!-- cog-plan-mode-gate -->\n# Plan Review Execute\n' >>"$file"
 
   run cog skill-lint "$file"
 

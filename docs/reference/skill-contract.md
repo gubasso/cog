@@ -170,6 +170,25 @@ The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy p
 `review-code-deep` for `review-findings` so frozen fixtures keep matching; that compatibility token
 is intentional and omitted from the table above.
 
+## Input fidelity (enrichment-only briefs)
+
+A brief-building delegator is a skill that composes a custom brief or prompt and hands it to a
+fresh-context worker through the Agent tool or `cog codex-runner run-exec`. The delegated input must
+be an enrichment-only superset of the original input: the user's original prompt/request verbatim and
+in full, plus organized context, interview Q&A, raw code excerpts, and constraints.
+
+The delegator must not summarize, truncate, or drop original information while building the brief.
+When unsure, include more. The coordinator's own verdict, proposed solution, or critique is the
+single deliberate omission when bias isolation is needed. See
+[ADR-0035](../decisions/0035-input-fidelity-enrichment-only-briefs.md).
+
+In-scope runtime skills carry this marker near the frontmatter:
+`<!-- cog-skill: input-fidelity -->`.
+
+Enforcement is the `input-fidelity` lint rule, keyed off a curated runtime-aware delegator set in
+`lib/commands/cmd_skill_lint.sh`. The marker asserts the contract structurally; the enrichment-only
+wording remains prose judgment in the skill body.
+
 ## Structural Lint Checks
 
 `cog skill-lint` hard-fails these structural issues:
@@ -189,6 +208,9 @@ is intentional and omitted from the table above.
   skill-name token. The scan covers frontmatter `description:` text and body prose while ignoring
   fenced code blocks, and is scoped to consumers in the curated consumer-to-producer map. See
   "Producer-blind consumers".
+- `input-fidelity`: a mapped brief-building delegator is missing the
+  `<!-- cog-skill: input-fidelity -->` marker. The rule is scoped to the curated runtime-aware
+  delegator set in `lib/commands/cmd_skill_lint.sh`. See "Input fidelity (enrichment-only briefs)".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring
@@ -288,6 +310,7 @@ The suppression names `allow-inline-shell` and `allow-orchestration-history` mus
 - Is repeated command logic shared through `cog::fn::*`?
 - Does orchestration prose follow `docs/reference/orchestration-contract.md`?
 - Does every plan-emitting skill carry the `cog-plan-mode-gate` stanza (see Plan-mode gate)?
+- Does every brief-building delegator carry the `input-fidelity` marker and enrichment-only prose?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?
 - Do command surface mirrors and help snapshots stay in sync for new commands?

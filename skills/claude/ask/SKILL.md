@@ -8,6 +8,7 @@ argument-hint: "[-f|--fast] [-w|--web-search] [-c|--codex] <question about the p
 ---
 
 <!-- trigger-tests: "ask", "explain", "what is", "how does", "why does" -->
+<!-- cog-skill: input-fidelity -->
 
 # Ask
 
@@ -123,6 +124,8 @@ echo "SANDBOX_MODE=$SANDBOX_MODE"
 ##### Step A.3 — Write Codex prompt (Bash)
 
 Substitute the literal `RUN_DIR` path and the literal `SANDBOX_MODE` value from step A.2.
+The prompt file is an enrichment-only superset of the original question: include the question text
+verbatim and in full, plus any relevant enriching context, and never replace it with a summary.
 
 ```bash
 cat > "$RUN_DIR/codex-prompt.txt" <<'EOF'

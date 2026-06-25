@@ -12,6 +12,7 @@ allowed-tools: Bash Read Write Edit Agent Grep Glob
 ---
 
 <!-- trigger-tests: "executor-oneshot", "execute one prompt through Claude single flow", "execute one plan through Claude single flow" -->
+<!-- cog-skill: input-fidelity -->
 
 # Executor Single
 
@@ -64,9 +65,11 @@ Run this stage only when input kind is `prompt`.
 Delegate plan generation to a foreground Claude subagent through the Agent tool
 (`subagent_type: general-purpose`). The delegation prompt instructs the subagent to read
 `$HOME/.claude/skills/plan-oneshot/SKILL.md` and follow it end-to-end, passing
-`--output <run-dir>/stage1-plan.md` and using the original request as the orientation. The subagent
-runs non-interactively: it treats every interview decision as a skill-chosen best default and records
-it. The generated plan must include assumptions, ambiguities, dependencies, and risks.
+`--output <run-dir>/stage1-plan.md` and using the original request as the orientation. The delegation
+prompt is an enrichment-only superset of the original input: include the original request verbatim
+and in full, plus relevant repo constraints, and never replace it with a summary. The subagent runs
+non-interactively: it treats every interview decision as a skill-chosen best default and records it.
+The generated plan must include assumptions, ambiguities, dependencies, and risks.
 
 The Stage 2 plan input is:
 
@@ -82,7 +85,8 @@ Implement natively in the current Claude session. Read and follow the Stage 2 pl
 Carry only relevant session context:
 
 - The plan input, verbatim.
-- The original request or supplied-plan source context.
+- The original request or supplied-plan source context, verbatim and in full, with only enriching
+  repo constraints added.
 - Current session constraints: do not run git commands unless explicitly authorized, follow
   `AGENTS.md` and `CLAUDE.md`, and stay inside the plan.
 - A required final implementation report covering files changed, commands run, deviations, and

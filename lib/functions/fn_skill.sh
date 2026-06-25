@@ -81,6 +81,11 @@ cog::fn::skill::is_plan_emitter() {
   grep -qE '<!--[[:space:]]*cog-skill:[[:space:]]*plan-emitter[[:space:]]*-->' "$file"
 }
 
+cog::fn::skill::has_input_fidelity_marker() {
+  local file="$1"
+  grep -qE '<!--[[:space:]]*cog-skill:[[:space:]]*input-fidelity[[:space:]]*-->' "$file"
+}
+
 cog::fn::skill::has_plan_mode_gate() {
   local file="$1"
   grep -qE '<!--[[:space:]]*cog-plan-mode-gate[[:space:]]*-->' "$file"

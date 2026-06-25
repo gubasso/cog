@@ -6,6 +6,8 @@ description: >
   cog codex-runner.
 ---
 
+<!-- cog-skill: input-fidelity -->
+
 # Executor Single
 
 Execute one prompt or one implementation plan through the shared 2-stage executor flow:
@@ -66,8 +68,10 @@ original task or supplied-plan source context.
 Run this stage only when input kind is `prompt`.
 
 Build a prompt file under the run directory whose literal first line is `$plan-oneshot`, followed
-by `--output <run-dir>/stage1-plan.md`, the original task, and the request to report any assumptions,
-ambiguities, dependencies, and risks. `$plan-oneshot` saves its own plan artifact to
+by `--output <run-dir>/stage1-plan.md`, the original task, and the request to report any
+assumptions, ambiguities, dependencies, and risks. The prompt is an enrichment-only superset of the
+original input: include the original task verbatim and in full, plus relevant repo constraints, and
+never replace it with a summary. `$plan-oneshot` saves its own plan artifact to
 `<run-dir>/stage1-plan.md` through `cog plan-doc`.
 
 Use native effort with the write-capable `danger` sandbox through `cog codex-runner`. Launch the
@@ -91,7 +95,8 @@ Codex implements the Stage 2 plan input through `cog codex-runner` with native e
 Stage 2 prompt under the run directory that carries only relevant session context:
 
 - The plan input, verbatim.
-- The original request or supplied-plan source context.
+- The original request or supplied-plan source context, verbatim and in full, with only enriching
+  repo constraints added.
 - Current session constraints: do not run git commands unless explicitly authorized, follow
   `AGENTS.md` and `CLAUDE.md`, and stay inside the plan.
 - A required final implementation report covering files changed, commands run, deviations, and

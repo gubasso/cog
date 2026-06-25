@@ -16,6 +16,7 @@ allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 
 <!-- trigger-tests: "plan-writer-multi", "dual-engine plan", "plan with codex", "two plans then synthesize" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: input-fidelity -->
 
 # Plan Writer Multi
 
@@ -115,22 +116,25 @@ Follow the stock `plan-writer` Phases 2–4 (`$HOME/.claude/skills/plan-writer/S
 
 ## Phase 5: Build the RAW context brief
 
-Write `$RUN_DIR/plan-brief.md` — the **single, identical input** both workers receive. It must be as
-**raw and high-fidelity as what you yourself hold** ("as if prompting Codex directly"), so both
-engines start neutral. Compose it, in order:
+Write `$RUN_DIR/plan-brief.md` — the **single, identical input** both workers receive. It is an
+enrichment-only superset of the original input, never a summary or lossy rewrite, so both engines
+start neutral. Compose it, in order:
 
-1. **Orientation / user prompts — verbatim** (the `$ARGUMENTS` orientation and the relevant user
-   turns, quoted).
-2. **Relevant conversation content — minimally paraphrased** (quote the user's words and key
-   exchanges; do not compress into your interpretation).
+1. **Orientation / user prompts — verbatim and in full** (the `$ARGUMENTS` orientation and the
+   relevant user turns, quoted).
+2. **Relevant conversation content — quoted** (keep the user's words and key exchanges; reorganize
+   for clarity without compressing away information).
 3. **Interview Q&A — verbatim** (each question + the user's raw answer).
 4. **Codebase research — raw excerpts** (absolute paths + quoted code/signatures), not summaries.
 5. **Hard constraints + the executor line**: include `Executor: <EXECUTOR> (EF <EF>)` so both
    workers size against the same factor.
 
+Never summarize, truncate, or drop original information while building this brief. When unsure,
+include more.
+
 **Do NOT put your own proposed approach/solution in the brief** — that would bias the workers and
 defeat the independent second opinion. The brief is _raw context + requirements + decisions_, never a
-pre-baked plan. Scope to relevance, but favor fidelity over brevity.
+pre-baked plan.
 
 If `--solo` (`SOLO=1`), skip Phase 6 and the Codex half of Phase 7; go straight to the Claude draft
 then Phase 8.

@@ -12,6 +12,7 @@ allowed-tools: Bash Read Write Agent Grep Glob
 
 <!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex plans and implements without plan review" -->
 <!-- cog-skill: plan-emitter -->
+<!-- cog-skill: input-fidelity -->
 <!-- cog-plan-mode-gate -->
 
 # Executor Single Codex
@@ -42,9 +43,11 @@ Stage 2.
 
 Run only for prompt input. Write `<RUN_DIR>/stage1-prompt.md` with `$plan-oneshot`, the write
 orientation from `cog codex-runner orientation write`, `--output <RUN_DIR>/stage1-plan.md`, and the
-original request. Then launch the durable Codex job and poll-and-classify with
-`cog codex-runner finalize --max-wall <secs>`; the exit code is the signal (0 ok, 1 failed, 75 still
-running), re-run finalize while it exits 75, and duration is never judged:
+original request. The prompt is an enrichment-only superset of the original input: include the
+original request verbatim and in full, plus relevant repo constraints, and never replace it with a
+summary. Then launch the durable Codex job and poll-and-classify with `cog codex-runner finalize
+--max-wall <secs>`; the exit code is the signal (0 ok, 1 failed, 75 still running), re-run finalize
+while it exits 75, and duration is never judged:
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/stage1-prompt.md --output <RUN_DIR>/stage1-codex-output.md --events <RUN_DIR>/stage1-events.jsonl --stderr <RUN_DIR>/stage1-stderr.log --thread last --state <RUN_DIR>/stage1.longrun.json
@@ -57,11 +60,12 @@ cog codex-runner finalize --state <RUN_DIR>/stage1.longrun.json --max-wall 300
 ## Stage 2: Implement With Codex
 
 Write `<RUN_DIR>/stage2-prompt.md` with the write orientation, the plan input verbatim, the original
-request or supplied-plan context, the active repository constraints, and a required final report
-covering files changed, deviations, commands run, and unresolved risks. Then launch the durable
-Codex job and poll-and-classify with `cog codex-runner finalize --max-wall <secs>`; the exit code is
-the signal (0 ok, 1 failed, 75 still running), re-run finalize while it exits 75, and duration is
-never judged:
+request or supplied-plan context verbatim and in full, the active repository constraints, and a
+required final report covering files changed, deviations, commands run, and unresolved risks. The
+stage prompt is an enrichment-only superset and must not replace original input with a summary. Then
+launch the durable Codex job and poll-and-classify with `cog codex-runner finalize --max-wall
+<secs>`; the exit code is the signal (0 ok, 1 failed, 75 still running), re-run finalize while it
+exits 75, and duration is never judged:
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/stage2-prompt.md --output <RUN_DIR>/stage2-execution.md --events <RUN_DIR>/stage2-events.jsonl --stderr <RUN_DIR>/stage2-stderr.log --state <RUN_DIR>/stage2.longrun.json
