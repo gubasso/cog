@@ -66,6 +66,7 @@ Commands:
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
+  plan-mode-gate Render the canonical plan-mode gate stanza.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
@@ -161,6 +162,7 @@ Commands:
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
+  plan-mode-gate Render the canonical plan-mode gate stanza.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.

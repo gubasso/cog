@@ -69,17 +69,6 @@ graceful-degrade fallback is needed for these references.
   full plan. Required. If empty, ask the user for a plan before proceeding. The skill depends only on
   the `.implementation-plans/` plan structure it reads; it is blind to which skill produced the plan.
 
-## Phase 0: Plan-mode gate
-
-<!-- cog-plan-mode-gate -->
-
-Before anything else, check whether Claude Code **plan mode** is active — you are in plan mode if this
-session carries a system-reminder saying plan mode is on / that you must not make edits (`Shift+Tab`
-or `/plan`). If it is active, **STOP**: do not run setup, build the brief, dispatch workers, or write.
-This coordinator writes review artifacts and cannot run read-only. Tell the user in one line:
-"review-plan-multi cannot run in plan mode; exit plan mode (Shift+Tab) and re-invoke." Do not call
-`ExitPlanMode` yourself and do not continue.
-
 ## Phase 1: Setup
 
 Parse flags and classify the plan input deterministically, then create the run directory. Substitute

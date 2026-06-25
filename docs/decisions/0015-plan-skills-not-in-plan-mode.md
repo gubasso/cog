@@ -80,4 +80,9 @@ The contract and the canonical gate wording live in
 
 ## Status
 
-Accepted
+Accepted; gate placement superseded by
+[ADR-0037](0037-plan-mode-gate-canonical-render.md).
+
+The detection contract and cheap-fail goal stand. ADR-0037 moves the gate off the plan/review workers
+onto the executor-*/runner-* orchestrator layer that drives them, and makes the wording a cog-rendered
+single source of truth (`cog plan-mode-gate render`) enforced by `cog skill-lint`.

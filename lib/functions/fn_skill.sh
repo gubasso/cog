@@ -91,6 +91,65 @@ cog::fn::skill::has_plan_mode_gate() {
   grep -qE '<!--[[:space:]]*cog-plan-mode-gate[[:space:]]*-->' "$file"
 }
 
+# True when a skill must carry the plan-mode gate. The gate lives on the
+# executor-*/runner-* orchestrator layer: those callers gate once at entry, then
+# delegate to gate-free plan/review workers. See ADR-0037.
+cog::fn::skill::requires_plan_mode_gate() {
+  local name="$1"
+  case "$(cog::fn::skill::classify_prefix "$name")" in
+    executor | runner) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Single source of truth for the plan-mode gate stanza. Detection of plan mode
+# stays probabilistic in skill prose (ADR-0015); this helper owns the canonical
+# text so cog plan-mode-gate render, cog skill-lint, and cog-skill-creator never
+# drift.
+cog::fn::skill::plan_mode_gate_paragraph() {
+  local name="$1"
+  cog::fn::skill::name_is_valid "$name" || return 2
+  printf '%s\n' '**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan'
+  printf '%s\n' 'mode is on / that you must not make edits), **STOP** before any other work — parsing args,'
+  printf '%s\n' 'researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode'
+  # shellcheck disable=SC2016  # backticks here are literal Markdown, not command substitution
+  printf '(`Shift+Tab`) and re-invoke `/%s`. Do not call `ExitPlanMode`, and do not silently continue.\n' "$name"
+}
+
+cog::fn::skill::plan_mode_gate_render() {
+  local name="$1"
+  printf '%s\n\n' '<!-- cog-plan-mode-gate -->'
+  cog::fn::skill::plan_mode_gate_paragraph "$name" || return 2
+}
+
+# Extract the inlined gate paragraph: the consecutive non-blank lines that follow
+# the gate marker (blank lines between marker and paragraph are skipped).
+cog::fn::skill::plan_mode_gate_extract() {
+  local file="$1"
+  awk '
+    !found && /<!--[[:space:]]*cog-plan-mode-gate[[:space:]]*-->/ {
+      found = 1
+      next
+    }
+    found && !started {
+      if ($0 ~ /^[[:space:]]*$/) next
+      started = 1
+      print
+      next
+    }
+    found && started {
+      if ($0 ~ /^[[:space:]]*$/) exit
+      print
+    }
+  ' "$file"
+}
+
+# Collapse every whitespace run (including newlines) to a single space and trim,
+# so wording is compared independent of line wrapping.
+cog::fn::skill::plan_mode_gate_normalize() {
+  printf '%s' "$1" | LC_ALL=C tr '[:space:]' ' ' | LC_ALL=C tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
+}
+
 cog::fn::skill::classify_prefix() {
   local name="$1"
   case "$name" in

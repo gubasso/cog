@@ -13,14 +13,8 @@ allowed-tools: Bash Read Write AskUserQuestion
 <!-- trigger-tests: "plan-oneshot-codex", "have Codex write one lean plan", "plan with Codex under the hood" -->
 <!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
-<!-- cog-plan-mode-gate -->
 
 # Plan One Lean Codex
-
-## Phase 0: Plan Mode Gate
-
-If Claude Code plan mode is active, STOP before parsing args, creating a run directory, or invoking
-Codex. Tell the user to exit plan mode with `Shift+Tab` and re-invoke `/plan-oneshot-codex`.
 
 Build one lean implementation plan by delegating the full planning turn to Codex's `$plan-oneshot`
 skill. Claude owns only argument handling, Codex preflight, runner invocation, postcondition checks,

@@ -14,6 +14,13 @@ allowed-tools: Bash Read Agent Skill
 
 # Runner All
 
+<!-- cog-plan-mode-gate -->
+
+**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
+mode is on / that you must not make edits), **STOP** before any other work — parsing args,
+researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
+(`Shift+Tab`) and re-invoke `/runner-all`. Do not call `ExitPlanMode`, and do not silently continue.
+
 Drive a `.implementation-plans/queue-plans.yaml` `plans:` queue. This skill runs inline in the
 orchestrating session; it never delegates the main loop. Each selected main item carries the command
 to run in its `prompt:` field, and this runner sends that text unchanged to a queue-blind

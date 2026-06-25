@@ -41,6 +41,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0034: Power Grade Source ID Enforcement](decisions/0034-power-grade-source-id-enforcement.md)
 - [ADR-0035: Input-fidelity enrichment-only briefs](decisions/0035-input-fidelity-enrichment-only-briefs.md)
 - [ADR-0036: Executor input-quality gate](decisions/0036-executor-input-quality-gate.md)
+- [ADR-0037: Plan-mode gate canonical render](decisions/0037-plan-mode-gate-canonical-render.md)
 
 ## Guides
 

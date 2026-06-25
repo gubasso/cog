@@ -22,14 +22,6 @@ Coordinate two independent lean planners from one identical raw brief, then synt
 lean plan through `cog plan-doc`. The workers are `/plan-oneshot` instances; the coordinator builds
 their complete input and owns the final plan.
 
-## Phase 0: Plan-mode gate
-
-<!-- cog-plan-mode-gate -->
-
-If Claude Code plan mode is active (the session says plan mode is on or that edits are blocked),
-STOP before setup, research, interview, delegation, or writing. Tell the user: "plan-multi cannot
-run in plan mode; exit plan mode (Shift+Tab) and re-invoke." Do not call `ExitPlanMode`.
-
 ## Inputs
 
 `$ARGUMENTS` accepts:

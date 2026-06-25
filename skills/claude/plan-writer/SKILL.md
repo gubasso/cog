@@ -34,13 +34,6 @@ for one `/executor-prex` run and executable by a fresh LLM session with ZERO ass
 conversation. Runs **inline** (no fork): it needs full access to the live conversation to extract
 decisions, findings, and explored code.
 
-<!-- cog-plan-mode-gate -->
-**Plan-mode gate (before anything else):** if Claude Code **plan mode** is active (a system-reminder
-says plan mode is on / that you must not edit; `Shift+Tab` or `/plan`), **STOP** before parsing args,
-researching, interviewing, or writing — this skill writes the plan under `.implementation-plans/` and
-cannot run read-only. Tell the user in one line to exit plan mode (`Shift+Tab`) and re-invoke; do not
-call `ExitPlanMode` yourself.
-
 ## Reference resolution
 
 The plan-rounds references ship with `cog` and resolve in-repo (or from the XDG deploy) via

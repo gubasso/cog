@@ -14,15 +14,15 @@ allowed-tools: Bash Read Write Agent Grep Glob
 <!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex prepares and implements one plan" -->
 <!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
-<!-- cog-plan-mode-gate -->
 
 # Executor Single Codex
 
-## Phase 0: Plan Mode Gate
+<!-- cog-plan-mode-gate -->
 
-If Claude Code plan mode is active, STOP before parsing args, creating artifacts, delegating, or
-invoking Codex. Tell the user to exit plan mode with `Shift+Tab` and re-invoke
-`/executor-oneshot-codex`.
+**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
+mode is on / that you must not make edits), **STOP** before any other work — parsing args,
+researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
+(`Shift+Tab`) and re-invoke `/executor-oneshot-codex`. Do not call `ExitPlanMode`, and do not silently continue.
 
 Execute one prompt or plan through the Codex-backed gated 2-stage executor flow: an input-evaluation
 gate guarantees a good plan, then Codex implements it. This launcher owns sequencing and postcondition

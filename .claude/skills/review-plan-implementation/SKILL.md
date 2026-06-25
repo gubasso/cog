@@ -22,17 +22,6 @@ work when the code has made parts obsolete, appends newly discovered gaps, and s
 if it cannot reach a verified committed state. Its Opus/low grade applies ADR-0013's no-Sonnet
 model/effort policy.
 
-## Phase 0: Plan-mode gate
-
-<!-- cog-plan-mode-gate -->
-
-This skill runs orchestrator-invoked by the runner (with `$RUN_DIR` set) and is never user-invoked
-interactively, so this gate is a belt-and-suspenders guard. If — outside that runner flow — Claude
-Code **plan mode** is active (a system-reminder says plan mode is on / that you must not make edits;
-`Shift+Tab` or `/plan`), **STOP**: this skill mutates plan queues/files and cannot run read-only.
-Tell the user to exit plan mode (`Shift+Tab`) and re-invoke; do not call `ExitPlanMode` yourself.
-When invoked normally by the runner (`$RUN_DIR` set, not in plan mode), proceed.
-
 ## Inputs
 
 `$ARGUMENTS` must provide `--repo-root <dir>` and `--main-queue <path>`. The main queue is the root

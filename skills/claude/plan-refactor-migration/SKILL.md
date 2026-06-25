@@ -16,16 +16,6 @@ This skill preserves the live skill contract: it writes only the plan directory,
 and treats the source project as read-only. It may reference parity-test scaffolds in the plan but
 does not edit target source files.
 
-## Phase 0: Plan-mode gate
-
-<!-- cog-plan-mode-gate -->
-
-Before anything else, check whether Claude Code **plan mode** is active — you are in plan mode if this
-session carries a system-reminder saying plan mode is on / that you must not make edits (`Shift+Tab`
-or `/plan`). If it is active, **STOP** before setup, scanning, or writing: this skill writes the plan
-directory and cannot run read-only. Tell the user in one line to exit plan mode (`Shift+Tab`) and
-re-invoke; do not call `ExitPlanMode` yourself and do not continue.
-
 ## Helper Delegation
 
 Run setup through:

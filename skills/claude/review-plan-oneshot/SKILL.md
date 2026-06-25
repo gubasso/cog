@@ -18,13 +18,6 @@ Review one implementation plan before concrete implementation. This skill keeps 
 sequencing, and annotation decisions in prose, while delegating scaffold, output-path, write, and
 validation mechanics to `cog plan-review`.
 
-<!-- cog-plan-mode-gate -->
-**Phase 0: Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan mode
-is on / that you must not edit; `Shift+Tab` or `/plan`), **STOP** before parsing args, researching,
-reviewing, or writing. Tell the user in one line to exit plan mode (`Shift+Tab`) and re-invoke; do
-not call `ExitPlanMode` yourself. When invoked in orchestrator mode (three absolute paths), this gate
-no-ops because the parent already gated.
-
 ## Inputs
 
 `$ARGUMENTS` is normally exactly three absolute paths:

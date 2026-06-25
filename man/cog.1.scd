@@ -135,6 +135,9 @@ The command list and short descriptions are sourced from command modules under
 *plan-init*
 	Bootstrap implementation plan root files.
 
+*plan-mode-gate*
+	Render the canonical plan-mode gate stanza.
+
 *plan-multi-setup*
 	Parse plan-multi arguments and create run state.
 

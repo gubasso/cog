@@ -20,12 +20,6 @@ Build one lean, self-contained implementation plan. This skill behaves like nati
 research reusable context, interview until the shape is clear, emit the plan to screen, and save one
 markdown artifact through `cog plan-doc`.
 
-<!-- cog-plan-mode-gate -->
-**Phase 0: Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan mode
-is on / that you must not edit; `Shift+Tab` or `/plan`), **STOP** before parsing args, researching,
-interviewing, or writing. Tell the user in one line to exit plan mode (`Shift+Tab`) and re-invoke; do
-not call `ExitPlanMode` yourself.
-
 ## Inputs
 
 - `$ARGUMENTS` - required orientation, focus, or goal for the plan.

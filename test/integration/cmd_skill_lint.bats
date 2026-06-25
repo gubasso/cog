@@ -42,6 +42,23 @@ EOF
   fi
 }
 
+append_plan_emitter() {
+  # Worker marker only -- plan/review workers must NOT carry the plan-mode gate.
+  local file="$1"
+  printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
+}
+
+append_orchestrator_gate() {
+  # Canonical plan-mode gate that executor-*/runner-* orchestrators must carry,
+  # stamped from the same SoT cog-skill-creator uses.
+  local file="$1" name="$2"
+  {
+    printf '\n'
+    cog plan-mode-gate render --skill "$name"
+    printf '\n'
+  } >>"$file"
+}
+
 @test "cog skill-lint accepts a valid Claude skill" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
 
@@ -595,20 +612,29 @@ EOF
   done < <(cog::fn::skill::allowed_frontmatter_keys_json claude | jq -r '.[]')
 }
 
-@test "cog skill-lint accepts a Claude plan-emitter that carries the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
+@test "cog skill-lint accepts an executor orchestrator that carries the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
+  append_orchestrator_gate "$file" executor-demo
 
   run cog skill-lint "$file"
 
   assert_success
 }
 
-@test "cog skill-lint rejects a Claude plan-emitter missing the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
+@test "cog skill-lint accepts a runner orchestrator that carries the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
+  append_orchestrator_gate "$file" runner-demo
+
+  run cog skill-lint "$file"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects an executor orchestrator missing the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
 
   run --separate-stderr cog skill-lint "$file"
 
@@ -616,10 +642,45 @@ EOF
   [[ $stderr == *"plan-mode-gate"* ]]
 }
 
-@test "cog skill-lint exempts a Codex plan-emitter from the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/codex/demo-skill" demo-skill codex
-  local file="${BATS_TEST_TMPDIR}/skills/codex/demo-skill/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
+@test "cog skill-lint rejects an executor orchestrator whose plan-mode gate wording drifted" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
+  printf '\n<!-- cog-plan-mode-gate -->\n\n**Phase 0 — Plan-mode gate.** Halt if plan mode is active and re-invoke later.\n' >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"plan-mode-gate"* ]]
+  [[ $stderr == *"drifted"* ]]
+}
+
+@test "cog skill-lint rejects an executor orchestrator whose gate marker has no stanza" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
+  printf '\n<!-- cog-plan-mode-gate -->\n' >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"plan-mode-gate"* ]]
+}
+
+@test "cog skill-lint rejects a plan worker that carries a plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
+  append_plan_emitter "$file"
+  append_orchestrator_gate "$file" plan-demo
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"plan-mode-gate"* ]]
+  [[ $stderr == *"belongs on the calling"* ]]
+}
+
+@test "cog skill-lint exempts a Codex executor from the plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/executor-demo" executor-demo codex
+  local file="${BATS_TEST_TMPDIR}/skills/codex/executor-demo/SKILL.md"
 
   run cog skill-lint "$file"
 
@@ -629,7 +690,7 @@ EOF
 @test "cog skill-lint accepts a Claude plan-emitter named plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
+  append_plan_emitter "$file"
 
   run cog skill-lint "$file"
 
@@ -639,7 +700,7 @@ EOF
 @test "cog skill-lint rejects a Claude plan-emitter not named plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\nStop if plan mode is active.\n' >>"$file"
+  append_plan_emitter "$file"
 
   run --separate-stderr cog skill-lint "$file"
 
@@ -670,7 +731,8 @@ EOF
 @test "cog skill-lint rejects plan-reviewer intent not named review-plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer" plan-reviewer claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/plan-reviewer/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\n# Plan Reviewer\n' >>"$file"
+  append_plan_emitter "$file"
+  printf '# Plan Reviewer\n' >>"$file"
 
   run --separate-stderr cog skill-lint "$file"
 
@@ -681,7 +743,8 @@ EOF
 @test "cog skill-lint accepts plan-reviewer intent named review-plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/review-plan-demo" review-plan-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/review-plan-demo/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\n# Plan Reviewer\n' >>"$file"
+  append_plan_emitter "$file"
+  printf '# Plan Reviewer\n' >>"$file"
 
   run cog skill-lint "$file"
 
@@ -702,7 +765,11 @@ EOF
 @test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n<!-- cog-plan-mode-gate -->\n# Plan Review Execute\n' >>"$file"
+  {
+    printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n'
+    cog plan-mode-gate render --skill executor-prex
+    printf '\n# Plan Review Execute\n'
+  } >>"$file"
 
   run cog skill-lint "$file"
 
@@ -712,7 +779,8 @@ EOF
 @test "cog skill-lint accepts plan-writer style skill that mentions plan review words" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture" plan-writer-fixture claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture/SKILL.md"
-  printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-plan-mode-gate -->\nThis plan-writer may review the plan before writing output.\n' >>"$file"
+  append_plan_emitter "$file"
+  printf 'This plan-writer may review the plan before writing output.\n' >>"$file"
 
   run cog skill-lint "$file"
 
@@ -803,6 +871,10 @@ description: Consumer skill that reads a structural input contract.
 
 It drives the structural input to completion.
 EOF
+  # executor-*/runner-* consumers are orchestrators and must carry the gate.
+  case "$name" in
+    executor-* | runner-*) append_orchestrator_gate "$dir/SKILL.md" "$name" ;;
+  esac
 }
 
 @test "cog skill-lint flags a mapped consumer naming a producer in body prose" {

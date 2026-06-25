@@ -47,10 +47,16 @@ suffixes are reserved for delegation launchers that run the other platform under
 `docs/decisions/0021-twin-skill-naming-and-delegation-hints.md` and `docs/reference/skill-contract.md`
 ("Twin and delegation skill naming").
 
-Skills that output a plan must not run in Claude plan mode (it is read-only and blocks the plan
-writes). They carry a Phase 0 plan-mode gate marked with `<!-- cog-skill: plan-emitter -->` and
-`<!-- cog-plan-mode-gate -->`, enforced by `cog skill-lint`'s `plan-mode-gate` rule. See
-`docs/reference/skill-contract.md` ("Plan-mode gate") and `docs/decisions/0015-plan-skills-not-in-plan-mode.md`.
+The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers: the
+caller a user launches gates once at entry (plan mode is read-only and blocks writes), then delegates to
+gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a Phase 0 plan-mode gate marked
+`<!-- cog-plan-mode-gate -->`; every other Claude skill must not. The gate wording is a single source of
+truth: render it with `cog plan-mode-gate render --skill <name>` and stamp it verbatim, never hand-write
+it. `cog skill-lint`'s `plan-mode-gate` rule fails an executor/runner that lacks the gate or whose
+stanza drifts from the render, and fails any other skill that carries it. See
+`docs/reference/skill-contract.md` ("Plan-mode gate"),
+`docs/decisions/0015-plan-skills-not-in-plan-mode.md`, and
+`docs/decisions/0037-plan-mode-gate-canonical-render.md`.
 
 Skill prose is lean, objective, and positively framed: describe what the skill IS and MUST DO. Drop
 preemptive negative guardrails that never had an empirical reason; keep negative or exclusion

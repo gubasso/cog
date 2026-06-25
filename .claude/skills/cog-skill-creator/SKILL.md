@@ -33,7 +33,8 @@ governing decisions while authoring:
 
 - prefix taxonomy (`docs/decisions/0016-skill-prefix-taxonomy.md`);
 - model/effort policy (`docs/reference/model-effort-policy.md`, `docs/decisions/0013-model-effort-policy.md`);
-- plan-mode gate (`docs/decisions/0015-plan-skills-not-in-plan-mode.md`).
+- plan-mode gate (`docs/decisions/0015-plan-skills-not-in-plan-mode.md`,
+  `docs/decisions/0037-plan-mode-gate-canonical-render.md`).
 
 When the skill will spawn Codex, delegate, queue work, or orchestrate nested execution, also read
 `docs/reference/orchestration-contract.md`.
@@ -135,8 +136,8 @@ Fix every reported issue before presenting the draft.
    - include env-preflight requirements when foreground execution matters;
    - never reintroduce the removed foreground hook.
 
-8. Decide whether the new skill is a plan emitter (see Plan-mode gate). If its primary output is a
-   plan document, plan the Phase 0 gate and the two markers now.
+8. If the new skill is a Claude `executor-*` or `runner-*` orchestrator, plan its Phase 0 plan-mode
+   gate now (see Plan-mode gate); any other skill must not carry the gate.
 
 9. Run the DRY/SoT check. Do not duplicate command logic already present in `lib/commands/` or shared
    mechanics already present in `lib/functions/`.
@@ -175,23 +176,32 @@ Fix every reported issue before presenting the draft.
 
 ## Plan-mode gate
 
-If the new skill's primary output is a plan document (writes under `.implementation-plans/`,
-rewritten plans, or queue mutations), it must not run in Claude plan mode, which is read-only and
-blocks those writes (`docs/decisions/0015-plan-skills-not-in-plan-mode.md`). Such a skill carries two
-HTML-comment markers — a plan-emitter marker (`cog-skill: plan-emitter`) near the frontmatter and a
-plan-mode-gate marker (`cog-plan-mode-gate`) on a Phase 0 stanza that runs before any other work and
-tells the user to exit plan mode and re-invoke. The gate must not call `ExitPlanMode` and must not
-silently continue. Copy the exact marker syntax and canonical gate wording from
-`docs/reference/skill-contract.md` ("Plan-mode gate").
+The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers
+(`docs/decisions/0037-plan-mode-gate-canonical-render.md`). If the new skill is a Claude `executor-*`
+or `runner-*` skill, it must carry a canonical Phase 0 gate stanza that runs before any other work,
+marked `cog-plan-mode-gate`: the caller gates once at entry (plan mode is read-only and blocks writes),
+then delegates to gate-free workers. The gate must not call `ExitPlanMode` and must not silently
+continue. A plan/review worker (or any non-orchestrator skill) must **not** carry the gate.
 
-`cog skill-lint` fails a Claude plan-emitter that lacks the gate. Codex skills are exempt.
+The gate wording is a single source of truth — stamp it, do not hand-write it:
+
+```bash
+cog plan-mode-gate render --skill "$NAME"
+```
+
+Paste the rendered block verbatim as the skill's Phase 0.
+
+`cog skill-lint` fails a Claude executor-*/runner- skill that lacks the gate or whose inlined stanza
+drifts from the rendered canonical text, and fails any other Claude skill that carries the gate. Codex
+skills are exempt.
 
 ## Rules
 
 - Never overwrite an existing skill. Name collision means abort.
 - Never invent frontmatter fields absent from `docs/reference/skill-contract.md`.
 - Never give a governed-intent skill a name whose prefix does not match its behavior.
-- Never ship a plan-emitting skill without the plan-mode gate markers and Phase 0 stanza.
+- Never ship a Claude executor-*/runner- skill without its Phase 0 plan-mode gate, and never put the
+  gate on any other skill.
 - Never select Sonnet; use `model: opus` + `effort: low`, or no override.
 - Never skip the approval gate.
 - Never silently fall back when `$RUN_DIR` is unset for personal scope.

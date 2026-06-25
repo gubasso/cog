@@ -31,10 +31,13 @@ platform-token suffixes are reserved for delegation launchers that run the other
 hood. See docs/decisions/0021-twin-skill-naming-and-delegation-hints.md and
 docs/reference/skill-contract.md ("Twin and delegation skill naming").
 
-Non-negotiable: skills that output a plan must not run in Claude plan mode; they carry a Phase 0
-plan-mode gate (markers cog-skill: plan-emitter + cog-plan-mode-gate), enforced by cog skill-lint.
-See docs/decisions/0015-plan-skills-not-in-plan-mode.md and docs/reference/skill-contract.md
-("Plan-mode gate").
+Non-negotiable: the plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan or
+review workers. Every Claude executor-*/runner- skill carries a Phase 0 plan-mode gate
+(cog-plan-mode-gate marker); every other Claude skill must not. The gate wording is a single source of
+truth rendered by cog plan-mode-gate render and stamped, never hand-written; cog skill-lint fails an
+executor/runner missing the gate or whose stanza drifts, and fails any other skill that carries it. See
+docs/decisions/0015-plan-skills-not-in-plan-mode.md, docs/decisions/0037-plan-mode-gate-canonical-render.md,
+and docs/reference/skill-contract.md ("Plan-mode gate").
 
 Non-negotiable: skill prose is lean, objective, and positively framed - describe what the skill IS
 and MUST DO. Avoid preemptive negative guardrails that never had an empirical reason; negative or

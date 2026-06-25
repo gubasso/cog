@@ -17,6 +17,13 @@ allowed-tools: Bash Read Write Edit Agent Grep Glob
 
 # Executor Vetted
 
+<!-- cog-plan-mode-gate -->
+
+**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
+mode is on / that you must not make edits), **STOP** before any other work — parsing args,
+researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
+(`Shift+Tab`) and re-invoke `/executor-vetted`. Do not call `ExitPlanMode`, and do not silently continue.
+
 Execute one prompt or one implementation plan through the gated 2-stage executor flow: an
 input-evaluation gate guarantees a vetted plan via dual-engine planning, then Claude implements it
 natively in the current session. This skill owns sequencing and judgment. Run directory setup, input

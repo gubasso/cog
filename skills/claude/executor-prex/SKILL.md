@@ -15,14 +15,15 @@ allowed-tools: Bash Read Write Edit Agent Skill
 <!-- trigger-tests: "executor-prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
 <!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
-<!-- cog-plan-mode-gate -->
 
 # Plan Review Execute
 
-## Phase 0: Plan Mode Gate
+<!-- cog-plan-mode-gate -->
 
-If Claude Code plan mode is active, STOP before parsing args, researching, delegating, or writing.
-Tell the user to exit plan mode with `Shift+Tab` and re-invoke `/executor-prex`.
+**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
+mode is on / that you must not make edits), **STOP** before any other work — parsing args,
+researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
+(`Shift+Tab`) and re-invoke `/executor-prex`. Do not call `ExitPlanMode`, and do not silently continue.
 
 Run a staged dual-agent workflow inside Claude Code:
 
