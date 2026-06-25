@@ -27,6 +27,11 @@ one pass, so the orchestrator can retry the commit with all issues resolved at o
   this commit. Fixes stay within this set.
 - `--report <log>`: the saved failure report (full hook and git output).
 
+The `--repo-root` and `--session-files` values you were invoked with are the literal
+paths the commands below use as `$REPO_ROOT` and `$SESSION_FILES_FILE`; substitute those
+literals directly. Shell state does not persist between Bash tool calls, so never rely
+on `$REPO_ROOT` or `$SESSION_FILES_FILE` being live shell variables.
+
 ## Non-negotiable rules
 
 - Fix every issue the report names in a single pass; address all failing hooks

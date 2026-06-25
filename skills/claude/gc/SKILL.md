@@ -125,11 +125,37 @@ Parent runners read these via
 `cog runner-commit-parse`, which accepts one line per repo and fails
 closed if any repo's line is `*_FAILED`.
 
+## Working directory
+
+All scratch artifacts live under one deterministic run directory. Establish it before
+anything else, in the first Bash call:
+
+```bash
+RUN_DIR="$(cog rundir gc | sed -n 's/^RUN_DIR=//p')"
+echo "RUN_DIR=$RUN_DIR"
+```
+
+The skill's scratch files are fixed paths under that directory:
+
+- `SESSION_FILES_FILE` = `$RUN_DIR/session-files.txt` — the chosen session paths.
+- For a single repo: `PATHS_FILE` = `$RUN_DIR/paths.txt`, `MESSAGE_FILE` =
+  `$RUN_DIR/message.txt`, `LOG_FILE` = `$RUN_DIR/round.log`, `PREV_LOG_FILE` =
+  `$RUN_DIR/prev-round.log`.
+- For multiple repos, give each repo its own `$RUN_DIR/<repo-slug>/` subdirectory (use
+  the repo basename) and place that repo's `paths.txt`, `message.txt`, `round.log`, and
+  `prev-round.log` inside it, so per-repo files never collide.
+
+Shell state does not persist between Bash tool calls. Substitute the literal `RUN_DIR`
+path echoed above — and the literal file paths under it — into every later command;
+never rely on `$SESSION_FILES_FILE`, `$PATHS_FILE`, `$MESSAGE_FILE`, `$LOG_FILE`, or
+`$PREV_LOG_FILE` being live shell variables in a later call. The `$VAR` names in the
+commands below are these literal files.
+
 ## Workflow
 
-1. Snapshot context using read-only commands: porcelain status, staged diff,
-   unstaged diff, and recent log. This informs the session file list and the commit
-   message draft.
+1. Establish the run directory (see "Working directory"), then snapshot context using
+   read-only commands: porcelain status, staged diff, unstaged diff, and recent log.
+   This informs the session file list and the commit message draft.
 
 2. Decide the session file list in prose. This remains judgment:
    - With `--all`/`-a`, include every dirty path the user asked to commit across the
@@ -158,7 +184,8 @@ closed if any repo's line is `*_FAILED`.
    - Otherwise proceed.
 
 5. For each repo object in `.repos`, in order:
-   1. Write its `.paths` (repo-relative) to a per-repo `$PATHS_FILE`.
+   1. Write its `.paths` (repo-relative) to that repo's `$PATHS_FILE` under `RUN_DIR`
+      (see "Working directory").
    2. `cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json`.
       If `ok` is not `true`, stop and ask before committing.
    3. Draft the commit message from **that** repo's staged diff in the format under
