@@ -46,6 +46,36 @@ copy_tree() {
   return 0
 }
 
+# Make dest_dir an exact mirror of src_dir: anything in dest not shipped by the
+# current source tree is deleted. Prefers rsync --delete; falls back to a
+# wipe-then-recopy when rsync is unavailable. Both yield an identical mirror.
+mirror_tree() {
+  local src_dir="$1"
+  local dest_dir="$2"
+
+  install -d "$dest_dir"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete "$src_dir/" "$dest_dir/"
+  else
+    rm -rf -- "${dest_dir:?}"
+    install -d "$dest_dir"
+    cp -a "$src_dir/." "$dest_dir/"
+  fi
+  record_tree_files "$src_dir" "$dest_dir"
+  return 0
+}
+
+# Dispatch the skill/agent roots through a destructive mirror when mirror mode is
+# on (COG_INSTALL_MIRROR=1), otherwise the default non-destructive overlay copy.
+sync_tree() {
+  if [[ $mirror == 1 ]]; then
+    mirror_tree "$@"
+  else
+    copy_tree "$@"
+  fi
+  return 0
+}
+
 install_man_page() {
   local src_scd="$repo_root/man/cog.1.scd"
   local src_man="$repo_root/man/cog.1"
@@ -78,6 +108,7 @@ prefix="${PREFIX:-$home/.local}"
 xdg_data_home="${XDG_DATA_HOME:-$home/.local/share}"
 xdg_state_home="${XDG_STATE_HOME:-$home/.local/state}"
 repo_root="$(resolve_repo_root)"
+mirror="${COG_INSTALL_MIRROR:-0}"
 app_root="$prefix/lib/cog"
 bin_link="$prefix/bin/cog"
 data_dir="$xdg_data_home/cog"
@@ -102,9 +133,10 @@ trap 'rm -f "$manifest_tmp" "$manifest_tmp.sorted" "${man_tmp:-}"' EXIT
 # Clear the cog-owned app payload before re-copying so a repeat install/upgrade
 # does not leave stale files (e.g. a command module deleted upstream) that would
 # stay dispatchable and escape the freshly built manifest. $app_root ($prefix/lib/cog)
-# is exclusively cog-owned, so removing these known subtrees is safe; the
-# user-home skill/agent roots are NOT cleared (they hold user-authored content)
-# and remain on the overlay + manifest-only path.
+# is exclusively cog-owned, so removing these known subtrees is safe. By default
+# the user-home skill/agent roots are NOT cleared (they hold user-authored
+# content) and remain on the overlay + manifest-only path; in mirror mode
+# (COG_INSTALL_MIRROR=1) sync_tree mirrors them destructively instead.
 install -d "$app_root"
 rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/VERSION"
 rm -rf -- "${data_dir:?}/skill-refs"
@@ -118,9 +150,9 @@ install -d "$(dirname "$bin_link")"
 ln -sfn "$app_root/bin/cog" "$bin_link"
 record_path "$bin_link"
 
-copy_tree "$repo_root/skills/claude" "$home/.claude/skills"
-copy_tree "$repo_root/agents/claude" "$home/.claude/agents"
-copy_tree "$repo_root/skills/codex" "$home/.agents/skills"
+sync_tree "$repo_root/skills/claude" "$home/.claude/skills"
+sync_tree "$repo_root/agents/claude" "$home/.claude/agents"
+sync_tree "$repo_root/skills/codex" "$home/.agents/skills"
 
 install -d "$comp_dir"
 install -m 0644 "$repo_root/completions/cog.bash" "$comp_dir/cog"

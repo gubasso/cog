@@ -31,6 +31,20 @@ install:
 	@printf '\033[1;32m==>\033[0m Done. Make sure \033[1m%s\033[0m is on your PATH.\n' "${PREFIX:-$HOME/.local}/bin"
 	@printf '    Try: \033[1mcog --help\033[0m  (you may need to open a new shell first)\n'
 
+install-sync:
+	@printf '\033[1;34m==>\033[0m Installing cog \033[1m(destructive mirror)\033[0m\n'
+	@printf '    prefix : %s\n' "${PREFIX:-$HOME/.local}"
+	@printf '    data   : %s\n' "${XDG_DATA_HOME:-$HOME/.local/share}"
+	@printf '    state  : %s\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
+	@printf '\033[1;31m    WARNING:\033[0m mirrors the cog source tree into the skill/agent roots\n'
+	@printf '             (~/.claude/skills, ~/.claude/agents, ~/.agents/skills).\n'
+	@printf '             Any file there NOT shipped by cog is DELETED.\n'
+	@printf '\n'
+	@COG_INSTALL_MIRROR=1 ./install.sh
+	@printf '\n'
+	@printf '\033[1;32m==>\033[0m Done. Make sure \033[1m%s\033[0m is on your PATH.\n' "${PREFIX:-$HOME/.local}/bin"
+	@printf '    Try: \033[1mcog --help\033[0m  (you may need to open a new shell first)\n'
+
 uninstall:
 	@printf '\033[1;34m==>\033[0m Uninstalling cog\n'
 	@printf '    state  : %s\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
