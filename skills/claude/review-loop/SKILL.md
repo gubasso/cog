@@ -120,16 +120,26 @@ Do not ask whether to continue between successful rounds.
 
 ## Final Output
 
-Write `$RUN_DIR/summary.md` and report:
+Write the narrative body to `$RUN_DIR/summary-body.md` with these required section headings, each
+followed by its content (`cog` fails closed when a required narrative section is absent):
 
-- total rounds;
 - what was implemented across rounds;
-- per-round fixed/acknowledged/dismissed/discussion/question counts;
-- files changed across the loop;
-- remaining findings;
-- accumulated followups and important decisions;
-- termination reason: `findings-empty`, `decision-approve`, `stall`, `user-limit`, `needs-discussion`,
-  `user-abort`, or `error`.
+- a `Files changed` section: files changed across the loop;
+- a `Remaining findings` section: findings still open at termination;
+- a `Followups` section: accumulated followups and important decisions.
+
+Then assemble and validate the terminal summary as the mandatory final step. `cog` derives the round
+count and `Per-round counts` section from `round-N-findings.json`, prepends the title and termination
+reason, writes `$RUN_DIR/summary.md`, and fails closed if the result is empty, missing its title or
+termination reason, or missing a required narrative section:
+
+```bash
+cog review-loop-summary build --run-dir "$RUN_DIR" \
+  --termination-reason <reason> --body "$RUN_DIR/summary-body.md"
+```
+
+`<reason>` is one of `findings-empty`, `decision-approve`, `stall`, `user-limit`, `needs-discussion`,
+`user-abort`, or `error`. Report total rounds and the termination reason to the user.
 
 ## Guardrails
 

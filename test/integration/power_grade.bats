@@ -10,12 +10,14 @@ setup() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-    .schema == "cog.power-grade.validate.v1" and
-    .ok == true and
-    .profile_count == 32 and
-    (.warnings | map(.kind) | index("needs_verification") != null) and
-    .errors == []
-  ' >/dev/null
+	  .schema == "cog.power-grade.validate.v1" and
+	  .ok == true and
+	  .profile_count == 27 and
+	  ([.warnings[] | select(.kind == "needs_verification")] | length) == 1 and
+	  ([.warnings[] | select(.kind == "sourced_without_allowlisted_source")] | length) == 0 and
+	  ([.warnings[] | select(.kind == "tier3_source_cited")] | length) == 0 and
+	  .errors == []
+	' >/dev/null
 }
 
 @test "power-grade cell returns a model effort profile" {
@@ -23,11 +25,40 @@ setup() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
+	  .schema == "cog.power-grade.cell.v1" and
+	  .ok == true and
+	  .profile.id == "codex-gpt-5.5-medium" and
+	  .profile.grade == 8 and
+	  (.profile.source_refs | length > 0) and
+	  (.profile.benchmark_source_ids | length > 0)
+	' >/dev/null
+}
+
+@test "power-grade cleared claude opus 4.7 cell has allowlisted benchmark sources" {
+  run cog power-grade cell --model claude-opus-4-7 --effort high --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.cell.v1" and
     .ok == true and
-    .profile.id == "codex-gpt-5.5-medium" and
-    .profile.grade == 8 and
-    (.profile.source_refs | length > 0)
+    .profile.id == "claude-opus-4.7-high" and
+    .profile.evidence_status == "sourced" and
+    (.profile.benchmark_source_ids | index("aws-bedrock-anthropic-opus-4-7") != null) and
+    (.profile.benchmark_source_ids | index("vals-ai") != null)
+  ' >/dev/null
+}
+
+@test "power-grade cleared gpt-5.4-mini cell has allowlisted benchmark sources" {
+  run cog power-grade cell --model gpt-5.4-mini --effort medium --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.cell.v1" and
+    .ok == true and
+    .profile.id == "codex-gpt-5.4-mini-medium" and
+    .profile.evidence_status == "sourced" and
+    (.profile.benchmark_source_ids | index("digitalapplied-gpt-5-4-mini-swebench-pro") != null) and
+    (.profile.benchmark_source_ids | index("openai-gpt-5-4-mini-announcement") != null)
   ' >/dev/null
 }
 
@@ -39,8 +70,7 @@ setup() {
     .schema == "cog.power-grade.classify.v1" and
     .ok == true and
     all(.profiles[]; .executable == true and .policy_selectable == true and .grade >= 9) and
-    ([.profiles[].id] | index("codex-gpt-5.3-codex-spark-needs-verification") == null) and
-    ([.profiles[].id] | index("claude-fable-5-high") == null)
+    ([.profiles[].id] | index("codex-gpt-5.3-codex-spark-needs-verification") == null)
   ' >/dev/null
 }
 

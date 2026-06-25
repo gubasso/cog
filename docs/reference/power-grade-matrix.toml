@@ -1,6 +1,6 @@
 # Power Grade matrix v1.
-# Data collected: 2026-06-24
-# Revalidate by: 2026-09-24, or sooner on model, pricing, benchmark, effort, or policy changes.
+# Data collected: 2026-06-25
+# Revalidate by: 2026-09-25, or sooner on model, pricing, benchmark, effort, or policy changes.
 #
 # Committed schema:
 # - schema_version: integer schema marker.
@@ -11,11 +11,12 @@
 # - [compound]: single source of truth for compound-pass math. Shell helpers read these values.
 # - [[profiles]]: one profile per executable model/effort cell, plus informational verification rows.
 #   Required keys: id, slug, label, provider, model, effort, grade, executable,
-#   policy_selectable, evidence_status, confidence, source_refs, description, use_where, caveats.
+#   policy_selectable, evidence_status, confidence, source_refs, benchmark_source_ids, description,
+#   use_where, caveats. `source_refs` are human doc anchors; `benchmark_source_ids` are allowlist IDs.
 # - [[named_profiles]]: policy pairings that keep model-effort policy and this matrix aligned.
 schema_version = 1
-data_collected = "2026-06-24"
-revalidate_by = "2026-09-24"
+data_collected = "2026-06-25"
+revalidate_by = "2026-09-25"
 
 [scale]
 min = 1
@@ -40,6 +41,7 @@ required_profile_keys = [
   "evidence_status",
   "confidence",
   "source_refs",
+  "benchmark_source_ids",
   "description",
   "use_where",
   "caveats",
@@ -71,6 +73,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:low", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Strong Opus model at reduced effort for bounded procedural work."
 use_where = ["structured implementation with known approach", "procedural execution with bounded judgment"]
 caveats = ["No published Claude per-effort numeric token multiplier is asserted."]
@@ -88,6 +91,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:medium"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Middle Opus 4.8 reasoning budget for moderately complex execution."
 use_where = ["moderate code edits", "plan execution with some judgment"]
 caveats = ["No published numeric low-to-medium quality delta is asserted."]
@@ -105,9 +109,10 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:high", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Default Claude exploration/planning pairing."
 use_where = ["open-ended planning", "code review", "design judgment"]
-caveats = ["SWE-bench figure is secondary."]
+caveats = ["SWE-bench figure is secondary; source IDs point to Anthropic model announcements and SWE-bench Verified without adding a new number."]
 
 [[profiles]]
 id = "claude-opus-4.8-xhigh"
@@ -122,6 +127,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:xhigh", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Escalated Opus 4.8 reasoning for hard coding or agentic work."
 use_where = ["hard single-pass implementation", "high-ambiguity agentic coding"]
 caveats = ["Use as escalation, not routine default."]
@@ -139,6 +145,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:max"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Highest Opus 4.8 effort tier for exceptional difficulty."
 use_where = ["hardest tasks", "expensive-to-reverse work after explicit escalation"]
 caveats = ["Reserve because cost and latency increase directionally with more thinking/output."]
@@ -153,12 +160,13 @@ effort = "low"
 grade = 4
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
-confidence = "low"
+evidence_status = "sourced"
+confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:low"]
+benchmark_source_ids = ["aws-bedrock-anthropic-opus-4-7", "vals-ai"]
 description = "Previous-generation Opus at reduced effort."
 use_where = ["bounded procedural work when this model is explicitly selected"]
-caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, and Terminal-Bench 2.0 69.4% are sourced from an AWS Bedrock vendor mirror because Anthropic's own page is chart-only; Vals AI reads 82.0% SWE-bench Verified under its independent harness; knowledge cutoff Jan 2026 (Anthropic models overview)."]
 
 [[profiles]]
 id = "claude-opus-4.7-medium"
@@ -170,12 +178,13 @@ effort = "medium"
 grade = 5
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
-confidence = "low"
+evidence_status = "sourced"
+confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:medium"]
+benchmark_source_ids = ["aws-bedrock-anthropic-opus-4-7", "vals-ai"]
 description = "Previous-generation Opus at middle effort."
 use_where = ["moderate work when this model is explicitly selected"]
-caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, and Terminal-Bench 2.0 69.4% are sourced from an AWS Bedrock vendor mirror because Anthropic's own page is chart-only; Vals AI reads 82.0% SWE-bench Verified under its independent harness; knowledge cutoff Jan 2026 (Anthropic models overview)."]
 
 [[profiles]]
 id = "claude-opus-4.7-high"
@@ -187,12 +196,13 @@ effort = "high"
 grade = 7
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
-confidence = "low"
+evidence_status = "sourced"
+confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:high"]
+benchmark_source_ids = ["aws-bedrock-anthropic-opus-4-7", "vals-ai"]
 description = "Previous-generation Opus at regular high effort."
 use_where = ["open-ended work only when this model is explicitly selected"]
-caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, and Terminal-Bench 2.0 69.4% are sourced from an AWS Bedrock vendor mirror because Anthropic's own page is chart-only; Vals AI reads 82.0% SWE-bench Verified under its independent harness; knowledge cutoff Jan 2026 (Anthropic models overview)."]
 
 [[profiles]]
 id = "claude-opus-4.7-xhigh"
@@ -204,12 +214,13 @@ effort = "xhigh"
 grade = 8
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
-confidence = "low"
+evidence_status = "sourced"
+confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:xhigh"]
+benchmark_source_ids = ["aws-bedrock-anthropic-opus-4-7", "vals-ai"]
 description = "Previous-generation Opus escalation effort."
 use_where = ["hard work only when this model is explicitly selected"]
-caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, and Terminal-Bench 2.0 69.4% are sourced from an AWS Bedrock vendor mirror because Anthropic's own page is chart-only; Vals AI reads 82.0% SWE-bench Verified under its independent harness; knowledge cutoff Jan 2026 (Anthropic models overview)."]
 
 [[profiles]]
 id = "claude-opus-4.7-max"
@@ -221,12 +232,13 @@ effort = "max"
 grade = 9
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
-confidence = "low"
+evidence_status = "sourced"
+confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.7", "docs/reference/models-reference-claude.md#claude:opus-4.7:max"]
+benchmark_source_ids = ["aws-bedrock-anthropic-opus-4-7", "vals-ai"]
 description = "Previous-generation Opus maximum effort."
 use_where = ["exceptional work only when this model is explicitly selected"]
-caveats = ["Benchmark and cutoff are NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, and Terminal-Bench 2.0 69.4% are sourced from an AWS Bedrock vendor mirror because Anthropic's own page is chart-only; Vals AI reads 82.0% SWE-bench Verified under its independent harness; knowledge cutoff Jan 2026 (Anthropic models overview)."]
 
 [[profiles]]
 id = "claude-haiku-4.5-none"
@@ -235,100 +247,16 @@ label = "Haiku 4.5"
 provider = "claude"
 model = "claude-haiku-4-5"
 effort = "none"
-grade = 2
+grade = 3
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-claude.md#claude:haiku-4.5", "docs/reference/models-reference-claude.md#claude:haiku-4.5:none", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
 description = "Fast routine Claude profile; effort must be omitted at runtime."
 use_where = ["thin orchestration", "simple deterministic routines"]
-caveats = ["No SWE-bench figure asserted; selectable effort is unsupported."]
-
-[[profiles]]
-id = "claude-fable-5-low"
-slug = "fable5-low"
-label = "Fable 5 low"
-provider = "claude"
-model = "claude-fable-5"
-effort = "low"
-grade = 6
-executable = true
-policy_selectable = false
-evidence_status = "needs_verification"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:low"]
-description = "High-cost reference model at low effort."
-use_where = ["reference comparison only"]
-caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
-
-[[profiles]]
-id = "claude-fable-5-medium"
-slug = "fable5-medium"
-label = "Fable 5 medium"
-provider = "claude"
-model = "claude-fable-5"
-effort = "medium"
-grade = 7
-executable = true
-policy_selectable = false
-evidence_status = "needs_verification"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:medium"]
-description = "High-cost reference model at middle effort."
-use_where = ["reference comparison only"]
-caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
-
-[[profiles]]
-id = "claude-fable-5-high"
-slug = "fable5-high"
-label = "Fable 5 high"
-provider = "claude"
-model = "claude-fable-5"
-effort = "high"
-grade = 9
-executable = true
-policy_selectable = false
-evidence_status = "needs_verification"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:high"]
-description = "Default Fable effort with always-on thinking."
-use_where = ["reference comparison only"]
-caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
-
-[[profiles]]
-id = "claude-fable-5-xhigh"
-slug = "fable5-xhigh"
-label = "Fable 5 xhigh"
-provider = "claude"
-model = "claude-fable-5"
-effort = "xhigh"
-grade = 10
-executable = true
-policy_selectable = false
-evidence_status = "needs_verification"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:xhigh"]
-description = "Escalated Fable reference profile."
-use_where = ["reference comparison only"]
-caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
-
-[[profiles]]
-id = "claude-fable-5-max"
-slug = "fable5-max"
-label = "Fable 5 max"
-provider = "claude"
-model = "claude-fable-5"
-effort = "max"
-grade = 10
-executable = true
-policy_selectable = false
-evidence_status = "needs_verification"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-claude.md#claude:fable-5", "docs/reference/models-reference-claude.md#claude:fable-5:max"]
-description = "Maximum Fable reference profile."
-use_where = ["reference comparison only"]
-caveats = ["Fable is forbidden by policy; cutoff is NEEDS VERIFICATION."]
+caveats = ["SWE-bench Verified 73.3% (Anthropic, sourced 2026-06-24); grade reflects the routine policy tier and unsupported selectable effort."]
 
 [[profiles]]
 id = "codex-gpt-5.5-minimal"
@@ -343,6 +271,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:minimal"]
+benchmark_source_ids = ["openai-models"]
 description = "Lowest Codex CLI reasoning tier on the strongest selectable model."
 use_where = ["thin work on gpt-5.5", "cheap sanity checks"]
 caveats = ["Effort multipliers are community-measured and low confidence."]
@@ -360,6 +289,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:low"]
+benchmark_source_ids = ["openai-models"]
 description = "Reduced reasoning budget on gpt-5.5."
 use_where = ["bounded execution", "lower-cost known tasks"]
 caveats = ["Effort multipliers are community-measured and low confidence."]
@@ -377,9 +307,10 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:medium", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["openai-models", "swebench-verified", "scale-seal-swe-bench-pro", "terminal-bench"]
 description = "Balanced Codex session default and exploration pairing."
 use_where = ["planning", "code review", "open-ended implementation"]
-caveats = ["Headline benchmarks are secondary."]
+caveats = ["Headline benchmarks are secondary; source IDs point to OpenAI model facts plus SWE-bench Verified, SWE-bench Pro, and Terminal-Bench authorities without adding new numbers."]
 
 [[profiles]]
 id = "codex-gpt-5.5-high"
@@ -394,6 +325,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:high", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["openai-models", "swebench-verified", "scale-seal-swe-bench-pro", "terminal-bench"]
 description = "Escalated gpt-5.5 profile for unusually hard work."
 use_where = ["hard single-pass implementation", "stuck or high-stakes procedural work"]
 caveats = ["Community-measured burn is about 3-5x medium."]
@@ -411,6 +343,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:xhigh"]
+benchmark_source_ids = ["openai-models", "swebench-verified", "scale-seal-swe-bench-pro", "terminal-bench"]
 description = "Exception-tier gpt-5.5 profile."
 use_where = ["hardest Codex tasks after explicit escalation"]
 caveats = ["Community-measured burn is about 8-15x medium."]
@@ -428,6 +361,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:minimal"]
+benchmark_source_ids = ["openai-models"]
 description = "Lowest Codex CLI effort on gpt-5.4."
 use_where = ["very small tasks", "low-cost checks"]
 caveats = ["API default is none; Codex CLI emits minimal."]
@@ -445,6 +379,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:low"]
+benchmark_source_ids = ["openai-models", "scale-seal-swe-bench-pro"]
 description = "Reduced effort on gpt-5.4."
 use_where = ["bounded low-cost tasks"]
 caveats = ["Benchmark evidence is weaker than gpt-5.5."]
@@ -462,9 +397,10 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:medium"]
+benchmark_source_ids = ["openai-models", "swebench-verified"]
 description = "Middle gpt-5.4 effort."
 use_where = ["moderate tasks when gpt-5.5 is not selected"]
-caveats = ["SWE-bench Verified figure is low-medium/secondary."]
+caveats = ["SWE-bench Verified figure is low-medium/secondary; source IDs point to OpenAI model facts and SWE-bench Verified without adding a new number."]
 
 [[profiles]]
 id = "codex-gpt-5.4-high"
@@ -479,6 +415,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:high", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["openai-models"]
 description = "High effort on gpt-5.4."
 use_where = ["non-default escalation when explicitly justified"]
 caveats = ["Policy warns this is an anti-pattern as a default cost-saving tier."]
@@ -496,6 +433,7 @@ policy_selectable = true
 evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4", "docs/reference/models-reference-codex.md#codex:gpt-5.4:xhigh"]
+benchmark_source_ids = ["openai-models", "scale-seal-swe-bench-pro"]
 description = "Highest gpt-5.4 effort with SWE-bench Pro evidence."
 use_where = ["reference comparison", "explicit non-default escalation"]
 caveats = ["Community-measured burn is about 8-15x medium."]
@@ -510,12 +448,13 @@ effort = "minimal"
 grade = 1
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:minimal"]
+benchmark_source_ids = ["digitalapplied-gpt-5-4-mini-swebench-pro", "openai-gpt-5-4-mini-announcement"]
 description = "Lowest effort on the routine Codex model."
 use_where = ["very small deterministic tasks"]
-caveats = ["No published SWE-bench figure."]
+caveats = ["SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified; OpenAI qualitatively states gpt-5.4-mini approaches gpt-5.4 on SWE-bench Pro."]
 
 [[profiles]]
 id = "codex-gpt-5.4-mini-low"
@@ -527,12 +466,13 @@ effort = "low"
 grade = 2
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:low"]
+benchmark_source_ids = ["digitalapplied-gpt-5-4-mini-swebench-pro", "openai-gpt-5-4-mini-announcement"]
 description = "Low effort on the routine Codex model."
 use_where = ["simple deterministic tasks"]
-caveats = ["No published SWE-bench figure."]
+caveats = ["SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified; OpenAI qualitatively states gpt-5.4-mini approaches gpt-5.4 on SWE-bench Pro."]
 
 [[profiles]]
 id = "codex-gpt-5.4-mini-medium"
@@ -544,12 +484,13 @@ effort = "medium"
 grade = 3
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:medium", "docs/reference/model-effort-policy.md"]
+benchmark_source_ids = ["digitalapplied-gpt-5-4-mini-swebench-pro", "openai-gpt-5-4-mini-announcement"]
 description = "Routine Codex policy pairing."
 use_where = ["routine orchestration", "thin mechanical tasks"]
-caveats = ["No published SWE-bench figure."]
+caveats = ["SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified; OpenAI qualitatively states gpt-5.4-mini approaches gpt-5.4 on SWE-bench Pro."]
 
 [[profiles]]
 id = "codex-gpt-5.4-mini-high"
@@ -561,12 +502,13 @@ effort = "high"
 grade = 4
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "medium"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:high"]
+benchmark_source_ids = ["digitalapplied-gpt-5-4-mini-swebench-pro", "openai-gpt-5-4-mini-announcement"]
 description = "Escalated effort on the routine Codex model."
 use_where = ["small tasks needing extra reasoning"]
-caveats = ["No published SWE-bench figure; do not treat as a gpt-5.5 replacement."]
+caveats = ["SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified; OpenAI qualitatively states gpt-5.4-mini approaches gpt-5.4 on SWE-bench Pro; do not treat as a gpt-5.5 replacement."]
 
 [[profiles]]
 id = "codex-gpt-5.4-mini-xhigh"
@@ -578,12 +520,13 @@ effort = "xhigh"
 grade = 5
 executable = true
 policy_selectable = true
-evidence_status = "needs_verification"
+evidence_status = "sourced"
 confidence = "low"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.4-mini", "docs/reference/models-reference-codex.md#codex:gpt-5.4-mini:xhigh"]
+benchmark_source_ids = ["digitalapplied-gpt-5-4-mini-swebench-pro", "openai-gpt-5-4-mini-announcement"]
 description = "Highest effort on the routine Codex model."
 use_where = ["reference comparison", "small tasks with explicit escalation"]
-caveats = ["No published SWE-bench figure."]
+caveats = ["SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified; OpenAI qualitatively states gpt-5.4-mini approaches gpt-5.4 on SWE-bench Pro."]
 
 [[profiles]]
 id = "codex-gpt-5.3-codex-spark-needs-verification"
@@ -598,9 +541,10 @@ policy_selectable = false
 evidence_status = "needs_verification"
 confidence = "low"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.3-codex-spark", "docs/reference/models-reference-codex.md#codex:gpt-5.3-codex-spark:needs-verification"]
+benchmark_source_ids = []
 description = "Informational research-preview row until numeric specs and effort support are published."
 use_where = ["not executable by cog policy"]
-caveats = ["Pricing, context, effort support, cutoff, and benchmark data are NEEDS VERIFICATION."]
+caveats = ["OpenAI Codex models page checked 2026-06-25 gives only text-only research-preview availability; pricing, context, effort support, cutoff, and benchmark data are NEEDS VERIFICATION, and weak secondary benchmark claims are not admitted."]
 
 [[named_profiles]]
 name = "exploration"

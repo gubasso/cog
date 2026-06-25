@@ -109,6 +109,7 @@ this reference table.
 | `review-init` | Create a review run directory and resolve output paths. |
 | `review-loop-input` | Build and validate review-loop handoff input JSON. |
 | `review-loop-progress` | Compare review findings across loop rounds. |
+| `review-loop-summary` | Assemble and validate the review-loop terminal summary. |
 | `review-normalize-findings` | Validate, sort, and severity-filter review findings JSON. |
 | `review-scope` | Detect changed-file review scope. |
 | `review-tech-scope` | Detect review technologies and bundled reference targets. |

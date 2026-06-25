@@ -15,7 +15,9 @@ severity, and compound-pass math.
 
 ## Hard Rule
 
-Never use `model: sonnet` in a `cog` skill. Use `model: opus` with `effort: low` instead.
+Never use `model: sonnet` or `model: fable` in a `cog` skill. For the Sonnet case, use `model: opus`
+with `effort: low` instead. The forbidden set is the machine SoT in `model-effort-claude.toml`
+(`forbidden_models`).
 
 This is an authoring rule for skill frontmatter and model selection. It is not a runtime file that
 skills load mid-execution.
@@ -65,8 +67,8 @@ a 1-10 difficulty-ceiling scale, one executable profile per supported model/effo
 - `routine`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
 
 Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one profile, `classify`
-to find policy-selectable profiles that can handle a grade (reference-only cells such as Fable are
-excluded), and `compound` to compute pass-sequence capability from the matrix-owned formula.
+to find policy-selectable profiles that can handle a grade (non-selectable and informational cells
+are excluded), and `compound` to compute pass-sequence capability from the matrix-owned formula.
 
 ## Review And Verification Work
 

@@ -212,6 +212,9 @@ The command list and short descriptions are sourced from command modules under
 *review-loop-progress*
 	Compare review findings across loop rounds.
 
+*review-loop-summary*
+	Assemble and validate the review-loop terminal summary.
+
 *review-normalize-findings*
 	Validate, sort, and severity-filter review findings JSON.
 

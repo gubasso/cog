@@ -4,7 +4,7 @@ schema_version: 1
 entries:
   - id: models-reference-claude
     path: docs/reference/models-reference-claude.md
-    last_checked: 2026-06-19
+    last_checked: 2026-06-25
     cadence_days: 90
     owner: model-effort policy
     why: "Claude model pricing, benchmarks, and available tiers change; the model/effort policy rests on them."
@@ -15,7 +15,7 @@ entries:
       - docs/reference/power-grade-matrix.toml
   - id: models-reference-codex
     path: docs/reference/models-reference-codex.md
-    last_checked: 2026-06-24
+    last_checked: 2026-06-25
     cadence_days: 90
     owner: model-effort policy
     why: "Codex-selectable GPT models, pricing, and effort multipliers change; the codex policy rests on them."
@@ -26,7 +26,7 @@ entries:
       - docs/reference/power-grade-matrix.toml
   - id: power-grade-matrix
     path: docs/reference/power-grade-matrix.toml
-    last_checked: 2026-06-24
+    last_checked: 2026-06-25
     cadence_days: 90
     owner: power-grade policy
     why: "The matrix grades model/effort capability from model benchmarks, pricing, effort support, and policy defaults that can drift."
@@ -34,6 +34,16 @@ entries:
     references:
       - docs/reference/model-effort-policy.md
       - docs/decisions/0032-power-grade-model.md
+  - id: power-grade-source-allowlist
+    path: docs/reference/power-grade-source-allowlist.toml
+    last_checked: 2026-06-25
+    cadence_days: 90
+    owner: power-grade policy
+    why: "Trusted-source URLs, tiers, and leaderboard domains drift; the matrix sourcing policy rests on them."
+    revalidate_how: "Re-check each source URL is live and canonical, re-confirm tier and clears_needs_verification, then update last_checked. Tier 3 entries stay recorded as excluded."
+    references:
+      - docs/decisions/0033-benchmark-source-tiers.md
+      - docs/reference/power-grade-matrix.toml
   - id: research-shelf
     path: docs/reference/research-shelf/index.jsonl
     last_checked: 2026-06-20

@@ -76,6 +76,7 @@ _cog() {
     review-init
     review-loop-input
     review-loop-progress
+    review-loop-summary
     review-normalize-findings
     review-plan-implementation-scan
     review-plan-implementation-verify

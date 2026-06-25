@@ -19,17 +19,45 @@ cog::fn::power_grade::matrix_json() {
   cog::fn::toml::json "$matrix_path"
 }
 
+cog::fn::power_grade::allowlist_path() {
+  local override="${COG_POWER_GRADE_ALLOWLIST:-}"
+  if [[ -n $override ]]; then
+    printf '%s\n' "$override"
+    return 0
+  fi
+  realpath "${LIB_DIR}/../docs/reference/power-grade-source-allowlist.toml"
+}
+
+cog::fn::power_grade::allowlist_json() {
+  local allowlist_path="${1:-}"
+  [[ -n $allowlist_path ]] || allowlist_path="$(cog::fn::power_grade::allowlist_path)"
+  [[ -f $allowlist_path ]] || cog::fn::error_raise "InputNotFound" \
+    "power grade source allowlist not found" "path: ${allowlist_path}" "" \
+    "check docs/reference/power-grade-source-allowlist.toml"
+
+  cog::fn::toml::json "$allowlist_path"
+}
+
 cog::fn::power_grade::validate_json() {
-  local matrix_path="${1:-}" matrix_json
+  local matrix_path="${1:-}" allowlist_path matrix_json allowlist_json
   [[ -n $matrix_path ]] || matrix_path="$(cog::fn::power_grade::matrix_path)"
   matrix_json="$(cog::fn::power_grade::matrix_json "$matrix_path")"
+  allowlist_path="$(cog::fn::power_grade::allowlist_path)"
+  allowlist_json="$(cog::fn::power_grade::allowlist_json "$allowlist_path")"
 
   jq -n \
     --arg schema "cog.power-grade.validate.v1" \
     --arg matrix_path "$matrix_path" \
-    --argjson matrix "$matrix_json" '
+    --arg allowlist_path "$allowlist_path" \
+    --argjson matrix "$matrix_json" \
+    --argjson allowlist "$allowlist_json" '
       def required_keys: ($matrix.validation.required_profile_keys // []);
       def missing_keys($p): required_keys | map(select($p[.] == null));
+      def allowlist_tiers:
+        ($allowlist.sources // [])
+        | map({key: .id, value: .tier})
+        | from_entries;
+      def profile_source_ids($p): ($p.benchmark_source_ids // []);
       def required_errors:
         $matrix.profiles
         | to_entries
@@ -48,6 +76,14 @@ cog::fn::power_grade::validate_json() {
         $matrix.profiles
         | map(select((.source_refs | type) != "array" or (.source_refs | length) == 0)
           | {kind: "missing_source_refs", profile_id: (.id // null)});
+      def unknown_source_errors:
+        allowlist_tiers as $tiers
+        | $matrix.profiles
+        | to_entries
+        | map(. as $entry
+            | (profile_source_ids($entry.value) | map(select(($tiers[.] // null) == null))) as $unknown
+            | select(($unknown | length) > 0)
+            | {kind: "unknown_source_id", profile_index: .key, profile_id: (.value.id // null), source_ids: $unknown});
       def named_profile_errors:
         ($matrix.profiles | map(.id)) as $ids
         | ($matrix.named_profiles // [])
@@ -55,16 +91,33 @@ cog::fn::power_grade::validate_json() {
                      (.codex_profile as $g | $ids | index($g) | not))
           | {kind: "named_profile_unknown_reference", name: (.name // null),
              claude_profile: (.claude_profile // null), codex_profile: (.codex_profile // null)});
-      def warnings:
+      def needs_verification_warnings:
         $matrix.profiles
         | map(select(.evidence_status == "needs_verification")
           | {kind: "needs_verification", profile_id: .id, executable: .executable, caveats: .caveats});
+      def tier3_source_warnings:
+        allowlist_tiers as $tiers
+        | $matrix.profiles
+        | map(. as $profile
+            | (profile_source_ids($profile) | map(select(($tiers[.] // null) == 3))) as $tier3
+            | select(($tier3 | length) > 0)
+            | {kind: "tier3_source_cited", profile_id: (.id // null), source_ids: $tier3});
+      def sourced_without_allowlisted_source_warnings:
+        allowlist_tiers as $tiers
+        | $matrix.profiles
+        | map(select((.evidence_status != "needs_verification") and
+                     ((profile_source_ids(.) | map(select((($tiers[.] // 999) <= 2))) | length) == 0))
+            | {kind: "sourced_without_allowlisted_source", profile_id: (.id // null),
+               benchmark_source_ids: profile_source_ids(.)});
+      def warnings:
+        needs_verification_warnings + tier3_source_warnings + sourced_without_allowlisted_source_warnings;
 
-      (required_errors + duplicate_errors("id") + duplicate_errors("slug") + grade_errors + source_errors + named_profile_errors) as $errors
+      (required_errors + duplicate_errors("id") + duplicate_errors("slug") + grade_errors + source_errors + unknown_source_errors + named_profile_errors) as $errors
       | {
           schema: $schema,
           ok: ($errors | length == 0),
           matrix_path: $matrix_path,
+          allowlist_path: $allowlist_path,
           profile_count: ($matrix.profiles | length),
           named_profile_count: (($matrix.named_profiles // []) | length),
           scale: $matrix.scale,

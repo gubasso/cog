@@ -37,6 +37,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0030: Runner verbatim queue dispatch](decisions/0030-runner-verbatim-queue-dispatch.md)
 - [ADR-0031: Deterministic Conventional Commits validation in gc](decisions/0031-conventional-commit-validation.md)
 - [ADR-0032: Power Grade Model](decisions/0032-power-grade-model.md)
+- [ADR-0033: Benchmark Source Tiers](decisions/0033-benchmark-source-tiers.md)
+- [ADR-0034: Power Grade Source ID Enforcement](decisions/0034-power-grade-source-id-enforcement.md)
 
 ## Guides
 
@@ -55,6 +57,7 @@ This directory is organized using Diataxis zones.
 - [Claude model/effort policy data](reference/model-effort-claude.toml)
 - [Codex model/effort policy data](reference/model-effort-codex.toml)
 - [Power Grade matrix](reference/power-grade-matrix.toml)
+- [Power Grade source allowlist](reference/power-grade-source-allowlist.toml)
 - [Skills](reference/skills.md)
 - [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)

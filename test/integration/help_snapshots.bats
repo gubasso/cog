@@ -90,6 +90,7 @@ Commands:
   review-init    Create a review run directory and resolve output paths.
   review-loop-input Build and validate review-loop handoff input JSON.
   review-loop-progress Compare review findings across loop rounds.
+  review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-implementation-scan Inventory all implementation-plan queues and repo/plan fingerprints.
   review-plan-implementation-verify Verify a review-plan-implementation run against a before/after scan.
@@ -181,6 +182,7 @@ Commands:
   review-init    Create a review run directory and resolve output paths.
   review-loop-input Build and validate review-loop handoff input JSON.
   review-loop-progress Compare review findings across loop rounds.
+  review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-implementation-scan Inventory all implementation-plan queues and repo/plan fingerprints.
   review-plan-implementation-verify Verify a review-plan-implementation run against a before/after scan.
