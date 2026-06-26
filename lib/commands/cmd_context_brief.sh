@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-: 'desc: Scaffold, build, and validate a rich-context handoff brief.'
+: 'desc: Template, build, and validate a rich-context handoff brief.'
 
 if ! declare -F cog::fn::context_brief_build >/dev/null; then
   # shellcheck source=/dev/null
@@ -7,14 +7,13 @@ if ! declare -F cog::fn::context_brief_build >/dev/null; then
 fi
 
 __cog_context_brief_usage() {
-  cog::fn::ui_data "Usage: cog context-brief scaffold [--out <path>]"
-  cog::fn::ui_data "Usage: cog context-brief build --request <file> --body <file> --out <path> [--json]"
-  cog::fn::ui_data "Usage: cog context-brief validate <path> [--json]"
-  cog::fn::ui_data "Usage: cog context-brief gate render --skill <name>"
+  cog::fn::ui_data "Usage: cog context-brief template [--out <path>]"
+  cog::fn::ui_data "Usage: cog context-brief build --request <file> --body <file> --out <path> [--format md|json]"
+  cog::fn::ui_data "Usage: cog context-brief validate <path> [--format text|json]"
   cog::fn::ui_data "Usage: cog context-brief --help"
 }
 
-__cog_context_brief_scaffold_cmd() {
+__cog_context_brief_template_cmd() {
   local out=""
 
   while (($# > 0)); do
@@ -25,24 +24,24 @@ __cog_context_brief_scaffold_cmd() {
         ;;
       --out)
         [[ $# -ge 2 && -n ${2:-} && -z $out ]] || cog::fn::error_raise "MissingArgument" \
-          "missing scaffold output path" "option: --out" "" "run 'cog context-brief --help'"
+          "missing template output path" "option: --out" "" "run 'cog context-brief --help'"
         out="$2"
         shift 2
         ;;
       -*)
         cog::fn::error_raise "InvalidInput" \
-          "unknown context-brief scaffold option" "option: $1" "" "run 'cog context-brief --help'"
+          "unknown context-brief template option" "option: $1" "" "run 'cog context-brief --help'"
         ;;
       *)
         cog::fn::error_raise "TooManyArguments" \
-          "too many context-brief scaffold arguments" "argument: $1" "" "run 'cog context-brief --help'"
+          "too many context-brief template arguments" "argument: $1" "" "run 'cog context-brief --help'"
         ;;
     esac
   done
 
   if [[ -n $out ]]; then
     cog::fn::context_brief_scaffold >"$out" || cog::fn::error_raise "JsonWriteFailed" \
-      "could not write context-brief scaffold" "path: ${out}" "" "check the output path and retry"
+      "could not write context-brief template" "path: ${out}" "" "check the output path and retry"
     cog::fn::ui_data "RESOLVED ${out}"
   else
     cog::fn::context_brief_scaffold
@@ -50,7 +49,8 @@ __cog_context_brief_scaffold_cmd() {
 }
 
 __cog_context_brief_build_cmd() {
-  local request="" body="" out="" json="${COG_UI_JSON:-false}"
+  local request="" body="" out="" format="md"
+  [[ ${COG_UI_JSON:-false} == true ]] && format="json"
 
   while (($# > 0)); do
     case "$1" in
@@ -76,8 +76,16 @@ __cog_context_brief_build_cmd() {
         out="$2"
         shift 2
         ;;
+      --format)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
+          "missing format" "option: --format" "" "run 'cog context-brief --help'"
+        format="$2"
+        shift 2
+        ;;
       --json)
-        json=true
+        # Deprecated alias for --format json; kept for one release.
+        cog::fn::log_warn "cog context-brief build: --json is deprecated; use --format json"
+        format="json"
         shift
         ;;
       -*)
@@ -90,6 +98,9 @@ __cog_context_brief_build_cmd() {
         ;;
     esac
   done
+
+  [[ $format == md || $format == json ]] || cog::fn::error_raise "InvalidInput" \
+    "unknown format" "format: ${format}" "" "use --format md|json"
 
   [[ -n $request ]] || cog::fn::error_raise "MissingArgument" \
     "missing request file" \
@@ -105,7 +116,7 @@ __cog_context_brief_build_cmd() {
 
   cog::fn::context_brief_build "$request" "$body" "$out"
 
-  if [[ $json == true ]]; then
+  if [[ $format == json ]]; then
     local result
     result="$(jq -cn --arg brief_file "$out" '{ok: true, brief_file: $brief_file}')"
     cog::fn::json_emit '(.ok == true) and (.brief_file | type == "string" and (. | length) > 0)' "$result"
@@ -115,7 +126,9 @@ __cog_context_brief_build_cmd() {
 }
 
 __cog_context_brief_validate_cmd() {
-  local brief="" json="${COG_UI_JSON:-false}" result
+  local brief="" format="text" result
+
+  [[ ${COG_UI_JSON:-false} == true ]] && format="json"
 
   while (($# > 0)); do
     case "$1" in
@@ -123,8 +136,16 @@ __cog_context_brief_validate_cmd() {
         __cog_context_brief_usage
         return 0
         ;;
+      --format)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
+          "missing format" "option: --format" "" "run 'cog context-brief --help'"
+        format="$2"
+        shift 2
+        ;;
       --json)
-        json=true
+        # Deprecated alias for --format json; kept for one release.
+        cog::fn::log_warn "cog context-brief validate: --json is deprecated; use --format json"
+        format="json"
         shift
         ;;
       --input)
@@ -147,74 +168,20 @@ __cog_context_brief_validate_cmd() {
   done
 
   [[ -n $brief ]] || cog::fn::error_raise "MissingArgument" \
-    "missing context brief file" "usage: cog context-brief validate <path> [--json]" "" \
+    "missing context brief file" "usage: cog context-brief validate <path> [--format text|json]" "" \
     "run 'cog context-brief --help'"
+
+  [[ $format == text || $format == json ]] || cog::fn::error_raise "InvalidInput" \
+    "unknown format" "format: ${format}" "" "use --format text|json"
 
   cog::fn::context_brief_assert "$brief"
 
   result="$(jq -cn --arg brief_file "$brief" '{ok: true, brief_file: $brief_file}')"
-  if [[ $json == true ]]; then
+  if [[ $format == json ]]; then
     cog::fn::json_emit '(.ok == true) and (.brief_file | type == "string")' "$result"
   else
     cog::fn::ui_data "$result"
   fi
-}
-
-__cog_context_brief_gate_render_cmd() {
-  local name=""
-
-  while (($# > 0)); do
-    case "$1" in
-      -h | --help)
-        __cog_context_brief_usage
-        return 0
-        ;;
-      --skill)
-        [[ $# -ge 2 && -n ${2:-} && -z $name ]] || cog::fn::error_raise "MissingArgument" \
-          "missing context-brief gate skill name" "option: --skill" "" "run 'cog context-brief --help'"
-        name="$2"
-        shift 2
-        ;;
-      -*)
-        cog::fn::error_raise "InvalidInput" \
-          "unknown context-brief gate render option" "option: $1" "" "run 'cog context-brief --help'"
-        ;;
-      *)
-        cog::fn::error_raise "TooManyArguments" \
-          "too many context-brief gate render arguments" "argument: $1" "" "run 'cog context-brief --help'"
-        ;;
-    esac
-  done
-
-  [[ -n $name ]] || cog::fn::error_raise "MissingArgument" \
-    "missing context-brief gate skill name" "option: --skill" "" "run 'cog context-brief --help'"
-  cog::fn::skill::name_is_valid "$name" || cog::fn::error_raise "InvalidInput" \
-    "invalid skill name" "name: ${name}" "" "use ^[a-z0-9-]{1,64}$ and avoid reserved names anthropic and claude"
-
-  cog::fn::skill::context_brief_gate_render "$name"
-}
-
-__cog_context_brief_gate_cmd() {
-  local sub="${1:-}"
-
-  case "$sub" in
-    -h | --help | "")
-      __cog_context_brief_usage
-      return 0
-      ;;
-    render)
-      shift
-      __cog_context_brief_gate_render_cmd "$@"
-      ;;
-    -*)
-      cog::fn::error_raise "InvalidInput" \
-        "unknown context-brief gate option" "option: $sub" "" "run 'cog context-brief --help'"
-      ;;
-    *)
-      cog::fn::error_raise "InvalidInput" \
-        "unknown context-brief gate mode" "mode: $sub" "" "expected render"
-      ;;
-  esac
 }
 
 cog::cmd::context_brief() {
@@ -225,9 +192,15 @@ cog::cmd::context_brief() {
       __cog_context_brief_usage
       return 0
       ;;
-    scaffold)
+    template)
       shift
-      __cog_context_brief_scaffold_cmd "$@"
+      __cog_context_brief_template_cmd "$@"
+      ;;
+    scaffold)
+      # Deprecated alias for `template`; kept for one release.
+      cog::fn::log_warn "cog context-brief scaffold is deprecated; use cog context-brief template"
+      shift
+      __cog_context_brief_template_cmd "$@"
       ;;
     build)
       shift
@@ -237,17 +210,13 @@ cog::cmd::context_brief() {
       shift
       __cog_context_brief_validate_cmd "$@"
       ;;
-    gate)
-      shift
-      __cog_context_brief_gate_cmd "$@"
-      ;;
     -*)
       cog::fn::error_raise "InvalidInput" \
         "unknown context-brief option" "option: $verb" "" "run 'cog context-brief --help'"
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
-        "unknown context-brief mode" "mode: $verb" "" "expected scaffold, build, or validate"
+        "unknown context-brief mode" "mode: $verb" "" "expected template, build, or validate"
       ;;
   esac
 }

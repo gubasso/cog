@@ -40,9 +40,10 @@ docs/decisions/0040-stage-agnostic-identifiers.md and docs/reference/skill-contr
 Non-negotiable: the plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan or
 review workers. Every Claude executor-*/runner- skill carries a Phase 0 plan-mode gate
 (cog-plan-mode-gate marker); every other Claude skill must not. The gate wording is a single source of
-truth rendered by cog plan-mode-gate render and stamped, never hand-written; cog skill-lint fails an
+truth rendered by cog gate render --id plan-mode and stamped, never hand-written; cog skill-lint fails an
 executor/runner missing the gate or whose stanza drifts, and fails any other skill that carries it. See
 docs/decisions/0015-plan-skills-not-in-plan-mode.md, docs/decisions/0037-plan-mode-gate-canonical-render.md,
+docs/decisions/0045-unified-gate-command-and-context-brief-verbs.md,
 and docs/reference/skill-contract.md ("Plan-mode gate").
 
 Non-negotiable: skill prose is lean, objective, and positively framed - describe what the skill IS

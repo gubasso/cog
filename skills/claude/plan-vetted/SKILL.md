@@ -73,7 +73,7 @@ inline when load-bearing or pointed-to when large; **Effort Guidance**; **Not Ev
 your own verdict out, then build the brief from the raw request:
 
 ```bash
-cog context-brief scaffold --out "<run-dir>/brief-body.md"
+cog context-brief template --out "<run-dir>/brief-body.md"
 # fill <run-dir>/brief-body.md per the contract, then:
 cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief-body.md" --out "<run-dir>/brief.md"
 ```

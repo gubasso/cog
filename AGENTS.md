@@ -57,12 +57,13 @@ The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on p
 caller a user launches gates once at entry (plan mode is read-only and blocks writes), then delegates to
 gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a Phase 0 plan-mode gate marked
 `<!-- cog-plan-mode-gate -->`; every other Claude skill must not. The gate wording is a single source of
-truth: render it with `cog plan-mode-gate render --skill <name>` and stamp it verbatim, never hand-write
-it. `cog skill-lint`'s `plan-mode-gate` rule fails an executor/runner that lacks the gate or whose
-stanza drifts from the render, and fails any other skill that carries it. See
+truth: render it with `cog gate render --id plan-mode --skill <name>` and stamp it verbatim, never
+hand-write it. `cog skill-lint`'s `plan-mode-gate` rule fails an executor/runner that lacks the gate or
+whose stanza drifts from the render, and fails any other skill that carries it. See
 `docs/reference/skill-contract.md` ("Plan-mode gate"),
-`docs/decisions/0015-plan-skills-not-in-plan-mode.md`, and
-`docs/decisions/0037-plan-mode-gate-canonical-render.md`.
+`docs/decisions/0015-plan-skills-not-in-plan-mode.md`,
+`docs/decisions/0037-plan-mode-gate-canonical-render.md`, and
+`docs/decisions/0045-unified-gate-command-and-context-brief-verbs.md`.
 
 Skill prose is lean, objective, and positively framed: describe what the skill IS and MUST DO. Drop
 preemptive negative guardrails that never had an empirical reason; keep negative or exclusion

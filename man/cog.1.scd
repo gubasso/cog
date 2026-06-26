@@ -61,7 +61,7 @@ The command list and short descriptions are sourced from command modules under
 	Validate cog-skill-creator inputs.
 
 *context-brief*
-	Scaffold, build, and validate a rich-context handoff brief.
+	Template, build, and validate a rich-context handoff brief.
 
 *digest-check*
 	Check digest frontmatter for source drift.
@@ -83,6 +83,9 @@ The command list and short descriptions are sourced from command modules under
 
 *executor-prex-parse-args*
 	Parse executor-prex arguments into run state.
+
+*gate*
+	Render, check, stamp, and list canonical skill gate stanzas.
 
 *gc-classify-failure*
 	Classify commit or push failure logs.
@@ -140,9 +143,6 @@ The command list and short descriptions are sourced from command modules under
 
 *plan-init*
 	Bootstrap implementation plan root files.
-
-*plan-mode-gate*
-	Render the canonical plan-mode gate stanza.
 
 *plan-multi-setup*
 	Parse plan-multi arguments and create run state.

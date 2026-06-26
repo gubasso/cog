@@ -113,7 +113,7 @@ First write the user's original request/goal (the intent the plan is reviewed ag
 input and conversation) to `$RUN_DIR/objective.txt`. Scaffold the authored body:
 
 ```bash
-cog context-brief scaffold --out "$RUN_DIR/request-body.md"
+cog context-brief template --out "$RUN_DIR/request-body.md"
 ```
 
 Fill `$RUN_DIR/request-body.md`: a well-oriented **Objective**; **Output Format** (an annotated plan

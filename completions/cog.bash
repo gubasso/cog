@@ -35,6 +35,7 @@ _cog() {
     editorconfig-detect
     executor
     executor-prex-parse-args
+    gate
     gc-classify-failure
     gc-commit
     gc-commit-lint
@@ -54,7 +55,6 @@ _cog() {
     osc-probe-binary
     plan-doc
     plan-init
-    plan-mode-gate
     plan-multi-setup
     plan-review
     plan-slug

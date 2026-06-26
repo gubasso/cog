@@ -41,7 +41,7 @@ Commands:
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
-  context-brief  Scaffold, build, and validate a rich-context handoff brief.
+  context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
@@ -49,6 +49,7 @@ Commands:
   editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
+  gate           Render, check, stamp, and list canonical skill gate stanzas.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
@@ -68,7 +69,6 @@ Commands:
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
-  plan-mode-gate Render the canonical plan-mode gate stanza.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
@@ -139,7 +139,7 @@ Commands:
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
-  context-brief  Scaffold, build, and validate a rich-context handoff brief.
+  context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
@@ -147,6 +147,7 @@ Commands:
   editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
+  gate           Render, check, stamp, and list canonical skill gate stanzas.
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
@@ -166,7 +167,6 @@ Commands:
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
-  plan-mode-gate Render the canonical plan-mode gate stanza.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.

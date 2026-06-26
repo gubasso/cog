@@ -217,7 +217,7 @@ single deliberate omission.
 
 The canonical `context-builder` skill assembles a brief inline in the caller's context (the
 conversation lives there, so it cannot be a blind subagent), and `cog context-brief`
-(`scaffold`/`build`/`validate`) owns the deterministic structure — `build --request` injects the raw
+(`template`/`build`/`validate`) owns the deterministic structure — `build --request` injects the raw
 request from a rawfile so it is always attached, and `validate` fails closed unless every section is
 present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capability.md) and
 [ADR-0043](../decisions/0043-best-constructed-input-standard.md).
@@ -310,10 +310,11 @@ worker delegated via the Agent tool runs in a fresh subagent that never sees pla
 only ever matters at the entry-point orchestrator.
 
 The gate stanza is a **Phase 0** marked `<!-- cog-plan-mode-gate -->` that runs before all other work,
-and its wording is a single source of truth owned by `cog plan-mode-gate render` — never hand-write it:
+and its wording is a single source of truth owned by `cog gate render --id plan-mode` — never
+hand-write it:
 
 ```bash
-cog plan-mode-gate render --skill <name>
+cog gate render --id plan-mode --skill <name>
 ```
 
 The rendered stanza tells the user, if Claude Code plan mode is active, to STOP before any other work
@@ -322,7 +323,7 @@ presents a plan for approval — wrong semantics) and must not silently continue
 
 `cog skill-lint` enforces this with the `plan-mode-gate` rule: every Claude `executor-*`/`runner-*`
 skill must carry the canonical gate (hard-fails when missing or when the inlined stanza drifts,
-whitespace-normalized, from `cog plan-mode-gate render`), and every other Claude skill must **not**
+whitespace-normalized, from `cog gate render --id plan-mode`), and every other Claude skill must **not**
 carry the gate (it belongs on the calling orchestrator). Codex skills are exempt — Codex has no Claude
 plan mode.
 
@@ -336,10 +337,10 @@ drift-linted like the plan-mode gate, but the rule is the source of truth while 
 the contract own the mechanics. See [ADR-0044](../decisions/0044-context-brief-gate.md).
 
 The gate stanza is marked `<!-- cog-context-brief-gate -->`, and its wording is a single source of
-truth owned by `cog context-brief gate render` — never hand-write it:
+truth owned by `cog gate render --id context-brief` — never hand-write it:
 
 ```bash
-cog context-brief gate render --skill <name>
+cog gate render --id context-brief --skill <name>
 ```
 
 `cog skill-lint` enforces this with the `context-brief-gate` rule, keyed off a curated, **runtime-

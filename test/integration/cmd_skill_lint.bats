@@ -54,7 +54,7 @@ append_orchestrator_gate() {
   local file="$1" name="$2"
   {
     printf '\n'
-    cog plan-mode-gate render --skill "$name"
+    cog gate render --id plan-mode --skill "$name"
     printf '\n'
   } >>"$file"
 }
@@ -218,7 +218,7 @@ write_boundary_skill() {
   file="$(write_boundary_skill)"
   {
     printf '\n'
-    cog context-brief gate render --skill plan-vetted
+    cog gate render --id context-brief --skill plan-vetted
     # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
     printf '\n\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
   } >>"$file"
@@ -233,7 +233,7 @@ write_boundary_skill() {
   file="$(write_boundary_skill)"
   {
     printf '\n'
-    cog context-brief gate render --skill plan-vetted
+    cog gate render --id context-brief --skill plan-vetted
     # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
     printf '\n\n```bash\ncog context-brief validate "$RUN_DIR/brief.md"\n```\n'
   } >>"$file"
@@ -265,7 +265,7 @@ write_boundary_skill() {
   file="$(write_boundary_skill)"
   {
     printf '\n'
-    cog context-brief gate render --skill plan-vetted
+    cog gate render --id context-brief --skill plan-vetted
     printf '\n'
   } >>"$file"
 
@@ -281,7 +281,7 @@ write_boundary_skill() {
   local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
   {
     printf '\n'
-    cog context-brief gate render --skill demo-skill
+    cog gate render --id context-brief --skill demo-skill
     printf '\n'
   } >>"$file"
 
@@ -899,7 +899,7 @@ EOF
   local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
   {
     printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n'
-    cog plan-mode-gate render --skill executor-demo
+    cog gate render --id plan-mode --skill executor-demo
     printf '\n# Plan Review Execute\n'
   } >>"$file"
 

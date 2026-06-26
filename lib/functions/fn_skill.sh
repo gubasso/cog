@@ -104,8 +104,8 @@ cog::fn::skill::requires_plan_mode_gate() {
 
 # Single source of truth for the plan-mode gate stanza. Detection of plan mode
 # stays probabilistic in skill prose (ADR-0015); this helper owns the canonical
-# text so cog plan-mode-gate render, cog skill-lint, and cog-skill-creator never
-# drift.
+# text so cog gate render --id plan-mode, cog skill-lint, and cog-skill-creator
+# never drift.
 cog::fn::skill::plan_mode_gate_paragraph() {
   local name="$1"
   cog::fn::skill::name_is_valid "$name" || return 2
@@ -157,8 +157,8 @@ cog::fn::skill::has_context_brief_gate() {
 
 # Single source of truth for the context-brief gate stanza. The obligation to
 # build a validated context brief for every fresh-context callee (ADR-0044) is
-# owned here so cog context-brief gate render and cog skill-lint never drift. The
-# rule lives here; the mechanics stay in cog context-brief and the contract.
+# owned here so cog gate render --id context-brief and cog skill-lint never drift.
+# The rule lives here; the mechanics stay in cog context-brief and the contract.
 cog::fn::skill::context_brief_gate_paragraph() {
   local name="$1"
   cog::fn::skill::name_is_valid "$name" || return 2

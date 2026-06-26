@@ -68,7 +68,7 @@ generated plans and excerpts that are load-bearing.
 ## Step 4: Scaffold the body
 
 ```bash
-cog context-brief scaffold --out "$RUN_DIR/body.md"
+cog context-brief template --out "$RUN_DIR/body.md"
 ```
 
 This writes every authored section (everything except Original Request, which build injects).

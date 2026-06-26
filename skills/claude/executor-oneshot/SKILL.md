@@ -83,7 +83,7 @@ Decisions** carrying the full substance; **Artifacts** inline or pointed-to; **E
 Evaluated** — keep your own verdict out), then build it:
 
 ```bash
-cog context-brief scaffold --out "<run-dir>/brief-body.md"
+cog context-brief template --out "<run-dir>/brief-body.md"
 # fill <run-dir>/brief-body.md per the contract, then:
 cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief-body.md" --out "<run-dir>/brief.md"
 ```

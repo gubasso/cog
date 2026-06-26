@@ -110,7 +110,7 @@ __cog_skill_lint_check_plan_gate() {
   # The plan-mode gate lives on the executor-*/runner-* orchestrator layer: those
   # callers gate once at entry, then delegate to gate-free plan/review workers
   # (ADR-0037). Detection is probabilistic and lives in skill prose (ADR-0015);
-  # the canonical wording is owned by cog plan-mode-gate render and enforced here
+  # the canonical wording is owned by cog gate render --id plan-mode and enforced here
   # (whitespace-normalized). Claude runtime only -- Codex has no Claude plan mode.
   local file="$1" runtime name expected actual
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -127,19 +127,19 @@ __cog_skill_lint_check_plan_gate() {
   fi
 
   if ! cog::fn::skill::has_plan_mode_gate "$file"; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "orchestrator skill missing plan-mode gate" "add a Phase 0 plan-mode gate: cog plan-mode-gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "orchestrator skill missing plan-mode gate" "add a Phase 0 plan-mode gate: cog gate render --id plan-mode --skill ${name}"
     return 1
   fi
 
   actual="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::plan_mode_gate_extract "$file")")"
   if [[ -z $actual ]]; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate marker has no stanza" "place the canonical stanza after the marker: cog plan-mode-gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate marker has no stanza" "place the canonical stanza after the marker: cog gate render --id plan-mode --skill ${name}"
     return 1
   fi
 
   expected="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::plan_mode_gate_paragraph "$name")")"
   if [[ $actual != "$expected" ]]; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate wording drifted from the canonical source of truth" "regenerate the stanza: cog plan-mode-gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate wording drifted from the canonical source of truth" "regenerate the stanza: cog gate render --id plan-mode --skill ${name}"
     return 1
   fi
   return 0
@@ -235,19 +235,19 @@ __cog_skill_lint_check_context_brief_gate() {
   fi
 
   if ! cog::fn::skill::has_context_brief_gate "$file"; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "boundary orchestrator missing context-brief gate" "add the gate stanza: cog context-brief gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "boundary orchestrator missing context-brief gate" "add the gate stanza: cog gate render --id context-brief --skill ${name}"
     return 1
   fi
 
   actual="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::context_brief_gate_extract "$file")")"
   if [[ -z $actual ]]; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate marker has no stanza" "place the canonical stanza after the marker: cog context-brief gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate marker has no stanza" "place the canonical stanza after the marker: cog gate render --id context-brief --skill ${name}"
     return 1
   fi
 
   expected="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::context_brief_gate_paragraph "$name")")"
   if [[ $actual != "$expected" ]]; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate wording drifted from the canonical source of truth" "regenerate the stanza: cog context-brief gate render --skill ${name}"
+    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate wording drifted from the canonical source of truth" "regenerate the stanza: cog gate render --id context-brief --skill ${name}"
     return 1
   fi
 

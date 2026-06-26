@@ -231,7 +231,7 @@ the authored body, fill it from the whole session (a well-oriented **Objective**
 pointed-to; **Effort Guidance**; **Not Evaluated** — keep your own verdict out), then build it:
 
 ```bash
-cog context-brief scaffold --out "$RUN_DIR/brief-body.md"
+cog context-brief template --out "$RUN_DIR/brief-body.md"
 # fill $RUN_DIR/brief-body.md per the contract, then:
 cog context-brief build --request "$RUN_DIR/request.md" --body "$RUN_DIR/brief-body.md" --out "$RUN_DIR/context-brief.md"
 ```

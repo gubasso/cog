@@ -118,7 +118,7 @@ best-constructed context brief per `$(cog skill-refs path orchestration/context-
 both engines start neutral. Scaffold the authored sections:
 
 ```bash
-cog context-brief scaffold --out "$RUN_DIR/plan-brief-body.md"
+cog context-brief template --out "$RUN_DIR/plan-brief-body.md"
 ```
 
 Fill `$RUN_DIR/plan-brief-body.md`: a well-oriented **Objective** drawn from the whole session;

@@ -186,7 +186,7 @@ continue. A plan/review worker (or any non-orchestrator skill) must **not** carr
 The gate wording is a single source of truth — stamp it, do not hand-write it:
 
 ```bash
-cog plan-mode-gate render --skill "$NAME"
+cog gate render --id plan-mode --skill "$NAME"
 ```
 
 Paste the rendered block verbatim as the skill's Phase 0.

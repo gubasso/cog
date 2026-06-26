@@ -48,10 +48,10 @@ Performance was not evaluated.
 EOF
 }
 
-@test "cog context-brief scaffold emits every authored section anchor" {
+@test "cog context-brief template emits every authored section anchor" {
   local out="${BATS_TEST_TMPDIR}/body.md"
 
-  run cog context-brief scaffold --out "$out"
+  run cog context-brief template --out "$out"
 
   assert_success
   assert_output "RESOLVED ${out}"
@@ -59,9 +59,18 @@ EOF
   grep -qxF '<!-- cog:context-brief:section=context-decisions -->' "$out"
   grep -qxF '<!-- cog:context-brief:section=artifacts -->' "$out"
   grep -qxF '<!-- cog:context-brief:section=not-evaluated -->' "$out"
-  # The original request is injected by build, never scaffolded.
+  # The original request is injected by build, never templated.
   run ! grep -qF 'section=original-request' "$out"
+}
+
+@test "cog context-brief scaffold still works as a deprecated alias for template" {
+  local out="${BATS_TEST_TMPDIR}/body.md"
+
+  run cog context-brief scaffold --out "$out"
+
   assert_success
+  assert_output "RESOLVED ${out}"
+  grep -qxF '<!-- cog:context-brief:section=objective -->' "$out"
 }
 
 @test "cog context-brief build injects the raw request verbatim and validates" {
@@ -78,10 +87,23 @@ EOF
   grep -qxF '# Context Brief' "$brief"
   grep -qxF '<!-- cog:context-brief:section=original-request -->' "$brief"
   # Verbatim request, heading line included, survives intact.
-  grep -qF "Keep a `## heading` line intact." "$brief"
+  grep -qF '## heading' "$brief"
 }
 
-@test "cog context-brief build --json reports the brief file" {
+@test "cog context-brief build --format json reports the brief file" {
+  local body="${BATS_TEST_TMPDIR}/body.md"
+  local request="${BATS_TEST_TMPDIR}/request.txt"
+  local brief="${BATS_TEST_TMPDIR}/brief.md"
+  write_filled_body "$body"
+  printf 'Do the thing.\n' >"$request"
+
+  run cog context-brief build --request "$request" --body "$body" --out "$brief" --format json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .brief_file == "'"$brief"'"' >/dev/null
+}
+
+@test "cog context-brief build --json still works as a deprecated alias for --format json" {
   local body="${BATS_TEST_TMPDIR}/body.md"
   local request="${BATS_TEST_TMPDIR}/request.txt"
   local brief="${BATS_TEST_TMPDIR}/brief.md"
@@ -94,6 +116,19 @@ EOF
   printf '%s\n' "$output" | jq -e '.ok == true and .brief_file == "'"$brief"'"' >/dev/null
 }
 
+@test "cog context-brief build rejects an unknown --format" {
+  local body="${BATS_TEST_TMPDIR}/body.md"
+  local request="${BATS_TEST_TMPDIR}/request.txt"
+  write_filled_body "$body"
+  printf 'Do the thing.\n' >"$request"
+
+  run --separate-stderr cog context-brief build \
+    --request "$request" --body "$body" --out "${BATS_TEST_TMPDIR}/brief.md" --format yaml
+
+  assert_failure
+  [[ $stderr == *"unknown format"* ]]
+}
+
 @test "cog context-brief validate accepts a complete brief" {
   local body="${BATS_TEST_TMPDIR}/body.md"
   local request="${BATS_TEST_TMPDIR}/request.txt"
@@ -102,7 +137,7 @@ EOF
   printf 'Do the thing.\n' >"$request"
   cog context-brief build --request "$request" --body "$body" --out "$brief" >/dev/null
 
-  run cog context-brief validate "$brief" --json
+  run cog context-brief validate "$brief" --format json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .brief_file == "'"$brief"'"' >/dev/null
@@ -121,10 +156,10 @@ EOF
   [[ $stderr == *"err.kind: InputUnreadable"* ]]
 }
 
-@test "cog context-brief build fails closed on an unfilled scaffold section" {
+@test "cog context-brief build fails closed on an unfilled template section" {
   local body="${BATS_TEST_TMPDIR}/body.md"
   local request="${BATS_TEST_TMPDIR}/request.txt"
-  cog context-brief scaffold --out "$body" >/dev/null
+  cog context-brief template --out "$body" >/dev/null
   printf 'Do the thing.\n' >"$request"
 
   run --separate-stderr cog context-brief build \

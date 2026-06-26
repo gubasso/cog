@@ -69,7 +69,7 @@ Build `BRIEF_FILE`, the single identical input for both workers, as a best-const
 per `$(cog skill-refs path orchestration/context-brief-contract.md)`. Scaffold the authored sections:
 
 ```bash
-cog context-brief scaffold --out "$RUN_DIR/brief-body.md"
+cog context-brief template --out "$RUN_DIR/brief-body.md"
 ```
 
 Fill `$RUN_DIR/brief-body.md`: a well-oriented **Objective** drawn from the whole session; **Output

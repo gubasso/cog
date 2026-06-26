@@ -45,16 +45,20 @@ this reference table.
 | `codex-runner explain-status <status>` | Explain a Codex runner status. |
 | `cog-skill-creator-scaffold` | Compute skill scaffold paths. |
 | `cog-skill-creator-validate` | Validate cog-skill-creator inputs. |
-| `context-brief` | Scaffold, build, and validate a rich-context handoff brief. |
-| `context-brief scaffold [--out <path>]` | Emit the author-filled context-brief body skeleton. |
-| `context-brief build --request <file> --body <file> --out <path>` | Attach the raw request verbatim and assemble a validated brief. |
-| `context-brief validate <path>` | Fail closed unless every required brief section is present and filled. |
-| `context-brief gate render --skill <name>` | Render the canonical context-brief gate stanza for a fresh-context-boundary orchestrator. |
+| `context-brief` | Template, build, and validate a rich-context handoff brief. |
+| `context-brief template [--out <path>]` | Emit the author-filled context-brief body template. |
+| `context-brief build --request <file> --body <file> --out <path> [--format md\|json]` | Attach the raw request verbatim and assemble a validated brief. |
+| `context-brief validate <path> [--format text\|json]` | Fail closed unless every required brief section is present and filled. |
 | `digest-check` | Check digest frontmatter for source drift. |
 | `digest-stamp` | Stamp digest frontmatter from source files. |
 | `doctor` | Check cog runtime health and installation prerequisites. |
 | `executor` | Manage shared executor run contracts and stage artifacts. |
 | `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
+| `gate` | Render, check, stamp, and list canonical skill gate stanzas. |
+| `gate render --id <id> --skill <name>` | Render a canonical gate stanza (`--id plan-mode\|context-brief`) for a skill. |
+| `gate check --id <id> --skill <name> --input <file> [--format text\|json]` | Report whether a skill's stamped gate stanza matches the canonical render (drift). |
+| `gate stamp --id <id> --skill <name> --input <file>` | Stamp or refresh a gate's canonical block in a file in place (idempotent). |
+| `gate list [--format text\|json]` | List the registered gate ids and their descriptions. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
 | `gc-commit` | Commit with a message file and explicit pathspec. |
 | `gc-commit-lint` | Validate a commit message against Conventional Commits (or defer to the repo linter). |
