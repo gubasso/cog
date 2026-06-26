@@ -150,6 +150,59 @@ cog::fn::skill::plan_mode_gate_normalize() {
   printf '%s' "$1" | LC_ALL=C tr '[:space:]' ' ' | LC_ALL=C tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
 }
 
+cog::fn::skill::has_context_brief_gate() {
+  local file="$1"
+  grep -qE '<!--[[:space:]]*cog-context-brief-gate[[:space:]]*-->' "$file"
+}
+
+# Single source of truth for the context-brief gate stanza. The obligation to
+# build a validated context brief for every fresh-context callee (ADR-0044) is
+# owned here so cog context-brief gate render and cog skill-lint never drift. The
+# rule lives here; the mechanics stay in cog context-brief and the contract.
+cog::fn::skill::context_brief_gate_paragraph() {
+  local name="$1"
+  cog::fn::skill::name_is_valid "$name" || return 2
+  # shellcheck disable=SC2016  # backticks here are literal Markdown, not command substitution
+  printf '**Context-brief gate.** Before `/%s` dispatches to any fresh-context worker — an Agent subagent\n' "$name"
+  # shellcheck disable=SC2016  # backticks here are literal Markdown, not command substitution
+  printf '%s\n' 'or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole'
+  printf '%s\n' 'accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full'
+  # shellcheck disable=SC2016  # backticks here are literal Markdown, not command substitution
+  printf '%s\n' 'substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog'
+  # shellcheck disable=SC2016  # backticks here are literal Markdown, not command substitution
+  printf '%s\n' 'context-brief build` and confirm it with `cog context-brief validate` before dispatch.'
+}
+
+cog::fn::skill::context_brief_gate_render() {
+  local name="$1"
+  printf '%s\n\n' '<!-- cog-context-brief-gate -->'
+  cog::fn::skill::context_brief_gate_paragraph "$name" || return 2
+}
+
+# Extract the inlined context-brief gate paragraph: the consecutive non-blank
+# lines that follow the gate marker (blank lines between marker and paragraph are
+# skipped). Keys off its own marker only, so it never collides with the plan-mode
+# gate extractor in a skill that carries both.
+cog::fn::skill::context_brief_gate_extract() {
+  local file="$1"
+  awk '
+    !found && /<!--[[:space:]]*cog-context-brief-gate[[:space:]]*-->/ {
+      found = 1
+      next
+    }
+    found && !started {
+      if ($0 ~ /^[[:space:]]*$/) next
+      started = 1
+      print
+      next
+    }
+    found && started {
+      if ($0 ~ /^[[:space:]]*$/) exit
+      print
+    }
+  ' "$file"
+}
+
 cog::fn::skill::classify_prefix() {
   local name="$1"
   case "$name" in

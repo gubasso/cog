@@ -11,6 +11,7 @@ allowed-tools: Bash Read Write Edit Skill
 ---
 
 <!-- trigger-tests: "review loop", "keep reviewing until clean", "iterative code review", "multi-pass review with Codex" -->
+<!-- cog-skill: input-fidelity -->
 
 # Review Loop
 
@@ -27,6 +28,14 @@ Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-res
 to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume`
 against the round-1 reviewer thread.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/review-loop` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ## Inputs
 
 Handoff mode: `$ARGUMENTS` is a `review_loop_input.json` path. Validate it first:
@@ -36,7 +45,9 @@ cog review-loop-input validate --input "$ARGUMENTS"
 ```
 
 Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id`
-are informational.
+are informational. When the input carries an optional `context` value — a rich-context brief conforming
+to `$(cog skill-refs path orchestration/context-brief-contract.md)` — use it verbatim as the round-1
+context brief instead of assembling a new one.
 
 Standalone mode: use `$ARGUMENTS`, conversation context, and read-only git inspection commands to
 understand the work. If intent is unclear, ask one focused question before round 1.
@@ -73,9 +84,18 @@ Artifacts:
 
 ## Round Context
 
-Round 1 context includes the task, reviewed plan when present, and prior implementation-review
-findings when present. The Codex twin captures the live diff itself; the context file carries intent
-and prior state.
+Round 1 context is a best-constructed context brief at `$RUN_DIR/round-1-context.md` conforming to
+`$(cog skill-refs path orchestration/context-brief-contract.md)`: the task as the raw request, a
+well-oriented objective, and the reviewed plan plus prior implementation-review findings as context
+and artifacts. When the handoff input already carries a `context` brief, write it to
+`$RUN_DIR/round-1-context.md` verbatim; otherwise assemble it inline via `/context-builder`. Either
+way, gate it before use:
+
+```bash
+cog context-brief validate "$RUN_DIR/round-1-context.md"
+```
+
+The Codex twin captures the live diff itself; the brief carries intent and prior state.
 
 Rounds 2+ resume the round-1 reviewer thread, so the reviewer already retains the task, plan, and
 every prior-round finding. The resumed round prompt is short: it carries only what is new — a brief

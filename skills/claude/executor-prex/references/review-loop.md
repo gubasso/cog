@@ -32,6 +32,13 @@ cog review-loop-input build \
   --out "$RUN_DIR/review_loop_input.json"
 ```
 
+When a rich-context brief conforming to
+`$(cog skill-refs path orchestration/context-brief-contract.md)` has been assembled for this run,
+pass it through with `--context "$RUN_DIR/context-brief.md"`; the consumer then seeds its round-1
+context from that brief instead of reassembling one. Omit the flag when no brief was built — the
+canonical 5-key envelope is unchanged and the consumer assembles its own context from `task`,
+`reviewed_plan`, and `implementation_review`.
+
 Stage 2 runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id`
 records the implementation exec when available. Both fields are kept in the handoff JSON and may be
 null. The schema and its

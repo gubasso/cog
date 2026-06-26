@@ -22,6 +22,14 @@ Coordinate two independent lean planners from one identical raw brief, then synt
 lean plan through `cog plan-doc`. The workers are `/plan-oneshot` instances; the coordinator builds
 their complete input and owns the final plan.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/plan-multi` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ## Inputs
 
 `$ARGUMENTS` accepts:
@@ -55,21 +63,29 @@ Follow `/plan-oneshot` Phases 2-4 inline:
 
 Workers must not ask the user anything.
 
-## Phase 5: Build the raw brief
+## Phase 5: Build the context brief
 
-Write `BRIEF_FILE`, the single identical input for both workers. It is an enrichment-only superset of
-the original input:
+Build `BRIEF_FILE`, the single identical input for both workers, as a best-constructed context brief
+per `$(cog skill-refs path orchestration/context-brief-contract.md)`. Scaffold the authored sections:
 
-1. Original orientation and relevant user turns, verbatim and in full.
-2. Relevant conversation content, quoted; reorganize for clarity without compressing away
-   information.
-3. Interview Q&A verbatim, question plus raw answer.
-4. Codebase research as raw excerpts with absolute paths and quoted code/signatures.
-5. Hard constraints, including no git commands unless explicitly authorized.
+```bash
+cog context-brief scaffold --out "$RUN_DIR/brief-body.md"
+```
 
-Never summarize, truncate, or drop original information while building this brief; when unsure,
-include more. Bias isolation is the single deliberate omission: keep your own proposed approach,
-plan, verdict, or solution out of the brief so each worker starts neutral.
+Fill `$RUN_DIR/brief-body.md`: a well-oriented **Objective** drawn from the whole session; **Output
+Format** (one lean implementation-plan draft); **Boundaries / Scope** (including hard constraints such
+as no git commands unless explicitly authorized); **Context & Decisions** (quoted conversation,
+interview Q&A, decisions and rationale — summarize narrative for clarity but carry the full substance);
+**Artifacts & Pointers** (codebase research as raw excerpts with absolute paths, plus any
+session-generated plan); **Effort Guidance**; and **Not Evaluated**. Keep your own proposed approach,
+plan, verdict, or solution out — bias isolation is the single deliberate omission.
+
+```bash
+cog context-brief build --request "$ORIENTATION_FILE" --body "$RUN_DIR/brief-body.md" --out "$BRIEF_FILE"
+```
+
+`build` attaches the orientation verbatim as the Original Request and fails closed unless every section
+is filled.
 
 If `SOLO=1`, skip Phase 6 and the Codex half of Phase 7.
 

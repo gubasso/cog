@@ -15,6 +15,14 @@ input-evaluation gate guarantees a good plan, then Codex implements it. This ski
 judgment. Run directory setup, input classification, the quality verdict, producer resolution,
 canonical artifact paths, Codex invocation, and executor summaries stay behind `cog`.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/executor-oneshot` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ## Inputs
 
 `$ARGUMENTS` is either a prompt/task description or an existing readable regular `.md` plan path.
@@ -60,10 +68,26 @@ cog executor prepare-step --executor executor-oneshot --engine codex --route <ne
 
 Write the prepared plan to `<run-dir>/prepared-plan.md`.
 
+Build the producer's input as a validated context brief first. Ensure `<run-dir>/request.md` exists
+(init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the
+supplied-plan source context verbatim and in full). Build the brief per
+`$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it
+from the whole session (a well-oriented Objective; Output Format; Boundaries; Context & Decisions
+carrying the full substance; Artifacts inline or pointed-to; Effort Guidance; Not Evaluated — keep your
+own verdict out), then build it:
+
+```bash
+cog context-brief scaffold --out <run-dir>/brief-body.md
+# fill <run-dir>/brief-body.md per the contract, then:
+cog context-brief build --request <run-dir>/request.md --body <run-dir>/brief-body.md --out <run-dir>/brief.md
+```
+
+`build` attaches the request verbatim and fails closed unless every section is filled. Carry
+`<run-dir>/brief.md` as the worker's complete context in both routes below.
+
 - **`needs-plan` → generate (`/plan-oneshot`, Codex).** Build a prompt whose first line is the write
-  orientation, followed by `$plan-oneshot`, `--output <run-dir>/prepared-plan.md`, and the original
-  task. The prompt is an enrichment-only superset of the original input: include the original task
-  verbatim and in full, plus relevant repo constraints, and never replace it with a summary.
+  orientation, followed by `$plan-oneshot`, `--output <run-dir>/prepared-plan.md`, and
+  `<run-dir>/brief.md` as the complete context (the validated context brief built above).
   `$plan-oneshot` saves its plan artifact to the output path. Launch write-capable, then
   poll-and-classify:
 
@@ -80,7 +104,7 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`.
   delegation prompt instructs the Claude subagent to read
   `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follow its Orchestrator Invocation Contract
   with three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for
-  inline-plan prompt input), request-path `<run-dir>/request.md`, and output-path
+  inline-plan prompt input), request-path `<run-dir>/brief.md` (the validated context brief), and output-path
   `<run-dir>/prepared-plan.md` — and to return a one-line confirmation containing the output path.
 
 After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.

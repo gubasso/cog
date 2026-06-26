@@ -29,6 +29,14 @@ This skill runs **inline** (no fork): only the main thread can read the live con
 the user, and act as the neutral judge. It **delegates** generation to two non-interactive workers
 and keeps all interaction and all repo writes to itself.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/plan-writer-multi` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ```text
 inline: gather raw context → research → INTERVIEW → build RAW BRIEF → preflight
             │
@@ -103,27 +111,32 @@ Follow the stock `plan-writer` Phases 2–4 (`$HOME/.claude/skills/plan-writer/S
   as a skill-chosen default. Settle scope, approach, and any sizing intent. The `--executor`/EF is
   already fixed from Phase 1 and is a **shared** input to both workers.
 
-## Phase 5: Build the RAW context brief
+## Phase 5: Build the context brief
 
-Write `$RUN_DIR/plan-brief.md` — the **single, identical input** both workers receive. It is an
-enrichment-only superset of the original input, never a summary or lossy rewrite, so both engines
-start neutral. Compose it, in order:
+Build `$RUN_DIR/plan-brief.md` — the **single, identical input** both workers receive — as a
+best-constructed context brief per `$(cog skill-refs path orchestration/context-brief-contract.md)`, so
+both engines start neutral. Scaffold the authored sections:
 
-1. **Orientation / user prompts — verbatim and in full** (the `$ARGUMENTS` orientation and the
-   relevant user turns, quoted).
-2. **Relevant conversation content — quoted** (keep the user's words and key exchanges; reorganize
-   for clarity without compressing away information).
-3. **Interview Q&A — verbatim** (each question + the user's raw answer).
-4. **Codebase research — raw excerpts** (absolute paths + quoted code/signatures), not summaries.
-5. **Hard constraints + the executor line**: include `Executor: <EXECUTOR> (EF <EF>)` so both
-   workers size against the same factor.
+```bash
+cog context-brief scaffold --out "$RUN_DIR/plan-brief-body.md"
+```
 
-Never summarize, truncate, or drop original information while building this brief. When unsure,
-include more.
+Fill `$RUN_DIR/plan-brief-body.md`: a well-oriented **Objective** drawn from the whole session;
+**Output Format** (one implementation-plan draft); **Boundaries / Scope**; **Context & Decisions**
+(quoted conversation, interview Q&A, decisions and rationale — summarize narrative for clarity but
+carry the full substance); **Artifacts & Pointers** (codebase research as raw excerpts with absolute
+paths, plus any session-generated plan); **Effort Guidance** (include `Executor: <EXECUTOR> (EF <EF>)`
+so both workers size against the same factor); and **Not Evaluated**.
 
-**Do NOT put your own proposed approach/solution in the brief** — that would bias the workers and
-defeat the independent second opinion. The brief is _raw context + requirements + decisions_, never a
-pre-baked plan.
+**Keep your own proposed approach/solution out of the brief** — that would bias the workers and defeat
+the independent second opinion. Bias isolation is the single deliberate omission.
+
+```bash
+cog context-brief build --request "$RUN_DIR/orientation.txt" --body "$RUN_DIR/plan-brief-body.md" --out "$RUN_DIR/plan-brief.md"
+```
+
+`build` attaches the orientation verbatim as the Original Request and fails closed unless every section
+is filled.
 
 If `--solo` (`SOLO=1`), skip Phase 6 and the Codex half of Phase 7; go straight to the Claude draft
 then Phase 8.

@@ -49,9 +49,9 @@ input it writes `plan-source` with the supplied plan path.
 
 Delegate the input-evaluation gate plus vetted-plan production to `plan-vetted`. Inline-chain it in the
 current context (read `$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it), passing the original
-input plus `--output <run-dir>/prepared-plan.md`. The delegation input is an enrichment-only superset
-of the original request: include it verbatim and in full, plus relevant repo constraints, and never
-replace it with a summary. `plan-vetted` evaluates the input, generates a plan (`needs-plan`) or
+input plus `--output <run-dir>/prepared-plan.md`. The delegation input is the best-constructed input
+per `$(cog skill-refs path orchestration/context-brief-contract.md)`: attach the original request
+as-is, add relevant repo constraints, and carry the full substance that bears on the work. `plan-vetted` evaluates the input, generates a plan (`needs-plan`) or
 multi-reviews it (`good-input`), and writes the vetted plan to the `--output` path. It returns the
 output path and the route.
 

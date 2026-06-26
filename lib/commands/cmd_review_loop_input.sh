@@ -2,13 +2,13 @@
 : 'desc: Build and validate review-loop handoff input JSON.'
 
 __cog_review_loop_input_usage() {
-  cog::fn::ui_data "Usage: cog review-loop-input build --run-dir <dir> [--out <path>|--json]"
+  cog::fn::ui_data "Usage: cog review-loop-input build --run-dir <dir> [--context <path>] [--out <path>|--json]"
   cog::fn::ui_data "Usage: cog review-loop-input validate --input <path> [--json]"
   cog::fn::ui_data "Usage: cog review-loop-input --help"
 }
 
 __cog_review_loop_input_build_cmd() {
-  local run_dir="" out="" json="${COG_UI_JSON:-false}"
+  local run_dir="" context="" out="" json="${COG_UI_JSON:-false}"
   local assembled
 
   while (($# > 0)); do
@@ -21,6 +21,12 @@ __cog_review_loop_input_build_cmd() {
         [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
           "missing run directory" "option: --run-dir" "" "run 'cog review-loop-input --help'"
         run_dir="$2"
+        shift 2
+        ;;
+      --context)
+        [[ $# -ge 2 && -n ${2:-} && -z $context ]] || cog::fn::error_raise "MissingArgument" \
+          "missing context brief path" "option: --context" "" "run 'cog review-loop-input --help'"
+        context="$2"
         shift 2
         ;;
       --out)
@@ -52,7 +58,7 @@ __cog_review_loop_input_build_cmd() {
 
   local self_check
   self_check="$(cog::fn::review_loop_input_schema_filter)"
-  assembled="$(cog::fn::review_loop_input_build "$run_dir")"
+  assembled="$(cog::fn::review_loop_input_build "$run_dir" "$context")"
   if [[ $json == true ]]; then
     cog::fn::json_emit "$self_check" "$assembled"
   else

@@ -168,6 +168,15 @@ append_orchestrator_gate() {
   assert_success
 }
 
+@test "cog skill-lint maps context-builder into the input-fidelity set" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/context-builder" context-builder claude
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/context-builder/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"input-fidelity"* ]]
+}
+
 @test "cog skill-lint accepts non-delegators without input-fidelity marker" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
 
@@ -182,6 +191,105 @@ append_orchestrator_gate() {
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/ask/SKILL.md"
 
   assert_success
+}
+
+# Build a fresh-context-boundary skill (plan-vetted) carrying the input-fidelity
+# marker so only the context-brief-gate rule is exercised.
+write_boundary_skill() {
+  local dir="${BATS_TEST_TMPDIR}/skills/claude/plan-vetted"
+  write_skill "$dir" plan-vetted claude
+  sed -i '/trigger-tests/a <!-- cog-skill: input-fidelity -->' "$dir/SKILL.md"
+  printf '%s\n' "$dir/SKILL.md"
+}
+
+@test "cog skill-lint requires the context-brief gate on a boundary orchestrator" {
+  local file
+  file="$(write_boundary_skill)"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"context-brief-gate"* ]]
+  [[ $stderr == *"missing context-brief gate"* ]]
+}
+
+@test "cog skill-lint accepts a boundary orchestrator with the gate and a build call" {
+  local file
+  file="$(write_boundary_skill)"
+  {
+    printf '\n'
+    cog context-brief gate render --skill plan-vetted
+    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
+    printf '\n\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  [[ $stderr != *"context-brief-gate"* ]]
+}
+
+@test "cog skill-lint accepts a boundary orchestrator that validates a handoff brief" {
+  local file
+  file="$(write_boundary_skill)"
+  {
+    printf '\n'
+    cog context-brief gate render --skill plan-vetted
+    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
+    printf '\n\n```bash\ncog context-brief validate "$RUN_DIR/brief.md"\n```\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  [[ $stderr != *"context-brief-gate"* ]]
+}
+
+@test "cog skill-lint rejects a drifted context-brief gate stanza" {
+  local file
+  file="$(write_boundary_skill)"
+  {
+    printf '\n<!-- cog-context-brief-gate -->\n\n'
+    printf '**Context-brief gate.** Drifted wording that is not the canonical stanza.\n'
+    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
+    printf '\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"context-brief-gate"* ]]
+  [[ $stderr == *"drifted"* ]]
+}
+
+@test "cog skill-lint rejects a context-brief gate with no build or validate call" {
+  local file
+  file="$(write_boundary_skill)"
+  {
+    printf '\n'
+    cog context-brief gate render --skill plan-vetted
+    printf '\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"context-brief-gate"* ]]
+  [[ $stderr == *"never builds or validates"* ]]
+}
+
+@test "cog skill-lint rejects the context-brief gate on a non-boundary skill" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  {
+    printf '\n'
+    cog context-brief gate render --skill demo-skill
+    printf '\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"context-brief-gate"* ]]
+  [[ $stderr == *"belongs on a fresh-context-boundary orchestrator"* ]]
 }
 
 @test "cog skill-lint rejects deterministic for loops" {
@@ -787,11 +895,11 @@ EOF
 }
 
 @test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
   {
     printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n'
-    cog plan-mode-gate render --skill executor-prex
+    cog plan-mode-gate render --skill executor-demo
     printf '\n# Plan Review Execute\n'
   } >>"$file"
 

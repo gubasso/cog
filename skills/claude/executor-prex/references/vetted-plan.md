@@ -5,8 +5,9 @@ Produce the vetted plan by inline-chaining `plan-vetted` in the current context:
 and the dual-engine producer selection (generate when thin, multi-review when already detailed); the
 parent only supplies the input and the output path, then runs the approval loop.
 
-Pass the task as an enrichment-only superset of the original request — verbatim and in full, plus
-relevant repo constraints — and the output path `$RUN_DIR/vetted-plan.md`. Do not pre-create
+Pass the task as the best-constructed input per `$(cog skill-refs path orchestration/context-brief-contract.md)`
+— attach the request as-is plus relevant repo constraints, carrying the full substance — and the output
+path `$RUN_DIR/vetted-plan.md`. Do not pre-create
 or pre-format the artifact; `plan-vetted` writes the vetted plan there and returns the output path and
 the route.
 

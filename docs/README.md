@@ -46,6 +46,9 @@ This directory is organized using Diataxis zones.
 - [ADR-0039: gc fix-all commit round loop with delegated opus@low fixer](decisions/0039-gc-fix-all-round-loop.md)
 - [ADR-0040: Stage-agnostic machine identifiers](decisions/0040-stage-agnostic-identifiers.md)
 - [ADR-0041: Named model/effort tier ladder](decisions/0041-named-tier-ladder.md)
+- [ADR-0042: Context-builder shared capability](decisions/0042-context-builder-shared-capability.md)
+- [ADR-0043: Best-constructed input standard](decisions/0043-best-constructed-input-standard.md)
+- [ADR-0044: Context-brief gate on fresh-context-boundary orchestrators](decisions/0044-context-brief-gate.md)
 
 ## Guides
 
@@ -75,3 +78,4 @@ This directory is organized using Diataxis zones.
 
 - [Architecture overview](explanation/architecture.md)
 - [Foreground orchestration](explanation/foreground-orchestration.md)
+- [Context handoff and the context-builder](explanation/context-builder.md)

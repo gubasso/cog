@@ -51,6 +51,8 @@ source "${LIB_DIR}/functions/fn_executor.sh"
 source "${LIB_DIR}/functions/fn_assess_input.sh"
 # shellcheck source=../lib/functions/fn_review_loop_input.sh
 source "${LIB_DIR}/functions/fn_review_loop_input.sh"
+# shellcheck source=../lib/functions/fn_context_brief.sh
+source "${LIB_DIR}/functions/fn_context_brief.sh"
 # shellcheck source=../lib/functions/fn_git.sh
 source "${LIB_DIR}/functions/fn_git.sh"
 # shellcheck source=../lib/functions/fn_queue.sh

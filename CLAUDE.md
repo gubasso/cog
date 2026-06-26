@@ -60,10 +60,16 @@ delegated to cog. Enforced by cog skill-lint (producer-blindness) via a curated 
 map. See docs/decisions/0026-consumer-skill-producer-blindness.md and
 docs/reference/skill-contract.md ("Producer-blind consumers").
 
-Non-negotiable: a brief-building delegator passes an enrichment-only superset of the original input
-to fresh-context workers: original prompt/request verbatim and in full, plus enriching context,
-interview Q&A, raw code excerpts, and constraints. The coordinator's own verdict or proposed solution
-is the deliberate omission for bias isolation. Enforced by cog skill-lint (input-fidelity) via a
-curated delegator set and marker. See
-docs/decisions/0035-input-fidelity-enrichment-only-briefs.md and docs/reference/skill-contract.md
-("Input fidelity (enrichment-only briefs)").
+Non-negotiable: a brief-building delegator passes the best-constructed input to fresh-context workers:
+a well-oriented objective crafted from the whole session, the raw request attached as-is, and the full
+substantive context and artifacts (decisions, research, findings, generated plans) that bear on the
+task. Summarize narrative for clarity, but carry the full substance where necessary; the coordinator's
+own verdict or proposed solution is the deliberate omission for bias isolation. Enforced by cog
+skill-lint (input-fidelity) via a curated delegator set and marker. The general structural shape is the
+context-brief convention (skill-refs/orchestration/context-brief-contract.md), built and validated
+through the canonical context-builder skill and cog context-brief (build --request attaches the raw
+request); context-building runs inline in the caller's context, never as a blind subagent. See
+docs/decisions/0043-best-constructed-input-standard.md (supersedes
+docs/decisions/0035-input-fidelity-enrichment-only-briefs.md),
+docs/decisions/0042-context-builder-shared-capability.md, and docs/reference/skill-contract.md
+("Input fidelity (best-constructed input)", "Context brief (general input convention)").

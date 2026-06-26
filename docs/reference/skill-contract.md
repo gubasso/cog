@@ -184,24 +184,43 @@ The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy p
 `review-code-deep` for `review-findings` so frozen fixtures keep matching; that compatibility token
 is intentional and omitted from the table above.
 
-## Input fidelity (enrichment-only briefs)
+## Input fidelity (best-constructed input)
 
 A brief-building delegator is a skill that composes a custom brief or prompt and hands it to a
-fresh-context worker through the Agent tool or `cog codex-runner run-exec`. The delegated input must
-be an enrichment-only superset of the original input: the user's original prompt/request verbatim and
-in full, plus organized context, interview Q&A, raw code excerpts, and constraints.
+fresh-context worker through the Agent tool or `cog codex-runner run-exec`. The delegated input is the
+**best-constructed input** for that worker: a well-oriented Objective crafted from the whole session,
+the raw request attached as-is, and the full substantive context and artifacts (decisions, research,
+findings, generated plans) that bear on the task.
 
-The delegator must not summarize, truncate, or drop original information while building the brief.
-When unsure, include more. The coordinator's own verdict, proposed solution, or critique is the
-single deliberate omission when bias isolation is needed. See
-[ADR-0035](../decisions/0035-input-fidelity-enrichment-only-briefs.md).
+Summarize narrative for clarity, but carry the full substance where it is necessary — never drop a
+decision or a generated artifact to be terse; reference large or external artifacts by path. The
+coordinator's own verdict, proposed solution, or critique is the single deliberate omission, for bias
+isolation. See [ADR-0043](../decisions/0043-best-constructed-input-standard.md) (supersedes ADR-0035).
 
 In-scope runtime skills carry this marker near the frontmatter:
 `<!-- cog-skill: input-fidelity -->`.
 
 Enforcement is the `input-fidelity` lint rule, keyed off a curated runtime-aware delegator set in
-`lib/commands/cmd_skill_lint.sh`. The marker asserts the contract structurally; the enrichment-only
-wording remains prose judgment in the skill body.
+`lib/commands/cmd_skill_lint.sh` (which includes `context-builder` and `review-loop`). The marker name
+is retained for stability; its meaning is fidelity to intent and substance, not verbatim copying. The
+marker asserts the contract structurally; the best-constructed standard remains prose judgment in the
+skill body.
+
+## Context brief (general input convention)
+
+The general structural shape of a best-constructed input is the context-brief convention at
+`skill-refs/orchestration/context-brief-contract.md`, resolved through
+`cog skill-refs path orchestration/context-brief-contract.md`. A brief carries the raw request
+(injected), a well-oriented objective, output format, boundaries, context and decisions, artifacts and
+pointers, effort guidance, and an explicit not-evaluated list; the coordinator's own verdict is the
+single deliberate omission.
+
+The canonical `context-builder` skill assembles a brief inline in the caller's context (the
+conversation lives there, so it cannot be a blind subagent), and `cog context-brief`
+(`scaffold`/`build`/`validate`) owns the deterministic structure — `build --request` injects the raw
+request from a rawfile so it is always attached, and `validate` fails closed unless every section is
+present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capability.md) and
+[ADR-0043](../decisions/0043-best-constructed-input-standard.md).
 
 ## Structural Lint Checks
 
@@ -306,6 +325,32 @@ skill must carry the canonical gate (hard-fails when missing or when the inlined
 whitespace-normalized, from `cog plan-mode-gate render`), and every other Claude skill must **not**
 carry the gate (it belongs on the calling orchestrator). Codex skills are exempt — Codex has no Claude
 plan mode.
+
+## Context-brief gate
+
+Every orchestrator that hands substantive work (planning, review, implementation) to a **fresh
+context** — an Agent subagent or a `cog codex-runner` Codex job — must build that worker's input as a
+validated context brief (the best-constructed input standard, see "Context brief" above and
+[ADR-0043](../decisions/0043-best-constructed-input-standard.md)). The obligation is stamped and
+drift-linted like the plan-mode gate, but the rule is the source of truth while `cog context-brief` and
+the contract own the mechanics. See [ADR-0044](../decisions/0044-context-brief-gate.md).
+
+The gate stanza is marked `<!-- cog-context-brief-gate -->`, and its wording is a single source of
+truth owned by `cog context-brief gate render` — never hand-write it:
+
+```bash
+cog context-brief gate render --skill <name>
+```
+
+`cog skill-lint` enforces this with the `context-brief-gate` rule, keyed off a curated, **runtime-
+agnostic** boundary set (Codex orchestrators included, unlike the Claude-only plan-mode gate). A skill
+in the set must carry BOTH the un-drifted canonical stanza AND a real `cog context-brief build` or
+`cog context-brief validate` call (build constructs the brief; validate confirms one obtained from the
+handoff input or assembled via `/context-builder`). The rule hard-fails a boundary skill that is
+missing the stanza, has drifted wording, or never builds/validates a brief, and forbids the marker on
+any skill outside the set. Read-only Q&A relays (`ask`), inline same-context chainers
+(`executor-vetted`, `context-builder`), and verbatim transport runners (`runner-*`, `gc`) are out of
+scope; the human top-level operator orients the first skill directly and is exempt.
 
 ## Premise Lint Checks
 

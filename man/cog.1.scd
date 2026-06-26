@@ -60,6 +60,9 @@ The command list and short descriptions are sourced from command modules under
 *cog-skill-creator-validate*
 	Validate cog-skill-creator inputs.
 
+*context-brief*
+	Scaffold, build, and validate a rich-context handoff brief.
+
 *digest-check*
 	Check digest frontmatter for source drift.
 

@@ -3,10 +3,18 @@
 # Single source of truth for the handoff-JSON schema invariant. Both the build
 # self-check (cmd_review_loop_input.sh) and validate use this one filter so the
 # schema cannot drift between two copies.
+#
+# `context` is an optional rich-context-brief pointer/payload. It is omitted when
+# absent (the canonical 5-key envelope) and, when present, must be a non-empty
+# string. The keyset accepts exactly the 5-key or the 6-key (with context) shape.
 __cog_review_loop_input_filter='
 def nonempty: type == "string" and length > 0;
 def thread_id: (. == null) or (type == "string" and test("^[A-Za-z0-9._:-]+$"));
-([keys] == [["impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]]) and
+(
+  ([keys] == [["impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]])
+  or
+  (([keys] == [["context","impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]]) and (.context | nonempty))
+) and
 (.task | nonempty) and
 (.reviewed_plan | nonempty) and
 (.implementation_review | nonempty) and
@@ -61,8 +69,10 @@ __cog_review_loop_input_read_thread_id() {
 
 cog::fn::review_loop_input_build() {
   local run_dir="${1:-}"
+  local context_file="${2:-}"
   local task_file reviewed_plan_file implementation_review_file plan_file impl_file
   local plan_tid="" impl_tid="" plan_present=false impl_present=false
+  local context_source="/dev/null" context_present=false
 
   [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
     "missing run directory" "function: cog::fn::review_loop_input_build" "" "pass a run directory"
@@ -77,6 +87,14 @@ cog::fn::review_loop_input_build() {
   cog::fn::rundir_require_file "$reviewed_plan_file" "vetted-plan.md"
   cog::fn::rundir_require_file "$implementation_review_file" "review.md"
   __cog_review_loop_input_read_thread_id "$plan_file" "plan-thread-id" plan_tid plan_present
+
+  # The optional context brief is included verbatim when a non-empty file is given,
+  # and omitted entirely otherwise so the canonical 5-key envelope is unchanged.
+  if [[ -n $context_file ]]; then
+    cog::fn::rundir_require_file "$context_file" "context brief"
+    context_source="$context_file"
+    context_present=true
+  fi
   __cog_review_loop_input_read_thread_id "$impl_file" "impl-thread-id" impl_tid impl_present
 
   jq -n \
@@ -87,13 +105,16 @@ cog::fn::review_loop_input_build() {
     --argjson plan_present "$plan_present" \
     --arg impl_tid "$impl_tid" \
     --argjson impl_present "$impl_present" \
+    --rawfile context "$context_source" \
+    --argjson context_present "$context_present" \
     '{
       task: $task,
       reviewed_plan: $reviewed_plan,
       implementation_review: $implementation_review,
       plan_thread_id: (if $plan_present then $plan_tid else null end),
       impl_thread_id: (if $impl_present then $impl_tid else null end)
-    }'
+    }
+    + (if $context_present then {context: $context} else {} end)'
 }
 
 cog::fn::review_loop_input_validate_file() {

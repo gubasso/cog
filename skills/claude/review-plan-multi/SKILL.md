@@ -28,6 +28,14 @@ This skill runs **inline** (no fork): only the main thread can read the live con
 request brief, and act as the neutral judge. It **delegates** each review to a non-interactive worker
 and keeps all interaction and the final write to itself.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/review-plan-multi` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ```text
 inline: read the plan input (file | dir | inline text) → build PLAN-UNDER-REVIEW + raw REQUEST brief → preflight
             │
@@ -99,12 +107,27 @@ Produce the **single, identical pair of inputs** both workers receive.
   `PLAN_UNDER_REVIEW`, preserving each file's heading and content.
 - `MODE=inline` — read `RAW_INPUT_FILE`; separate the plan portion into `PLAN_UNDER_REVIEW`.
 
-**`REQUEST_FILE`** — the goal and context the plan is reviewed **against**: the original request
-verbatim and in full, decisions and their reasoning, hard constraints, and relevant codebase facts
-(absolute paths and quoted excerpts). Draw it from the input and the live conversation as an
-enrichment-only superset of the original input, never a summary or lossy rewrite. Quote the user's
-words, include interview Q&A verbatim when present, preserve raw plan/request excerpts, and favor
-over-inclusion when unsure.
+**`REQUEST_FILE`** — the goal and context the plan is reviewed **against**, built as a
+best-constructed context brief per `$(cog skill-refs path orchestration/context-brief-contract.md)`.
+First write the user's original request/goal (the intent the plan is reviewed against, drawn from the
+input and conversation) to `$RUN_DIR/objective.txt`. Scaffold the authored body:
+
+```bash
+cog context-brief scaffold --out "$RUN_DIR/request-body.md"
+```
+
+Fill `$RUN_DIR/request-body.md`: a well-oriented **Objective**; **Output Format** (an annotated plan
+review); **Boundaries / Scope** (review only, do not implement); **Context & Decisions** (decisions and
+reasoning, interview Q&A, the user's words — summarize narrative for clarity but carry the full
+substance); **Artifacts & Pointers** (relevant codebase facts as absolute paths and quoted excerpts);
+**Effort Guidance**; and **Not Evaluated**. Then assemble:
+
+```bash
+cog context-brief build --request "$RUN_DIR/objective.txt" --body "$RUN_DIR/request-body.md" --out "$REQUEST_FILE"
+```
+
+`build` attaches the request verbatim and fails closed unless every section is filled.
+`PLAN_UNDER_REVIEW` stays a separate file — the material under review, not part of the brief.
 
 **Keep your own verdict out of both files.** The brief is raw context + requirements; the plan is the
 material under review. Injecting your own critique or proposed fixes biases the workers and defeats

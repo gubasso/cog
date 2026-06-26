@@ -31,4 +31,7 @@ prose.
 
 ## Status
 
-Accepted
+Superseded by [ADR-0043](0043-best-constructed-input-standard.md) — the verbatim-and-in-full mandate
+is replaced by the best-constructed input standard (oriented summary + raw request attached + full
+substantive context and artifacts, unbiased). The `input-fidelity` marker and lint rule are retained
+with redefined meaning.

@@ -124,8 +124,8 @@ echo "SANDBOX_MODE=$SANDBOX_MODE"
 ##### Step A.3 — Write Codex prompt (Bash)
 
 Substitute the literal `RUN_DIR` path and the literal `SANDBOX_MODE` value from step A.2.
-The prompt file is an enrichment-only superset of the original question: include the question text
-verbatim and in full, plus any relevant enriching context, and never replace it with a summary.
+The prompt file is the best-constructed input per `$(cog skill-refs path orchestration/context-brief-contract.md)`:
+attach the question text as-is, plus any relevant enriching context, and carry the full substance.
 
 ```bash
 cat > "$RUN_DIR/codex-prompt.txt" <<'EOF'

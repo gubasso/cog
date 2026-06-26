@@ -41,6 +41,7 @@ Commands:
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
+  context-brief  Scaffold, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
@@ -138,6 +139,7 @@ Commands:
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
+  context-brief  Scaffold, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.

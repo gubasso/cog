@@ -45,6 +45,11 @@ this reference table.
 | `codex-runner explain-status <status>` | Explain a Codex runner status. |
 | `cog-skill-creator-scaffold` | Compute skill scaffold paths. |
 | `cog-skill-creator-validate` | Validate cog-skill-creator inputs. |
+| `context-brief` | Scaffold, build, and validate a rich-context handoff brief. |
+| `context-brief scaffold [--out <path>]` | Emit the author-filled context-brief body skeleton. |
+| `context-brief build --request <file> --body <file> --out <path>` | Attach the raw request verbatim and assemble a validated brief. |
+| `context-brief validate <path>` | Fail closed unless every required brief section is present and filled. |
+| `context-brief gate render --skill <name>` | Render the canonical context-brief gate stanza for a fresh-context-boundary orchestrator. |
 | `digest-check` | Check digest frontmatter for source drift. |
 | `digest-stamp` | Stamp digest frontmatter from source files. |
 | `doctor` | Check cog runtime health and installation prerequisites. |

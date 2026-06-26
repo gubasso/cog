@@ -24,6 +24,14 @@ mode is on / that you must not make edits), **STOP** before any other work — p
 researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
 (`Shift+Tab`) and re-invoke `/executor-oneshot-codex`. Do not call `ExitPlanMode`, and do not silently continue.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/executor-oneshot-codex` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 Execute one prompt or plan through the Codex-backed gated 2-stage executor flow: an input-evaluation
 gate guarantees a good plan, then Codex implements it. This launcher owns sequencing and postcondition
 checks; deterministic run setup, the quality verdict, producer resolution, artifact paths, Codex
@@ -58,10 +66,27 @@ cog executor prepare-step --executor executor-oneshot --engine codex --route <ne
 
 Write the prepared plan to `<RUN_DIR>/prepared-plan.md`.
 
+Build the producer's input as a validated context brief first. Ensure `<RUN_DIR>/request.md` exists
+(init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the
+supplied-plan source context verbatim and in full). Build the brief per
+`$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it
+from the whole session (a well-oriented **Objective**; **Output Format**; **Boundaries**; **Context &
+Decisions** carrying the full substance; **Artifacts** inline or pointed-to; **Effort Guidance**; **Not
+Evaluated** — keep your own verdict out), then build it:
+
+```bash
+cog context-brief scaffold --out "<RUN_DIR>/brief-body.md"
+# fill <RUN_DIR>/brief-body.md per the contract, then:
+cog context-brief build --request "<RUN_DIR>/request.md" --body "<RUN_DIR>/brief-body.md" --out "<RUN_DIR>/brief.md"
+```
+
+`build` attaches the request verbatim and fails closed unless every section is filled. Carry
+`<RUN_DIR>/brief.md` as the worker's complete context in both routes below.
+
 - **`needs-plan` → Codex plans (`/plan-oneshot`).** Write `<RUN_DIR>/prepare-prompt.md` with the
   write orientation from `cog codex-runner orientation write`, `$plan-oneshot`, `--output
-  <RUN_DIR>/prepared-plan.md`, and the original request — an enrichment-only superset of the original
-  input (verbatim and in full, plus relevant repo constraints, never a summary). Launch the durable
+  <RUN_DIR>/prepared-plan.md`, and `<RUN_DIR>/brief.md` as the complete context (the validated context
+  brief built above). Launch the durable
   Codex job and poll-and-classify (exit code is the signal: 0 ok, 1 failed, 75 still running; re-run
   finalize while it exits 75; duration is never judged):
 
@@ -70,13 +95,11 @@ Write the prepared plan to `<RUN_DIR>/prepared-plan.md`.
   cog codex-runner finalize --state <RUN_DIR>/prepare.longrun.json --max-wall 300
   ```
 
-- **`good-input` → Claude reviews (`/review-plan-oneshot`, cross-engine).** Ensure `<RUN_DIR>/request.md`
-  exists (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing
-  the supplied-plan source context verbatim and in full, with only enriching repo constraints).
+- **`good-input` → Claude reviews (`/review-plan-oneshot`, cross-engine).**
   Delegate to a Claude subagent through the Agent tool that reads
   `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follows its Orchestrator Invocation Contract
   with three absolute paths — plan-path (the supplied plan path, or `<RUN_DIR>/request.md` for
-  inline-plan prompt input), request-path `<RUN_DIR>/request.md`, output-path
+  inline-plan prompt input), request-path `<RUN_DIR>/brief.md` (the validated context brief), output-path
   `<RUN_DIR>/prepared-plan.md`.
 
 Verify `<RUN_DIR>/prepared-plan.md` exists and is non-empty before Stage 2.
@@ -87,8 +110,8 @@ Write `<RUN_DIR>/execution-prompt.md` with the write orientation, the prepared p
 `<RUN_DIR>/prepared-plan.md` verbatim (when it is an annotated review, implement the reconciled plan —
 apply APPROVED/MODIFIED/ADDED, skip REMOVED), the original request or supplied-plan context verbatim
 and in full, the active repository constraints, and a required final report covering files changed,
-deviations, commands run, and unresolved risks. The stage prompt is an enrichment-only superset and
-must not replace original input with a summary. Launch the durable Codex job and poll-and-classify:
+deviations, commands run, and unresolved risks. The stage prompt is the best-constructed input per the
+context-brief standard: attach the original input as-is and carry the full substance. Launch the durable Codex job and poll-and-classify:
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/execution-prompt.md --output <RUN_DIR>/execution-report.md --events <RUN_DIR>/execution-events.jsonl --stderr <RUN_DIR>/execution-stderr.log --state <RUN_DIR>/execution.longrun.json

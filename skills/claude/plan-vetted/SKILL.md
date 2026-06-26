@@ -23,6 +23,14 @@ directory setup, input classification, the quality verdict, producer resolution,
 paths, and the final export stay behind `cog`. This is a Claude-only coordinator: its producers run
 Claude and Codex together.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/plan-vetted` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ## Inputs
 
 `$ARGUMENTS` is a prompt/task description or an existing readable regular `.md` plan path, optionally
@@ -54,23 +62,42 @@ cog executor prepare-step --executor plan-vetted --engine claude --route <needs-
 
 Both producers are dual-engine Claude coordinators delegated through the Agent tool.
 
+## Context Brief
+
+Build the producer's input as a validated context brief per
+`$(cog skill-refs path orchestration/context-brief-contract.md)`. For plan input, first write the
+supplied-plan source context verbatim and in full to `<run-dir>/request.md` (init writes it for prompt
+input). Scaffold the authored body, fill it from the whole session — a well-oriented **Objective**;
+**Output Format**; **Boundaries**; **Context & Decisions** carrying the full substance; **Artifacts**
+inline when load-bearing or pointed-to when large; **Effort Guidance**; **Not Evaluated** — keeping
+your own verdict out, then build the brief from the raw request:
+
+```bash
+cog context-brief scaffold --out "<run-dir>/brief-body.md"
+# fill <run-dir>/brief-body.md per the contract, then:
+cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief-body.md" --out "<run-dir>/brief.md"
+```
+
+`build` attaches the request verbatim and fails closed unless every section is present and filled. Pass
+`<run-dir>/brief.md` as the orientation/context in the producer delegation below.
+
 ## Prepare The Plan
 
 Write the prepared plan to `<run-dir>/prepared-plan.md`.
 
 - **`needs-plan` → generate (`/plan-multi`).** Delegate to a foreground Claude subagent through the
   Agent tool (`subagent_type: general-purpose`) that reads `$HOME/.claude/skills/plan-multi/SKILL.md`
-  and follows it, passing `--output <run-dir>/prepared-plan.md` and the original request as
-  orientation. The delegation prompt is an enrichment-only superset of the original input: include the
-  original request verbatim and in full, plus relevant repo constraints, and never replace it with a
-  summary. The subagent runs non-interactively, treating every interview decision as a best default,
+  and follows it, passing `--output <run-dir>/prepared-plan.md` and `<run-dir>/brief.md` as the
+  complete orientation/context (the validated context brief built above).
+  The subagent runs non-interactively, treating every interview decision as a best default,
   and runs both engines (not `--solo`). It returns the output path.
 
 - **`good-input` → multi-review (`/review-plan-multi`).** Delegate to a foreground Claude subagent
   through the Agent tool that reads `$HOME/.claude/skills/review-plan-multi/SKILL.md` and follows it,
-  passing the original input as its plan-plus-context argument (the supplied plan path for plan input,
-  or `<run-dir>/request.md` for prompt input). The subagent runs both engines and returns the absolute
-  path of its definitive vetted review. Adopt that review as the prepared plan:
+  passing the plan under review (the supplied plan path for plan input, or `<run-dir>/request.md` for
+  prompt input) plus `<run-dir>/brief.md` as the request brief it is reviewed against. The subagent
+  runs both engines and returns the absolute path of its definitive vetted review. Adopt that review as
+  the prepared plan:
 
   ```bash
   cog executor adopt-prepared --run-dir <run-dir> --from <returned-review-path> --json

@@ -27,6 +27,7 @@ _cog() {
     codex-runner
     cog-skill-creator-scaffold
     cog-skill-creator-validate
+    context-brief
     digest-check
     digest-stamp
     doctor

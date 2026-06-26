@@ -20,6 +20,14 @@ Build one lean implementation plan by delegating the full planning turn to Codex
 skill. Claude owns only argument handling, Codex preflight, runner invocation, postcondition checks,
 and reporting the saved plan path.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/plan-oneshot-codex` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 ## Inputs
 
 `$ARGUMENTS` accepts the same shape as `$plan-oneshot`:
@@ -40,17 +48,29 @@ use `<RUN_DIR>/plan.md`.
 Gate Codex before writing the prompt with `cog codex-runner gate sandbox <RUN_DIR>/preflight.json`.
 Stop on failure and report the preflight path.
 
+Build the Codex worker's input as a validated context brief. Write the complete user orientation
+verbatim and in full to `<RUN_DIR>/request.md`, then build the brief per
+`$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it
+from the whole session (a well-oriented **Objective**; **Output Format**; **Boundaries**; **Context &
+Decisions** carrying the full substance; **Artifacts** inline or pointed-to; **Effort Guidance**; **Not
+Evaluated** — keep your own verdict out), then build it:
+
+```bash
+cog context-brief scaffold --out "<RUN_DIR>/brief-body.md"
+# fill <RUN_DIR>/brief-body.md per the contract, then:
+cog context-brief build --request "<RUN_DIR>/request.md" --body "<RUN_DIR>/brief-body.md" --out "<RUN_DIR>/brief.md"
+```
+
+`build` attaches the orientation verbatim and fails closed unless every section is filled.
+
 Write `<RUN_DIR>/plan-prompt.md` with:
 
 - The literal first line `$plan-oneshot`.
 - The write orientation from `cog codex-runner orientation write`.
 - `--output <plan-path>` plus any forwarded `--research-root`.
-- The complete user orientation, verbatim and in full, plus only enriching constraints.
+- The validated context brief `<RUN_DIR>/brief.md` as the complete orientation/context.
 - The instruction that Codex must save exactly one lean plan through `cog plan-doc`, print the plan,
   and report assumptions, ambiguities, dependencies, and risks.
-
-The prompt is an enrichment-only superset of the original input and must not replace the user
-orientation with a summary.
 
 Launch the durable Codex job, then poll-and-classify it with one verb, `cog codex-runner finalize
 --max-wall <secs>`. The exit code is the signal (0 = ok · 1 = failed · 75 = still running);

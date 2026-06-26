@@ -23,6 +23,14 @@ mode is on / that you must not make edits), **STOP** before any other work — p
 researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
 (`Shift+Tab`) and re-invoke `/executor-oneshot`. Do not call `ExitPlanMode`, and do not silently continue.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/executor-oneshot` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 Execute one prompt or one implementation plan through the gated 2-stage executor flow: an
 input-evaluation gate guarantees a good plan, then Claude implements it natively in the current
 session. This skill owns sequencing and judgment. Run directory setup, input classification, the
@@ -63,24 +71,39 @@ It returns the producer skill, the engine it runs on, and the invocation lane.
 
 ## Stage 1: Prepare The Plan
 
-Write the prepared plan to `<run-dir>/prepared-plan.md`.
+Write the prepared plan to `<run-dir>/prepared-plan.md`. Stage 1 is the fresh-context boundary (Stage 2
+implements natively in this session), so build the producer's input as a validated context brief first.
+
+Ensure `<run-dir>/request.md` exists (init writes it for prompt input; for plan input, create a
+non-empty `request.md` capturing the supplied-plan source context verbatim and in full, with only
+enriching repo constraints). Build the brief per
+`$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it
+from the whole session (a well-oriented **Objective**; **Output Format**; **Boundaries**; **Context &
+Decisions** carrying the full substance; **Artifacts** inline or pointed-to; **Effort Guidance**; **Not
+Evaluated** — keep your own verdict out), then build it:
+
+```bash
+cog context-brief scaffold --out "<run-dir>/brief-body.md"
+# fill <run-dir>/brief-body.md per the contract, then:
+cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief-body.md" --out "<run-dir>/brief.md"
+```
+
+`build` attaches the request verbatim and fails closed unless every section is filled. Carry
+`<run-dir>/brief.md` as the worker's complete context in both routes below.
 
 - **`needs-plan` → generate (`/plan-oneshot`, Claude, Agent lane).** Delegate plan generation to a
   foreground Claude subagent through the Agent tool (`subagent_type: general-purpose`) that reads
   `$HOME/.claude/skills/plan-oneshot/SKILL.md` and follows it, passing `--output
-  <run-dir>/prepared-plan.md` and the original request as orientation. The delegation prompt is an
-  enrichment-only superset of the original input: include the original request verbatim and in full,
-  plus relevant repo constraints, and never replace it with a summary. The subagent runs
+  <run-dir>/prepared-plan.md` and `<run-dir>/brief.md` as the complete orientation/context. The subagent runs
   non-interactively, treating every interview decision as a skill-chosen best default and recording
   it. The generated plan must include assumptions, ambiguities, dependencies, and risks.
 
 - **`good-input` → review (`/review-plan-oneshot`, Codex, cross-engine).** The existing plan is
-  reviewed by the opposite engine for independence. Ensure `<run-dir>/request.md` exists (init writes
-  it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan
-  source context verbatim and in full, with only enriching repo constraints). Build a Codex prompt
+  reviewed by the opposite engine for independence. Build a Codex prompt
   whose first line is the write orientation from `cog codex-runner orientation write`, followed by
   `$review-plan-oneshot` and three absolute paths — plan-path (the supplied plan path, or
-  `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/request.md`, and
+  `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/brief.md` (the
+  validated context brief), and
   output-path `<run-dir>/prepared-plan.md`. Launch the durable job write-capable, then
   poll-and-classify (exit code is the signal: 0 ok, 1 failed, 75 still running; re-run finalize while
   it exits 75; duration is never judged):

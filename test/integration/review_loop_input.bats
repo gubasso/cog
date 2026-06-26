@@ -66,6 +66,74 @@ write_thread_ids() {
   printf '%s\n' "$output" | jq -e '.ok == true and .input == "'"${run_dir}/review_loop_input.json"'"' >/dev/null
 }
 
+@test "cog review-loop-input build includes the optional context brief verbatim" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_required_inputs "$run_dir"
+  write_thread_ids "$run_dir"
+  printf '# Context Brief\n\nverbatim brief body\n' >"${run_dir}/context-brief.md"
+
+  run cog review-loop-input build --run-dir "$run_dir" --context "${run_dir}/context-brief.md" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.context == "# Context Brief\n\nverbatim brief body\n"' >/dev/null
+}
+
+@test "cog review-loop-input validate accepts the 6-key shape with context" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_required_inputs "$run_dir"
+  write_thread_ids "$run_dir"
+  printf '# Context Brief\n\nbody\n' >"${run_dir}/context-brief.md"
+  cog review-loop-input build --run-dir "$run_dir" --context "${run_dir}/context-brief.md" >/dev/null
+
+  run cog review-loop-input validate --input "${run_dir}/review_loop_input.json" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true' >/dev/null
+}
+
+@test "cog review-loop-input validate rejects an empty context value" {
+  local input="${BATS_TEST_TMPDIR}/review_loop_input.json"
+  jq -n \
+    --arg task "task text" \
+    --arg reviewed_plan "reviewed plan text" \
+    --arg implementation_review "stage 4 review text" \
+    '{
+      task: $task,
+      reviewed_plan: $reviewed_plan,
+      implementation_review: $implementation_review,
+      plan_thread_id: null,
+      impl_thread_id: null,
+      context: ""
+    }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input" --json
+
+  assert_failure
+  [[ $stderr == *"review-loop input failed schema validation"* ]]
+}
+
+@test "cog review-loop-input validate rejects an unexpected sixth key" {
+  local input="${BATS_TEST_TMPDIR}/review_loop_input.json"
+  jq -n \
+    --arg task "task text" \
+    --arg reviewed_plan "reviewed plan text" \
+    --arg implementation_review "stage 4 review text" \
+    '{
+      task: $task,
+      reviewed_plan: $reviewed_plan,
+      implementation_review: $implementation_review,
+      plan_thread_id: null,
+      impl_thread_id: null,
+      surprise: "nope"
+    }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input" --json
+
+  assert_failure
+  [[ $stderr == *"review-loop input failed schema validation"* ]]
+}
+
 @test "cog review-loop-input build fails when required file is missing" {
   local run_dir="${BATS_TEST_TMPDIR}/run"
   write_required_inputs "$run_dir"

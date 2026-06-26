@@ -25,6 +25,14 @@ mode is on / that you must not make edits), **STOP** before any other work — p
 researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
 (`Shift+Tab`) and re-invoke `/executor-prex`. Do not call `ExitPlanMode`, and do not silently continue.
 
+<!-- cog-context-brief-gate -->
+
+**Context-brief gate.** Before `/executor-prex` dispatches to any fresh-context worker — an Agent subagent
+or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
+accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
+substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
+context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+
 Run a staged dual-agent workflow inside Claude Code:
 
 1. `plan-vetted` produces a vetted implementation plan (evaluate the input, then generate or
@@ -157,6 +165,7 @@ stage outputs under `RUN_DIR` using these names:
 - `review.md`
 - `review_loop_input.json` (produced only if stage 4 runs)
 - `preflight.json` (codex gate output)
+- `context-brief.md` (the validated context brief; built once, reused across stages)
 
 ## Workflow Mode
 
@@ -212,15 +221,31 @@ cog codex-runner gate codex "$RUN_DIR/preflight.json" || {
 `codex_session.available` is `true` and `health` is `ok`. On non-zero exit, release the lock and
 stop — do not continue to stage 1.
 
+## Context Brief
+
+Build the run's context brief once, then reuse it across stages (it is also passed through to the
+Stage 4 review-loop handoff). Build it per
+`$(cog skill-refs path orchestration/context-brief-contract.md)` from `$RUN_DIR/request.md`: scaffold
+the authored body, fill it from the whole session (a well-oriented **Objective**; **Output Format**;
+**Boundaries**; **Context & Decisions** carrying the full substance; **Artifacts** inline or
+pointed-to; **Effort Guidance**; **Not Evaluated** — keep your own verdict out), then build it:
+
+```bash
+cog context-brief scaffold --out "$RUN_DIR/brief-body.md"
+# fill $RUN_DIR/brief-body.md per the contract, then:
+cog context-brief build --request "$RUN_DIR/request.md" --body "$RUN_DIR/brief-body.md" --out "$RUN_DIR/context-brief.md"
+```
+
+`build` attaches the request verbatim and fails closed unless every section is filled.
+
 ## Stage 1: Vetted Plan
 
 Produce the vetted implementation plan with `plan-vetted`, which fills the old plan and plan-review
 stages in one step: it evaluates the input, then generates a plan (`needs-plan`) or multi-reviews it
 (`good-input`) through dual-engine planning. Inline-chain it in the current context (read
 `$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it), passing the task plus `--output
-"$RUN_DIR/vetted-plan.md"`. The delegation input is an enrichment-only superset of the
-original task: include it verbatim and in full, plus relevant repo constraints, and never replace it
-with a summary.
+"$RUN_DIR/vetted-plan.md"`. The delegation input is the validated context brief
+`$RUN_DIR/context-brief.md` built above.
 
 `plan-vetted` writes the vetted plan to `$RUN_DIR/vetted-plan.md` and returns the output path
 and the route. Verify the artifact before continuing:
