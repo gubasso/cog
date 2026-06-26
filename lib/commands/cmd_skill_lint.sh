@@ -868,6 +868,55 @@ __cog_skill_lint_check_producer_blind() {
   return "$failed"
 }
 
+# Native-execution executor skills produce the execution report in the
+# orchestrator's own session, so the orchestrator holds the Write tool and could
+# type a non-canonical filename. cog owns that write (`cog executor adopt`), so
+# the skill prose must not instruct a direct write to the canonical execution
+# artifact. The prepare artifact is always delegated through a worker's `--output`
+# and is not guarded here. See docs/decisions/0046-cog-owned-stage-artifact-writes.md.
+__cog_skill_lint_artifact_write_owned_skills() {
+  case "$1" in
+    executor-oneshot | executor-vetted) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+__cog_skill_lint_check_artifact_write_ownership() {
+  local file="$1" name
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  __cog_skill_lint_artifact_write_owned_skills "$name" || return 0
+
+  local line line_no=0 failed=0 in_fence=false lc
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] && continue
+
+    # The leak is a write imperative whose object is the canonical execution
+    # artifact (write ... execution-report.md). A line that only names the
+    # artifact (a returns list, a postcondition) or routes through cog/--output is
+    # legitimate.
+    lc="${line,,}"
+    [[ $lc == *execution-report.md* ]] || continue
+    [[ $lc =~ (write|save).*execution-report\.md ]] || continue
+    [[ $lc == *"cog "* || $lc == *"--output"* ]] && continue
+
+    __cog_skill_lint_finding "$file" "$line_no" "artifact-write-ownership" \
+      "instructs a direct write to the canonical execution artifact" \
+      "write the report to a working file, then place it with 'cog executor adopt --ordinal execution --from <file>'"
+    failed=1
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -900,6 +949,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_artifact_write_ownership "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

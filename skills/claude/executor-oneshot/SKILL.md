@@ -113,7 +113,8 @@ cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief
   cog codex-runner finalize --state <prepare.longrun.json> --max-wall 300
   ```
 
-After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
+After Stage 1, confirm the prepared plan with `cog executor verify-artifact --run-dir <run-dir>
+--ordinal prepare` before continuing; it fails closed when the canonical artifact is missing or empty.
 
 ## Stage 2: Implement
 
@@ -131,8 +132,15 @@ Carry only relevant session context:
 - A required final implementation report covering files changed, commands run, deviations, and
   unresolved risks.
 
-After implementation, write the final implementation report to `<run-dir>/execution-report.md`. Verify
-that it exists and is non-empty.
+After implementation, write the final implementation report to a working file in the run directory,
+then hand it to `cog` so the canonical artifact name and its non-empty check stay deterministic:
+
+```bash
+cog executor adopt --run-dir <run-dir> --ordinal execution --from <report-working-file>
+```
+
+`adopt` places the report at the canonical execution artifact path and fails closed when the source is
+missing or empty.
 
 ## Summary
 
@@ -153,9 +161,9 @@ Status rules:
 At every boundary, verify the durable postcondition before advancing:
 
 - Gate: `<run-dir>/assess-input.json` exists and validates; the route is `needs-plan` or `good-input`.
-- Stage 1: `prepared-plan.md` exists and is non-empty.
+- Stage 1: `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare` succeeds.
 - Plan input: the supplied plan path exists and is readable before review or implementation.
-- Stage 2: `execution-report.md` exists and is non-empty.
+- Stage 2: `cog executor verify-artifact --run-dir <run-dir> --ordinal execution` succeeds.
 - Summary: `executor-summary.json` is written by `cog executor summary`.
 
 On failure, stop the chain, preserve the run directory artifacts, and still emit the executor summary

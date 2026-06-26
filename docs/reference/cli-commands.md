@@ -183,7 +183,16 @@ prompt. `cog executor prepare-step --executor <e> --engine <eng> --route <needs-
 --json` resolves the prepare-stage producer skill, the engine it runs on, and the invocation lane.
 `cog executor adopt-prepared --run-dir <dir> --from <path> --json` copies a producer artifact whose
 output path the executor does not control (the `review-plan-multi` review) into the canonical
-`prepared-plan.md` slot. `cog executor export-prepared --run-dir <dir> --output <path> --json` copies
+`prepared-plan.md` slot. `cog executor adopt --run-dir <dir> --ordinal <ordinal> --from <path> --json`
+is the stage-agnostic form: it places a staged artifact into the canonical slot resolved for that
+ordinal (used for the native execution report, which the orchestrator produces in-session), emitting
+`schema: "cog.executor.adopt-artifact.v1"`, and fails closed on a missing or empty source. `cog
+executor verify-artifact --run-dir <dir> --ordinal <ordinal> --json` is the deterministic postcondition
+gate: it exits non-zero when the canonical artifact for that ordinal is missing or empty, emitting
+`schema: "cog.executor.verify-artifact.v1"` on success. cog owns the canonical artifact name and its
+verification so an executor skill never hand-writes either (see
+[ADR-0046](../decisions/0046-cog-owned-stage-artifact-writes.md)). `cog executor export-prepared
+--run-dir <dir> --output <path> --json` copies
 that canonical `prepared-plan.md` out to a caller-supplied path (used by `plan-vetted` to hand its
 vetted plan back through `--output`).
 

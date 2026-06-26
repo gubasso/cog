@@ -371,6 +371,41 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint flags a direct execution-report write in a native executor" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot" executor-oneshot claude
+  # shellcheck disable=SC2016  # literal markdown path written to a fixture file
+  printf '\n%s\n' 'After implementation, write the report to `<run-dir>/execution-report.md`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"artifact-write-ownership"* ]]
+}
+
+@test "cog skill-lint scopes artifact-write-ownership to native executors" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal markdown path written to a fixture file
+  printf '\n%s\n' 'After implementation, write the report to `<run-dir>/execution-report.md`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint accepts a cog-routed execution adopt line in a native executor" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot" executor-oneshot claude
+  # shellcheck disable=SC2016  # literal markdown line written to a fixture file
+  printf '\n%s\n' 'Place the report with `cog executor adopt --ordinal execution --from <file>` (execution-report.md).' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot/SKILL.md"
+
+  # Other rules may still flag the minimal fixture; this rule must not.
+  [[ $stderr != *"artifact-write-ownership"* ]]
+}
+
 @test "cog skill-lint accepts pure cog command and skill-refs resolution blocks" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'

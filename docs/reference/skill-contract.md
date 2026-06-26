@@ -247,6 +247,12 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
 - `stage-agnostic-identifiers`: a runtime skill body or skill `references/` filename/content uses a
   stage-numbered machine identifier matching the banned identifier patterns. Human prose forms like
   `Stage N` and `stage N` are allowed. See "Stage-agnostic identifiers".
+- `artifact-write-ownership`: a curated native-execution executor skill (`executor-oneshot`,
+  `executor-vetted`) instructs a direct write to the canonical execution artifact
+  (`execution-report.md`) instead of routing through `cog executor adopt`. The orchestrator produces
+  that report in-session, so cog must own the canonical name and its non-empty gate. The scan skips
+  fenced code blocks; lines that only name the artifact (a returns list, a postcondition) or route
+  through `cog`/`--output` are not flagged. See [ADR-0046](../decisions/0046-cog-owned-stage-artifact-writes.md).
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring

@@ -58,8 +58,9 @@ output path and the route.
 A dual-engine plan (two strong models drafting independently, then a synthesized best-of-both) is
 itself the vetting, so neither route needs a separate review pass.
 
-After Stage 1, record the returned route for the summary and verify that `<run-dir>/prepared-plan.md`
-exists and is non-empty before continuing.
+After Stage 1, record the returned route for the summary and confirm the prepared plan with `cog
+executor verify-artifact --run-dir <run-dir> --ordinal prepare` before continuing; it fails closed when
+the canonical artifact is missing or empty.
 
 ## Stage 2: Implement
 
@@ -78,8 +79,15 @@ Carry only relevant session context:
 - A required final implementation report covering files changed, commands run, deviations, and
   unresolved risks.
 
-After implementation, write the final implementation report to `<run-dir>/execution-report.md`. Verify
-that it exists and is non-empty.
+After implementation, write the final implementation report to a working file in the run directory,
+then hand it to `cog` so the canonical artifact name and its non-empty check stay deterministic:
+
+```bash
+cog executor adopt --run-dir <run-dir> --ordinal execution --from <report-working-file>
+```
+
+`adopt` places the report at the canonical execution artifact path and fails closed when the source is
+missing or empty.
 
 ## Summary
 
@@ -99,10 +107,10 @@ Status rules:
 
 At every boundary, verify the durable postcondition before advancing:
 
-- Stage 1: `prepared-plan.md` exists and is non-empty; the returned route is `needs-plan` or
-  `good-input`.
+- Stage 1: `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare` succeeds; the returned
+  route is `needs-plan` or `good-input`.
 - Plan input: the supplied plan path exists and is readable before review or implementation.
-- Stage 2: `execution-report.md` exists and is non-empty.
+- Stage 2: `cog executor verify-artifact --run-dir <run-dir> --ordinal execution` succeeds.
 - Summary: `executor-summary.json` is written by `cog executor summary`.
 
 On failure, stop the chain, preserve the run directory artifacts, and still emit the executor summary

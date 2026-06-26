@@ -7,6 +7,8 @@ __cog_executor_artifacts_self_check='(.schema=="cog.executor.artifacts.v2") and 
 __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and has("plan_path") and (has("stages")|not)'
 __cog_executor_prepare_step_self_check='(.schema=="cog.executor.prepare-step.v1") and (.producer|type=="string") and (.prepare_engine|type=="string") and (.lane|type=="string")'
 __cog_executor_adopt_prepared_self_check='(.schema=="cog.executor.adopt-prepared.v1") and (.ok==true) and (.path|type=="string")'
+__cog_executor_adopt_artifact_self_check='(.schema=="cog.executor.adopt-artifact.v1") and (.ok==true) and (.ordinal|type=="string") and (.path|type=="string")'
+__cog_executor_verify_artifact_self_check='(.schema=="cog.executor.verify-artifact.v1") and (.ok==true) and (.ordinal|type=="string") and (.path|type=="string")'
 __cog_executor_export_prepared_self_check='(.schema=="cog.executor.export-prepared.v1") and (.ok==true) and (.path|type=="string")'
 
 __cog_executor_usage() {
@@ -14,6 +16,8 @@ __cog_executor_usage() {
   cog::fn::ui_data "Usage: cog executor classify-input <input> [--json]"
   cog::fn::ui_data "Usage: cog executor prepare-step --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --route <needs-plan|good-input> [--json]"
   cog::fn::ui_data "Usage: cog executor adopt-prepared --run-dir <dir> --from <path> [--json]"
+  cog::fn::ui_data "Usage: cog executor adopt --run-dir <dir> --ordinal <ordinal> --from <path> [--json]"
+  cog::fn::ui_data "Usage: cog executor verify-artifact --run-dir <dir> --ordinal <ordinal> [--json]"
   cog::fn::ui_data "Usage: cog executor export-prepared --run-dir <dir> --output <path> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
   cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--json]"
@@ -270,6 +274,96 @@ __cog_executor_adopt_prepared() {
   fi
 }
 
+__cog_executor_adopt() {
+  local run_dir="" ordinal="" from="" json="${COG_UI_JSON:-false}" result
+
+  while (($# > 0)); do
+    case "$1" in
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog executor --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --ordinal)
+        [[ $# -ge 2 && -n ${2:-} && -z $ordinal ]] || cog::fn::error_raise "MissingArgument" \
+          "missing stage ordinal" "option: --ordinal" "" "run 'cog executor --help'"
+        ordinal="$2"
+        shift 2
+        ;;
+      --from)
+        [[ $# -ge 2 && -n ${2:-} && -z $from ]] || cog::fn::error_raise "MissingArgument" \
+          "missing source path" "option: --from" "" "run 'cog executor --help'"
+        from="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" "unknown adopt option" "option: $1" "" "run 'cog executor --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" "too many adopt arguments" "argument: $1" "" "run 'cog executor --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir && -n $ordinal && -n $from ]] || cog::fn::error_raise "MissingArgument" \
+    "missing adopt argument" \
+    "usage: cog executor adopt --run-dir <dir> --ordinal <ordinal> --from <path>" "" \
+    "run 'cog executor --help'"
+  result="$(cog::fn::executor::adopt_artifact_json "$run_dir" "$ordinal" "$from")"
+  if [[ $json == true ]]; then
+    cog::fn::json_emit "$__cog_executor_adopt_artifact_self_check" "$result"
+  else
+    cog::fn::ui_data "ARTIFACT=$(jq -r '.path' <<<"$result")"
+  fi
+}
+
+__cog_executor_verify_artifact() {
+  local run_dir="" ordinal="" json="${COG_UI_JSON:-false}" result
+
+  while (($# > 0)); do
+    case "$1" in
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog executor --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --ordinal)
+        [[ $# -ge 2 && -n ${2:-} && -z $ordinal ]] || cog::fn::error_raise "MissingArgument" \
+          "missing stage ordinal" "option: --ordinal" "" "run 'cog executor --help'"
+        ordinal="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" "unknown verify-artifact option" "option: $1" "" "run 'cog executor --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" "too many verify-artifact arguments" "argument: $1" "" "run 'cog executor --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir && -n $ordinal ]] || cog::fn::error_raise "MissingArgument" \
+    "missing verify-artifact argument" \
+    "usage: cog executor verify-artifact --run-dir <dir> --ordinal <ordinal>" "" \
+    "run 'cog executor --help'"
+  result="$(cog::fn::executor::verify_artifact_json "$run_dir" "$ordinal")"
+  if [[ $json == true ]]; then
+    cog::fn::json_emit "$__cog_executor_verify_artifact_self_check" "$result"
+  else
+    cog::fn::ui_data "ARTIFACT=$(jq -r '.path' <<<"$result")"
+  fi
+}
+
 __cog_executor_export_prepared() {
   local run_dir="" output="" json="${COG_UI_JSON:-false}" result
 
@@ -491,6 +585,14 @@ cog::cmd::executor() {
       shift
       __cog_executor_adopt_prepared "$@"
       ;;
+    adopt)
+      shift
+      __cog_executor_adopt "$@"
+      ;;
+    verify-artifact)
+      shift
+      __cog_executor_verify_artifact "$@"
+      ;;
     export-prepared)
       shift
       __cog_executor_export_prepared "$@"
@@ -509,7 +611,7 @@ cog::cmd::executor() {
       ;;
     "")
       cog::fn::error_raise "MissingArgument" \
-        "missing executor mode" "usage: cog executor init|classify-input|prepare-step|adopt-prepared|export-prepared|artifacts|summary|queue-prompts" "" \
+        "missing executor mode" "usage: cog executor init|classify-input|prepare-step|adopt-prepared|adopt|verify-artifact|export-prepared|artifacts|summary|queue-prompts" "" \
         "run 'cog executor --help'"
       ;;
     *)

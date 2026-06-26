@@ -224,6 +224,69 @@ setup() {
   [[ $stderr == *"missing or empty"* ]]
 }
 
+@test "cog executor adopt places a staged report at the canonical execution slot" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+  # The orchestrator may stage its report under any working name; cog owns the canonical name.
+  source="${run_dir}/stage2-execution.md"
+  printf '%s\n' "# report body" >"$source"
+
+  run cog executor adopt --run-dir "$run_dir" --ordinal execution --from "$source" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.adopt-artifact.v1" and .ok == true and .ordinal == "execution" and (.path | endswith("/execution-report.md"))' >/dev/null
+  assert_file_contains "${run_dir}/execution-report.md" "report body"
+}
+
+@test "cog executor adopt rejects an empty source" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+  source="${BATS_TEST_TMPDIR}/empty.md"
+  : >"$source"
+
+  run --separate-stderr cog executor adopt --run-dir "$run_dir" --ordinal execution --from "$source"
+
+  assert_failure
+  [[ $stderr == *"missing or empty"* ]]
+}
+
+@test "cog executor adopt rejects an unknown ordinal" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+  source="${BATS_TEST_TMPDIR}/report.md"
+  printf '%s\n' "# report" >"$source"
+
+  run --separate-stderr cog executor adopt --run-dir "$run_dir" --ordinal bogus --from "$source"
+
+  assert_failure
+  [[ $stderr == *"unknown executor artifact stage"* ]]
+}
+
+@test "cog executor verify-artifact passes for a present non-empty artifact" {
+  local run_dir source
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+  source="${run_dir}/report.md"
+  printf '%s\n' "# report" >"$source"
+  cog executor adopt --run-dir "$run_dir" --ordinal execution --from "$source" --json >/dev/null
+
+  run cog executor verify-artifact --run-dir "$run_dir" --ordinal execution --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.verify-artifact.v1" and .ok == true and .ordinal == "execution" and (.path | endswith("/execution-report.md"))' >/dev/null
+}
+
+@test "cog executor verify-artifact fails closed for a missing artifact" {
+  local run_dir
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+
+  run --separate-stderr cog executor verify-artifact --run-dir "$run_dir" --ordinal execution
+
+  assert_failure
+  [[ $stderr == *"missing or empty"* ]]
+}
+
 @test "cog executor queue-prompts emits recognition data without the removed vetted twins" {
   run cog executor queue-prompts --json
 

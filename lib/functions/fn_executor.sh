@@ -213,6 +213,70 @@ cog::fn::executor::adopt_prepared_json() {
     '{schema: "cog.executor.adopt-prepared.v1", ok: true, from: $from, path: $path}'
 }
 
+# Resolve the executor that owns a run directory from its state file. The state
+# file is written by `cog executor init`, so a run directory without it is not a
+# canonical executor run and cannot resolve canonical artifact names.
+cog::fn::executor::read_state_executor() {
+  local run_dir="${1:-}" executor_file
+
+  [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+    "missing executor run directory" "function: cog::fn::executor::read_state_executor" "" \
+    "pass a run directory"
+  [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
+    "executor run directory not found" "path: ${run_dir}" "" "check the run directory"
+
+  executor_file="$(cog::fn::rundir_path "$run_dir" executor)"
+  [[ -s $executor_file ]] || cog::fn::error_raise "InvalidInput" \
+    "executor run directory is not initialized" "path: ${run_dir}" \
+    "missing state file: ${executor_file}" \
+    "initialize the run directory with 'cog executor init'"
+
+  printf '%s\n' "$(<"$executor_file")"
+}
+
+# Adopt a staged artifact into its canonical run-dir slot for a given stage
+# ordinal. cog owns the canonical filename (resolved from the executor flow), so
+# the producing skill writes content to any working path and hands it here; the
+# canonical artifact the postcondition and summary reference is always cog-named.
+# This is the stage-agnostic generalization used for the native execution report,
+# where the orchestrator model itself produces the content.
+cog::fn::executor::adopt_artifact_json() {
+  local run_dir="${1:-}" ordinal="${2:-}" from="${3:-}" executor name dest
+
+  [[ -n $run_dir && -n $ordinal && -n $from ]] || cog::fn::error_raise "MissingArgument" \
+    "missing adopt-artifact argument" "function: cog::fn::executor::adopt_artifact_json" "" \
+    "pass a run directory, a stage ordinal, and a source path"
+  executor="$(cog::fn::executor::read_state_executor "$run_dir")"
+  cog::fn::rundir_require_file "$from" "staged artifact source"
+
+  name="$(cog::fn::executor::artifact_name "$executor" "$ordinal")"
+  dest="$(cog::fn::rundir_path "$run_dir" "$name")"
+  cp -- "$from" "$dest" || cog::fn::error_raise "JsonWriteFailed" \
+    "could not adopt staged artifact" "from: ${from}, to: ${dest}" "" "check run directory permissions"
+
+  jq -cn --arg ordinal "$ordinal" --arg from "$from" --arg path "$dest" \
+    '{schema: "cog.executor.adopt-artifact.v1", ok: true, ordinal: $ordinal, from: $from, path: $path}'
+}
+
+# Verify a canonical stage artifact exists and is non-empty. cog owns the
+# postcondition gate so an executor skill confirms a durable boundary with a
+# deterministic non-zero exit instead of self-attesting from prose.
+cog::fn::executor::verify_artifact_json() {
+  local run_dir="${1:-}" ordinal="${2:-}" executor name path
+
+  [[ -n $run_dir && -n $ordinal ]] || cog::fn::error_raise "MissingArgument" \
+    "missing verify-artifact argument" "function: cog::fn::executor::verify_artifact_json" "" \
+    "pass a run directory and a stage ordinal"
+  executor="$(cog::fn::executor::read_state_executor "$run_dir")"
+
+  name="$(cog::fn::executor::artifact_name "$executor" "$ordinal")"
+  path="$(cog::fn::rundir_path "$run_dir" "$name")"
+  cog::fn::rundir_require_file "$path" "${ordinal} artifact"
+
+  jq -cn --arg ordinal "$ordinal" --arg path "$path" \
+    '{schema: "cog.executor.verify-artifact.v1", ok: true, ordinal: $ordinal, path: $path}'
+}
+
 # Export the canonical prepared-plan.md to a caller-supplied output path. A
 # plan-only producer (plan-vetted) builds its vetted plan in its own run dir,
 # then hands it back to the executor (or a standalone caller) that named the

@@ -50,6 +50,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0043: Best-constructed input standard](decisions/0043-best-constructed-input-standard.md)
 - [ADR-0044: Context-brief gate on fresh-context-boundary orchestrators](decisions/0044-context-brief-gate.md)
 - [ADR-0045: Unified `cog gate` command and context-brief verb cleanup](decisions/0045-unified-gate-command-and-context-brief-verbs.md)
+- [ADR-0046: cog-owned stage artifact writes](decisions/0046-cog-owned-stage-artifact-writes.md)
 
 ## Guides
 
