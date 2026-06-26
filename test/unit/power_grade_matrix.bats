@@ -131,7 +131,7 @@ validate_matrix_fixture() {
     .scale.max == 10 and
     .compound.formula == "capped_max_plus_artifact_gain" and
     (.profiles | type == "array" and length > 0) and
-    (.named_profiles | type == "array" and length == 3)
+    (.named_profiles | type == "array" and length == 5)
   ' >/dev/null
 }
 

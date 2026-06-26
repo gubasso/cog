@@ -24,8 +24,8 @@ skills load mid-execution.
 
 ## Defaults
 
-Exploration and planning skills normally set no `model:` or `effort:` override. They ride the
-session default:
+High-tier skills (open-ended reasoning, planning, plan review) normally set no `model:` or `effort:`
+override. They ride the session default:
 
 - Claude: Opus + high.
 - Codex: `gpt-5.5` + medium.
@@ -35,21 +35,41 @@ override should be documented where the model choice is made.
 
 ## Tiers
 
-The TOML files are the machine-readable source of truth for exact values and descriptive fields. Use
-this table as the human-readable rationale:
+The canonical tier vocabulary is a five-rung named ladder — `XHIGH`, `HIGH`, `MEDIUM`, `LOW`,
+`CHEAP` — adopted in ADR-0041. It supersedes the former `exploration`/`procedural`/`routine` tier
+names and the `exploration`/`single-pass-escalation`/`routine` power-grade pairings. Each rung maps
+to one Claude cell and one Codex cell:
 
-| Tier | Use when | Authoring action |
-| --- | --- | --- |
-| Exploration | Open-ended reasoning, planning, codebase exploration, design review, or question answering. | Set no skill frontmatter override; use the session default. |
-| Procedural | A detailed procedure or plan already exists, deterministic mechanics are delegated to `cog`, and bounded judgment remains. | Pin the procedural tier from the provider TOML. For Claude this is the never-Sonnet replacement tier. |
-| Routine | The task is thin orchestration over deterministic mechanics with no meaningful reasoning. | Pin the routine tier from the provider TOML. For Claude Haiku, omit `effort`. |
+| Tier | Claude cell | Codex cell | Use when | Authoring action |
+| --- | --- | --- | --- | --- |
+| XHIGH | opus-4.8@xhigh | gpt-5.5@high | Hardest single-pass work or a full from-scratch review that rebuilds an entire codebase, plan, and diff. | Pin the xhigh rung (Claude `opus`+`xhigh`). |
+| HIGH | opus-4.8@high | gpt-5.5@medium | Open-ended reasoning, planning, plan review, or question answering. This is the session default. | Set no override; ride the session default. |
+| MEDIUM | opus-4.8@medium | gpt-5.5@low | Executor default and resumed warm re-review: implement a prepared plan with bounded judgment. | Pin the medium rung (Claude `opus`+`medium`). |
+| LOW | opus-4.8@low | gpt-5.4@medium | A detailed procedure exists, deterministic mechanics are delegated to `cog`, and bounded judgment remains; also verbatim dispatch. | Pin the low rung. For Claude this is the never-Sonnet replacement tier. |
+| CHEAP | haiku (no effort) | gpt-5.4-mini@medium | Thin orchestration over deterministic mechanics with no meaningful reasoning. | Pin the cheap rung. For Claude Haiku, omit `effort`. |
+
+The TOML files (`model-effort-claude.toml`, `model-effort-codex.toml`) are the machine-readable
+source of truth for exact values and descriptive fields per rung.
+
+### Prefix-to-tier defaults
+
+The skill-prefix taxonomy maps to default rungs (override per skill only with recorded justification):
+
+- `plan-*` → HIGH.
+- `executor-*` → MEDIUM by default; a reasoning executor that judges, re-evaluates, directs, or fixes
+  (e.g. `executor-prex`) may ride HIGH.
+- `review-plan-*` → HIGH (reviewing an already-distilled plan/spec).
+- `review-oneshot-*` → XHIGH (fresh-context full review).
+- `runner-*` → LOW for verbatim prompt-opaque dispatch; higher only when it does routing policy,
+  triage, or retry decisions.
 
 ## How To Classify Work
 
 1. Read the relevant provider TOML file.
-2. Match the task against each tier's `use_when`, `signals`, and `anti_signals`.
-3. Set `model:` and `effort:` only when `set_frontmatter = true`.
-4. For Claude routine tasks on Haiku, omit `effort`; Haiku returns an error when effort is sent.
+2. Match the task against each rung's `use_when`, `signals`, and `anti_signals`.
+3. Set `model:` and `effort:` only when `set_frontmatter = true` (HIGH rides the default and sets no
+   override).
+4. For Claude CHEAP tasks on Haiku, omit `effort`; Haiku returns an error when effort is sent.
 5. For Codex, choose the `cog codex-runner` or `codex-session` profile according to
    `model-effort-codex.toml`.
 
@@ -62,9 +82,11 @@ Power Grade profiles are model/effort capability cells used by `cog power-grade`
 a 1-10 difficulty-ceiling scale, one executable profile per supported model/effort cell, non-fatal
 `needs_verification` evidence markers for genuine public-data gaps, and named policy pairings:
 
-- `exploration`: Opus 4.8 at high effort / `gpt-5.5` at medium effort.
-- `single-pass-escalation`: Opus 4.8 at xhigh effort / `gpt-5.5` at high effort.
-- `routine`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
+- `xhigh`: Opus 4.8 at xhigh effort / `gpt-5.5` at high effort.
+- `high`: Opus 4.8 at high effort / `gpt-5.5` at medium effort (the session default).
+- `medium`: Opus 4.8 at medium effort / `gpt-5.5` at low effort.
+- `low`: Opus 4.8 at low effort / `gpt-5.4` at medium effort.
+- `cheap`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
 
 Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one profile, `classify`
 to find policy-selectable profiles that can handle a grade (non-selectable and informational cells
@@ -72,13 +94,20 @@ are excluded), and `compound` to compute pass-sequence capability from the matri
 
 ## Review And Verification Work
 
-Reviewing or verifying an already-reasoned artifact (plan review, code review) is exploration-tier
-work: it rides the session default (Claude opus + high; Codex gpt-5.5 + medium) and sets no
-frontmatter override. Generator-verifier asymmetry makes critique cheaper than generation, but
-correctness judging is non-trivial, so the high default is the right floor rather than a reduced
-tier. Reserve the xhigh/max exception tiers for reviews that span many subsystems, are
-security-critical, are expensive to reverse, or run as evaluations. See ADR-0027 and the
-research-shelf entry tagged `verifier-asymmetry`.
+Review effort tracks how much context the reviewer must reconstruct (ADR-0041, refining ADR-0027):
+
+- `review-plan-*` → **HIGH**. Reviewing an already-distilled plan/spec rides the session default.
+  Generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of
+  correctness judging, so HIGH is the right floor.
+- `review-oneshot-*` → **XHIGH**. A fresh-context full review must rebuild the entire codebase, plan,
+  and diff before it can judge; that reconstruction cost erodes the asymmetry discount, so the floor
+  rises to XHIGH.
+- `review-loop` → **round 1 HIGH, rounds 2+ MEDIUM**. Round 1 is a fresh from-scratch review with full
+  input. Rounds 2+ resume the prior reviewer context (warm, not cold) and both re-check prior findings
+  and re-review for new regressions; the retained context earns one rung of discount (to MEDIUM), not
+  two (LOW would be unsafe while new fix-code regressions remain in scope).
+
+See ADR-0041 and ADR-0027, and the research-shelf entry tagged `verifier-asymmetry`.
 
 ## Evidence And Revalidation
 

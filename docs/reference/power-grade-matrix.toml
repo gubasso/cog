@@ -110,7 +110,7 @@ evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-claude.md#claude:opus-4.8", "docs/reference/models-reference-claude.md#claude:opus-4.8:high", "docs/reference/model-effort-policy.md"]
 benchmark_source_ids = ["anthropic-model-announcements", "swebench-verified"]
-description = "Default Claude exploration/planning pairing."
+description = "Default Claude HIGH-rung profile: open-ended reasoning and planning."
 use_where = ["open-ended planning", "code review", "design judgment"]
 caveats = ["SWE-bench figure is secondary; source IDs point to Anthropic model announcements and SWE-bench Verified without adding a new number."]
 
@@ -308,7 +308,7 @@ evidence_status = "sourced"
 confidence = "high"
 source_refs = ["docs/reference/models-reference-codex.md#codex:gpt-5.5", "docs/reference/models-reference-codex.md#codex:gpt-5.5:medium", "docs/reference/model-effort-policy.md"]
 benchmark_source_ids = ["openai-models", "swebench-verified", "scale-seal-swe-bench-pro", "terminal-bench"]
-description = "Balanced Codex session default and exploration pairing."
+description = "Balanced Codex session default; the HIGH-rung Codex profile."
 use_where = ["planning", "code review", "open-ended implementation"]
 caveats = ["Headline benchmarks are secondary; source IDs point to OpenAI model facts plus SWE-bench Verified, SWE-bench Pro, and Terminal-Bench authorities without adding new numbers."]
 
@@ -546,22 +546,41 @@ description = "Informational research-preview row until numeric specs and effort
 use_where = ["not executable by cog policy"]
 caveats = ["OpenAI Codex models page checked 2026-06-25 gives only text-only research-preview availability; pricing, context, effort support, cutoff, and benchmark data are NEEDS VERIFICATION, and weak secondary benchmark claims are not admitted."]
 
+# Canonical named tier ladder (xhigh/high/medium/low/cheap). These supersede the former
+# exploration/single-pass-escalation/routine pairings: high == old exploration (session default),
+# xhigh == old single-pass-escalation, cheap == old routine, plus new medium and low rungs. See
+# ADR-0041 and the provider ladders in model-effort-claude.toml / model-effort-codex.toml.
+
 [[named_profiles]]
-name = "exploration"
-claude_profile = "claude-opus-4.8-high"
-codex_profile = "codex-gpt-5.5-medium"
-use_when = "Open-ended reasoning, planning, review, and exploration."
+name = "xhigh"
+claude_profile = "claude-opus-4.8-xhigh"
+codex_profile = "codex-gpt-5.5-high"
+use_when = "Hardest single-pass execution, explicit escalation, or full from-scratch review."
 source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]
 
 [[named_profiles]]
-name = "single-pass-escalation"
-claude_profile = "claude-opus-4.8-xhigh"
-codex_profile = "codex-gpt-5.5-high"
-use_when = "Hard single-pass execution or explicit escalation."
-source_refs = ["docs/reference/model-effort-policy.md"]
+name = "high"
+claude_profile = "claude-opus-4.8-high"
+codex_profile = "codex-gpt-5.5-medium"
+use_when = "Open-ended reasoning, planning, plan review, and the session default."
+source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]
 
 [[named_profiles]]
-name = "routine"
+name = "medium"
+claude_profile = "claude-opus-4.8-medium"
+codex_profile = "codex-gpt-5.5-low"
+use_when = "Executor default and resumed warm re-review: implement a prepared plan with bounded judgment."
+source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]
+
+[[named_profiles]]
+name = "low"
+claude_profile = "claude-opus-4.8-low"
+codex_profile = "codex-gpt-5.4-medium"
+use_when = "Procedural execution and verbatim dispatch; the never-Sonnet replacement tier."
+source_refs = ["docs/reference/model-effort-policy.md", "docs/reference/model-effort-claude.toml", "docs/reference/model-effort-codex.toml"]
+
+[[named_profiles]]
+name = "cheap"
 claude_profile = "claude-haiku-4.5-none"
 codex_profile = "codex-gpt-5.4-mini-medium"
 use_when = "Thin deterministic orchestration and routine work."

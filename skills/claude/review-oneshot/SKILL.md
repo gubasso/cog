@@ -5,6 +5,8 @@ description: >
   diff. Delegates deterministic scope, technology detection, findings normalization,
   and PR-comment mechanics to cog while keeping review judgment in this skill. For
   iterative review with triage and fixes, use review-loop.
+model: opus
+effort: xhigh
 argument-hint: "[--scope <glob>] [--severity blocking|important|nit|suggestion|question|praise] [--format markdown|json] [--comment]"
 allowed-tools: Bash, Read, Write, Grep, Glob, WebSearch, WebFetch
 ---

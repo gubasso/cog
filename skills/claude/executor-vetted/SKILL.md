@@ -6,7 +6,7 @@ description: >
   (generate when thin, multi-review when already detailed), then implement it
   natively in session.
 model: opus
-effort: low
+effort: medium
 argument-hint: "<prompt-or-plan-path>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob

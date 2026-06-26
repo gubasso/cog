@@ -6,6 +6,8 @@ description: >
   claude-delegate, verify the round is done, commit, run the
   review-plan-implementation boundary, and continue until complete or failed
   closed.
+model: opus
+effort: low
 argument-hint: "[-n|--dry-run] [--max <n>] -ar @<plan-dir>"
 disable-model-invocation: true
 allowed-tools: Bash Read Agent Skill

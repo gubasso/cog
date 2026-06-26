@@ -14,13 +14,18 @@ allowed-tools: Bash Read Write Edit Skill
 
 # Review Loop
 
-Each round invokes the Codex `review-oneshot` twin in orchestrator mode against the live diff.
-Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats
-until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
+Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the live diff: a fresh
+from-scratch review with full input (task, reviewed plan, context, changed files). Rounds 2+ resume
+that same reviewer thread — warm context that retains every prior round — and in each resumed round
+the reviewer both re-checks whether prior findings were resolved and performs a full re-review for new
+regressions in the applied fixes. Claude delegates finding triage to `/review-findings`, applies fixes
+marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly
+limited, or aborted by the user.
 
-Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `gate`, `orientation`,
-`finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only` to every Codex review
-prompt. Each review is a fresh one-shot; there is no Codex resume between rounds.
+Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`,
+`gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only`
+to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume`
+against the round-1 reviewer thread.
 
 ## Inputs
 
@@ -68,18 +73,34 @@ Artifacts:
 
 ## Round Context
 
-Round 1 context includes the task, reviewed plan when present, and prior stage-4 findings when
-present. Rounds 2+ include the same task/plan, previous triage, accumulated followups, a brief
-summary of fixes since the previous round, and any user guidance.
+Round 1 context includes the task, reviewed plan when present, and prior implementation-review
+findings when present. The Codex twin captures the live diff itself; the context file carries intent
+and prior state.
 
-The Codex twin captures the live diff itself. The context file carries intent and prior state.
+Rounds 2+ resume the round-1 reviewer thread, so the reviewer already retains the task, plan, and
+every prior-round finding. The resumed round prompt is short: it carries only what is new — a brief
+summary of fixes since the previous round, any user guidance, and the dual instruction to (a) confirm
+whether prior findings were resolved and (b) re-review the current diff for new regressions. Prior
+findings come from the reviewer's retained context, not a cold re-injection.
 
 ## Review Round
 
-Build `$RUN_DIR/round-N-prompt.txt` with `$review-oneshot <context> <output-marker>` and a
-read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort for round 1
-and `low` effort for later rounds. Use `finalize --max-wall <secs>` until it exits 0, 1, or 75;
-exit 75 means still running and should be polled again.
+Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`
+and a read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort (the
+Codex HIGH cell). After `finalize`, capture the reviewer thread id for resume:
+
+```bash
+cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
+```
+
+`round-1-runner.json` also surfaces `.thread_id` and `.account`; persist both for later rounds.
+
+Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation and the resumed
+dual instruction above. Launch through `cog codex-runner run-resume --account <account>
+--thread-id <thread-id>` with `low` effort (the Codex MEDIUM cell).
+
+For every round use `finalize --max-wall <secs>` until it exits 0, 1, or 75; exit 75 means still
+running and should be polled again.
 
 Validate the runner result and ensure `$RUN_DIR/round-N-findings.json` is non-empty JSON with a
 `findings` array.

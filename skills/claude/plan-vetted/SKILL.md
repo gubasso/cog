@@ -4,8 +4,6 @@ description: >
   Produce one vetted implementation plan through dual-engine planning: evaluate the
   input, then generate a plan when it is thin (needs-plan) or multi-review it when it
   is already detailed (good-input), writing the vetted plan to a caller-supplied output.
-model: opus
-effort: low
 argument-hint: "<prompt-or-plan-path> [--output <abs.md>]"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob

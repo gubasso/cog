@@ -5,6 +5,8 @@ description: >
   runnable plans: item, dispatch its prompt verbatim to a fresh claude-delegate,
   reconcile the main item to done, commit, run the review-plan-implementation
   boundary, and continue until complete or failed closed.
+model: opus
+effort: low
 argument-hint: "[-n|--dry-run] [--max <n>] <queue-plans.yaml>"
 disable-model-invocation: true
 allowed-tools: Bash Read Agent Skill

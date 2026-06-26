@@ -5,43 +5,75 @@ schema_version = 1
 provider = "claude"
 forbidden_models = ["sonnet", "fable"]
 sonnet_replacement = { model = "opus", effort = "low" }
-session_default = { model = "opus", effort = "high", note = "exploration/planning skills set no override and ride this" }
+session_default = { model = "opus", effort = "high", note = "high-tier skills set no override and ride this" }
 
-[tiers.exploration]
+# Canonical named tier ladder (xhigh/high/medium/low/cheap). These five rungs are the SoT tier
+# vocabulary and supersede the former exploration/procedural/routine names: high == old exploration
+# (session default), xhigh == old single-pass-escalation, low == old procedural (never-Sonnet
+# replacement), cheap == old routine, and medium (opus@medium) is a new rung. See ADR-0041 and the
+# matching Codex ladder in model-effort-codex.toml.
+
+[tiers.xhigh]
+model = "opus"
+effort = "xhigh"
+set_frontmatter = true
+use_when = """Hardest single-pass execution or full from-scratch review that must reconstruct an
+entire codebase, plan, and diff before judging. The escalation rung above the session default."""
+signals = ["from-scratch full review", "broad/multi-subsystem scope", "security-critical or expensive to reverse", "runs as an evaluation"]
+anti_signals = ["reviewing an already-distilled plan", "bounded procedural execution"]
+examples = ["review-oneshot"]
+reference_docs = ["docs/reference/models-reference-claude.md"]
+rationale = """Fresh-context full review erodes the generator-verifier asymmetry discount: the
+reviewer must rebuild the whole context before it can judge, so the floor rises to opus+xhigh."""
+escalation = """Reserve effort=max for the rare task beyond xhigh; never default to it."""
+
+[tiers.high]
 model = "(session default)"
 effort = "(session default)"
 set_frontmatter = false
 use_when = """Open-ended reasoning: exploring a codebase, planning, asking or answering questions,
-reviewing design, and deciding an approach. The hard reasoning happens during the task."""
-signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-design work"]
+reviewing a plan, and deciding an approach. The hard reasoning happens during the task."""
+signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-plan work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-loop", "review-oneshot", "cog-skill-creator", "review-plan-oneshot"]
+examples = ["ask", "plan-oneshot", "plan-multi", "plan-writer", "plan-writer-multi", "plan-refactor-migration", "plan-vetted", "executor-prex", "review-plan-oneshot", "review-plan-multi", "cog-skill-creator"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
-rationale = """Exploration and planning should ride the session default so genuinely open work keeps
-the strongest default model and effort budget. Pinning frontmatter would cap that work."""
-escalation = """A skill author may override per case when a task is genuinely harder than open
-exploration, and the override must be justified in the skill or invocation context. Reviewing or
-verifying an already-reasoned artifact (plan review, code review) rides the session default:
-generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of
-correctness judging, so opus+high is the right floor. Reserve effort=xhigh for reviews that span many
-subsystems, are security-critical, are expensive to reverse, or run as evaluations."""
+rationale = """Open work rides the session default (opus+high) so genuinely open reasoning keeps the
+strongest default budget. Reviewing an already-reasoned plan rides this same floor: generator-verifier
+asymmetry makes critique cheaper than generation, tempered by the difficulty of correctness judging."""
+escalation = """A skill author may override per case when a task is genuinely harder; the override
+must be justified in the skill or invocation context. A reasoning executor (judging, re-evaluating,
+directing, fixing) may ride this tier instead of the executor default."""
 
-[tiers.procedural]
+[tiers.medium]
+model = "opus"
+effort = "medium"
+set_frontmatter = true
+use_when = """Executor default: implement a prepared plan with bounded judgment, where the hard
+design is already chewed but reality-friction decisions remain during implementation."""
+signals = ["executes a prepared plan", "implements to completion", "bounded implementation judgment", "may spawn subagents"]
+anti_signals = ["novel open-ended design", "pure verbatim dispatch"]
+examples = ["executor-oneshot", "executor-vetted"]
+reference_docs = ["docs/reference/models-reference-claude.md"]
+rationale = """Implementing a prepared plan needs real but bounded reasoning: opus+medium sits above
+the never-Sonnet procedural floor and below open planning effort."""
+escalation = """Raise a reasoning executor to high when it judges/re-evaluates/directs/fixes."""
+
+[tiers.low]
 model = "opus"
 effort = "low"
 set_frontmatter = true
 use_when = """Executes a well-structured, detailed procedure where the hard decisions are already
 made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
-signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "executes an existing detailed plan"]
+signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "verbatim queue dispatch"]
 anti_signals = ["novel design", "open-ended exploration"]
-examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep"]
+examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "assess-input", "gc-hook-fix", "runner-all", "runner-plan", "executor-oneshot-codex", "plan-oneshot-codex"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Opus at low effort is the canonical never-sonnet replacement tier: use the stronger
 model at reduced effort instead of selecting Sonnet."""
 escalation = """Raise to effort=medium for heavier detailed-plan execution when needed; never drop
 to sonnet."""
 
-[tiers.routine]
+[tiers.cheap]
 model = "haiku"
 effort = "(none)"
 set_frontmatter = true
@@ -53,5 +85,5 @@ examples = ["gc"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Haiku is fastest and cheapest for simple routines. Haiku 4.5 returns an error if an
 effort parameter is sent, so skill frontmatter must omit effort for Haiku."""
-escalation = """If the routine starts needing judgment, promote it to the procedural tier
+escalation = """If the routine starts needing judgment, promote it to the low tier
 (model=opus, effort=low) rather than adding an effort field to Haiku."""

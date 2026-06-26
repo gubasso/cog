@@ -5,7 +5,7 @@ description: >
   flow: evaluate the input, prepare a good plan (generate when thin, cross-engine
   review when already detailed), then implement it natively in session.
 model: opus
-effort: low
+effort: medium
 argument-hint: "<prompt-or-plan-path>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Grep Glob
