@@ -12,6 +12,11 @@ session_default = { model = "opus", effort = "high", note = "high-tier skills se
 # (session default), xhigh == old single-pass-escalation, low == old procedural (never-Sonnet
 # replacement), cheap == old routine, and medium (opus@medium) is a new rung. See ADR-0041 and the
 # matching Codex ladder in model-effort-codex.toml.
+#
+# Each tier's `skills = [...]` list is the authoritative governed-tier registry consumed by
+# `cog skill-lint` (`model-effort-tier` rule) and `cog power-grade skill-tier`. A skill listed here
+# is pinned to that tier; this is where the known exceptions live (e.g. `executor-prex` rides high,
+# the codex delegation launchers and `review-findings` ride low). See ADR-0047.
 
 [tiers.xhigh]
 model = "opus"
@@ -21,7 +26,7 @@ use_when = """Hardest single-pass execution or full from-scratch review that mus
 entire codebase, plan, and diff before judging. The escalation rung above the session default."""
 signals = ["from-scratch full review", "broad/multi-subsystem scope", "security-critical or expensive to reverse", "runs as an evaluation"]
 anti_signals = ["reviewing an already-distilled plan", "bounded procedural execution"]
-examples = ["review-oneshot"]
+skills = ["review-oneshot"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Fresh-context full review erodes the generator-verifier asymmetry discount: the
 reviewer must rebuild the whole context before it can judge, so the floor rises to opus+xhigh."""
@@ -35,7 +40,7 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing a plan, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-plan work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-oneshot", "plan-multi", "plan-writer", "plan-writer-multi", "plan-refactor-migration", "plan-vetted", "executor-prex", "review-plan-oneshot", "review-plan-multi", "cog-skill-creator"]
+skills = ["ask", "plan-oneshot", "plan-multi", "plan-writer", "plan-writer-multi", "plan-refactor-migration", "plan-vetted", "executor-prex", "review-plan-oneshot", "review-plan-multi", "review-loop", "cog-skill-creator"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Open work rides the session default (opus+high) so genuinely open reasoning keeps the
 strongest default budget. Reviewing an already-reasoned plan rides this same floor: generator-verifier
@@ -52,7 +57,7 @@ use_when = """Executor default: implement a prepared plan with bounded judgment,
 design is already chewed but reality-friction decisions remain during implementation."""
 signals = ["executes a prepared plan", "implements to completion", "bounded implementation judgment", "may spawn subagents"]
 anti_signals = ["novel open-ended design", "pure verbatim dispatch"]
-examples = ["executor-oneshot", "executor-vetted"]
+skills = ["executor-oneshot", "executor-vetted"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Implementing a prepared plan needs real but bounded reasoning: opus+medium sits above
 the never-Sonnet procedural floor and below open planning effort."""
@@ -66,7 +71,7 @@ use_when = """Executes a well-structured, detailed procedure where the hard deci
 made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
 signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "verbatim queue dispatch"]
 anti_signals = ["novel design", "open-ended exploration"]
-examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "assess-input", "gc-hook-fix", "runner-all", "runner-plan", "executor-oneshot-codex", "plan-oneshot-codex"]
+skills = ["pre-commit", "test-review", "review-findings", "review-plan-implementation", "claudemd", "osc-obs", "suckless-patcher", "ast-grep", "assess-input", "gc-hook-fix", "runner-all", "runner-plan", "executor-oneshot-codex", "plan-oneshot-codex"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Opus at low effort is the canonical never-sonnet replacement tier: use the stronger
 model at reduced effort instead of selecting Sonnet."""
@@ -81,7 +86,7 @@ use_when = """Bare execution of a simple routine where nearly all logic is deter
 delegated to scripts or orchestrators; the model sequences calls and formats output."""
 signals = ["thin orchestration over cog subcommands", "no real reasoning", "fast/cheap is the priority"]
 anti_signals = ["any meaningful judgment", "multi-step design"]
-examples = ["gc"]
+skills = ["gc"]
 reference_docs = ["docs/reference/models-reference-claude.md"]
 rationale = """Haiku is fastest and cheapest for simple routines. Haiku 4.5 returns an error if an
 effort parameter is sent, so skill frontmatter must omit effort for Haiku."""

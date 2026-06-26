@@ -63,6 +63,13 @@ The skill-prefix taxonomy maps to default rungs (override per skill only with re
 - `runner-*` → LOW for verbatim prompt-opaque dispatch; higher only when it does routing policy,
   triage, or retry decisions.
 
+These defaults are enforced for Claude skills by the `model-effort-tier` `cog skill-lint` rule. The
+per-tier `skills = [...]` lists in [`model-effort-claude.toml`](model-effort-claude.toml) are the
+authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the
+prefix default (the recorded justification) live. Verify a skill with
+`cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with
+`cog power-grade profile --name <tier>`. See [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md).
+
 ## How To Classify Work
 
 1. Read the relevant provider TOML file.
@@ -125,6 +132,8 @@ availability, or effort-support changes.
 
 The following are intentionally out of scope for this round:
 
-- Building a `cog model-policy` lookup command.
 - Changing `cog codex-runner` wiring.
 - Re-grading existing skill frontmatter.
+
+The tier-lookup follow-up is now provided by `cog power-grade profile` and
+`cog power-grade skill-tier` (ADR-0047); a broader `cog model-policy` surface remains out of scope.

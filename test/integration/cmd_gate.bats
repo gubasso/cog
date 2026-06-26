@@ -209,6 +209,8 @@ EOF
 ---
 name: executor-demo
 description: Demo.
+model: opus
+effort: medium
 ---
 
 <!-- trigger-tests: "demo" -->

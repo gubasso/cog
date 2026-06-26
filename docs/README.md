@@ -51,6 +51,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0044: Context-brief gate on fresh-context-boundary orchestrators](decisions/0044-context-brief-gate.md)
 - [ADR-0045: Unified `cog gate` command and context-brief verb cleanup](decisions/0045-unified-gate-command-and-context-brief-verbs.md)
 - [ADR-0046: cog-owned stage artifact writes](decisions/0046-cog-owned-stage-artifact-writes.md)
+- [ADR-0047: Enforce prefix→tier policy via skill-lint with a registry escape hatch](decisions/0047-enforce-prefix-tier-policy.md)
 
 ## Guides
 

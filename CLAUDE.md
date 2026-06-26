@@ -19,7 +19,12 @@ docs/decisions/0025-sot-executor-delegation.md.
 
 Non-negotiable: skill model/effort selection follows docs/reference/model-effort-policy.md and
 docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use model: opus + effort:
-low).
+low). A governed Claude skill's model:/effort: must resolve to its expected tier, enforced by cog
+skill-lint (model-effort-tier); the authoritative registry is the per-tier skills lists in
+docs/reference/model-effort-claude.toml (the single escape hatch for exceptions), and authors verify
+with cog power-grade skill-tier / cog power-grade profile. See
+docs/decisions/0047-enforce-prefix-tier-policy.md and docs/reference/skill-contract.md
+("Model/effort tier enforcement").
 
 Non-negotiable: skill names follow the prefix taxonomy in docs/decisions/0016-skill-prefix-taxonomy.md
 and docs/reference/skill-contract.md ("Prefix taxonomy"): plan-* emits plans, review-* reviews code or

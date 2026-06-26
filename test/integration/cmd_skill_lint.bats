@@ -11,12 +11,20 @@ setup() {
 write_skill() {
   local dir="$1" name="$2" runtime="${3:-claude}"
   mkdir -p "$dir"
+  # executor-*/runner-* names are governed by the model-effort-tier rule
+  # (executor → medium, runner → low); pin the matching cell so generic
+  # orchestrator fixtures stay tier-compliant.
+  local tier_fm=""
+  case "$name" in
+    executor-*) tier_fm=$'model: opus\neffort: medium\n' ;;
+    runner-*) tier_fm=$'model: opus\neffort: low\n' ;;
+  esac
   if [[ $runtime == claude ]]; then
     cat >"$dir/SKILL.md" <<EOF
 ---
 name: $name
 description: Demo.
----
+${tier_fm}---
 
 <!-- trigger-tests: "demo" -->
 
@@ -1026,10 +1034,15 @@ write_mapped_consumer() {
   # except for any extra lines the caller appends afterward.
   local dir="$1" name="$2"
   mkdir -p "$dir"
+  # The mapped consumers (runner-all, runner-plan, review-findings) are all
+  # registry-pinned to the LOW tier, so the fixture rides opus+low to satisfy
+  # the model-effort-tier rule while these tests exercise producer-blindness.
   cat >"$dir/SKILL.md" <<EOF
 ---
 name: $name
 description: Consumer skill that reads a structural input contract.
+model: opus
+effort: low
 ---
 
 <!-- trigger-tests: "demo" -->
@@ -1119,4 +1132,127 @@ EOF
 
   assert_success
   [[ $stderr != *"producer-blindness"* ]]
+}
+
+# --- model-effort-tier rule -------------------------------------------------
+
+write_tier_skill() {
+  # write_tier_skill <dir> <name> <model> <effort>
+  # Empty model/effort are omitted (rides the session default).
+  local dir="$1" name="$2" model="$3" effort="$4"
+  mkdir -p "$dir"
+  local tier_fm=""
+  [[ -n $model ]] && tier_fm+="model: ${model}"$'\n'
+  [[ -n $effort ]] && tier_fm+="effort: ${effort}"$'\n'
+  cat >"$dir/SKILL.md" <<EOF
+---
+name: $name
+description: Demo.
+${tier_fm}---
+
+<!-- trigger-tests: "demo" -->
+
+# Demo
+
+\`\`\`text
+ok
+\`\`\`
+EOF
+}
+
+@test "cog skill-lint accepts a governed HIGH skill that rides the session default" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo "" ""
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint rejects a governed HIGH skill pinned to the wrong tier" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo opus low
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
+  assert_failure
+  [[ $stderr == *"model-effort-tier"* ]]
+  [[ $stderr == *"expects tier 'high'"* ]]
+}
+
+@test "cog skill-lint does not flag a governed MEDIUM executor pinned to opus+medium" {
+  # executor-* orchestrators trip unrelated gate rules with a minimal fixture, so
+  # this asserts the model-effort-tier rule specifically does not fire.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo opus medium
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
+  [[ $stderr != *"model-effort-tier"* ]]
+}
+
+@test "cog skill-lint does not flag a governed LOW runner pinned to opus+low" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo opus low
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
+  [[ $stderr != *"model-effort-tier"* ]]
+}
+
+@test "cog skill-lint flags a governed LOW runner pinned to the wrong tier" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo opus xhigh
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
+  assert_failure
+  [[ $stderr == *"model-effort-tier"* ]]
+  [[ $stderr == *"expects tier 'low'"* ]]
+}
+
+@test "cog skill-lint treats opus+high as equivalent to the HIGH session default" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo opus high
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint resolves haiku without effort to the CHEAP tier" {
+  # 'gc' is registry-pinned cheap; haiku (no effort) resolves to cheap.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc haiku ""
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint exempts an ungoverned skill regardless of model/effort" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-thing" demo-thing opus medium
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-thing/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint honors a registry exception over the prefix default" {
+  # executor-prex is registry-pinned high; riding the session default satisfies it
+  # even though the executor-* prefix default is medium. (Minimal fixture trips
+  # unrelated gate rules, so assert the tier rule specifically does not fire.)
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex "" ""
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
+  [[ $stderr != *"model-effort-tier"* ]]
+}
+
+@test "cog skill-lint flags executor-prex when pinned to the executor MEDIUM default" {
+  # The registry pins executor-prex to high; opus+medium (the executor default) must fail.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex opus medium
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
+  assert_failure
+  [[ $stderr == *"model-effort-tier"* ]]
+  [[ $stderr == *"expects tier 'high'"* ]]
+}
+
+@test "cog skill-lint skips the model-effort-tier rule for codex skills" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/executor-demo" executor-demo codex
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/executor-demo/SKILL.md"
+  assert_success
+}
+
+@test "model-effort-claude.toml tier registry is the SoT the resolver reads" {
+  # Drift guard: every skill pinned in a tier's `skills` list must resolve to
+  # that tier via `cog power-grade skill-tier`, with the registry as its source.
+  local toml="${BATS_TEST_DIRNAME}/../../docs/reference/model-effort-claude.toml"
+  local rung skill expected reason
+  for rung in xhigh high medium low cheap; do
+    while IFS= read -r skill; do
+      [[ -n $skill ]] || continue
+      run cog power-grade skill-tier --skill "$skill" --json
+      assert_success
+      expected="$(jq -r '.expected' <<<"$output")"
+      reason="$(jq -r '.reason' <<<"$output")"
+      assert_equal "$expected" "$rung"
+      assert_equal "$reason" registry
+    done < <(taplo get -f "$toml" -o json | jq -r --arg r "$rung" '.tiers[$r].skills[]?')
+  done
 }

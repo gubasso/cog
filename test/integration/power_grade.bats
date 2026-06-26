@@ -109,3 +109,74 @@ setup() {
     .errors[0].error == "profile_not_executable"
   ' >/dev/null
 }
+
+@test "power-grade profile resolves a named tier to its Claude and Codex cells" {
+  run cog power-grade profile --name low --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.profile.v1" and
+    .ok == true and
+    .tier == "low" and
+    .claude.model == "claude-opus-4-8" and
+    .claude.effort == "low" and
+    .codex.model == "gpt-5.4" and
+    .codex.effort == "medium"
+  ' >/dev/null
+}
+
+@test "power-grade profile resolves the cheap tier to Haiku with no effort" {
+  run cog power-grade profile --name cheap --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .ok == true and
+    .claude.model == "claude-haiku-4-5" and
+    .claude.effort == "none"
+  ' >/dev/null
+}
+
+@test "power-grade profile fails for an unknown tier name" {
+  run cog power-grade profile --name bogus --json
+
+  assert_failure 65
+  printf '%s\n' "$output" | jq -e '.ok == false and .claude == null and .codex == null' >/dev/null
+}
+
+@test "power-grade skill-tier confirms a registry-pinned exception" {
+  run cog power-grade skill-tier --skill executor-prex --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.skill-tier.v1" and
+    .ok == true and
+    .skill == "executor-prex" and
+    .expected == "high" and
+    .actual == "high" and
+    .reason == "registry"
+  ' >/dev/null
+}
+
+@test "power-grade skill-tier reports an ungoverned skill as exempt" {
+  run cog power-grade skill-tier --skill context-builder --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .ok == true and
+    .expected == "exempt" and
+    .reason == "exempt"
+  ' >/dev/null
+}
+
+@test "power-grade skill-tier accepts an explicit --file" {
+  run cog power-grade skill-tier --file "${BATS_TEST_DIRNAME}/../../skills/claude/runner-all/SKILL.md" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.skill == "runner-all" and .expected == "low" and .actual == "low"' >/dev/null
+}
+
+@test "power-grade skill-tier requires a skill identifier" {
+  run cog power-grade skill-tier --json
+
+  assert_failure
+}

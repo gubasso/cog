@@ -36,7 +36,8 @@ gpt-5.4-mini under subscription auth."""
 # model-effort-claude.toml. Codex cells: xhigh=gpt-5.5@high, high=gpt-5.5@medium (session default),
 # medium=gpt-5.5@low, low=gpt-5.4@medium, cheap=gpt-5.4-mini@medium. These supersede the former
 # exploration/procedural/routine names. Codex skills carry no SKILL.md frontmatter; the tier is
-# selected at runtime through cog codex-runner. See ADR-0041.
+# selected at runtime through cog codex-runner. The per-tier `skills = [...]` lists mirror the Claude
+# registry for reference only; the `model-effort-tier` lint reads the Claude file. See ADR-0041.
 
 [tiers.xhigh]
 model = "gpt-5.5"
@@ -46,7 +47,7 @@ use_when = """Hardest single-pass execution or full from-scratch review. The esc
 the session default."""
 signals = ["from-scratch full review", "broad/multi-subsystem scope", "security-critical or expensive to reverse", "runs as an evaluation"]
 anti_signals = ["reviewing an already-distilled plan", "bounded procedural execution"]
-examples = ["review-oneshot"]
+skills = ["review-oneshot"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """gpt-5.5 at high is the escalation rung. Community-measured burn is about 3-5x medium,
 so it is reserved for genuinely hard or full from-scratch review work."""
@@ -60,7 +61,7 @@ use_when = """Open-ended reasoning: exploring a codebase, planning, asking or an
 reviewing a plan, and deciding an approach. The hard reasoning happens during the task."""
 signals = ["unbounded search space", "decisions not yet made", "needs full session judgment", "plan/ask/review-plan work"]
 anti_signals = ["a detailed plan already exists", "purely mechanical or deterministic steps"]
-examples = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-plan-oneshot"]
+skills = ["ask", "plan-writer", "plan-writer-multi", "executor-prex", "review-plan-oneshot"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """The high rung rides the Codex session default: gpt-5.5 at medium effort. Round-1
 evidence treats this as the quality default and balanced recommendation."""
@@ -74,7 +75,7 @@ use_when = """Executor default and resumed review rounds: implement a prepared p
 retained context, where the hard design is already chewed but bounded judgment remains."""
 signals = ["executes a prepared plan", "resumed warm re-review", "bounded implementation judgment"]
 anti_signals = ["novel open-ended design", "from-scratch full review"]
-examples = ["executor-oneshot", "executor-vetted"]
+skills = ["executor-oneshot", "executor-vetted"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """gpt-5.5 at low keeps the strong model while trimming effort for work whose hard
 reasoning was already spent upstream (a prepared plan, or a warm resumed re-review)."""
@@ -88,7 +89,7 @@ use_when = """Executes a well-structured, detailed procedure where the hard deci
 made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains."""
 signals = ["repeatable runbook", "deterministic core delegated to cog", "bounded judgment", "verbatim queue dispatch"]
 anti_signals = ["novel design", "open-ended exploration"]
-examples = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep"]
+skills = ["pre-commit", "test-review", "review-findings", "claudemd", "osc-obs", "suckless-patcher", "ast-grep"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """gpt-5.4 at medium drops the model (not just effort) for procedural work, capturing the
 cheaper model's per-token saving. gpt-5.4 at high is an anti-pattern because high effort erases that
@@ -103,7 +104,7 @@ use_when = """Bare execution of a simple routine where nearly all logic is deter
 delegated to scripts or orchestrators; the model sequences calls and formats output."""
 signals = ["thin orchestration over cog subcommands", "no real reasoning", "fast/cheap is the priority"]
 anti_signals = ["any meaningful judgment", "multi-step design"]
-examples = ["gc"]
+skills = ["gc"]
 reference_docs = ["docs/reference/models-reference-codex.md"]
 rationale = """Use gpt-5.4-mini at medium as the chosen planning value for trivial work, preserving
 the prior routine-tier value across the rename. Verified 2026-06-24 against OpenAI model docs:

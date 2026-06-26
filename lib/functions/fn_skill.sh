@@ -314,3 +314,100 @@ cog::fn::skill::unknown_frontmatter_keys_json() {
   allowed="$(cog::fn::skill::allowed_frontmatter_keys_json "$runtime")"
   jq -cn --argjson keys "$keys" --argjson allowed "$allowed" '$keys - $allowed'
 }
+
+# Read a single frontmatter scalar value by key (empty when the key is absent).
+cog::fn::skill::frontmatter_value() {
+  local file="$1" key="$2" value
+  value="$(awk -v key="$key" '
+    NR==1 && $0=="---"{f=1; next}
+    f && $0=="---"{exit}
+    f && index($0, key ":")==1 {
+      sub("^" key ":[[:space:]]*", "")
+      print
+      exit
+    }' "$file")"
+  cog::fn::skill::name_normalize_frontmatter_value "$value"
+}
+
+# Path to the Claude model/effort policy TOML (the governed-tier registry SoT).
+cog::fn::skill::tier_toml_path() {
+  local override="${COG_MODEL_EFFORT_CLAUDE:-}"
+  if [[ -n $override ]]; then
+    printf '%s\n' "$override"
+    return 0
+  fi
+  realpath "${LIB_DIR}/../docs/reference/model-effort-claude.toml"
+}
+
+cog::fn::skill::tier_toml_json() {
+  local path="${1:-}"
+  [[ -n $path ]] || path="$(cog::fn::skill::tier_toml_path)"
+  [[ -f $path ]] || cog::fn::error_raise "InputNotFound" \
+    "model/effort policy TOML not found" "path: ${path}" "" \
+    "check docs/reference/model-effort-claude.toml"
+  cog::fn::toml::json "$path"
+}
+
+# Tier a skill name is explicitly pinned to in the registry, or empty if unlisted.
+cog::fn::skill::registry_tier() {
+  local name="$1" json
+  json="$(cog::fn::skill::tier_toml_json)"
+  jq -r --arg name "$name" '
+    [ .tiers | to_entries[] | select((.value.skills // []) | index($name)) | .key ] | first // empty
+  ' <<<"$json"
+}
+
+# Prefix-default tier for a governed skill name, or empty for ungoverned prefixes.
+cog::fn::skill::prefix_default_tier() {
+  case "$1" in
+    review-plan-*) printf '%s\n' high ;;
+    review-oneshot*) printf '%s\n' xhigh ;;
+    plan-*) printf '%s\n' high ;;
+    executor-*) printf '%s\n' medium ;;
+    runner-*) printf '%s\n' low ;;
+    *) printf '%s\n' "" ;;
+  esac
+}
+
+# Expected tier for a skill name: explicit registry membership wins, else the
+# prefix default, else "exempt" (ungoverned). Returns xhigh|high|medium|low|cheap|exempt.
+cog::fn::skill::expected_tier() {
+  local name="$1" rung
+  rung="$(cog::fn::skill::registry_tier "$name")"
+  [[ -n $rung ]] || rung="$(cog::fn::skill::prefix_default_tier "$name")"
+  printf '%s\n' "${rung:-exempt}"
+}
+
+# Why a skill has its expected tier: registry | prefix-default | exempt.
+cog::fn::skill::expected_tier_source() {
+  local name="$1"
+  if [[ -n $(cog::fn::skill::registry_tier "$name") ]]; then
+    printf '%s\n' registry
+  elif [[ -n $(cog::fn::skill::prefix_default_tier "$name") ]]; then
+    printf '%s\n' prefix-default
+  else
+    printf '%s\n' exempt
+  fi
+}
+
+# Resolve a skill's frontmatter (model, effort) to a tier name, or "unknown".
+# Absent model and effort means "ride the session default" → high.
+cog::fn::skill::tier_for_frontmatter() {
+  local model="$1" effort="$2" json rung
+  if [[ -z $model && -z $effort ]]; then
+    printf '%s\n' high
+    return 0
+  fi
+  if [[ $model == haiku && -z $effort ]]; then
+    printf '%s\n' cheap
+    return 0
+  fi
+  json="$(cog::fn::skill::tier_toml_json)"
+  # Explicitly pinning the session-default cell (e.g. opus+high) is equivalent to riding HIGH.
+  rung="$(jq -r --arg model "$model" --arg effort "$effort" '
+    ( [ .tiers | to_entries[] | select(.value.model == $model and .value.effort == $effort) | .key ] | first )
+    // (if (.session_default.model == $model and .session_default.effort == $effort) then "high" else empty end)
+    // empty
+  ' <<<"$json")"
+  printf '%s\n' "${rung:-unknown}"
+}

@@ -917,6 +917,33 @@ __cog_skill_lint_check_artifact_write_ownership() {
   return "$failed"
 }
 
+# model-effort-tier: a governed Claude skill's model:/effort: frontmatter must
+# resolve to the tier the policy expects for it. The expected tier comes from the
+# authoritative registry in docs/reference/model-effort-claude.toml (per-tier
+# `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
+# Absent model+effort rides the session default (HIGH). The known exceptions
+# (executor-prex high; codex launchers, review-findings, review-plan-implementation
+# low) live in the registry, not here. See docs/decisions/0047-enforce-prefix-tier-policy.md.
+__cog_skill_lint_check_model_effort_tier() {
+  local file="$1" runtime name expected model effort actual
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ $runtime == claude ]] || return 0
+
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  expected="$(cog::fn::skill::expected_tier "$name")"
+  [[ $expected == exempt ]] && return 0
+
+  model="$(cog::fn::skill::frontmatter_value "$file" model)"
+  effort="$(cog::fn::skill::frontmatter_value "$file" effort)"
+  actual="$(cog::fn::skill::tier_for_frontmatter "$model" "$effort")"
+  [[ $actual == "$expected" ]] && return 0
+
+  __cog_skill_lint_finding "$file" 1 "model-effort-tier" \
+    "model/effort resolves to tier '${actual}' (model=${model:-<default>} effort=${effort:-<default>}) but policy expects tier '${expected}'" \
+    "match the expected tier's cell (see 'cog power-grade profile --name ${expected}'), or pin the skill in the right tier's 'skills' list in docs/reference/model-effort-claude.toml"
+  return 1
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -952,6 +979,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_artifact_write_ownership "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_model_effort_tier "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

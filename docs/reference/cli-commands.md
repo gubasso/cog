@@ -93,6 +93,8 @@ this reference table.
 | `power-grade cell --model <model> --effort <effort>` | Print one model/effort profile. |
 | `power-grade classify --grade <n>` | Print executable profiles that can handle a difficulty grade. |
 | `power-grade compound --passes <profile,profile,...>` | Compute compounded capability for a pass sequence. |
+| `power-grade profile --name <tier>` | Resolve a named tier to its Claude and Codex model/effort cells. |
+| `power-grade skill-tier --skill <name> \| --file <path>` | Resolve a skill's expected vs actual model/effort tier. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |
