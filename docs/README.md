@@ -52,6 +52,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0045: Unified `cog gate` command and context-brief verb cleanup](decisions/0045-unified-gate-command-and-context-brief-verbs.md)
 - [ADR-0046: cog-owned stage artifact writes](decisions/0046-cog-owned-stage-artifact-writes.md)
 - [ADR-0047: Enforce prefix→tier policy via skill-lint with a registry escape hatch](decisions/0047-enforce-prefix-tier-policy.md)
+- [ADR-0048: Plan vault storage and resolution](decisions/0048-plan-vault-storage-and-resolution.md)
 
 ## Guides
 
@@ -75,6 +76,7 @@ This directory is organized using Diataxis zones.
 - [Skill contract](reference/skill-contract.md)
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
 - [Orchestration contract](reference/orchestration-contract.md)
+- [Plan vault](reference/plan-vault.md)
 - [Skill reference corpus](../skill-refs/)
 
 ## Explanation
@@ -82,3 +84,4 @@ This directory is organized using Diataxis zones.
 - [Architecture overview](explanation/architecture.md)
 - [Foreground orchestration](explanation/foreground-orchestration.md)
 - [Context handoff and the context-builder](explanation/context-builder.md)
+- [Plan vault trust model](explanation/plan-vault-trust-model.md)

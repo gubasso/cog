@@ -23,6 +23,11 @@ regressions in the applied fixes. Claude delegates finding triage to `/review-fi
 marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly
 limited, or aborted by the user.
 
+**Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists, written via
+`cog review-loop-summary build` (Final Output). This is the single exit artifact for every
+termination reason — including when the work looks finished after a round's fixes. Reaching a clean
+or fixed state is not the end of the run; writing `summary.md` is.
+
 Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`,
 `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only`
 to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume`
@@ -136,6 +141,11 @@ Append the report's `Followups` decisions, deferrals, and open questions to `$RU
 Apply minimal code edits for findings marked `FIXED`. Pause only for `NEEDS_DISCUSSION`, errors, user
 abort, or an explicit user limit.
 
+Applying a round's fixes is a continuation point, not a stopping point. After applying the `FIXED`
+edits for a round that has no `NEEDS_DISCUSSION`, run the next (resumed) round to confirm the fixes
+hold and surface regressions. The loop ends only when a termination condition below is met, and it
+ends by writing `summary.md`.
+
 After round 2 and later, compute deterministic progress:
 
 ```bash
@@ -157,7 +167,8 @@ Stop on:
 - user abort;
 - runner or validation error.
 
-Do not ask whether to continue between successful rounds.
+Do not ask whether to continue between successful rounds. On whichever condition fires, proceed
+directly to Final Output and write `summary.md`; every termination path ends there.
 
 ## Final Output
 

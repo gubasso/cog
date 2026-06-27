@@ -138,6 +138,9 @@ The command list and short descriptions are sourced from command modules under
 *osc-probe-binary*
 	Resolve a binary RPM to an OBS source package.
 
+*plan*
+	Resolve and manage plan stores.
+
 *plan-doc*
 	Write and validate lean plan artifacts.
 

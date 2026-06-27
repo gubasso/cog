@@ -69,6 +69,14 @@ source "${LIB_DIR}/functions/fn_plan_artifact.sh"
 source "${LIB_DIR}/functions/fn_plan_doc.sh"
 # shellcheck source=../lib/functions/fn_plan_review.sh
 source "${LIB_DIR}/functions/fn_plan_review.sh"
+# shellcheck source=../lib/functions/fn_plan_store.sh
+source "${LIB_DIR}/functions/fn_plan_store.sh"
+# shellcheck source=../lib/functions/fn_plan_config.sh
+source "${LIB_DIR}/functions/fn_plan_config.sh"
+# shellcheck source=../lib/functions/fn_plan_trust.sh
+source "${LIB_DIR}/functions/fn_plan_trust.sh"
+# shellcheck source=../lib/functions/fn_plan_resolve.sh
+source "${LIB_DIR}/functions/fn_plan_resolve.sh"
 # shellcheck source=../lib/functions/fn_tracking.sh
 source "${LIB_DIR}/functions/fn_tracking.sh"
 # shellcheck source=../lib/functions/fn_toml.sh

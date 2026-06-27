@@ -53,6 +53,7 @@ _cog() {
     noop
     osc-preflight
     osc-probe-binary
+    plan
     plan-doc
     plan-init
     plan-multi-setup
