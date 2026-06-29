@@ -10,6 +10,11 @@ references under skill-refs/<area>/ and deploy-payload templates under skill-ref
 optional enhancers only. See docs/decisions/0017-reference-self-containment.md and
 docs/decisions/0023-skill-refs-unified-resource-sot.md.
 
+Non-negotiable: top-level data/ is the SoT for structured reference data consumed by the cog CLI
+itself. CLI data is YAML split one file per top-level table, except append-only streams such as
+data/research-shelf/index.jsonl, and resolves through cog::fn::data_root so installs use
+$XDG_DATA_HOME/cog/data.
+
 Non-negotiable: runtime skills never depend on docs/reference/codex-conventions.md or
 DOCS_NOTES_REPO. Codex behavior comes from cog codex-runner, and load-bearing shared references are
 imported to skill-refs and resolved with cog skill-refs path. Shared judgment workflows delegate to a
@@ -21,7 +26,7 @@ Non-negotiable: skill model/effort selection follows docs/reference/model-effort
 docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use model: opus + effort:
 low). A governed Claude skill's model:/effort: must resolve to its expected tier, enforced by cog
 skill-lint (model-effort-tier); the authoritative registry is the per-tier skills lists in
-docs/reference/model-effort-claude.toml (the single escape hatch for exceptions), and authors verify
+data/model-effort/claude/tiers.yaml (the single escape hatch for exceptions), and authors verify
 with cog power-grade skill-tier / cog power-grade profile. See
 docs/decisions/0047-enforce-prefix-tier-policy.md and docs/reference/skill-contract.md
 ("Model/effort tier enforcement").

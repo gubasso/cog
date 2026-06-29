@@ -329,29 +329,29 @@ cog::fn::skill::frontmatter_value() {
   cog::fn::skill::name_normalize_frontmatter_value "$value"
 }
 
-# Path to the Claude model/effort policy TOML (the governed-tier registry SoT).
-cog::fn::skill::tier_toml_path() {
+# Path to the Claude model/effort policy data (the governed-tier registry SoT).
+cog::fn::skill::tier_data_path() {
   local override="${COG_MODEL_EFFORT_CLAUDE:-}"
   if [[ -n $override ]]; then
     printf '%s\n' "$override"
     return 0
   fi
-  realpath "${LIB_DIR}/../docs/reference/model-effort-claude.toml"
+  cog::fn::data::path "model-effort/claude"
 }
 
-cog::fn::skill::tier_toml_json() {
+cog::fn::skill::tier_data_json() {
   local path="${1:-}"
-  [[ -n $path ]] || path="$(cog::fn::skill::tier_toml_path)"
-  [[ -f $path ]] || cog::fn::error_raise "InputNotFound" \
-    "model/effort policy TOML not found" "path: ${path}" "" \
-    "check docs/reference/model-effort-claude.toml"
-  cog::fn::toml::json "$path"
+  [[ -n $path ]] || path="$(cog::fn::skill::tier_data_path)"
+  [[ -e $path ]] || cog::fn::error_raise "InputNotFound" \
+    "model/effort policy data not found" "path: ${path}" "" \
+    "check data/model-effort/claude"
+  cog::fn::data::load_dir "$path"
 }
 
 # Tier a skill name is explicitly pinned to in the registry, or empty if unlisted.
 cog::fn::skill::registry_tier() {
   local name="$1" json
-  json="$(cog::fn::skill::tier_toml_json)"
+  json="$(cog::fn::skill::tier_data_json)"
   jq -r --arg name "$name" '
     [ .tiers | to_entries[] | select((.value.skills // []) | index($name)) | .key ] | first // empty
   ' <<<"$json"
@@ -402,7 +402,7 @@ cog::fn::skill::tier_for_frontmatter() {
     printf '%s\n' cheap
     return 0
   fi
-  json="$(cog::fn::skill::tier_toml_json)"
+  json="$(cog::fn::skill::tier_data_json)"
   # Explicitly pinning the session-default cell (e.g. opus+high) is equivalent to riding HIGH.
   rung="$(jq -r --arg model "$model" --arg effort "$effort" '
     ( [ .tiers | to_entries[] | select(.value.model == $model and .value.effort == $effort) | .key ] | first )

@@ -1,0 +1,12 @@
+schema_version: 1
+provider: claude
+forbidden_models:
+  - sonnet
+  - fable
+sonnet_replacement:
+  effort: low
+  model: opus
+session_default:
+  effort: high
+  model: opus
+  note: high-tier skills set no override and ride this

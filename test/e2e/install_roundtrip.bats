@@ -29,13 +29,37 @@ teardown() {
   assert_file_exists "$PREFIX/lib/cog/VERSION"
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/pre-commit"
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/editorconfig"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/power-grade/matrix/profiles.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/model-effort/claude/tiers.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/maintenance-tracking.yaml"
 
   run cog --version
   assert_success
   assert_output "0.1.0"
 
+  # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
+  run "$BASH" -c 'cd "$1" && cog power-grade cell --model claude-opus-4-8 --effort high --json | jq -e ".ok == true" >/dev/null' bash "$BATS_TEST_TMPDIR"
+  assert_success
+
+  # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
+  run "$BASH" -c 'cd "$1" && cog tracking-scan --now 2026-06-29 --json | jq -e ".registry_path | contains(\"/cog/data/maintenance-tracking.yaml\")" >/dev/null' bash "$BATS_TEST_TMPDIR"
+  assert_success
+
   run cog doctor
   assert_success
+}
+
+@test "install preserves installed research shelf on upgrade" {
+  local shelf="$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl"
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+  printf '%s\n' '{"id":"local-record"}' >>"$shelf"
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  grep -Fqx '{"id":"local-record"}' "$shelf"
 }
 
 @test "agents and skills deployed" {
@@ -82,6 +106,8 @@ teardown() {
   assert_file_exists "$manifest"
   grep -Fqx "$PREFIX/bin/cog" "$manifest"
   grep -Fqx "$PREFIX/lib/cog/lib/helpers.sh" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/data/power-grade/matrix/profiles.yaml" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/bash-completion/completions/cog" "$manifest"
   grep -Fqx "$HOME/.claude/agents/claude-delegate.md" "$manifest"
   grep -Eq "^$HOME/\.claude/skills/[^/]+/SKILL\.md$" "$manifest"

@@ -116,8 +116,8 @@ A governed Claude skill's `model:`/`effort:` frontmatter must resolve to the nam
 tier policy expects for it (`xhigh|high|medium|low|cheap`). The expected tier is resolved
 deterministically, with explicit registry membership winning over the prefix default:
 
-1. **Registry pin** — the skill name appears in a per-tier `skills = [...]` list in
-   [`model-effort-claude.toml`](model-effort-claude.toml). This is the authoritative registry and the
+1. **Registry pin** — the skill name appears in a per-tier `skills` list in
+   [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml). This is the authoritative registry and the
    single escape hatch: the known exceptions live here (`executor-prex` rides high; the codex
    delegation launchers, `review-findings`, and `review-plan-implementation` ride low).
 2. **Prefix default** — otherwise the [prefix taxonomy](#prefix-taxonomy) default applies: `plan-*`
@@ -277,7 +277,7 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   through `cog`/`--output` are not flagged. See [ADR-0046](../decisions/0046-cog-owned-stage-artifact-writes.md).
 - `model-effort-tier`: a governed Claude skill's `model:`/`effort:` frontmatter resolves to a tier
   other than the one policy expects for it. The expected tier comes from the authoritative per-tier
-  `skills` lists in `docs/reference/model-effort-claude.toml`, with a prefix-default fallback
+  `skills` lists in `data/model-effort/claude/tiers.yaml`, with a prefix-default fallback
   (`plan-*`/`review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium, `runner-*` →
   low); ungoverned skills are `exempt` and skipped. Absent `model:`/`effort:` rides the session
   default (HIGH); the known exceptions (`executor-prex` → high, the codex delegation launchers,

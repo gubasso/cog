@@ -1,6 +1,6 @@
 # Maintenance Tracking
 
-`docs/reference/maintenance-tracking.yaml` is the registry of repository artifacts that contain perishable facts. It records which files need periodic revalidation, why they can drift, how to refresh them, and what downstream files depend on them.
+`data/maintenance-tracking.yaml` is the registry of repository artifacts that contain perishable facts. It records which files need periodic revalidation, why they can drift, how to refresh them, and what downstream files depend on them.
 
 ## Registry Format
 

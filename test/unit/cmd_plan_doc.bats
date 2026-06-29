@@ -12,6 +12,7 @@ setup() {
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   source "${LIB_DIR}/functions/fn_json_write.sh"
   source "${LIB_DIR}/functions/fn_rundir.sh"
+  source "${LIB_DIR}/functions/fn_data.sh"
   source "${LIB_DIR}/functions/fn_research.sh"
   source "${LIB_DIR}/functions/fn_plan_slug.sh"
   source "${LIB_DIR}/functions/fn_plan_artifact.sh"

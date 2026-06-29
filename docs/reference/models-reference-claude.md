@@ -8,7 +8,7 @@ Data collected: 2026-06-19; re-verified 2026-06-25 (Haiku SWE-bench, Opus 4.7 cu
 Revalidate by: 2026-09-25, or sooner on any new model release or pricing change
 
 Sources (trust tiers and the full allowlist live in
-[`power-grade-source-allowlist.toml`](power-grade-source-allowlist.toml)):
+[`data/power-grade/source-allowlist`](../../data/power-grade/source-allowlist/)):
 
 - PRIMARY: <https://platform.claude.com/docs/en/about-claude/models/overview>
 - PRIMARY: <https://platform.claude.com/docs/en/about-claude/pricing>
@@ -61,7 +61,7 @@ Haiku 4.5 does not support selectable effort. Sending the `effort` parameter ret
 ## Power Grade Inputs
 
 This section is the dated Claude evidence row set consumed by
-`docs/reference/power-grade-matrix.toml`. It consolidates existing sourced facts from this reference;
+`data/power-grade/matrix`. It consolidates existing sourced facts from this reference;
 it does not add newly researched benchmark numbers.
 
 | Source row id | Model | Effort axis for matrix | Coding benchmark input | Cost input | Effort-quality input | Effort-cost input | Power Grade caveats |

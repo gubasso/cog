@@ -50,6 +50,7 @@ while IFS= read -r path; do
 done <"$manifest"
 
 prune_empty_tree "$data_dir/skill-refs"
+prune_empty_tree "$data_dir/data"
 rmdir_empty "$data_dir"
 rmdir_empty "$app_root/lib/commands"
 rmdir_empty "$app_root/lib/functions"

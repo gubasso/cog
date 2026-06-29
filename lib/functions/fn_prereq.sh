@@ -75,7 +75,7 @@ cog::fn::prereq_collect_checks() {
   local version_file="${LIB_DIR}/../VERSION"
   local version
   local dep dep_path status detail
-  local -a deps=(bash jq git find sed mktemp)
+  local -a deps=(bash jq yq git find sed mktemp)
   local -A homes=()
   local state_parent
   local bin_path="${LIB_DIR}/../bin/cog"
@@ -111,13 +111,6 @@ cog::fn::prereq_collect_checks() {
       [[ -n $__hard_failure_kind_ref ]] || __hard_failure_kind_ref="dependency"
     fi
   done
-  if dep_path="$(command -v taplo 2>/dev/null)"; then
-    cog::fn::prereq_add_check "$checks_name" "dependency:taplo" "ok" "$dep_path"
-  else
-    cog::fn::prereq_add_check "$checks_name" "dependency:taplo" "warn" \
-      "optional TOML runtime not installed; install hint: sudo zypper install taplo"
-  fi
-
   cog::fn::prereq_add_check "$checks_name" "xdg_config_home" "ok" "" "${homes[config_home]}"
   cog::fn::prereq_add_check "$checks_name" "xdg_cache_home" "ok" "" "${homes[cache_home]}"
   cog::fn::prereq_add_check "$checks_name" "xdg_data_home" "ok" "" "${homes[data_home]}"

@@ -1,0 +1,6 @@
+policy:
+  clears_rule: tier <= 2
+  description: Vendor pages are tier 1 for model facts (pricing, context, cutoff, effort support); benchmark owners are tier 1 for their own scores; vendor mirrors are tier 1 when they restate first-party benchmark numbers in readable text. Reputable secondary press may be tier 2 with a recorded caveat. A source's tier can differ by data type, captured in trusted_for/not_trusted_for. Tier 3 entries are recorded so a forbidden source is never silently re-introduced.
+  tier1_clears: true
+  tier2_clears_with_caveat: true
+  tier3_clears: false

@@ -29,9 +29,15 @@ command modules do not remain dispatchable.
 
 | Path | Purpose |
 | ---- | ------- |
+| `$XDG_DATA_HOME/cog/data` | Installed CLI-consumed structured reference data. |
+| `$XDG_DATA_HOME/cog/skill-refs` | Installed skill-loaded reference corpus and deploy templates. |
 | `$XDG_DATA_HOME/bash-completion/completions/cog` | Bash completion file. |
 | `$XDG_DATA_HOME/man/man1/cog.1` | Installed man page when available. |
 | `$XDG_STATE_HOME/cog/install-manifest` | Newline-delimited absolute paths owned by the installer. |
+
+Read-only data subtrees are refreshed on install. The append-only research shelf index under
+`$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl` is copied only when absent so installed-mode
+records survive upgrades.
 
 ## Skill and agent overlays
 

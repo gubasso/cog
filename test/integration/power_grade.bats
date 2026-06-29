@@ -2,7 +2,6 @@ setup() {
   bats_require_minimum_version 1.5.0
   load '../test_helper/common-setup'
   _common_setup
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
 }
 
 @test "power-grade validate reports matrix warnings without failing" {

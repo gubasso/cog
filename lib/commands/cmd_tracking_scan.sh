@@ -92,7 +92,7 @@ __cog_tracking_scan_plain() {
 }
 
 cog::cmd::tracking_scan() {
-  local registry_path="docs/reference/maintenance-tracking.yaml" registry_seen="" now="" mode="" json abs_registry
+  local registry_path="" registry_seen="" now="" mode="" json abs_registry
 
   while (($# > 0)); do
     case "$1" in
@@ -130,6 +130,10 @@ cog::cmd::tracking_scan() {
         ;;
     esac
   done
+
+  if [[ -z $registry_seen ]]; then
+    registry_path="$(cog::fn::data::path "maintenance-tracking.yaml" || true)"
+  fi
 
   if [[ -z $now ]]; then
     if [[ -n ${COG_TRACKING_SCAN_NOW:-} ]]; then

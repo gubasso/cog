@@ -14,6 +14,7 @@ valid_manifest_path() {
 
   if path_under "$path" "$app_root" \
     || path_under "$path" "$data_dir/skill-refs" \
+    || path_under "$path" "$data_dir/data" \
     || path_under "$path" "$prefix/bin" \
     || path_under "$path" "$home/.claude/skills" \
     || path_under "$path" "$home/.claude/agents" \

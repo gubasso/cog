@@ -1,0 +1,8 @@
+compound:
+  cap_to_scale_max: true
+  description: compound_grade = min(scale.max, max(pass grades) + sum(artifact_gain for pass 2..n))
+  first_pass_gain: 0
+  formula: capped_max_plus_artifact_gain
+  result_is_authoritative_only_when_ok: true
+  subsequent_pass_artifact_gain: 1
+  unknown_artifact_gain: 0

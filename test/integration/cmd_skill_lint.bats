@@ -5,7 +5,16 @@ setup() {
   export HOME="${BATS_TEST_TMPDIR}/home"
   export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
+  export LIB_DIR="${BATS_TEST_DIRNAME}/../../lib"
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
+  # shellcheck source=/dev/null
+  source "${LIB_DIR}/helpers.sh"
+  # shellcheck source=/dev/null
+  source "${LIB_DIR}/functions/fn_ui_print.sh"
+  # shellcheck source=/dev/null
+  source "${LIB_DIR}/functions/fn_log.sh"
+  # shellcheck source=/dev/null
+  source "${LIB_DIR}/functions/fn_data.sh"
 }
 
 write_skill() {
@@ -1239,10 +1248,10 @@ EOF
   assert_success
 }
 
-@test "model-effort-claude.toml tier registry is the SoT the resolver reads" {
+@test "model-effort claude tier registry is the SoT the resolver reads" {
   # Drift guard: every skill pinned in a tier's `skills` list must resolve to
   # that tier via `cog power-grade skill-tier`, with the registry as its source.
-  local toml="${BATS_TEST_DIRNAME}/../../docs/reference/model-effort-claude.toml"
+  local registry="${BATS_TEST_DIRNAME}/../../data/model-effort/claude"
   local rung skill expected reason
   for rung in xhigh high medium low cheap; do
     while IFS= read -r skill; do
@@ -1253,6 +1262,6 @@ EOF
       reason="$(jq -r '.reason' <<<"$output")"
       assert_equal "$expected" "$rung"
       assert_equal "$reason" registry
-    done < <(taplo get -f "$toml" -o json | jq -r --arg r "$rung" '.tiers[$r].skills[]?')
+    done < <(cog::fn::data::load_dir "$registry" | jq -r --arg r "$rung" '.tiers[$r].skills[]?')
   done
 }

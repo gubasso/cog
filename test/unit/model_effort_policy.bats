@@ -13,13 +13,11 @@ setup() {
   # shellcheck source=/dev/null
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   # shellcheck source=/dev/null
-  source "${LIB_DIR}/functions/fn_toml.sh"
+  source "${LIB_DIR}/functions/fn_data.sh"
 }
 
 @test "claude policy forbids sonnet and fable" {
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
-
-  run cog::fn::toml::json "${REPO_ROOT}/docs/reference/model-effort-claude.toml"
+  run cog::fn::data::load_dir "${REPO_ROOT}/data/model-effort/claude"
 
   assert_success
   printf '%s\n' "$output" | jq -e '
@@ -29,9 +27,7 @@ setup() {
 }
 
 @test "codex policy marks xhigh supported for gpt-5.5, gpt-5.4, and gpt-5.4-mini" {
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
-
-  run cog::fn::toml::json "${REPO_ROOT}/docs/reference/model-effort-codex.toml"
+  run cog::fn::data::load_dir "${REPO_ROOT}/data/model-effort/codex"
 
   assert_success
   # gpt-5.4-mini effort enum was verified 2026-06-24 and promoted out of the unverified table.
@@ -44,9 +40,7 @@ setup() {
 }
 
 @test "codex supported_efforts use minimal (model_reasoning_effort lowest tier), not none" {
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
-
-  run cog::fn::toml::json "${REPO_ROOT}/docs/reference/model-effort-codex.toml"
+  run cog::fn::data::load_dir "${REPO_ROOT}/data/model-effort/codex"
 
   assert_success
   # cog drives the Codex `model_reasoning_effort` key, whose lowest tier is `minimal`, never `none`.

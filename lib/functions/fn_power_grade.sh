@@ -6,17 +6,17 @@ cog::fn::power_grade::matrix_path() {
     printf '%s\n' "$override"
     return 0
   fi
-  realpath "${LIB_DIR}/../docs/reference/power-grade-matrix.toml"
+  cog::fn::data::path "power-grade/matrix"
 }
 
 cog::fn::power_grade::matrix_json() {
   local matrix_path="${1:-}"
   [[ -n $matrix_path ]] || matrix_path="$(cog::fn::power_grade::matrix_path)"
-  [[ -f $matrix_path ]] || cog::fn::error_raise "InputNotFound" \
+  [[ -e $matrix_path ]] || cog::fn::error_raise "InputNotFound" \
     "power grade matrix not found" "path: ${matrix_path}" "" \
-    "check docs/reference/power-grade-matrix.toml"
+    "check data/power-grade/matrix"
 
-  cog::fn::toml::json "$matrix_path"
+  cog::fn::data::load_dir "$matrix_path"
 }
 
 cog::fn::power_grade::allowlist_path() {
@@ -25,17 +25,17 @@ cog::fn::power_grade::allowlist_path() {
     printf '%s\n' "$override"
     return 0
   fi
-  realpath "${LIB_DIR}/../docs/reference/power-grade-source-allowlist.toml"
+  cog::fn::data::path "power-grade/source-allowlist"
 }
 
 cog::fn::power_grade::allowlist_json() {
   local allowlist_path="${1:-}"
   [[ -n $allowlist_path ]] || allowlist_path="$(cog::fn::power_grade::allowlist_path)"
-  [[ -f $allowlist_path ]] || cog::fn::error_raise "InputNotFound" \
+  [[ -e $allowlist_path ]] || cog::fn::error_raise "InputNotFound" \
     "power grade source allowlist not found" "path: ${allowlist_path}" "" \
-    "check docs/reference/power-grade-source-allowlist.toml"
+    "check data/power-grade/source-allowlist"
 
-  cog::fn::toml::json "$allowlist_path"
+  cog::fn::data::load_dir "$allowlist_path"
 }
 
 cog::fn::power_grade::validate_json() {

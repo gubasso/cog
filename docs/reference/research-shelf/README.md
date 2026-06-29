@@ -2,7 +2,7 @@
 
 The research shelf is the repository store for dated, sourced findings that skills can reuse instead
 of repeating live web research on every run. The shelf index is
-`docs/reference/research-shelf/index.jsonl`; each line is one JSON object recorded by
+`data/research-shelf/index.jsonl`; each line is one JSON object recorded by
 `cog research-shelf record`.
 
 ## Consumer Contract

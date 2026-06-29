@@ -73,7 +73,7 @@ setup() {
   assert_output "ok"
 }
 
-@test "prereq_collect_checks reports missing taplo as advisory" {
+@test "prereq_collect_checks reports missing yq as hard dependency" {
   local fakebin="${BATS_TEST_TMPDIR}/fakebin"
   local old_path="$PATH"
   local -a checks=()
@@ -92,12 +92,12 @@ setup() {
   PATH="$old_path"
   checks_json="$(printf '%s\n' "${checks[@]}" | jq -s '.')"
 
-  [ "$overall" = "ok" ]
-  [ -z "$hard_failure_kind" ]
+  [ "$overall" = "error" ]
+  [ "$hard_failure_kind" = "dependency" ]
   printf '%s\n' "$checks_json" | jq -e '
-    map(select(.name == "dependency:taplo"))[0]
-    | .status == "warn"
-    and (.detail | contains("sudo zypper install taplo"))
+    map(select(.name == "dependency:yq"))[0]
+    | .status == "error"
+    and (.detail | contains("required command not found"))
   ' >/dev/null
   printf '%s\n' "$checks_json" | jq -e '
     (["bash", "jq", "git", "find", "sed", "mktemp"] -

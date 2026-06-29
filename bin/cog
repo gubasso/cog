@@ -33,6 +33,8 @@ source "${LIB_DIR}/functions/fn_error_raise.sh"
 source "${LIB_DIR}/functions/fn_json_write.sh"
 # shellcheck source=../lib/functions/fn_prereq.sh
 source "${LIB_DIR}/functions/fn_prereq.sh"
+# shellcheck source=../lib/functions/fn_data.sh
+source "${LIB_DIR}/functions/fn_data.sh"
 # shellcheck source=../lib/functions/fn_skill.sh
 source "${LIB_DIR}/functions/fn_skill.sh"
 # shellcheck source=../lib/functions/fn_review.sh
@@ -85,8 +87,6 @@ source "${LIB_DIR}/functions/fn_plan_trust.sh"
 source "${LIB_DIR}/functions/fn_plan_resolve.sh"
 # shellcheck source=../lib/functions/fn_tracking.sh
 source "${LIB_DIR}/functions/fn_tracking.sh"
-# shellcheck source=../lib/functions/fn_toml.sh
-source "${LIB_DIR}/functions/fn_toml.sh"
 # shellcheck source=../lib/functions/fn_power_grade.sh
 source "${LIB_DIR}/functions/fn_power_grade.sh"
 # shellcheck source=../lib/functions/fn_review_plan_implementation.sh

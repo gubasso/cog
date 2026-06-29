@@ -919,7 +919,7 @@ __cog_skill_lint_check_artifact_write_ownership() {
 
 # model-effort-tier: a governed Claude skill's model:/effort: frontmatter must
 # resolve to the tier the policy expects for it. The expected tier comes from the
-# authoritative registry in docs/reference/model-effort-claude.toml (per-tier
+# authoritative registry in data/model-effort/claude (per-tier
 # `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
 # Absent model+effort rides the session default (HIGH). The known exceptions
 # (executor-prex high; codex launchers, review-findings, review-plan-implementation
@@ -940,7 +940,7 @@ __cog_skill_lint_check_model_effort_tier() {
 
   __cog_skill_lint_finding "$file" 1 "model-effort-tier" \
     "model/effort resolves to tier '${actual}' (model=${model:-<default>} effort=${effort:-<default>}) but policy expects tier '${expected}'" \
-    "match the expected tier's cell (see 'cog power-grade profile --name ${expected}'), or pin the skill in the right tier's 'skills' list in docs/reference/model-effort-claude.toml"
+    "match the expected tier's cell (see 'cog power-grade profile --name ${expected}'), or pin the skill in the right tier's 'skills' list in data/model-effort/claude/tiers.yaml"
   return 1
 }
 

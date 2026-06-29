@@ -36,7 +36,7 @@ See `docs/decisions/0008-skill-script-boundary.md`.
 Skill `model:`/`effort:` choices follow `docs/reference/model-effort-policy.md`. `model: sonnet` is
 forbidden; use `model: opus` + `effort: low`. A governed Claude skill's `model:`/`effort:` must
 resolve to its expected tier, enforced by the `model-effort-tier` rule in `cog skill-lint`. The
-authoritative registry is the per-tier `skills` lists in `docs/reference/model-effort-claude.toml`
+authoritative registry is the per-tier `skills` lists in `data/model-effort/claude/tiers.yaml`
 (the single escape hatch for documented exceptions); `cog power-grade skill-tier --skill <name>` and
 `cog power-grade profile --name <tier>` expose the same SoT to authors. See
 `docs/decisions/0047-enforce-prefix-tier-policy.md`.
@@ -77,6 +77,11 @@ carry no source-repo meta — no `skills/.../SKILL.md` twin/canon cross-referenc
 in `docs/`, not in a runtime skill file. The source-path part is enforced by `cog skill-lint`'s
 `skill-source-path-reference` rule. See `docs/decisions/0019-lean-positive-skill-prose.md` and
 `docs/reference/skill-contract.md` ("Lean positive prose").
+
+Top-level `data/` is the source of truth for structured reference data consumed by the `cog` CLI
+itself. CLI data is YAML split one file per top-level table, except append-only streams such as
+`data/research-shelf/index.jsonl`, and resolves through `cog::fn::data_root` so installs use
+`$XDG_DATA_HOME/cog/data`.
 
 ## Reference Self-Containment
 

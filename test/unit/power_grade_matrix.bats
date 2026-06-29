@@ -13,115 +13,105 @@ setup() {
   # shellcheck source=/dev/null
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   # shellcheck source=/dev/null
-  source "${LIB_DIR}/functions/fn_toml.sh"
+  source "${LIB_DIR}/functions/fn_data.sh"
   # shellcheck source=/dev/null
   source "${LIB_DIR}/functions/fn_power_grade.sh"
 }
 
 matrix_json() {
-  local matrix="${REPO_ROOT}/docs/reference/power-grade-matrix.toml"
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
-  cog::fn::toml::json "$matrix"
+  local matrix="${REPO_ROOT}/data/power-grade/matrix"
+  cog::fn::data::load_dir "$matrix"
 }
 
 allowlist_json() {
-  local allowlist="${REPO_ROOT}/docs/reference/power-grade-source-allowlist.toml"
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
-  cog::fn::toml::json "$allowlist"
+  local allowlist="${REPO_ROOT}/data/power-grade/source-allowlist"
+  cog::fn::data::load_dir "$allowlist"
 }
 
 write_allowlist_fixture() {
   local path="$1"
-  cat >"$path" <<'TOML'
-schema_version = 1
-data_collected = "2026-06-25"
-revalidate_by = "2026-09-25"
-
-[policy]
-clears_rule = "tier <= 2"
-tier1_clears = true
-tier2_clears_with_caveat = true
-tier3_clears = false
-description = "fixture"
-
-[[sources]]
-id = "tier1-source"
-name = "Tier 1 source"
-url = "https://example.test/tier1"
-tier = 1
-owner = "fixture"
-data_types = ["benchmark"]
-trusted_for = ["benchmark_score"]
-not_trusted_for = []
-methodology_transparency = "fixture"
-reproducible_auditable = "partial"
-update_cadence = "fixture"
-clears_needs_verification = true
-notes = "fixture"
-last_checked = "2026-06-25"
-
-[[sources]]
-id = "tier3-source"
-name = "Tier 3 source"
-url = "https://example.test/tier3"
-tier = 3
-owner = "fixture"
-data_types = ["benchmark"]
-trusted_for = []
-not_trusted_for = ["benchmark_score"]
-methodology_transparency = "fixture"
-reproducible_auditable = "none"
-update_cadence = "fixture"
-clears_needs_verification = false
-notes = "fixture"
-last_checked = "2026-06-25"
-TOML
+  cat >"$path" <<'YAML'
+schema_version: 1
+data_collected: "2026-06-25"
+revalidate_by: "2026-09-25"
+policy:
+  clears_rule: "tier <= 2"
+  tier1_clears: true
+  tier2_clears_with_caveat: true
+  tier3_clears: false
+  description: "fixture"
+sources:
+  - id: "tier1-source"
+    name: "Tier 1 source"
+    url: "https://example.test/tier1"
+    tier: 1
+    owner: "fixture"
+    data_types: ["benchmark"]
+    trusted_for: ["benchmark_score"]
+    not_trusted_for: []
+    methodology_transparency: "fixture"
+    reproducible_auditable: "partial"
+    update_cadence: "fixture"
+    clears_needs_verification: true
+    notes: "fixture"
+    last_checked: "2026-06-25"
+  - id: "tier3-source"
+    name: "Tier 3 source"
+    url: "https://example.test/tier3"
+    tier: 3
+    owner: "fixture"
+    data_types: ["benchmark"]
+    trusted_for: []
+    not_trusted_for: ["benchmark_score"]
+    methodology_transparency: "fixture"
+    reproducible_auditable: "none"
+    update_cadence: "fixture"
+    clears_needs_verification: false
+    notes: "fixture"
+    last_checked: "2026-06-25"
+YAML
 }
 
 write_matrix_fixture() {
   local path="$1" evidence_status="$2" source_ids="$3"
-  cat >"$path" <<TOML
-schema_version = 1
-data_collected = "2026-06-25"
-revalidate_by = "2026-09-25"
-
-[scale]
-min = 1
-max = 10
-description = "fixture"
-grade_rule = "fixture"
-
-[validation]
-required_profile_keys = ["id", "slug", "label", "provider", "model", "effort", "grade", "executable", "policy_selectable", "evidence_status", "confidence", "source_refs", "benchmark_source_ids", "description", "use_where", "caveats"]
-
-[compound]
-formula = "capped_max_plus_artifact_gain"
-
-[[profiles]]
-id = "fixture-profile"
-slug = "fixture-profile"
-label = "fixture profile"
-provider = "codex"
-model = "fixture-model"
-effort = "medium"
-grade = 1
-executable = true
-policy_selectable = true
-evidence_status = "${evidence_status}"
-confidence = "medium"
-source_refs = ["docs/reference/models-reference-codex.md#fixture"]
-benchmark_source_ids = ${source_ids}
-description = "fixture"
-use_where = ["fixture"]
-caveats = []
-TOML
+  cat >"$path" <<YAML
+schema_version: 1
+data_collected: "2026-06-25"
+revalidate_by: "2026-09-25"
+scale:
+  min: 1
+  max: 10
+  description: "fixture"
+  grade_rule: "fixture"
+validation:
+  required_profile_keys: ["id", "slug", "label", "provider", "model", "effort", "grade", "executable", "policy_selectable", "evidence_status", "confidence", "source_refs", "benchmark_source_ids", "description", "use_where", "caveats"]
+compound:
+  formula: "capped_max_plus_artifact_gain"
+profiles:
+  - id: "fixture-profile"
+    slug: "fixture-profile"
+    label: "fixture profile"
+    provider: "codex"
+    model: "fixture-model"
+    effort: "medium"
+    grade: 1
+    executable: true
+    policy_selectable: true
+    evidence_status: "${evidence_status}"
+    confidence: "medium"
+    source_refs: ["data/model-effort/codex#fixture"]
+    benchmark_source_ids: ${source_ids}
+    description: "fixture"
+    use_where: ["fixture"]
+    caveats: []
+YAML
 }
 
 validate_matrix_fixture() {
   COG_POWER_GRADE_MATRIX="$1" COG_POWER_GRADE_ALLOWLIST="$2" cog::fn::power_grade::validate_json
 }
 
-@test "power grade matrix parses through cog toml runtime" {
+@test "power grade matrix parses through cog data runtime" {
   run matrix_json
 
   assert_success
@@ -203,9 +193,8 @@ validate_matrix_fixture() {
 }
 
 @test "power grade validator rejects unknown benchmark source ids" {
-  local matrix="${BATS_TEST_TMPDIR}/matrix.toml"
-  local allowlist="${BATS_TEST_TMPDIR}/allowlist.toml"
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
+  local matrix="${BATS_TEST_TMPDIR}/matrix.yaml"
+  local allowlist="${BATS_TEST_TMPDIR}/allowlist.yaml"
   write_allowlist_fixture "$allowlist"
   write_matrix_fixture "$matrix" "sourced" '["missing-source"]'
 
@@ -219,9 +208,8 @@ validate_matrix_fixture() {
 }
 
 @test "power grade validator warns on tier-3 benchmark source ids" {
-  local matrix="${BATS_TEST_TMPDIR}/matrix.toml"
-  local allowlist="${BATS_TEST_TMPDIR}/allowlist.toml"
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
+  local matrix="${BATS_TEST_TMPDIR}/matrix.yaml"
+  local allowlist="${BATS_TEST_TMPDIR}/allowlist.yaml"
   write_allowlist_fixture "$allowlist"
   write_matrix_fixture "$matrix" "sourced" '["tier3-source"]'
 
@@ -235,9 +223,8 @@ validate_matrix_fixture() {
 }
 
 @test "power grade validator warns when sourced profile lacks clearing source" {
-  local matrix="${BATS_TEST_TMPDIR}/matrix.toml"
-  local allowlist="${BATS_TEST_TMPDIR}/allowlist.toml"
-  command -v taplo >/dev/null 2>&1 || skip "taplo not installed"
+  local matrix="${BATS_TEST_TMPDIR}/matrix.yaml"
+  local allowlist="${BATS_TEST_TMPDIR}/allowlist.yaml"
   write_allowlist_fixture "$allowlist"
   write_matrix_fixture "$matrix" "sourced" '[]'
 

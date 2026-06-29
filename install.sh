@@ -140,9 +140,20 @@ trap 'rm -f "$manifest_tmp" "$manifest_tmp.sorted" "${man_tmp:-}"' EXIT
 install -d "$app_root"
 rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/VERSION"
 rm -rf -- "${data_dir:?}/skill-refs"
+rm -rf -- "${data_dir:?}/data/power-grade" "${data_dir:?}/data/model-effort" "${data_dir:?}/data/maintenance-tracking.yaml"
 copy_tree "$repo_root/bin" "$app_root/bin"
 copy_tree "$repo_root/lib" "$app_root/lib"
 copy_tree "$repo_root/skill-refs" "$data_dir/skill-refs"
+copy_tree "$repo_root/data/power-grade" "$data_dir/data/power-grade"
+copy_tree "$repo_root/data/model-effort" "$data_dir/data/model-effort"
+install -d "$data_dir/data"
+install -m 0644 "$repo_root/data/maintenance-tracking.yaml" "$data_dir/data/maintenance-tracking.yaml"
+record_path "$data_dir/data/maintenance-tracking.yaml"
+install -d "$data_dir/data/research-shelf"
+if [[ ! -e $data_dir/data/research-shelf/index.jsonl ]]; then
+  install -m 0644 "$repo_root/data/research-shelf/index.jsonl" "$data_dir/data/research-shelf/index.jsonl"
+fi
+record_path "$data_dir/data/research-shelf/index.jsonl"
 install -m 0644 "$repo_root/VERSION" "$app_root/VERSION"
 record_path "$app_root/VERSION"
 

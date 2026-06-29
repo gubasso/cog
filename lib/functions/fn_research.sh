@@ -2,15 +2,12 @@
 
 cog::fn::research::root() {
   local override="${1:-}"
-  local app_root
-
   if [[ -n $override ]]; then
     printf '%s\n' "$override"
   elif [[ -n ${COG_RESEARCH_SHELF_ROOT:-} ]]; then
     printf '%s\n' "$COG_RESEARCH_SHELF_ROOT"
   else
-    app_root="$(cd "${LIB_DIR}/.." && pwd -P)"
-    printf '%s\n' "${app_root}/docs/reference/research-shelf"
+    cog::fn::data::path "research-shelf"
   fi
 }
 

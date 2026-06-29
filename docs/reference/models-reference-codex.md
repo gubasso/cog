@@ -10,7 +10,7 @@ Revalidate by: 2026-09-25, or sooner on any new model release, CLI availability 
 change
 
 Sources (trust tiers and the full allowlist live in
-[`power-grade-source-allowlist.toml`](power-grade-source-allowlist.toml)):
+[`data/power-grade/source-allowlist`](../../data/power-grade/source-allowlist/)):
 
 - PRIMARY: <https://developers.openai.com/api/docs/models/gpt-5.5>
 - PRIMARY: <https://developers.openai.com/api/docs/models/gpt-5.4>
@@ -57,7 +57,7 @@ for quota risk, not a billing guarantee.
 ## Power Grade Inputs
 
 This section is the dated Codex/GPT evidence row set consumed by
-`docs/reference/power-grade-matrix.toml`. It consolidates existing sourced facts from this reference;
+`data/power-grade/matrix`. It consolidates existing sourced facts from this reference;
 it does not add newly researched benchmark numbers.
 
 | Source row id | Model | Effort axis for matrix | Coding benchmark input | Cost input | Effort-quality input | Effort-cost input | Power Grade caveats |
@@ -109,7 +109,7 @@ Implications for `cog`:
   denote the same ~0.1x-burn lowest tier; they are surface-specific spellings, not different levels.
 - `xhigh` is model-dependent on every surface; it is documented for `gpt-5.5`, `gpt-5.4`, and
   `gpt-5.4-mini`.
-- `docs/reference/model-effort-codex.toml` `[supported_efforts]` lists the Codex
+- `data/model-effort/codex/supported-efforts.yaml` `supported_efforts` lists the Codex
   (`model_reasoning_effort`) set on purpose, so the data SoT matches what cog can actually emit.
 
 ## Availability Caveats

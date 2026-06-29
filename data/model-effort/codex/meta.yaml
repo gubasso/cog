@@ -1,0 +1,14 @@
+schema_version: 1
+provider: codex
+session_default:
+  effort: medium
+  model: gpt-5.5
+subscription_auth_models:
+  - gpt-5.5
+  - gpt-5.4
+  - gpt-5.4-mini
+api_only_model_rule: |-
+  Models ending in -codex are API-only and must never be pinned for
+  subscription-auth Codex. cog codex-runner and codex-session pin only gpt-5.5, gpt-5.4, or
+  gpt-5.4-mini under subscription auth.
+api_only_model_suffix: -codex

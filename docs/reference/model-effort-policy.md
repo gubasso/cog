@@ -5,18 +5,19 @@ for selecting Codex model/effort profiles through `cog codex-runner` or `codex-s
 
 The machine-readable policy data lives in:
 
-- [`model-effort-claude.toml`](model-effort-claude.toml)
-- [`model-effort-codex.toml`](model-effort-codex.toml)
-- [`power-grade-matrix.toml`](power-grade-matrix.toml)
+- [`data/model-effort/claude`](../../data/model-effort/claude/)
+- [`data/model-effort/codex`](../../data/model-effort/codex/)
+- [`data/power-grade/matrix`](../../data/power-grade/matrix/)
 
-The provider TOML files define policy tier selection. `power-grade-matrix.toml` is the source of
+The provider YAML data defines policy tier selection. `data/power-grade/matrix` is the source of
 truth for profile capability grades, source-cited profile evidence, named policy pairings, validation
 severity, and compound-pass math.
 
 ## Hard Rule
 
 Never use `model: sonnet` or `model: fable` in a `cog` skill. For the Sonnet case, use `model: opus`
-with `effort: low` instead. The forbidden set is the machine SoT in `model-effort-claude.toml`
+with `effort: low` instead. The forbidden set is the machine SoT in
+`data/model-effort/claude/meta.yaml`
 (`forbidden_models`).
 
 This is an authoring rule for skill frontmatter and model selection. It is not a runtime file that
@@ -48,8 +49,8 @@ to one Claude cell and one Codex cell:
 | LOW | opus-4.8@low | gpt-5.4@medium | A detailed procedure exists, deterministic mechanics are delegated to `cog`, and bounded judgment remains; also verbatim dispatch. | Pin the low rung. For Claude this is the never-Sonnet replacement tier. |
 | CHEAP | haiku (no effort) | gpt-5.4-mini@medium | Thin orchestration over deterministic mechanics with no meaningful reasoning. | Pin the cheap rung. For Claude Haiku, omit `effort`. |
 
-The TOML files (`model-effort-claude.toml`, `model-effort-codex.toml`) are the machine-readable
-source of truth for exact values and descriptive fields per rung.
+The YAML files under `data/model-effort/claude` and `data/model-effort/codex` are the
+machine-readable source of truth for exact values and descriptive fields per rung.
 
 ### Prefix-to-tier defaults
 
@@ -64,7 +65,7 @@ The skill-prefix taxonomy maps to default rungs (override per skill only with re
   triage, or retry decisions.
 
 These defaults are enforced for Claude skills by the `model-effort-tier` `cog skill-lint` rule. The
-per-tier `skills = [...]` lists in [`model-effort-claude.toml`](model-effort-claude.toml) are the
+per-tier `skills` lists in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml) are the
 authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the
 prefix default (the recorded justification) live. Verify a skill with
 `cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with
@@ -72,13 +73,13 @@ prefix default (the recorded justification) live. Verify a skill with
 
 ## How To Classify Work
 
-1. Read the relevant provider TOML file.
+1. Read the relevant provider data directory.
 2. Match the task against each rung's `use_when`, `signals`, and `anti_signals`.
 3. Set `model:` and `effort:` only when `set_frontmatter = true` (HIGH rides the default and sets no
    override).
 4. For Claude CHEAP tasks on Haiku, omit `effort`; Haiku returns an error when effort is sent.
 5. For Codex, choose the `cog codex-runner` or `codex-session` profile according to
-   `model-effort-codex.toml`.
+   `data/model-effort/codex`.
 
 Do not pin `-codex` models for subscription-auth Codex. The Codex policy pins only `gpt-5.5`,
 `gpt-5.4`, or `gpt-5.4-mini` for that path.
@@ -123,7 +124,7 @@ This policy is backed by dated reference files:
 - [`models-reference-claude.md`](models-reference-claude.md), data collected `2026-06-19`.
 - [`models-reference-codex.md`](models-reference-codex.md), data collected `2026-06-19`, re-verified
   `2026-06-24`.
-- [`power-grade-matrix.toml`](power-grade-matrix.toml), data collected `2026-06-24`.
+- [`data/power-grade/matrix`](../../data/power-grade/matrix/), data collected `2026-06-24`.
 
 Revalidate this policy when those evidence files are revalidated, or sooner on model, pricing,
 availability, or effort-support changes.

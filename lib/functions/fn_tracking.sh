@@ -36,7 +36,7 @@ cog::fn::tracking_validate_registry_json() {
   ' <<<"$registry_json" >/dev/null || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
     "tracking registry has invalid shape" "" \
     "expected schema_version and entries with id, path, last_checked, cadence_days, why, revalidate_how" \
-    "fix docs/reference/maintenance-tracking.yaml"
+    "fix data/maintenance-tracking.yaml"
 }
 
 cog::fn::tracking_validate_date() {

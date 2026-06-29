@@ -1,0 +1,21 @@
+validation:
+  informational_profile_is_fatal: false
+  needs_verification_is_fatal: false
+  required_profile_keys:
+    - id
+    - slug
+    - label
+    - provider
+    - model
+    - effort
+    - grade
+    - executable
+    - policy_selectable
+    - evidence_status
+    - confidence
+    - source_refs
+    - benchmark_source_ids
+    - description
+    - use_where
+    - caveats
+  unsupported_efforts_as_profiles: false

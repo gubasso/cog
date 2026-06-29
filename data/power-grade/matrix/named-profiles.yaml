@@ -1,0 +1,41 @@
+named_profiles:
+  - claude_profile: claude-opus-4.8-xhigh
+    codex_profile: codex-gpt-5.5-high
+    name: xhigh
+    source_refs:
+      - docs/reference/model-effort-policy.md
+      - data/model-effort/claude
+      - data/model-effort/codex
+    use_when: Hardest single-pass execution, explicit escalation, or full from-scratch review.
+  - claude_profile: claude-opus-4.8-high
+    codex_profile: codex-gpt-5.5-medium
+    name: high
+    source_refs:
+      - docs/reference/model-effort-policy.md
+      - data/model-effort/claude
+      - data/model-effort/codex
+    use_when: Open-ended reasoning, planning, plan review, and the session default.
+  - claude_profile: claude-opus-4.8-medium
+    codex_profile: codex-gpt-5.5-low
+    name: medium
+    source_refs:
+      - docs/reference/model-effort-policy.md
+      - data/model-effort/claude
+      - data/model-effort/codex
+    use_when: 'Executor default and resumed warm re-review: implement a prepared plan with bounded judgment.'
+  - claude_profile: claude-opus-4.8-low
+    codex_profile: codex-gpt-5.4-medium
+    name: low
+    source_refs:
+      - docs/reference/model-effort-policy.md
+      - data/model-effort/claude
+      - data/model-effort/codex
+    use_when: Procedural execution and verbatim dispatch; the never-Sonnet replacement tier.
+  - claude_profile: claude-haiku-4.5-none
+    codex_profile: codex-gpt-5.4-mini-medium
+    name: cheap
+    source_refs:
+      - docs/reference/model-effort-policy.md
+      - data/model-effort/claude
+      - data/model-effort/codex
+    use_when: Thin deterministic orchestration and routine work.
