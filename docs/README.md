@@ -53,6 +53,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0046: cog-owned stage artifact writes](decisions/0046-cog-owned-stage-artifact-writes.md)
 - [ADR-0047: Enforce prefix→tier policy via skill-lint with a registry escape hatch](decisions/0047-enforce-prefix-tier-policy.md)
 - [ADR-0048: Plan vault storage and resolution](decisions/0048-plan-vault-storage-and-resolution.md)
+- [ADR-0049: A-priori plan/round complexity rubric](decisions/0049-plan-complexity-rubric.md)
 
 ## Guides
 
