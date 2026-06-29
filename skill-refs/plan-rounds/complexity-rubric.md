@@ -211,7 +211,7 @@ axes that need a judgment pass; a `review-*` skill then refines those axes and e
 4. Compute the weighted score.
 5. Apply the escalation floors; take the higher grade.
 6. Emit the vector, grade, and the top two or three drivers.
-7. For **Very High** or **Extreme**, recommend a decomposition into rounds.
+7. For **Very High** or **Extreme**, recommend a decomposition and set `splittable` and `seam_hints`.
 
 Output shape:
 
@@ -223,8 +223,16 @@ drivers:
   - changes a public CLI contract and its completion/help references
   - touches a shared loader on the command-dispatch path
   - requires unit plus integration verification
+splittable: true                 # false => an irreducible atom; no acceptable seam exists
+seam_hints:                       # advisory candidate cuts, weakest connascence first
+  - between: [ public CLI contract change, docs/completion/help updates ]
+    connascence: low
 recommendation: one cohesive round; split the contract change from the docs/completion updates only if they diverge
 ```
+
+`splittable` records whether any acceptable seam exists; `seam_hints` name candidate cuts and how
+weakly the two sides depend on each other. Both are advisory: the evaluator names seams, a splitter
+makes the cut. They feed the recursive split loop specified in the round-splitting contract.
 
 A short documentation task — one ADR plus one reference file, a few small edits, no logic
 (`scope 1, breadth 1, coupling 1, novelty 1, behavior 0, verification 0, context 1` → `6.2`) — grades
@@ -249,7 +257,9 @@ first; then **layer boundaries** bottom-up (data → logic → API → UI); then
 (an artifact-producing round precedes its consumer; never cycle). Keep **atomic changes together** —
 a type and its consumers, a migration and the code that uses the new schema, tests with the code they
 test. Put **shared foundations** (types, interfaces, config) in the first round. Round count is
-uncapped; the ceiling is one cohesive unit of work completable in a single execution session.
+uncapped; the ceiling is one cohesive unit of work completable in a single execution session. The
+recursive loop that consumes `splittable`/`seam_hints` to drive a plan to that ceiling is specified in
+the round-splitting contract (`cog skill-refs path plan-rounds/round-splitting-contract.md`).
 
 ## Calibration
 

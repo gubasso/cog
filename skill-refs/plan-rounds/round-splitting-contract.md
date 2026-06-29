@@ -1,0 +1,193 @@
+# Round-Splitting Orchestration Contract
+
+The contract for turning an a-priori complexity grade into a right-sized set of rounds: the *largest*
+rounds that each grade at or below the single-session ceiling. Work is consolidated into one round,
+then split only when forced, recursively, until every round fits. This file is the single source of
+truth for the split loop; skills that implement the roles point here and do not restate the schemas,
+the dispatch table, or the ceiling policy.
+
+Grading itself is defined in `complexity-rubric.md` (this directory); resolve both with
+`cog skill-refs path plan-rounds/<file>`. The decision and its rationale are
+[ADR-0050](../../docs/decisions/0050-recursive-round-right-sizing.md).
+
+## The three roles
+
+| Role | Prefix | Nature | Owns |
+| ---- | ------ | ------ | ---- |
+| **Evaluator** | `review-plan-*` | pure, read-only, parallel-safe | one plan/round → a complexity report per the rubric, including the split signal |
+| **Splitter** | `plan-*` | generative judgment | one over-ceiling round + seam hints → exactly two complete, information-preserving rounds |
+| **Orchestrator** | `plan-*` (+ `cog`) | deterministic control flow | the queue, the parallel fan-out, the threshold compare, the recursion, the termination guards |
+
+The evaluator is blind to whether its input is a whole plan, one round, or a post-split fragment — it
+grades whatever prose it is given. The splitter is the only writer. The orchestrator never analyzes.
+
+## The serialized-judgment boundary
+
+The split decision is *not* split into "whether (deterministic) vs. how (judgment)." Every analytic
+call — the grade, is-it-splittable, where-to-cut, did-the-split-reduce — is made by a worker and
+rendered into structured fields. The orchestrator's decision is then a pure dispatch over those fields
+plus one constant compare. Judgment never leaves the workers; it arrives at the orchestrator as data.
+This is the skill/script boundary ([ADR-0008]) over the machine-output contract ([ADR-0009]).
+
+[ADR-0008]: ../../docs/decisions/0008-skill-script-boundary.md
+[ADR-0009]: ../../docs/decisions/0009-machine-facing-output-contract.md
+
+## Contracts
+
+### Evaluator
+
+Input: one plan directory `README.md`, one round file, or a queue — prose, graded a priori.
+
+Output: the complexity report defined by `complexity-rubric.md`, which carries the grade, the
+seven-axis vector, the drivers, and the split signal:
+
+```yaml
+grade: Extreme
+score: 30.6
+axis_scores: { scope: 4, breadth: 4, coupling: 4, novelty: 3, behavior: 3, verification: 4, context: 3 }
+drivers:
+  - changes a public CLI contract and migrates its persisted schema
+  - broad feature set spanning several workflows and subsystems
+  - requires integration, migration, and rollback verification
+splittable: true                 # false => an irreducible atom; no acceptable seam exists
+seam_hints:                       # advisory candidate cuts, weakest connascence first
+  - between: [ contract + schema migration, docs/completion/help updates ]
+    connascence: low
+  - between: [ contract + schema migration, integration-test sweep ]
+    connascence: moderate
+```
+
+The evaluator is pure: same input, same report. It names seams; it never makes the cut.
+
+### Splitter
+
+Input: one round whose grade exceeds the ceiling, plus that round's `seam_hints`.
+
+Output: a verdict. It cuts at the lowest-connascence seam, preserves every requirement on both sides,
+and names each child for its cohesive content — never an ordinal, per [ADR-0040]:
+
+```yaml
+split_performed: true            # false => the splitter judged the round irreducible
+seam:
+  between: [ contract + schema migration, docs/completion/help updates ]
+  connascence: low
+rounds:
+  - id: contract-and-schema-migration
+    path: .implementation-plans/plans/<plan>/contract-and-schema-migration.md
+  - id: docs-and-completion-updates
+    path: .implementation-plans/plans/<plan>/docs-and-completion-updates.md
+coverage:
+  parent_requirements: 9
+  covered_by_children: 9         # must equal parent_requirements
+  lost: []                       # must be empty — a lossy split is rejected
+  duplicated: [ shared-types ]   # informational; a shared foundation may intentionally recur
+```
+
+[ADR-0040]: ../../docs/decisions/0040-stage-agnostic-identifiers.md
+
+### Orchestrator dispatch
+
+The orchestrator switches on the two verdicts plus one `cog` compare. No branch contains analysis:
+
+```text
+report := evaluate(round)                                  # review-plan-* worker, fanned out
+over   := cog plan-complexity over-ceiling --grade <report.grade>
+
+not over                          -> final.append(round)                  # largest-that-fits, keep it
+over and not report.splittable    -> final.append(round); flag irreducible-over-ceiling
+over and report.splittable        -> verdict := split(round, report.seam_hints)   # plan-* worker
+
+# resolve the splitter's ground truth:
+verdict.split_performed == false  -> final.append(round); flag irreducible-over-ceiling
+verdict.split_performed == true   -> cog round-split coverage --parent <round> --children <verdict.rounds>
+                                     queue.extend(verdict.rounds)          # re-graded next pass
+```
+
+`splittable` is the evaluator's prediction; `split_performed` is the splitter's fact. A wrong
+prediction collapses into the same terminal flag, so the queue always converges.
+
+## The loop
+
+```text
+queue    := [ consolidated single max-size round ]         # start largest, per the maximize-size goal
+baseline := evaluate(queue[0])                             # "everything as one" — kept for conservation
+final    := []
+while queue not empty:
+    batch   := drain(queue)
+    reports := parallel( evaluate(r) for r in batch )       # one read-only evaluator per round
+    for (r, report) in zip(batch, reports):
+        dispatch(r, report)                                 # appends to final, or enqueues children
+assert cog round-split coverage --parent baseline --children <final>   # union still covers the origin
+return final                                                # every round graded, all at/under ceiling
+```
+
+Each pass grades all un-evaluated rounds in parallel, keeps the ones that fit, and replaces each
+over-ceiling round with its two children. The recursion bottoms out when every round is at or below
+the ceiling or flagged irreducible. Because every child is re-graded, an unbalanced intermediate
+self-corrects and a natural three-way split is reached over two passes.
+
+## Ceiling policy
+
+The ceiling is the rubric bin above which a round must split: the largest grade a single execution
+session reliably holds. It is **executor-independent** — a property of "one cohesive unit of work,"
+not of any executor's capacity. Coupling it to an executor would re-entangle complexity with
+capability, the conflation [ADR-0049] removed.
+
+[ADR-0049]: ../../docs/decisions/0049-plan-complexity-rubric.md
+
+It is a single calibratable constant resolved by `cog plan-complexity ceiling`, defaulting to **Very
+High** — only rounds grading **Extreme** must split. This is the conservative, size-maximizing default:
+a **Very High** round is deliberately kept as one large unit (the rubric's "unless a large round is
+deliberate" clause). The [ADR-0049] calibration loop tunes it against repo outcomes; nothing else
+hard-codes a bin.
+
+## Invariants
+
+- **Scope conservation.** A split redistributes scope (axis A); it never creates or destroys work.
+  The union of the children covers the parent's requirements exactly — `coverage.lost` is empty. The
+  final conservation check re-grades the union against the baseline.
+- **Coupling and context reduction.** A split lowers each child's coupling (axis C) and context load
+  (axis G) by cutting at the lowest-connascence seam. That reduction — not any change in total scope —
+  is what pulls the grade under the ceiling, and it is the splitter's objective function.
+- **Information preservation.** Both children are complete, standalone rounds. Detail is moved, never
+  trimmed to fit a document boundary; a shared foundation (types, interfaces, config) may recur in
+  both children and is reported in `coverage.duplicated`, not treated as loss.
+- **Idempotent grading.** The evaluator is a pure function of its input prose, so re-grading a round —
+  or the whole set as one — is free and repeatable.
+- **Content-named children.** Child round identifiers are cohesive-content slugs, never split ordinals
+  ([ADR-0040]).
+- **Producer-blind dispatch.** The orchestrator depends on the report and verdict *schemas*, not on
+  which skill produced them ([ADR-0026]).
+
+[ADR-0026]: ../../docs/decisions/0026-consumer-skill-producer-blindness.md
+
+## Deterministic mechanics (cog surface)
+
+The judgment lives in the three skills; the deterministic mechanics they call live in `cog`:
+
+- `cog plan-complexity extract <plan>` — pre-score the rubric's mechanically extractable signals from
+  plan text and a file graph; flag the axes that need a judgment pass.
+- `cog plan-complexity ceiling` — resolve the single calibratable ceiling bin.
+- `cog plan-complexity over-ceiling --grade <G>` — the deterministic compare; returns a boolean.
+- `cog round-split coverage --parent <p> --children <a> <b>` — assert requirement/acceptance-criteria
+  coverage of a split (and of the final union against the baseline); fail closed on any `lost` item.
+
+The work queue is a run-directory artifact the orchestrator drives; `cog` owns the partition, compare,
+and coverage predicates so no skill reimplements them in prose.
+
+## Parallelism and isolation
+
+- **Evaluators** are read-only and fan out freely — one per un-evaluated round, no worktree, no
+  contention.
+- **Splitters** within a pass each operate on a *disjoint* over-ceiling round and write to disjoint
+  content-slug paths the orchestrator assigns, so they parallelize without a worktree.
+- Role `model`/`effort` tiers follow `docs/reference/model-effort-policy.md` and are registered per
+  [ADR-0047](../../docs/decisions/0047-enforce-prefix-tier-policy.md) when the skills are built.
+
+## Handoff to executor matching
+
+The loop's output is the boundary: a converged set of rounds, each carrying a grade, all at or below
+the single-session ceiling, with the original work conserved. Matching each round's grade to an
+executor is a separate downstream scope (its own lookup, its own ADR) and is deliberately out of scope
+here — keeping the round set executor-independent is what lets it be re-graded or re-split without
+re-opening the match.
