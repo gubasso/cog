@@ -112,7 +112,8 @@ write_body() {
     --termination-reason findings-empty --body "${run_dir}/summary-body.md"
 
   assert_success
-  assert_output "RESOLVED ${run_dir}/summary.md"
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=3 reason=findings-empty"
   grep -q '^# Review Loop Summary' "${run_dir}/summary.md"
   grep -q 'Total rounds: 3' "${run_dir}/summary.md"
   grep -q '^## Per-round counts' "${run_dir}/summary.md"
@@ -144,6 +145,8 @@ write_body() {
     --termination-reason decision-approve --body "${run_dir}/summary-body.md" --json
 
   assert_success
+  # JSON mode keeps stdout pure JSON: the canonical result line is non-json-mode only.
+  refute_output --partial 'REVIEW_LOOP_OK'
   printf '%s\n' "$output" | jq -e \
     '.ok == true and .round_count == 2 and .termination_reason == "decision-approve" and
      (.summary_file | endswith("/summary.md"))' >/dev/null
@@ -198,6 +201,8 @@ JSON
 
   assert_failure
   [[ $stderr == *"no review rounds found"* ]]
+  # The canonical result line must never appear on a fail-closed path (no artifact written).
+  refute_output --partial 'REVIEW_LOOP_OK'
 }
 
 @test "cog review-loop-summary build rejects an unknown termination reason" {

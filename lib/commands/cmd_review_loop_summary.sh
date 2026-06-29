@@ -242,6 +242,10 @@ __cog_review_loop_summary_build_cmd() {
     cog::fn::json_emit "$__cog_review_loop_summary_build_self_check" "$result"
   else
     cog::fn::ui_data "RESOLVED ${out}"
+    # Canonical terminal result line, emitted only after summary.md is written and asserted above.
+    # Mirrors `cog msg ok review-loop "<summary_file> rounds=<n> reason=<reason>"` so the line
+    # provably co-occurs with a validated artifact and can be surfaced verbatim as the run's reply.
+    cog::fn::ui_data "REVIEW_LOOP_OK ${out} rounds=${round_count} reason=${reason}"
   fi
 }
 
