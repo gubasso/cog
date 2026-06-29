@@ -78,5 +78,11 @@ dispatch table, loop, ceiling policy, invariants, and `cog` surface — lives at
 
 ## Status
 
+Partially implemented. The deterministic `cog plan-complexity`, `cog round-req`, and
+`cog round-split` surface exists; the Claude evaluator and splitter worker skills exist; the
+requirement-ID spine, ID-based seam hints, queue-blind splitter contract, and coverage semantics are
+registered in the shipped plan-round references. The orchestrator and executor-grade matching remain
+pending downstream scopes.
+
 Accepted. Implementation pending: the three role-skills and the `cog` deterministic surface named in
 the contract. Grade↔executor matching is a separate scope and a separate future ADR.

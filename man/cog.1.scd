@@ -141,6 +141,9 @@ The command list and short descriptions are sourced from command modules under
 *plan*
 	Resolve and manage plan stores.
 
+*plan-complexity*
+	Extract and compare implementation plan complexity signals.
+
 *plan-doc*
 	Write and validate lean plan artifacts.
 
@@ -253,6 +256,12 @@ The command list and short descriptions are sourced from command modules under
 
 *review-validate-findings*
 	Validate review findings JSON.
+
+*round-req*
+	Stamp and list round acceptance requirement IDs.
+
+*round-split*
+	Check split-round requirement coverage.
 
 *rundir*
 	Create a workflow run directory and optionally acquire its lock.

@@ -54,6 +54,7 @@ _cog() {
     osc-preflight
     osc-probe-binary
     plan
+    plan-complexity
     plan-doc
     plan-init
     plan-multi-setup
@@ -90,6 +91,8 @@ _cog() {
     review-scope
     review-tech-scope
     review-validate-findings
+    round-req
+    round-split
     rundir
     runner-all-setup
     runner-commit-parse

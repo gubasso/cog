@@ -68,6 +68,7 @@ Commands:
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan           Resolve and manage plan stores.
+  plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
@@ -104,6 +105,8 @@ Commands:
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
+  round-req      Stamp and list round acceptance requirement IDs.
+  round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
   runner-all-setup Parse runner-all arguments and create main queue run state.
   runner-commit-parse Parse runner commit result lines.
@@ -167,6 +170,7 @@ Commands:
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
   plan           Resolve and manage plan stores.
+  plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
   plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
@@ -203,6 +207,8 @@ Commands:
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
+  round-req      Stamp and list round acceptance requirement IDs.
+  round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
   runner-all-setup Parse runner-all arguments and create main queue run state.
   runner-commit-parse Parse runner commit result lines.

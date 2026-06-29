@@ -63,6 +63,12 @@ source "${LIB_DIR}/functions/fn_queue.sh"
 source "${LIB_DIR}/functions/fn_research.sh"
 # shellcheck source=../lib/functions/fn_plan_slug.sh
 source "${LIB_DIR}/functions/fn_plan_slug.sh"
+# shellcheck source=../lib/functions/fn_plan_complexity.sh
+source "${LIB_DIR}/functions/fn_plan_complexity.sh"
+# shellcheck source=../lib/functions/fn_round_req.sh
+source "${LIB_DIR}/functions/fn_round_req.sh"
+# shellcheck source=../lib/functions/fn_round_split.sh
+source "${LIB_DIR}/functions/fn_round_split.sh"
 # shellcheck source=../lib/functions/fn_plan_artifact.sh
 source "${LIB_DIR}/functions/fn_plan_artifact.sh"
 # shellcheck source=../lib/functions/fn_plan_doc.sh

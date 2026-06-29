@@ -51,10 +51,14 @@ drivers:
   - requires integration, migration, and rollback verification
 splittable: true                 # false => an irreducible atom; no acceptable seam exists
 seam_hints:                       # advisory candidate cuts, weakest connascence first
-  - between: [ contract + schema migration, docs/completion/help updates ]
+  - label: contract-vs-docs
     connascence: low
-  - between: [ contract + schema migration, integration-test sweep ]
-    connascence: moderate
+    left:
+      label: contract-and-schema
+      requirement_ids: [R1, R2, R3]
+    right:
+      label: docs-and-completion
+      requirement_ids: [R4, R5]
 ```
 
 The evaluator is pure: same input, same report. It names seams; it never makes the cut.
@@ -77,13 +81,43 @@ rounds:
   - id: docs-and-completion-updates
     path: .implementation-plans/plans/<plan>/docs-and-completion-updates.md
 coverage:
-  parent_requirements: 9
-  covered_by_children: 9         # must equal parent_requirements
+  key: id
+  parent_reqs: [R1, R2, R3, R4, R5]
   lost: []                       # must be empty — a lossy split is rejected
-  duplicated: [ shared-types ]   # informational; a shared foundation may intentionally recur
+  added: [R6]
+  duplicated: [R3]               # informational; a shared foundation may intentionally recur
 ```
 
 [ADR-0040]: ../../docs/decisions/0040-stage-agnostic-identifiers.md
+
+### Requirement identity
+
+Acceptance criteria may carry a leading plan-scoped requirement tag:
+
+```text
+- [ ] (R3) The command fails closed when coverage loses a parent requirement.
+```
+
+`cog round-req stamp <round-or-plan-path>` owns allocation. It scans the plan directory for the
+current max, assigns monotonic `R1`, `R2`, ... tags to untagged non-boilerplate acceptance criteria,
+and never renumbers existing tags. Directory targets stamp every round file in the plan directory,
+skipping README, STRATEGY, and queue files. File targets stamp only that file while scanning sibling
+round files for the current max.
+
+Ownership is split:
+
+- callers stamp before grading so seams and coverage can use stable IDs end to end;
+- the splitter defensively stamps the parent and child files idempotently;
+- the evaluator stays read-only and reports whether requirements were already stamped.
+
+Coverage keys on IDs when present and falls back to normalized criterion text for legacy untagged
+rounds. `cog round-split coverage` fails closed when any parent requirement is lost. Duplicate or
+malformed IDs are invalid within one input scope. A shared parent ID may recur across children and is
+reported as duplicated.
+
+The two Template-A bookkeeping criteria for queue completion are excluded from stamping, listing, and
+coverage. The queue-round criterion is matched by normalized pattern because its topic token varies;
+the final-plan criterion is matched by normalized exact text.
 
 ### Orchestrator dispatch
 
@@ -136,10 +170,12 @@ capability, the conflation [ADR-0049] removed.
 [ADR-0049]: ../../docs/decisions/0049-plan-complexity-rubric.md
 
 It is a single calibratable constant resolved by `cog plan-complexity ceiling`, defaulting to **Very
-High** — only rounds grading **Extreme** must split. This is the conservative, size-maximizing default:
-a **Very High** round is deliberately kept as one large unit (the rubric's "unless a large round is
-deliberate" clause). The [ADR-0049] calibration loop tunes it against repo outcomes; nothing else
-hard-codes a bin.
+High** and optionally overridden for a process with the `COG_PLAN_COMPLEXITY_CEILING` environment
+variable. It is intentionally env-only in this round; cog config files do not accept that key. Only
+rounds grading **Extreme** must split under the default. This is the conservative, size-maximizing
+default: a **Very High** round is deliberately kept as one large unit (the rubric's "unless a large
+round is deliberate" clause). The [ADR-0049] calibration loop tunes it against repo outcomes; nothing
+else hard-codes a bin.
 
 ## Invariants
 
@@ -158,6 +194,8 @@ hard-codes a bin.
   ([ADR-0040]).
 - **Producer-blind dispatch.** The orchestrator depends on the report and verdict *schemas*, not on
   which skill produced them ([ADR-0026]).
+- **Queue-blind splitting.** The splitter writes child rounds and a verdict only. The caller owns
+  `queue-rounds.yaml` reconciliation, either after each loop or at the end.
 
 [ADR-0026]: ../../docs/decisions/0026-consumer-skill-producer-blindness.md
 
@@ -171,6 +209,8 @@ The judgment lives in the three skills; the deterministic mechanics they call li
 - `cog plan-complexity over-ceiling --grade <G>` — the deterministic compare; returns a boolean.
 - `cog round-split coverage --parent <p> --children <a> <b>` — assert requirement/acceptance-criteria
   coverage of a split (and of the final union against the baseline); fail closed on any `lost` item.
+- `cog round-req stamp <round-or-plan-path>` — idempotently assign plan-scoped requirement IDs.
+- `cog round-req list <round>` — read requirement IDs and normalized criterion text.
 
 The work queue is a run-directory artifact the orchestrator drives; `cog` owns the partition, compare,
 and coverage predicates so no skill reimplements them in prose.

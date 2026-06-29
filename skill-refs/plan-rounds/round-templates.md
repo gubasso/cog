@@ -90,6 +90,7 @@ Record completion in the queue — status lives in YAML; nothing moves on disk:
 ## Acceptance Criteria
 
 {{Concrete, checkable criteria specific to THIS round. Each independently verifiable.}}
+{{Criteria may carry optional cog-stamped requirement IDs: `- [ ] (R3) ...`.}}
 
 - [ ] {{criterion 1}}
 - [ ] {{criterion 2}}

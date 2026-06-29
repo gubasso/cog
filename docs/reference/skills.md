@@ -68,6 +68,7 @@ below maps each currently shipped artifact to its taxonomy class.
 - skills/claude/plan-oneshot-codex
 - skills/claude/plan-oneshot
 - skills/claude/plan-multi
+- skills/claude/plan-split
 - skills/claude/plan-writer
 - skills/claude/plan-writer-multi
 - skills/claude/plan-refactor-migration
@@ -90,6 +91,7 @@ Plan-review sub-namespace (`review-plan-*`):
 
 - skills/claude/review-plan-oneshot
 - skills/claude/review-plan-multi
+- skills/claude/review-plan-complexity
 - skills/codex/review-plan-oneshot
 - .claude/skills/review-plan-implementation
 

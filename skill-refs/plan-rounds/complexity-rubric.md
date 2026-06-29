@@ -225,14 +225,22 @@ drivers:
   - requires unit plus integration verification
 splittable: true                 # false => an irreducible atom; no acceptable seam exists
 seam_hints:                       # advisory candidate cuts, weakest connascence first
-  - between: [ public CLI contract change, docs/completion/help updates ]
+  - label: cli-contract-vs-docs
     connascence: low
+    left:
+      label: public CLI contract change
+      requirement_ids: [R1, R2]
+    right:
+      label: docs and completion updates
+      requirement_ids: [R3, R4]
 recommendation: one cohesive round; split the contract change from the docs/completion updates only if they diverge
 ```
 
-`splittable` records whether any acceptable seam exists; `seam_hints` name candidate cuts and how
-weakly the two sides depend on each other. Both are advisory: the evaluator names seams, a splitter
-makes the cut. They feed the recursive split loop specified in the round-splitting contract.
+`splittable` records whether any acceptable seam exists; `seam_hints` name candidate cuts, how weakly
+the two sides depend on each other, and the requirement-ID partition for each side when the input is
+stamped. For unstamped inputs, use normalized requirement text labels and recommend `cog round-req
+stamp`. Both fields are advisory: the evaluator names seams, a splitter makes the cut. They feed the
+recursive split loop specified in the round-splitting contract.
 
 A short documentation task — one ADR plus one reference file, a few small edits, no logic
 (`scope 1, breadth 1, coupling 1, novelty 1, behavior 0, verification 0, context 1` → `6.2`) — grades

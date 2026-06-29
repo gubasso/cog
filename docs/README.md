@@ -55,6 +55,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0048: Plan vault storage and resolution](decisions/0048-plan-vault-storage-and-resolution.md)
 - [ADR-0049: A-priori plan/round complexity rubric](decisions/0049-plan-complexity-rubric.md)
 - [ADR-0050: Recursive complexity-driven round right-sizing](decisions/0050-recursive-round-right-sizing.md)
+- [ADR-0051: Requirement IDs for round coverage](decisions/0051-requirement-id-round-coverage.md)
 
 ## Guides
 
