@@ -38,7 +38,7 @@ forbidden; use `model: opus` + `effort: low`. A governed Claude skill's `model:`
 resolve to its expected tier, enforced by the `model-effort-tier` rule in `cog skill-lint`. The
 authoritative registry is the per-tier `skills` lists in `data/model-effort/claude/tiers.yaml`
 (the single escape hatch for documented exceptions); `cog power-grade skill-tier --skill <name>` and
-`cog power-grade profile --name <tier>` expose the same SoT to authors. See
+`cog power-grade tier --name <name>` expose the same SoT to authors. See
 `docs/decisions/0047-enforce-prefix-tier-policy.md`.
 
 Skill names must follow the prefix taxonomy in `docs/decisions/0016-skill-prefix-taxonomy.md` and

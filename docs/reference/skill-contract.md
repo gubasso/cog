@@ -128,7 +128,7 @@ Absent `model:`/`effort:` rides the session default (HIGH); explicitly pinning t
 cell (`opus`+`high`) is equivalent. The `model-effort-tier` lint rule (Claude skills only) compares
 the resolved actual tier against the expected tier and fails on mismatch. The registry is also the
 SoT for the author-facing `cog power-grade skill-tier --skill <name>` (expected-vs-actual verdict) and
-`cog power-grade profile --name <tier>` (tier → Claude/Codex cells). See
+`cog power-grade tier --name <name>` (tier → Claude/Codex cells). See
 [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md), which refines
 [ADR-0041](../decisions/0041-named-tier-ladder.md) and [ADR-0013](../decisions/0013-model-effort-policy.md).
 
@@ -283,7 +283,7 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   default (HIGH); the known exceptions (`executor-prex` → high, the codex delegation launchers,
   `review-findings`, and `review-plan-implementation` → low) are registry pins, the single escape
   hatch. Authors verify a choice with `cog power-grade skill-tier --skill <name>` and resolve a tier
-  to its cells with `cog power-grade profile --name <tier>`. See
+  to its cells with `cog power-grade tier --name <name>`. See
   [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md) and "Model/effort tier enforcement".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The

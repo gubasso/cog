@@ -90,11 +90,11 @@ this reference table.
 | `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
 | `review-plan-multi-setup` | Parse review-plan-multi arguments and create run state. |
 | `power-grade` | Inspect and validate model/effort power grades. |
-| `power-grade validate` | Validate the Power Grade matrix schema and source-cited profiles. |
-| `power-grade cell --model <model> --effort <effort>` | Print one model/effort profile. |
-| `power-grade classify --grade <n>` | Print executable profiles that can handle a difficulty grade. |
-| `power-grade compound --passes <profile,profile,...>` | Compute compounded capability for a pass sequence. |
-| `power-grade profile --name <tier>` | Resolve a named tier to its Claude and Codex model/effort cells. |
+| `power-grade validate` | Validate the Power Grade matrix schema and source-cited cells. |
+| `power-grade cell --model <model> --effort <effort>` | Print one model/effort cell. |
+| `power-grade classify --grade <n>` | Print executable cells that can handle a difficulty grade. |
+| `power-grade compound --passes <cell,cell,...>` | Compute compounded capability for a pass sequence. |
+| `power-grade tier --name <name>` | Resolve a named tier to its Claude and Codex model/effort cells. |
 | `power-grade skill-tier --skill <name> \| --file <path>` | Resolve a skill's expected vs actual model/effort tier. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |

@@ -11,7 +11,7 @@ setup() {
   printf '%s\n' "$output" | jq -e '
 	  .schema == "cog.power-grade.validate.v1" and
 	  .ok == true and
-	  .profile_count == 27 and
+	  .model_cell_count == 27 and
 	  ([.warnings[] | select(.kind == "needs_verification")] | length) == 1 and
 	  ([.warnings[] | select(.kind == "sourced_without_allowlisted_source")] | length) == 0 and
 	  ([.warnings[] | select(.kind == "tier3_source_cited")] | length) == 0 and
@@ -19,17 +19,17 @@ setup() {
 	' >/dev/null
 }
 
-@test "power-grade cell returns a model effort profile" {
+@test "power-grade cell returns a model effort cell" {
   run cog power-grade cell --model gpt-5.5 --effort medium --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
 	  .schema == "cog.power-grade.cell.v1" and
 	  .ok == true and
-	  .profile.id == "codex-gpt-5.5-medium" and
-	  .profile.grade == 8 and
-	  (.profile.source_refs | length > 0) and
-	  (.profile.benchmark_source_ids | length > 0)
+	  .cell.id == "codex-gpt-5.5-medium" and
+	  .cell.grade == 8 and
+	  (.cell.source_refs | length > 0) and
+	  (.cell.benchmark_source_ids | length > 0)
 	' >/dev/null
 }
 
@@ -40,10 +40,10 @@ setup() {
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.cell.v1" and
     .ok == true and
-    .profile.id == "claude-opus-4.7-high" and
-    .profile.evidence_status == "sourced" and
-    (.profile.benchmark_source_ids | index("aws-bedrock-anthropic-opus-4-7") != null) and
-    (.profile.benchmark_source_ids | index("vals-ai") != null)
+    .cell.id == "claude-opus-4.7-high" and
+    .cell.evidence_status == "sourced" and
+    (.cell.benchmark_source_ids | index("aws-bedrock-anthropic-opus-4-7") != null) and
+    (.cell.benchmark_source_ids | index("vals-ai") != null)
   ' >/dev/null
 }
 
@@ -54,22 +54,22 @@ setup() {
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.cell.v1" and
     .ok == true and
-    .profile.id == "codex-gpt-5.4-mini-medium" and
-    .profile.evidence_status == "sourced" and
-    (.profile.benchmark_source_ids | index("digitalapplied-gpt-5-4-mini-swebench-pro") != null) and
-    (.profile.benchmark_source_ids | index("openai-gpt-5-4-mini-announcement") != null)
+    .cell.id == "codex-gpt-5.4-mini-medium" and
+    .cell.evidence_status == "sourced" and
+    (.cell.benchmark_source_ids | index("digitalapplied-gpt-5-4-mini-swebench-pro") != null) and
+    (.cell.benchmark_source_ids | index("openai-gpt-5-4-mini-announcement") != null)
   ' >/dev/null
 }
 
-@test "power-grade classify returns executable profiles at or above grade" {
+@test "power-grade classify returns executable cells at or above grade" {
   run cog power-grade classify --grade 9 --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.classify.v1" and
     .ok == true and
-    all(.profiles[]; .executable == true and .policy_selectable == true and .grade >= 9) and
-    ([.profiles[].id] | index("codex-gpt-5.3-codex-spark-needs-verification") == null)
+    all(.cells[]; .executable == true and .policy_selectable == true and .grade >= 9) and
+    ([.cells[].id] | index("codex-gpt-5.3-codex-spark-needs-verification") == null)
   ' >/dev/null
 }
 
@@ -94,27 +94,27 @@ setup() {
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.cell.v1" and
     .ok == false and
-    .profile == null
+    .cell == null
   ' >/dev/null
 }
 
-@test "power-grade compound fails for informational profile" {
+@test "power-grade compound fails for informational cell" {
   run cog power-grade compound --passes gpt53codexspark-needs-verification --json
 
   assert_failure 65
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.compound.v1" and
     .ok == false and
-    .errors[0].error == "profile_not_executable"
+    .errors[0].error == "cell_not_executable"
   ' >/dev/null
 }
 
-@test "power-grade profile resolves a named tier to its Claude and Codex cells" {
-  run cog power-grade profile --name low --json
+@test "power-grade tier resolves a named tier to its Claude and Codex cells" {
+  run cog power-grade tier --name low --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-    .schema == "cog.power-grade.profile.v1" and
+    .schema == "cog.power-grade.tier.v1" and
     .ok == true and
     .tier == "low" and
     .claude.model == "claude-opus-4-8" and
@@ -124,8 +124,8 @@ setup() {
   ' >/dev/null
 }
 
-@test "power-grade profile resolves the cheap tier to Haiku with no effort" {
-  run cog power-grade profile --name cheap --json
+@test "power-grade tier resolves the cheap tier to Haiku with no effort" {
+  run cog power-grade tier --name cheap --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '
@@ -135,8 +135,8 @@ setup() {
   ' >/dev/null
 }
 
-@test "power-grade profile fails for an unknown tier name" {
-  run cog power-grade profile --name bogus --json
+@test "power-grade tier fails for an unknown tier name" {
+  run cog power-grade tier --name bogus --json
 
   assert_failure 65
   printf '%s\n' "$output" | jq -e '.ok == false and .claude == null and .codex == null' >/dev/null

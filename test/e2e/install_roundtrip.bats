@@ -29,7 +29,7 @@ teardown() {
   assert_file_exists "$PREFIX/lib/cog/VERSION"
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/pre-commit"
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/editorconfig"
-  assert_file_exists "$XDG_DATA_HOME/cog/data/power-grade/matrix/profiles.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml"
   assert_file_exists "$XDG_DATA_HOME/cog/data/model-effort/claude/tiers.yaml"
   assert_file_exists "$XDG_DATA_HOME/cog/data/maintenance-tracking.yaml"
 
@@ -106,7 +106,7 @@ teardown() {
   assert_file_exists "$manifest"
   grep -Fqx "$PREFIX/bin/cog" "$manifest"
   grep -Fqx "$PREFIX/lib/cog/lib/helpers.sh" "$manifest"
-  grep -Fqx "$XDG_DATA_HOME/cog/data/power-grade/matrix/profiles.yaml" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/bash-completion/completions/cog" "$manifest"
   grep -Fqx "$HOME/.claude/agents/claude-delegate.md" "$manifest"

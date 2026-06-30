@@ -51,75 +51,75 @@ cog::fn::power_grade::validate_json() {
     --arg allowlist_path "$allowlist_path" \
     --argjson matrix "$matrix_json" \
     --argjson allowlist "$allowlist_json" '
-      def required_keys: ($matrix.validation.required_profile_keys // []);
+      def required_keys: ($matrix.validation.required_cell_keys // []);
       def missing_keys($p): required_keys | map(select($p[.] == null));
       def allowlist_tiers:
         ($allowlist.sources // [])
         | map({key: .id, value: .tier})
         | from_entries;
-      def profile_source_ids($p): ($p.benchmark_source_ids // []);
+      def cell_source_ids($p): ($p.benchmark_source_ids // []);
       def required_errors:
-        $matrix.profiles
+        $matrix.model_cells
         | to_entries
         | map({index: .key, id: (.value.id // null), missing: missing_keys(.value)})
         | map(select(.missing | length > 0))
-        | map({kind: "missing_required_profile_keys", profile_index: .index, profile_id: .id, missing: .missing});
+        | map({kind: "missing_required_cell_keys", cell_index: .index, cell_id: .id, missing: .missing});
       def duplicate_errors($field):
-        ($matrix.profiles | map(.[$field]) | group_by(.) | map(select(length > 1) | .[0])) as $dupes
+        ($matrix.model_cells | map(.[$field]) | group_by(.) | map(select(length > 1) | .[0])) as $dupes
         | $dupes
-        | map({kind: ("duplicate_profile_" + $field), value: .});
+        | map({kind: ("duplicate_cell_" + $field), value: .});
       def grade_errors:
-        $matrix.profiles
+        $matrix.model_cells
         | map(select((.grade | type) != "number" or .grade < $matrix.scale.min or .grade > $matrix.scale.max)
-          | {kind: "profile_grade_out_of_scale", profile_id: (.id // null), grade: (.grade // null)});
+          | {kind: "cell_grade_out_of_scale", cell_id: (.id // null), grade: (.grade // null)});
       def source_errors:
-        $matrix.profiles
+        $matrix.model_cells
         | map(select((.source_refs | type) != "array" or (.source_refs | length) == 0)
-          | {kind: "missing_source_refs", profile_id: (.id // null)});
+          | {kind: "missing_source_refs", cell_id: (.id // null)});
       def unknown_source_errors:
         allowlist_tiers as $tiers
-        | $matrix.profiles
+        | $matrix.model_cells
         | to_entries
         | map(. as $entry
-            | (profile_source_ids($entry.value) | map(select(($tiers[.] // null) == null))) as $unknown
+            | (cell_source_ids($entry.value) | map(select(($tiers[.] // null) == null))) as $unknown
             | select(($unknown | length) > 0)
-            | {kind: "unknown_source_id", profile_index: .key, profile_id: (.value.id // null), source_ids: $unknown});
-      def named_profile_errors:
-        ($matrix.profiles | map(.id)) as $ids
-        | ($matrix.named_profiles // [])
-        | map(select((.claude_profile as $c | $ids | index($c) | not) or
-                     (.codex_profile as $g | $ids | index($g) | not))
-          | {kind: "named_profile_unknown_reference", name: (.name // null),
-             claude_profile: (.claude_profile // null), codex_profile: (.codex_profile // null)});
+            | {kind: "unknown_source_id", cell_index: .key, cell_id: (.value.id // null), source_ids: $unknown});
+      def model_tier_errors:
+        ($matrix.model_cells | map(.id)) as $ids
+        | ($matrix.model_tiers // [])
+        | map(select((.claude_cell as $c | $ids | index($c) | not) or
+                     (.codex_cell as $g | $ids | index($g) | not))
+          | {kind: "model_tier_unknown_reference", name: (.name // null),
+             claude_cell: (.claude_cell // null), codex_cell: (.codex_cell // null)});
       def needs_verification_warnings:
-        $matrix.profiles
+        $matrix.model_cells
         | map(select(.evidence_status == "needs_verification")
-          | {kind: "needs_verification", profile_id: .id, executable: .executable, caveats: .caveats});
+          | {kind: "needs_verification", cell_id: .id, executable: .executable, caveats: .caveats});
       def tier3_source_warnings:
         allowlist_tiers as $tiers
-        | $matrix.profiles
-        | map(. as $profile
-            | (profile_source_ids($profile) | map(select(($tiers[.] // null) == 3))) as $tier3
+        | $matrix.model_cells
+        | map(. as $cell
+            | (cell_source_ids($cell) | map(select(($tiers[.] // null) == 3))) as $tier3
             | select(($tier3 | length) > 0)
-            | {kind: "tier3_source_cited", profile_id: (.id // null), source_ids: $tier3});
+            | {kind: "tier3_source_cited", cell_id: (.id // null), source_ids: $tier3});
       def sourced_without_allowlisted_source_warnings:
         allowlist_tiers as $tiers
-        | $matrix.profiles
+        | $matrix.model_cells
         | map(select((.evidence_status != "needs_verification") and
-                     ((profile_source_ids(.) | map(select((($tiers[.] // 999) <= 2))) | length) == 0))
-            | {kind: "sourced_without_allowlisted_source", profile_id: (.id // null),
-               benchmark_source_ids: profile_source_ids(.)});
+                     ((cell_source_ids(.) | map(select((($tiers[.] // 999) <= 2))) | length) == 0))
+            | {kind: "sourced_without_allowlisted_source", cell_id: (.id // null),
+               benchmark_source_ids: cell_source_ids(.)});
       def warnings:
         needs_verification_warnings + tier3_source_warnings + sourced_without_allowlisted_source_warnings;
 
-      (required_errors + duplicate_errors("id") + duplicate_errors("slug") + grade_errors + source_errors + unknown_source_errors + named_profile_errors) as $errors
+      (required_errors + duplicate_errors("id") + duplicate_errors("slug") + grade_errors + source_errors + unknown_source_errors + model_tier_errors) as $errors
       | {
           schema: $schema,
           ok: ($errors | length == 0),
           matrix_path: $matrix_path,
           allowlist_path: $allowlist_path,
-          profile_count: ($matrix.profiles | length),
-          named_profile_count: (($matrix.named_profiles // []) | length),
+          model_cell_count: ($matrix.model_cells | length),
+          model_tier_count: (($matrix.model_tiers // []) | length),
           scale: $matrix.scale,
           validation: $matrix.validation,
           errors: $errors,
@@ -141,41 +141,41 @@ cog::fn::power_grade::cell_json() {
     --arg model "$model" \
     --arg effort "$effort" \
     --argjson matrix "$matrix_json" '
-      ($matrix.profiles | map(select(.model == $model and .effort == $effort)) | first) as $profile
+      ($matrix.model_cells | map(select(.model == $model and .effort == $effort)) | first) as $cell
       | {
           schema: $schema,
-          ok: ($profile != null),
+          ok: ($cell != null),
           matrix_path: $matrix_path,
           model: $model,
           effort: $effort,
-          profile: $profile
+          cell: $cell
         }'
 }
 
-cog::fn::power_grade::profile_json() {
+cog::fn::power_grade::tier_json() {
   local name="$1" matrix_path="${2:-}" matrix_json
   [[ -n $name ]] || cog::fn::error_raise "MissingArgument" \
-    "missing named-profile name" "option: --name" "" "run 'cog power-grade --help'"
+    "missing tier name" "option: --name" "" "run 'cog power-grade --help'"
   [[ -n $matrix_path ]] || matrix_path="$(cog::fn::power_grade::matrix_path)"
   matrix_json="$(cog::fn::power_grade::matrix_json "$matrix_path")"
 
   jq -e -n \
-    --arg schema "cog.power-grade.profile.v1" \
+    --arg schema "cog.power-grade.tier.v1" \
     --arg matrix_path "$matrix_path" \
     --arg name "$name" \
     --argjson matrix "$matrix_json" '
-      def cell($id): ($matrix.profiles | map(select(.id == $id)) | first)
+      def cell($id): ($matrix.model_cells | map(select(.id == $id)) | first)
         | if . == null then null else {id, model, effort, grade} end;
-      ($matrix.named_profiles // [] | map(select(.name == $name)) | first) as $np
+      ($matrix.model_tiers // [] | map(select(.name == $name)) | first) as $tier
       | {
           schema: $schema,
-          ok: ($np != null),
+          ok: ($tier != null),
           matrix_path: $matrix_path,
           name: $name,
-          tier: ($np.name // null),
-          use_when: ($np.use_when // null),
-          claude: (if $np then cell($np.claude_profile) else null end),
-          codex: (if $np then cell($np.codex_profile) else null end)
+          tier: ($tier.name // null),
+          use_when: ($tier.use_when // null),
+          claude: (if $tier then cell($tier.claude_cell) else null end),
+          codex: (if $tier then cell($tier.codex_cell) else null end)
         }'
 }
 
@@ -249,9 +249,9 @@ cog::fn::power_grade::classify_json() {
         matrix_path: $matrix_path,
         grade: $grade,
         scale: $matrix.scale,
-        profiles: (
+        cells: (
           if $in_scale then
-            $matrix.profiles
+            $matrix.model_cells
             | map(select(.executable == true and .policy_selectable == true and .grade >= $grade))
             | sort_by(.grade, .id)
           else
@@ -281,16 +281,16 @@ cog::fn::power_grade::compound_json() {
     --arg passes "$passes" \
     --argjson pass_ids "$pass_json" \
     --argjson matrix "$matrix_json" '
-      def profile_for($id):
-        ($matrix.profiles | map(select(.id == $id or .slug == $id)) | first);
-      def pass_profile($id; $idx):
-        (profile_for($id)) as $p
+      def cell_for($id):
+        ($matrix.model_cells | map(select(.id == $id or .slug == $id)) | first);
+      def pass_cell($id; $idx):
+        (cell_for($id)) as $p
         | if $p == null then
-            {ok: false, input: $id, index: $idx, error: "unknown_profile"}
+            {ok: false, input: $id, index: $idx, error: "unknown_cell"}
           elif $p.executable != true then
-            {ok: false, input: $id, index: $idx, profile: $p, error: "profile_not_executable"}
+            {ok: false, input: $id, index: $idx, cell: $p, error: "cell_not_executable"}
           else
-            {ok: true, input: $id, index: $idx, profile: $p}
+            {ok: true, input: $id, index: $idx, cell: $p}
           end;
 
       "capped_max_plus_artifact_gain" as $supported_formula
@@ -298,13 +298,13 @@ cog::fn::power_grade::compound_json() {
       | (if $formula_unsupported then
            [{ok: false, input: ($matrix.compound.formula // null), index: -1, error: "unknown_formula"}]
          else [] end) as $formula_errors
-      | ($pass_ids | to_entries | map(pass_profile(.value; .key))) as $passes_resolved
+      | ($pass_ids | to_entries | map(pass_cell(.value; .key))) as $passes_resolved
       | ($formula_errors + ($passes_resolved | map(select(.ok != true)))) as $errors
-      | ($passes_resolved | map(select(.ok == true) | .profile)) as $profiles
-      | ($profiles | map(.grade) | max // 0) as $base_grade
+      | ($passes_resolved | map(select(.ok == true) | .cell)) as $cells
+      | ($cells | map(.grade) | max // 0) as $base_grade
       | ($matrix.compound.first_pass_gain // 0) as $first_gain
       | ($matrix.compound.subsequent_pass_artifact_gain // 1) as $gain
-      | ([range(0; ($profiles | length))] | map(if . == 0 then $first_gain else $gain end)) as $gains
+      | ([range(0; ($cells | length))] | map(if . == 0 then $first_gain else $gain end)) as $gains
       | ($gains | add // 0) as $artifact_gain
       | ($base_grade + $artifact_gain) as $raw_grade
       | (if ($matrix.compound.cap_to_scale_max // true)
@@ -313,7 +313,7 @@ cog::fn::power_grade::compound_json() {
          end) as $compound_grade
       | {
           schema: $schema,
-          ok: (($errors | length) == 0 and ($profiles | length) > 0),
+          ok: (($errors | length) == 0 and ($cells | length) > 0),
           matrix_path: $matrix_path,
           input: $passes,
           formula: $matrix.compound,

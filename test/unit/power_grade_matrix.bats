@@ -84,10 +84,10 @@ scale:
   description: "fixture"
   grade_rule: "fixture"
 validation:
-  required_profile_keys: ["id", "slug", "label", "provider", "model", "effort", "grade", "executable", "policy_selectable", "evidence_status", "confidence", "source_refs", "benchmark_source_ids", "description", "use_where", "caveats"]
+  required_cell_keys: ["id", "slug", "label", "provider", "model", "effort", "grade", "executable", "policy_selectable", "evidence_status", "confidence", "source_refs", "benchmark_source_ids", "description", "use_where", "caveats"]
 compound:
   formula: "capped_max_plus_artifact_gain"
-profiles:
+model_cells:
   - id: "fixture-profile"
     slug: "fixture-profile"
     label: "fixture profile"
@@ -120,12 +120,12 @@ validate_matrix_fixture() {
     .scale.min == 1 and
     .scale.max == 10 and
     .compound.formula == "capped_max_plus_artifact_gain" and
-    (.profiles | type == "array" and length > 0) and
-    (.named_profiles | type == "array" and length == 5)
+    (.model_cells | type == "array" and length > 0) and
+    (.model_tiers | type == "array" and length == 5)
   ' >/dev/null
 }
 
-@test "power grade matrix profiles satisfy committed schema" {
+@test "power grade matrix model cells satisfy committed schema" {
   run matrix_json
 
   assert_success
@@ -144,9 +144,9 @@ validate_matrix_fixture() {
       (.caveats | type == "array");
 
     . as $root |
-    ([.profiles[].id] | length) == ([.profiles[].id] | unique | length) and
-    ([.profiles[].slug] | length) == ([.profiles[].slug] | unique | length) and
-    all(.profiles[]; has_required and (.grade >= $root.scale.min and .grade <= $root.scale.max))
+    ([.model_cells[].id] | length) == ([.model_cells[].id] | unique | length) and
+    ([.model_cells[].slug] | length) == ([.model_cells[].slug] | unique | length) and
+    all(.model_cells[]; has_required and (.grade >= $root.scale.min and .grade <= $root.scale.max))
   ' >/dev/null
 }
 
@@ -155,10 +155,10 @@ validate_matrix_fixture() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-	    ([.profiles[] | select(.model == "claude-haiku-4-5")] | length) == 1 and
-	    (.profiles[] | select(.model == "claude-haiku-4-5") | .effort == "none") and
-	    ([.profiles[] | select(.evidence_status == "needs_verification")] | length) == 1 and
-	    (.profiles[] | select(.model == "gpt-5.3-codex-spark") |
+	    ([.model_cells[] | select(.model == "claude-haiku-4-5")] | length) == 1 and
+	    (.model_cells[] | select(.model == "claude-haiku-4-5") | .effort == "none") and
+	    ([.model_cells[] | select(.evidence_status == "needs_verification")] | length) == 1 and
+	    (.model_cells[] | select(.model == "gpt-5.3-codex-spark") |
 	      .executable == false and
 	      .evidence_status == "needs_verification" and
 	      .effort == "needs-verification")
@@ -222,7 +222,7 @@ validate_matrix_fixture() {
   ' >/dev/null
 }
 
-@test "power grade validator warns when sourced profile lacks clearing source" {
+@test "power grade validator warns when sourced cell lacks clearing source" {
   local matrix="${BATS_TEST_TMPDIR}/matrix.yaml"
   local allowlist="${BATS_TEST_TMPDIR}/allowlist.yaml"
   write_allowlist_fixture "$allowlist"

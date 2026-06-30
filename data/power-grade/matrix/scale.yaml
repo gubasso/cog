@@ -1,5 +1,5 @@
 scale:
-  description: Power Grade is a difficulty ceiling for a single model/effort profile. Higher numbers mean the profile can handle harder, more ambiguous, or higher-blast-radius work.
+  description: Power Grade is a difficulty ceiling for a single model/effort cell. Higher numbers mean the cell can handle harder, more ambiguous, or higher-blast-radius work.
   grade_rule: Assign grades from the sourced model benchmark, effort-support, pricing, and qualitative Power Grade input rows. Do not invent missing benchmark numbers; use evidence_status and confidence for gaps.
   max: 10
   min: 1

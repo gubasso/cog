@@ -10,7 +10,7 @@ The machine-readable policy data lives in:
 - [`data/power-grade/matrix`](../../data/power-grade/matrix/)
 
 The provider YAML data defines policy tier selection. `data/power-grade/matrix` is the source of
-truth for profile capability grades, source-cited profile evidence, named policy pairings, validation
+truth for cell capability grades, source-cited cell evidence, named policy pairings, validation
 severity, and compound-pass math.
 
 ## Hard Rule
@@ -69,7 +69,7 @@ per-tier `skills` lists in [`data/model-effort/claude/tiers.yaml`](../../data/mo
 authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the
 prefix default (the recorded justification) live. Verify a skill with
 `cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with
-`cog power-grade profile --name <tier>`. See [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md).
+`cog power-grade tier --name <name>`. See [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md).
 
 ## How To Classify Work
 
@@ -84,10 +84,10 @@ prefix default (the recorded justification) live. Verify a skill with
 Do not pin `-codex` models for subscription-auth Codex. The Codex policy pins only `gpt-5.5`,
 `gpt-5.4`, or `gpt-5.4-mini` for that path.
 
-## Power Grade Profiles
+## Power Grade Cells
 
-Power Grade profiles are model/effort capability cells used by `cog power-grade`. The matrix defines
-a 1-10 difficulty-ceiling scale, one executable profile per supported model/effort cell, non-fatal
+Power Grade cells are the graded model/effort entries used by `cog power-grade`. The matrix defines
+a 1-10 difficulty-ceiling scale, one executable cell per supported model/effort pair, non-fatal
 `needs_verification` evidence markers for genuine public-data gaps, and named policy pairings:
 
 - `xhigh`: Opus 4.8 at xhigh effort / `gpt-5.5` at high effort.
@@ -96,8 +96,8 @@ a 1-10 difficulty-ceiling scale, one executable profile per supported model/effo
 - `low`: Opus 4.8 at low effort / `gpt-5.4` at medium effort.
 - `cheap`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
 
-Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one profile, `classify`
-to find policy-selectable profiles that can handle a grade (non-selectable and informational cells
+Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one cell, `classify`
+to find policy-selectable cells that can handle a grade (non-selectable and informational cells
 are excluded), and `compound` to compute pass-sequence capability from the matrix-owned formula.
 
 ## Review And Verification Work
@@ -136,5 +136,5 @@ The following are intentionally out of scope for this round:
 - Changing `cog codex-runner` wiring.
 - Re-grading existing skill frontmatter.
 
-The tier-lookup follow-up is now provided by `cog power-grade profile` and
+The tier-lookup follow-up is now provided by `cog power-grade tier` and
 `cog power-grade skill-tier` (ADR-0047); a broader `cog model-policy` surface remains out of scope.

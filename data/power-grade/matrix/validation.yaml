@@ -1,7 +1,7 @@
 validation:
-  informational_profile_is_fatal: false
+  informational_cell_is_fatal: false
   needs_verification_is_fatal: false
-  required_profile_keys:
+  required_cell_keys:
     - id
     - slug
     - label
@@ -18,4 +18,4 @@ validation:
     - description
     - use_where
     - caveats
-  unsupported_efforts_as_profiles: false
+  unsupported_efforts_as_cells: false

@@ -1,4 +1,4 @@
-profiles:
+model_cells:
   - benchmark_source_ids:
       - anthropic-model-announcements
       - swebench-verified

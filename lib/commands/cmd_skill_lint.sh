@@ -940,7 +940,7 @@ __cog_skill_lint_check_model_effort_tier() {
 
   __cog_skill_lint_finding "$file" 1 "model-effort-tier" \
     "model/effort resolves to tier '${actual}' (model=${model:-<default>} effort=${effort:-<default>}) but policy expects tier '${expected}'" \
-    "match the expected tier's cell (see 'cog power-grade profile --name ${expected}'), or pin the skill in the right tier's 'skills' list in data/model-effort/claude/tiers.yaml"
+    "match the expected tier's cell (see 'cog power-grade tier --name ${expected}'), or pin the skill in the right tier's 'skills' list in data/model-effort/claude/tiers.yaml"
   return 1
 }
 

@@ -27,7 +27,7 @@ docs/decisions/0013-model-effort-policy.md; model: sonnet is forbidden (use mode
 low). A governed Claude skill's model:/effort: must resolve to its expected tier, enforced by cog
 skill-lint (model-effort-tier); the authoritative registry is the per-tier skills lists in
 data/model-effort/claude/tiers.yaml (the single escape hatch for exceptions), and authors verify
-with cog power-grade skill-tier / cog power-grade profile. See
+with cog power-grade skill-tier / cog power-grade tier. See
 docs/decisions/0047-enforce-prefix-tier-policy.md and docs/reference/skill-contract.md
 ("Model/effort tier enforcement").
 
