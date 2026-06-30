@@ -96,6 +96,9 @@ this reference table.
 | `power-grade compound --passes <cell,cell,...>` | Compute compounded capability for a pass sequence. |
 | `power-grade tier --name <name>` | Resolve a named tier to its Claude and Codex model/effort cells. |
 | `power-grade skill-tier --skill <name> \| --file <path>` | Resolve a skill's expected vs actual model/effort tier. |
+| `power-grade executor [--executor <name>]` | Derive each executor's capability power and routing band from its pass composition. |
+| `power-grade match --score <n>` | Route a complexity score to the right-sized executor via the normalized-percent overlay. |
+| `power-grade executor-validate` | Check executor capability data for completeness, cell references, and calibration coherence. |
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `preflight` | Run centralized orchestrator preflight checks. |

@@ -1,0 +1,113 @@
+# Executor capability — pass composition (source of truth for 0a).
+# Each executor's heaviest route is enumerated as ordered stages. A stage folds its
+# members by `combine`: single = the lone grade; sum = members added (concurrent
+# dual-engine passes, or sequential multi-round passes); max = the strongest member
+# (route-alternatives where only one path runs — grade the heaviest route).
+# Executor power = sum of stage powers; each member `cell` is a model-cells.yaml slug.
+# `basis` records why a member maps to its cell: declared = the pass skill's own
+# frontmatter model/effort; driven-effort = the effort the pass is launched with
+# (Codex run-exec / inline plan-oneshot); medium-default = no declared frontmatter,
+# graded at the model-tiers medium rung. Powers reproduced by `cog power-grade executor`.
+executor_passes:
+  - executor: executor-oneshot
+    heaviest_route: single-engine
+    stages:
+      - role: gate
+        combine: single
+        members:
+          - cell: opus48-low
+            runs_via: claude-subagent
+            basis: declared
+            note: assess-input
+      - role: plan
+        combine: max
+        members:
+          - cell: opus48-high
+            runs_via: claude-subagent
+            basis: declared
+            note: plan-oneshot generates the plan
+          - cell: gpt55-high
+            runs_via: codex
+            basis: driven-effort
+            note: review-plan-oneshot cross-engine review (good-input route)
+      - role: implement
+        combine: single
+        members:
+          - cell: opus48-medium
+            runs_via: claude-in-session
+            basis: medium-default
+            note: in-session implementation
+  - executor: executor-vetted
+    heaviest_route: dual-engine-vetted
+    stages:
+      - role: gate
+        combine: single
+        members:
+          - cell: opus48-low
+            runs_via: claude-subagent
+            basis: declared
+            note: assess-input (inside plan-vetted)
+      - role: plan
+        combine: sum
+        members:
+          - cell: opus48-high
+            runs_via: claude-subagent
+            basis: driven-effort
+            note: plan-multi Claude engine (inline plan-oneshot at high)
+          - cell: gpt55-high
+            runs_via: codex
+            basis: driven-effort
+            note: plan-multi Codex engine (run-exec at high effort)
+      - role: implement
+        combine: single
+        members:
+          - cell: opus48-medium
+            runs_via: claude-in-session
+            basis: medium-default
+            note: in-session implementation
+  - executor: executor-prex
+    heaviest_route: auto-review
+    stages:
+      - role: gate
+        combine: single
+        members:
+          - cell: opus48-low
+            runs_via: claude-subagent
+            basis: declared
+            note: assess-input (inside plan-vetted)
+      - role: plan
+        combine: sum
+        members:
+          - cell: opus48-high
+            runs_via: claude-subagent
+            basis: driven-effort
+            note: plan-multi Claude engine (inline plan-oneshot at high)
+          - cell: gpt55-high
+            runs_via: codex
+            basis: driven-effort
+            note: plan-multi Codex engine (run-exec at high effort)
+      - role: implement
+        combine: single
+        members:
+          - cell: gpt55-medium
+            runs_via: codex
+            basis: driven-effort
+            note: Codex implements at medium effort
+      - role: review
+        combine: single
+        members:
+          - cell: opus48-xhigh
+            runs_via: claude-subagent
+            basis: declared
+            note: review-oneshot implementation review
+      - role: review-loop
+        combine: sum
+        members:
+          - cell: gpt55-medium
+            runs_via: codex
+            basis: driven-effort
+            note: round 1 cold — the HIGH tier's Codex cell
+          - cell: gpt55-low
+            runs_via: codex
+            basis: driven-effort
+            note: rounds 2+ warm — the MEDIUM tier's Codex cell

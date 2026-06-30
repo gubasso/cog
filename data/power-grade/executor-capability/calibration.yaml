@@ -1,0 +1,26 @@
+# Executor capability — calibration constants (0b/0c policy inputs).
+# Only inputs and policy constants live here; powers, %-bands, and routing
+# thresholds are derived at runtime by `cog power-grade executor` / `... match`
+# and are never persisted. Re-derive on any change rather than caching numbers.
+calibration:
+  aggregation:
+    method: sum-of-stages
+    stage_combine:
+      single: the lone pass grade
+      sum: members summed (concurrent dual-engine, or sequential multi-round)
+      max: strongest member grade (route-alternative; grade the heaviest route)
+  executor_normalization: percent-of-max
+  complexity:
+    # The rubric's maximum weighted score. Provenance is prose today
+    # (Finding 5); persisted here so the overlay is deterministic. A rubric
+    # refit that changes the max must update this value.
+    max_score: 34
+    normalization: score-over-max
+    provenance: skill-refs/plan-rounds/complexity-rubric.md
+    provenance_adr: docs/decisions/0049-plan-complexity-rubric.md
+  extreme_reserved:
+    # Rounds above this complexity are non-executable as a single round unless
+    # explicitly requested; a future /plan-writer splits each into two rounds.
+    over_score: 30
+    over_percent: 88.2
+    note: non-executable unless explicitly requested; future /plan-writer splits the round in two

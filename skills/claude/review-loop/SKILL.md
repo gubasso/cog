@@ -113,8 +113,8 @@ findings come from the reviewer's retained context, not a cold re-injection.
 ## Review Round
 
 Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`
-and a read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort (the
-Codex HIGH cell). After `finalize`, capture the reviewer thread id for resume:
+and a read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort — the
+HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
 
 ```bash
 cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
@@ -124,7 +124,7 @@ cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
 
 Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation and the resumed
 dual instruction above. Launch through `cog codex-runner run-resume --account <account>
---thread-id <thread-id>` with `low` effort (the Codex MEDIUM cell).
+--thread-id <thread-id>` with `low` effort — the MEDIUM tier's Codex cell (`gpt-5.5@low`).
 
 For every round use `finalize --max-wall <secs>` until it exits 0, 1, or 75; exit 75 means still
 running and should be polled again.

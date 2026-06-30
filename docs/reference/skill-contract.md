@@ -132,6 +132,25 @@ SoT for the author-facing `cog power-grade skill-tier --skill <name>` (expected-
 [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md), which refines
 [ADR-0041](../decisions/0041-named-tier-ladder.md) and [ADR-0013](../decisions/0013-model-effort-policy.md).
 
+## Explicit model/effort/power-grade references
+
+A skill's prose names a model, effort, tier, or power-grade cell by its correct kind. Per
+[ADR-0053](../decisions/0053-power-grade-cell-tier-rename.md), a *cell* is a graded `(model, effort)`
+row — named by its `model@effort` or its matrix slug — and a *tier* is a named rung of the five-rung
+ladder (`XHIGH|HIGH|MEDIUM|LOW|CHEAP`) pairing one Claude and one Codex cell. A reference resolves to
+the explicit cell where the concrete capability matters; the labeled form names the tier and its cell
+together, e.g. "the HIGH tier's Codex cell (`gpt-5.5@medium`)". An explicit `--effort <value>` inside a
+command block already satisfies this.
+
+The linted mislabel is a tier word used as the noun "cell" (e.g. "the Codex HIGH cell"), which
+conflates the tier with the cell it resolves to. Correct tier prose ("the HIGH tier") and explicit
+cell prose are allowed; a deliberate exception is recorded with an inline
+`<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line.
+
+`cog skill-lint` enforces this with the `model-effort-prose-label` rule over runtime `SKILL.md` bodies,
+skipping frontmatter (governed by `model-effort-tier`) and fenced code blocks. See
+[ADR-0055](../decisions/0055-explicit-model-reference-labeling.md).
+
 ## Twin and delegation skill naming
 
 Native twins use one base name in both runtime trees and are distinguished by directory:
@@ -285,6 +304,13 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   hatch. Authors verify a choice with `cog power-grade skill-tier --skill <name>` and resolve a tier
   to its cells with `cog power-grade tier --name <name>`. See
   [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md) and "Model/effort tier enforcement".
+- `model-effort-prose-label`: a runtime skill body (Claude or Codex) names a power-grade tier as the
+  noun "cell" (e.g. "the Codex HIGH cell"), conflating a tier with the cell it resolves to. Correct
+  tier prose ("the HIGH tier") and explicit `model@effort`/slug cell prose are allowed; frontmatter and
+  fenced code blocks are skipped, and an inline
+  `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line records a deliberate
+  exception. See [ADR-0055](../decisions/0055-explicit-model-reference-labeling.md) and "Explicit
+  model/effort/power-grade references".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path
   (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The
   scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring

@@ -30,10 +30,11 @@ entries:
     cadence_days: 90
     owner: power-grade policy
     why: "The matrix grades model/effort capability from model benchmarks, pricing, effort support, and policy defaults that can drift."
-    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date."
+    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date. The downstream data/power-grade/executor-capability powers and routing thresholds re-derive from these grades; re-run cog power-grade executor-validate after any grade change."
     references:
       - docs/reference/model-effort-policy.md
       - docs/decisions/0032-power-grade-model.md
+      - data/power-grade/executor-capability
   - id: power-grade-source-allowlist
     path: data/power-grade/source-allowlist
     last_checked: 2026-06-25
@@ -44,6 +45,20 @@ entries:
     references:
       - docs/decisions/0033-benchmark-source-tiers.md
       - data/power-grade/matrix
+  - id: executor-capability
+    path: data/power-grade/executor-capability
+    last_checked: 2026-06-30
+    cadence_days: 90
+    owner: power-grade policy
+    why: "Executor pass composition and capability calibration derive from the executor-* skill flows, the model-cells matrix, and the complexity rubric's max score, all of which can drift."
+    revalidate_how: "Re-confirm each native executor-* skill's pass list and declared/driven model-effort against passes.yaml, re-check calibration.yaml's complexity max_score against the rubric, then run cog power-grade executor-validate and update last_checked."
+    references:
+      - docs/decisions/0054-executor-capability-grading.md
+      - data/power-grade/matrix
+      - skill-refs/plan-rounds/complexity-rubric.md
+      - skills/claude/executor-oneshot/SKILL.md
+      - skills/claude/executor-vetted/SKILL.md
+      - skills/claude/executor-prex/SKILL.md
   - id: research-shelf
     path: data/research-shelf/index.jsonl
     last_checked: 2026-06-20

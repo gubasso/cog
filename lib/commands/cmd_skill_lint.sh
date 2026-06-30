@@ -944,6 +944,72 @@ __cog_skill_lint_check_model_effort_tier() {
   return 1
 }
 
+# model-effort-prose-label: a prose reference to a model/effort/power-grade cell
+# must name its kind correctly — a cell is a (model, effort) row (named by model@effort
+# or its slug); a tier is a named rung (named "the <TIER> tier") — per ADR-0053. Using
+# a tier word as the noun "cell" (e.g. "the Codex HIGH cell") conflates the two. Scans
+# runtime SKILL.md bodies, skipping frontmatter (governed by model-effort-tier) and
+# fenced code blocks (where an explicit `--effort <val>` is already unambiguous). An
+# inline `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line
+# records a deliberate exception. See docs/decisions/0055-explicit-model-reference-labeling.md.
+__cog_skill_lint_check_model_effort_prose_label() {
+  local file="$1" runtime
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ -n $runtime ]] || return 0
+
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
+  local pending_allow=false lc tier
+  local fence_re='^[[:space:]]*```+'
+  local marker_re='^[[:space:]]*<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-model-ref-label[[:space:]]+[^>]*-->[[:space:]]*$'
+  local tier_cell_re='(^|[^a-z])(xhigh|high|medium|low|cheap)[[:space:]]+(codex[[:space:]]+|claude[[:space:]]+)?cells?([^a-z]|$)'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] && continue
+
+    if [[ $line =~ $marker_re ]]; then
+      pending_allow=true
+      continue
+    fi
+
+    lc="${line,,}"
+    if [[ $lc =~ $tier_cell_re ]]; then
+      tier="${BASH_REMATCH[2]}"
+      if [[ $pending_allow == true ]]; then
+        pending_allow=false
+        continue
+      fi
+      __cog_skill_lint_finding "$file" "$line_no" "model-effort-prose-label" \
+        "names a power-grade tier as a cell ('${tier} cell'); a cell is a (model, effort) row, a tier is a named rung" \
+        "name the tier ('the ${tier^^} tier') or the explicit cell (model@effort or its slug), per ADR-0053"
+      failed=1
+    fi
+
+    [[ -n ${line//[[:space:]]/} ]] && pending_allow=false
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -982,6 +1048,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_model_effort_tier "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_model_effort_prose_label "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

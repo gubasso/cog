@@ -7,6 +7,9 @@ __cog_power_grade_classify_self_check='(.schema=="cog.power-grade.classify.v1") 
 __cog_power_grade_compound_self_check='(.schema=="cog.power-grade.compound.v1") and (.ok|type=="boolean") and (.matrix_path|type=="string") and (.input|type=="string") and (.passes|type=="array") and (.base_grade|type=="number") and (.artifact_gain|type=="number") and (.compound_grade|type=="number") and (.errors|type=="array")'
 __cog_power_grade_tier_self_check='(.schema=="cog.power-grade.tier.v1") and (.ok|type=="boolean") and (.matrix_path|type=="string") and (.name|type=="string") and ((.claude|type=="object") or (.claude == null)) and ((.codex|type=="object") or (.codex == null))'
 __cog_power_grade_skill_tier_self_check='(.schema=="cog.power-grade.skill-tier.v1") and (.ok|type=="boolean") and (.skill|type=="string") and (.file|type=="string") and (.expected|type=="string") and (.actual|type=="string") and (.reason|type=="string")'
+__cog_power_grade_executor_self_check='(.schema=="cog.power-grade.executor.v1") and (.ok|type=="boolean") and (.capability_path|type=="string") and (.matrix_path|type=="string") and (.max_power|type=="number") and (.executors|type=="array") and (.errors|type=="array")'
+__cog_power_grade_match_self_check='(.schema=="cog.power-grade.match.v1") and (.ok|type=="boolean") and (.score|type=="number") and (.max_score|type=="number") and (.percent|type=="number") and (.reserved|type=="boolean") and ((.executor|type=="string") or (.executor==null)) and (.bands|type=="array") and (.errors|type=="array")'
+__cog_power_grade_executor_validate_self_check='(.schema=="cog.power-grade.executor-validate.v1") and (.ok|type=="boolean") and (.capability_path|type=="string") and (.checks|type=="object") and (.missing_executors|type=="array") and (.unknown_cells|type=="array") and (.errors|type=="array")'
 
 __cog_power_grade_usage() {
   cog::fn::ui_data "Usage: cog power-grade validate [--json]"
@@ -15,6 +18,9 @@ __cog_power_grade_usage() {
   cog::fn::ui_data "Usage: cog power-grade compound --passes <cell,cell,...> [--json]"
   cog::fn::ui_data "Usage: cog power-grade tier --name <name> [--json]"
   cog::fn::ui_data "Usage: cog power-grade skill-tier --skill <name> | --file <path> [--json]"
+  cog::fn::ui_data "Usage: cog power-grade executor [--executor <name>] [--json]"
+  cog::fn::ui_data "Usage: cog power-grade match --score <n> [--json]"
+  cog::fn::ui_data "Usage: cog power-grade executor-validate [--json]"
 }
 
 __cog_power_grade_emit_json() {
@@ -220,6 +226,74 @@ __cog_power_grade_skill_tier() {
   __cog_power_grade_emit_json "$__cog_power_grade_skill_tier_self_check" "$json"
 }
 
+__cog_power_grade_executor() {
+  local name="" json
+
+  while (($# > 0)); do
+    case "$1" in
+      --executor)
+        [[ $# -ge 2 && -n ${2:-} && -z $name ]] || cog::fn::error_raise "MissingArgument" \
+          "missing or duplicate executor name" "option: --executor" "" "run 'cog power-grade --help'"
+        name="$2"
+        shift 2
+        ;;
+      --json)
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown power-grade executor option" "option: $1" "" "run 'cog power-grade --help'"
+        ;;
+      *)
+        cog::fn::error_raise "InvalidInput" \
+          "unexpected power-grade executor argument" "argument: $1" "" "run 'cog power-grade --help'"
+        ;;
+    esac
+  done
+
+  json="$(cog::fn::power_grade::executor_json "$name")"
+  __cog_power_grade_emit_json "$__cog_power_grade_executor_self_check" "$json"
+}
+
+__cog_power_grade_match() {
+  local score="" json
+
+  while (($# > 0)); do
+    case "$1" in
+      --score)
+        [[ $# -ge 2 && -n ${2:-} && -z $score ]] || cog::fn::error_raise "MissingArgument" \
+          "missing or duplicate complexity score" "option: --score" "" "run 'cog power-grade --help'"
+        score="$2"
+        shift 2
+        ;;
+      --json)
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown power-grade match option" "option: $1" "" "run 'cog power-grade --help'"
+        ;;
+      *)
+        cog::fn::error_raise "InvalidInput" \
+          "unexpected power-grade match argument" "argument: $1" "" "run 'cog power-grade --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $score ]] || cog::fn::error_raise "MissingArgument" \
+    "missing complexity score" "usage: cog power-grade match --score <n>" "" \
+    "run 'cog power-grade --help'"
+  json="$(cog::fn::power_grade::match_json "$score")"
+  __cog_power_grade_emit_json "$__cog_power_grade_match_self_check" "$json"
+}
+
+__cog_power_grade_executor_validate() {
+  local json
+  __cog_power_grade_parse_json_flag_only "$@"
+  json="$(cog::fn::power_grade::executor_validate_json)"
+  __cog_power_grade_emit_json "$__cog_power_grade_executor_validate_self_check" "$json"
+}
+
 cog::cmd::power_grade() {
   local sub="${1:-}"
 
@@ -251,9 +325,21 @@ cog::cmd::power_grade() {
       shift
       __cog_power_grade_skill_tier "$@"
       ;;
+    executor)
+      shift
+      __cog_power_grade_executor "$@"
+      ;;
+    match)
+      shift
+      __cog_power_grade_match "$@"
+      ;;
+    executor-validate)
+      shift
+      __cog_power_grade_executor_validate "$@"
+      ;;
     "")
       cog::fn::error_raise "MissingArgument" \
-        "missing power-grade subcommand" "usage: cog power-grade validate|cell|classify|compound|tier|skill-tier" "" \
+        "missing power-grade subcommand" "usage: cog power-grade validate|cell|classify|compound|tier|skill-tier|executor|match|executor-validate" "" \
         "run 'cog power-grade --help'"
       ;;
     *)

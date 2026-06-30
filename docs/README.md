@@ -58,6 +58,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0051: Requirement IDs for round coverage](decisions/0051-requirement-id-round-coverage.md)
 - [ADR-0052: Cog data directory and format](decisions/0052-cog-data-directory-and-format.md)
 - [ADR-0053: Power Grade cell/tier vocabulary rename](decisions/0053-power-grade-cell-tier-rename.md)
+- [ADR-0054: Executor capability grading and complexity matching](decisions/0054-executor-capability-grading.md)
+- [ADR-0055: Explicit model/effort/power-grade references in skills](decisions/0055-explicit-model-reference-labeling.md)
 
 ## Guides
 

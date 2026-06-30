@@ -1265,3 +1265,52 @@ EOF
     done < <(cog::fn::data::load_dir "$registry" | jq -r --arg r "$rung" '.tiers[$r].skills[]?')
   done
 }
+
+@test "cog skill-lint flags a tier word used as the noun cell in prose" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
+  printf '\n%s\n' 'Round 1 runs at `medium` effort (the Codex HIGH cell).' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"model-effort-prose-label"* ]]
+}
+
+@test "cog skill-lint accepts a labeled tier-and-cell reference" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
+  printf '\n%s\n' 'Round 1 runs at `medium` effort — the HIGH tier'\''s Codex cell (`gpt-5.5@medium`).' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint honors an allow-model-ref-label marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  {
+    # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
+    printf '\n%s\n' '<!-- cog-skill-lint: allow-model-ref-label documented legacy phrasing -->'
+    printf '%s\n' 'Round 1 runs at medium effort (the Codex HIGH cell).'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint ignores tier-cell phrasing inside a fenced block" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  {
+    printf '\n```text\n'
+    printf '%s\n' 'the Codex HIGH cell'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}

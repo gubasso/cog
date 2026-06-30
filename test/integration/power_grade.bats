@@ -179,3 +179,113 @@ setup() {
 
   assert_failure
 }
+
+@test "power-grade executor derives capability powers and contiguous bands" {
+  run cog power-grade executor --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.executor.v1" and
+    .ok == true and
+    .max_power == 52 and
+    (.executors | sort_by(.power) | map(.executor)) == ["executor-oneshot","executor-vetted","executor-prex"] and
+    ([.executors[] | select(.executor == "executor-oneshot")][0].power) == 20 and
+    ([.executors[] | select(.executor == "executor-vetted")][0].power) == 28 and
+    ([.executors[] | select(.executor == "executor-prex")][0].power) == 52 and
+    ([.executors[] | select(.executor == "executor-prex")][0].ceil_pct) == 100 and
+    .errors == []
+  ' >/dev/null
+}
+
+@test "power-grade executor can select a single executor" {
+  run cog power-grade executor --executor executor-vetted --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .ok == true and
+    (.executors | length) == 1 and
+    .executors[0].executor == "executor-vetted" and
+    .executors[0].power == 28
+  ' >/dev/null
+}
+
+@test "power-grade executor fails for an unknown executor" {
+  run cog power-grade executor --executor bogus --json
+
+  assert_failure 65
+  printf '%s\n' "$output" | jq -e '
+    .ok == false and
+    (.errors[0].kind) == "unknown_executor"
+  ' >/dev/null
+}
+
+@test "power-grade match routes a low-complexity score to the oneshot executor" {
+  run cog power-grade match --score 8 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.match.v1" and
+    .ok == true and
+    .reserved == false and
+    .executor == "executor-oneshot" and
+    (.bands | length) == 3
+  ' >/dev/null
+}
+
+@test "power-grade match routes an upper-moderate score to the vetted executor" {
+  run cog power-grade match --score 15 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .reserved == false and .executor == "executor-vetted"' >/dev/null
+}
+
+@test "power-grade match routes a high score to the prex executor" {
+  run cog power-grade match --score 22 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .reserved == false and .executor == "executor-prex"' >/dev/null
+}
+
+@test "power-grade match reserves an extreme score as non-executable" {
+  run cog power-grade match --score 32 --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .reserved == true and .executor == null' >/dev/null
+}
+
+@test "power-grade match requires a score" {
+  run cog power-grade match --json
+
+  assert_failure
+}
+
+@test "power-grade executor-validate passes on the shipped capability data" {
+  run cog power-grade executor-validate --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .schema == "cog.power-grade.executor-validate.v1" and
+    .ok == true and
+    .checks.completeness == true and
+    .checks.referential_integrity == true and
+    .checks.calibration_coherence == true and
+    .missing_executors == [] and
+    .unknown_cells == []
+  ' >/dev/null
+}
+
+@test "power-grade executor-validate fails when a native executor lacks an entry" {
+  cp -r "${BATS_TEST_DIRNAME}/../../data/power-grade/executor-capability" "${BATS_TEST_TMPDIR}/cap"
+  yq -i 'del(.executor_passes[] | select(.executor == "executor-prex"))' "${BATS_TEST_TMPDIR}/cap/passes.yaml"
+
+  export COG_POWER_GRADE_CAPABILITY="${BATS_TEST_TMPDIR}/cap"
+  run cog power-grade executor-validate --json
+  unset COG_POWER_GRADE_CAPABILITY
+
+  assert_failure 65
+  printf '%s\n' "$output" | jq -e '
+    .ok == false and
+    .checks.completeness == false and
+    (.missing_executors | index("executor-prex") != null)
+  ' >/dev/null
+}
