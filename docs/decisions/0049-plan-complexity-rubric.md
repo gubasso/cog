@@ -33,12 +33,14 @@ mechanical extraction in `cog` and nuanced reads in a skill, per
 - Good: evidence-backed and executor-independent; the deterministic/judgment split lets `cog` extract
   reliable signals while a skill refines judgment; fixes the over-grading that wasted executor capacity.
 - Good: one self-contained source of truth for sizing, grading, and splitting.
-- Bad: weights and thresholds are opinionated until calibrated against git-history ground truth.
-- Bad: requires a follow-up implementation round — rewire `plan-writer`, `plan-writer-multi`, and
-  `plan-lifecycle.md` to the new file, build the `cog plan-complexity` extractor, and remove the
-  retired `complexity-heuristic.md`.
+- Bad: weights and thresholds are opinionated until calibrated against git-history ground truth — the
+  calibration loop is now built by [ADR-0058](0058-match-outcome-telemetry-and-calibration-loop.md)
+  (match-outcome telemetry + a cog-scoped, human-gated refit cadence).
 
 ## Status
 
-Accepted. Implementation pending: the consuming-skill rewire, the `cog plan-complexity` extractor,
-and retirement of `skill-refs/plan-rounds/complexity-heuristic.md`.
+Implemented. The `cog plan-complexity` extractor exists and is tested; the consuming surfaces are the
+`plan-*` producer ([ADR-0056](0056-plan-round-executor-routing-contract.md)) and the shared
+`skill-refs/plan-rounds/*`; `skill-refs/plan-rounds/complexity-heuristic.md` is retired. The deferred
+"refit rubric weights against outcomes" follow-up is addressed by
+[ADR-0058](0058-match-outcome-telemetry-and-calibration-loop.md).

@@ -50,8 +50,7 @@ forbidden_scan_codex() {
     osc-obs
     plan-multi
     plan-vetted
-    plan-writer
-    plan-writer-multi
+    plan-builder-to-queue
     pre-commit
     plan-refactor-migration
     review-oneshot
@@ -70,8 +69,12 @@ forbidden_scan_codex() {
   done
 }
 
-@test "project-local cog-skill-creator has valid frontmatter" {
-  assert_markdown_frontmatter "$repo_root/.claude/skills/cog-skill-creator/SKILL.md"
+@test "shipped cog-skill-creator has valid frontmatter" {
+  assert_markdown_frontmatter "$repo_root/skills/claude/cog-skill-creator/SKILL.md"
+}
+
+@test "cog-skill-creator is no longer a repo-local skill" {
+  [ ! -e "$repo_root/.claude/skills/cog-skill-creator/SKILL.md" ]
 }
 
 @test "all Codex skills have valid frontmatter" {
@@ -81,7 +84,6 @@ forbidden_scan_codex() {
     ast-grep
     gc
     implementation-reviewer
-    plan-writer
     plan-refactor-migration
     review-oneshot
     suckless-patcher
@@ -146,9 +148,28 @@ forbidden_scan_codex() {
   assert_file_contains "$repo_root/skills/claude/runner-plan/SKILL.md" "repos:"
 }
 
-@test "plan writer multi documents satellite repos" {
-  local file="$repo_root/skills/claude/plan-writer-multi/SKILL.md"
+@test "plan multi documents satellite repos" {
+  local file="$repo_root/skills/claude/plan-multi/SKILL.md"
 
-  assert_file_contains "$file" "repos:"
-  assert_file_contains "$file" "/gc -a --repo <sat>"
+  assert_file_contains "$file" "codex-runner"
+}
+
+@test "deleted authoring surfaces no longer exist (DP6 regression)" {
+  [ ! -e "$repo_root/skills/claude/plan-writer-multi/SKILL.md" ]
+  [ ! -e "$repo_root/skills/claude/plan-writer/SKILL.md" ]
+  [ ! -e "$repo_root/skills/codex/plan-writer/SKILL.md" ]
+  [ ! -e "$repo_root/lib/commands/cmd_plan_writer_multi_setup.sh" ]
+  run grep -q "plan-writer-multi" "$repo_root/data/model-effort/claude/tiers.yaml"
+  assert_failure
+  run grep -q "plan-writer" "$repo_root/data/model-effort/codex/tiers.yaml"
+  assert_failure
+}
+
+@test "plan-builder-to-queue is the shipped plan-emitter coordinator" {
+  local file="$repo_root/skills/claude/plan-builder-to-queue/SKILL.md"
+  assert_file_exists "$file"
+  assert_file_contains "$file" "cog-skill: plan-emitter"
+  assert_file_contains "$file" "cog-context-brief-gate"
+  run grep -q "cog-plan-mode-gate" "$file"
+  assert_failure
 }

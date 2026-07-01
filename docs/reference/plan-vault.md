@@ -1,6 +1,10 @@
 # Plan Vault
 
-The plan vault is resolved through `cog plan project resolve`. Consumers should call that seam and then read the returned `queue_path` and `plans_dir`.
+The plan vault is resolved through `cog plan project resolve`. Consumers should call that seam and then read the returned `queue_path` and `plans_dir` — producers never hardcode `.implementation-plans/` ([ADR-0057](../decisions/0057-plan-vault-producer-retarget-and-global-git.md)).
+
+The global vault is **git-by-default**: `cog plan store init` and any command that creates the global tree (e.g. `cog plan new --global`) git-init the global store on first use, so plans are trackable without an extra step. Pass `--no-git` to opt out. Project-local `.cog/plans` stores stay non-git (they live inside the project's own repo).
+
+Project keys are `<slug>-<hash16>` over the SHA-256 of the git identity. When two repos' 16-hex prefixes collide but their git identities differ, the prefix **collision-extends** (18, 20, … up to 64 hex) until the key is unique, and the chosen key + identity are persisted in `project.sh` so re-resolution is idempotent.
 
 ## Storage Layout
 
@@ -44,13 +48,13 @@ Precedence is CLI flags, environment, project config, user config, then defaults
 
 ```text
 cog plan store path [--json]
-cog plan store init [--global|--local] [--git] [--json]
+cog plan store init [--global|--local] [--no-git] [--json]
 cog plan project resolve [--project-root <dir>] [--plan-root <dir>] [--store auto|local|global] [--json]
 cog plan project link [--root <dir>] [--name <alias>] [--json]
 cog plan project list [--json]
 cog plan trust|distrust|trust-status [--project-root <dir>] [--json]
 cog plan doctor [--json]
-cog plan new --title <text> [--local|--global] [--project-root <dir>] [--json]
+cog plan new --title <text> [--local|--global] [--no-git] [--project-root <dir>] [--json]
 cog plan list [--local|--global] [--project-root <dir>] [--json]
 cog plan path <plan-id> [--local|--global] [--project-root <dir>] [--json]
 ```

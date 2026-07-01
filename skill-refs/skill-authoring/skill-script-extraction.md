@@ -194,7 +194,7 @@ Do not extract or do the following:
 - **Judgment tables.** A table that reads deterministic inputs but encodes a _decision_
   (resume-fallback reaction, finding → status triage, plan-conformance) stays prose.
 - **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely
-  multi-line parsers (executor-prex, plan-writer-multi, runner-all, runner-plan) earn a subcommand.
+  multi-line parsers (executor-prex, plan-multi, runner-all, runner-plan) earn a subcommand.
 - **Micro-helper clouds.** Several subcommands stitched with `jq` between each call. Make it coarse:
   one subcommand, one JSON object.
 - **Hand-rolled `agent-helper` resolve/fallback blocks.** Bare call + `require`; never a stale

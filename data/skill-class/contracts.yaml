@@ -1,0 +1,53 @@
+# Per-class membership contracts for the core skill taxonomy (ADR-0016, DP11).
+# `cog skill-class check` composes the scattered facet checks (plan-mode-gate,
+# skill-prefix-taxonomy, model-effort-tier, producer-blindness, input-fidelity,
+# context-brief, stage-agnostic) into ONE positive class-membership assertion: a
+# governed plan-*/review-*/review-plan-*/executor-*/runner-* skill must carry all
+# its class prerequisites and none of its prohibitions. The tier expectation
+# cross-references data/model-effort/{claude,codex}/tiers.yaml and is NEVER
+# duplicated here. Marker tokens are the inner text of an HTML comment marker
+# (e.g. `cog-plan-mode-gate` matches `<!-- cog-plan-mode-gate -->`).
+skill_classes:
+  plan:
+    summary: Emits an implementation plan into the structural plan/round output contract.
+    plan_mode_gate: forbidden
+    required_markers: []
+    forbidden_markers:
+      - cog-plan-mode-gate
+    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: high)"
+    io_contract: Input is a goal or orientation; output is a plan in the structural plan/round contract.
+    producer_obligations: Output is consumed producer-blind by runner-* verbatim dispatch.
+  review:
+    summary: Reviews code or a diff and emits the shared structured-findings contract.
+    plan_mode_gate: forbidden
+    required_markers: []
+    forbidden_markers:
+      - cog-plan-mode-gate
+    tier_basis: "data/model-effort/claude/tiers.yaml (review-oneshot: xhigh; otherwise registry or exempt)"
+    io_contract: Input is a diff or scope; output is the shared structured-findings contract.
+    producer_obligations: Findings are consumed producer-blind by review-findings triage.
+  review-plan:
+    summary: Reviews a plan before implementation and emits an annotated verdict.
+    plan_mode_gate: forbidden
+    required_markers: []
+    forbidden_markers:
+      - cog-plan-mode-gate
+    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: high)"
+    io_contract: Input is a plan or round; output is an annotated plan-review verdict.
+    producer_obligations: Verdict is consumed producer-blind by the plan orchestrator.
+  executor:
+    summary: Executes one prompt or plan to completion in the caller's session.
+    plan_mode_gate: required
+    required_markers: []
+    forbidden_markers: []
+    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: medium)"
+    io_contract: Input is one prompt/plan (-ar <path>); output is the canonical execution report.
+    producer_obligations: Reads its input contract blind to the producer; gates plan-mode at entry.
+  runner:
+    summary: Orchestrates executor-selected queue items via verbatim queue dispatch.
+    plan_mode_gate: required
+    required_markers: []
+    forbidden_markers: []
+    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: low)"
+    io_contract: Input is a queue; dispatches each item's prompt verbatim to a queue-blind subagent.
+    producer_obligations: Producer-blind and prompt-verbatim; gates plan-mode at entry.

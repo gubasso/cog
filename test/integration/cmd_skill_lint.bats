@@ -585,7 +585,7 @@ EOF
 
 @test "cog skill-lint rejects a source-repo skill path reference" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
-  printf '%s\n' 'Canonical semantics live in the Claude twin: skills/claude/plan-writer/SKILL.md.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '%s\n' 'Canonical semantics live in the Claude twin: skills/claude/plan-multi/SKILL.md.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
@@ -615,7 +615,7 @@ EOF
 @test "cog skill-lint allows runtime-installed claude skills paths" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   # shellcheck disable=SC2016
-  printf '%s\n' 'Read the skill file at $HOME/.claude/skills/plan-writer/SKILL.md and follow it.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '%s\n' 'Read the skill file at $HOME/.claude/skills/plan-multi/SKILL.md and follow it.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
@@ -627,7 +627,7 @@ EOF
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
 
 ```text
-skills/claude/plan-writer/SKILL.md
+skills/claude/plan-multi/SKILL.md
 ```
 EOF
 
@@ -960,11 +960,11 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint accepts plan-writer style skill that mentions plan review words" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture" plan-writer-fixture claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-writer-fixture/SKILL.md"
+@test "cog skill-lint accepts plan-builder style skill that mentions plan review words" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-fixture" plan-builder-fixture claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-builder-fixture/SKILL.md"
   append_plan_emitter "$file"
-  printf 'This plan-writer may review the plan before writing output.\n' >>"$file"
+  printf 'This plan-builder may review the plan before writing output.\n' >>"$file"
 
   run cog skill-lint "$file"
 
@@ -1068,7 +1068,7 @@ EOF
 
 @test "cog skill-lint flags a mapped consumer naming a producer in body prose" {
   write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-all" runner-all
-  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
+  printf '%s\n' 'Drive a plan-builder-to-queue queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
 
@@ -1078,7 +1078,7 @@ EOF
 
 @test "cog skill-lint flags runner-plan naming a producer in body prose" {
   write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-plan" runner-plan
-  printf '%s\n' 'Drive a plan-writer queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
+  printf '%s\n' 'Drive a plan-builder-to-queue queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
 
@@ -1113,7 +1113,7 @@ EOF
   cat >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md" <<'EOF'
 
 ```text
-plan-writer-multi
+plan-builder-to-queue
 ```
 EOF
 
@@ -1125,7 +1125,7 @@ EOF
 
 @test "cog skill-lint does not flag a producer name for an unmapped skill" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
-  printf '%s\n' 'This skill freely names plan-writer and review-code-deep and review-loop.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '%s\n' 'This skill freely names plan-builder-to-queue and review-code-deep and review-loop.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
@@ -1312,5 +1312,42 @@ EOF
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
+  assert_success
+}
+
+@test "cog skill-lint passes the shipped plan-builder-to-queue skill" {
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  run cog skill-lint "$repo_root/skills/claude/plan-builder-to-queue/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint fails a cog-plan-builder-named plan-emitter (DP1 taxonomy regression)" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/cog-plan-builder" cog-plan-builder claude
+  append_plan_emitter "${BATS_TEST_TMPDIR}/skills/claude/cog-plan-builder/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/cog-plan-builder/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-prefix-taxonomy"* ]]
+}
+
+@test "cog skill-lint skill-class-contract rule fails a plan-* carrying a plan-mode gate" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-gated" plan-gated claude
+  append_plan_emitter "${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
+  printf '\n<!-- cog-plan-mode-gate -->\n' >>"${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"skill-class-contract"* ]]
+}
+
+@test "producer-blindness map and curated lint sets no longer name plan-writer-multi as a live skill" {
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  run grep -q "plan-writer-multi" "$repo_root/lib/commands/cmd_skill_lint.sh"
+  assert_failure
+  run grep -q 'plan-builder-to-queue' "$repo_root/lib/commands/cmd_skill_lint.sh"
   assert_success
 }

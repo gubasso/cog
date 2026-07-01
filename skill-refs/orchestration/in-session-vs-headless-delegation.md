@@ -65,7 +65,7 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and
   tool call while it returns `75` (a `$?`-based retry across tool calls, never a shell `while` in one
   >600s call). Duration is never judged: a long unit is never a reason to split it. The orchestrator's
   own tool calls stay foreground; the model still never backgrounds its own tool calls. This applies
-  in every Codex-driving skill (`executor-prex`, `review-loop`, `plan-writer-multi`, `ask`); runtime
+  in every Codex-driving skill (`executor-prex`, `review-loop`, `plan-multi`, `ask`); runtime
   behavior is owned by `cog codex-runner`, and the durable-job contract is recorded in
   `docs/decisions/0022-cog-owned-durable-longrun.md`.
 - **Use the `Agent` tool, never the `Skill` tool, for nested delegation** — `Skill` inline-injects

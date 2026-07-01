@@ -1,28 +1,28 @@
 # Round Plan Templates
 
-Templates for the files generated under `.implementation-plans/`. Use `{{PLACEHOLDER}}` markers —
-the generating skill substitutes them with actual values.
+Templates for the files generated under the resolved plan store (`cog plan project resolve` →
+`plan_root`; `cog plan new` → `plan_dir`). Use `{{PLACEHOLDER}}` markers — the generating skill
+substitutes them with actual values and never hardcodes `.implementation-plans/`
+([ADR-0057](../../docs/decisions/0057-plan-vault-producer-retarget-and-global-git.md)).
 
-Every plan is a directory `plans/<slug>/` containing: `README.md` (Template B), one round file per
-round (Template A, **no number prefix**), an inner `queue-rounds.yaml` (Template D), and — for XL
-plans only — `STRATEGY.md` (Template C). The plan is also registered in the repo-wide
-`.implementation-plans/queue-plans.yaml` (Template D). Plan directories are flat siblings, a single
-level under `plans/` — **never nested** and never with plan subdirectories; ordering lives only in
-`depends_on`.
+Every plan is a directory `plans/<slug>/` containing: `README.md` (Template B), a `rounds/` subdir
+with one round file per round (Template A, **no number prefix**), an inner `queue-rounds.yaml`
+(Template D), and — for very large plans only — `STRATEGY.md` (Template C). The plan is also
+registered in the store-wide `<plan-root>/queue-plans.yaml` (Template D). Plan directories are flat
+siblings, a single level under `plans/` — **never nested**; ordering lives only in `depends_on`.
 
-The root files `.implementation-plans/README.md` (Template F) and
-`.implementation-plans/queue-plans.yaml` (Template D, empty `plans:` list) are bootstrapped once,
-the first time the generating skill runs in a repo.
+The root files `<plan-root>/README.md` (Template F) and `<plan-root>/queue-plans.yaml` (Template D,
+empty `plans:` list) are bootstrapped once, the first time the generating skill runs against a store.
 
 All templates follow the repo's markdown rules: fenced code blocks must have language specifiers
 (MD040). Use `text` when no specific syntax applies.
 
-## Template A — Round file (`plans/<slug>/<topic>.md`)
+## Template A — Round file (`<plan-dir>/rounds/<topic>.md`)
 
-Each round file is a self-contained task description for `/executor-prex -ar`. The filename is the round's
-`<topic>` slug with no number prefix; round order lives in the plan's `queue-rounds.yaml`. Topic
-slugs must not be `readme`, `queue`, `strategy`, `queue-plans`, or `queue-rounds` (case-insensitive)
-— those names are reserved for the meta files.
+Each round file is a self-contained task description for `/<executor> -ar`. The filename is the
+round's `<topic>` slug with no number prefix; round order lives in the plan's `queue-rounds.yaml`.
+Topic slugs must not be `readme`, `queue`, `strategy`, `queue-plans`, or `queue-rounds`
+(case-insensitive) — those names are reserved for the meta files.
 
 ```markdown
 # {{Title}}
@@ -84,19 +84,20 @@ Record completion in the queue — status lives in YAML; nothing moves on disk:
 
 {{If this is the final round, also:}}
 
-2. All rounds are now done, so in the top-level `.implementation-plans/queue-plans.yaml` set this
-   plan's (`item: {{SLUG}}`) `status` to `done`. Leave the plan directory in place.
+2. All rounds are now done, so in the top-level `<plan-root>/queue-plans.yaml` set this plan's
+   (`item: {{SLUG}}`) `status` to `done`. Leave the plan directory in place.
 
 ## Acceptance Criteria
 
 {{Concrete, checkable criteria specific to THIS round. Each independently verifiable.}}
-{{Criteria may carry optional cog-stamped requirement IDs: `- [ ] (R3) ...`.}}
+{{Each criterion carries its `cog round-req`-stamped requirement ID: `- [ ] (R3) ...`. The IDs are
+allocated by `cog round-req stamp` and preserved across any split (`cog round-split coverage`).}}
 
-- [ ] {{criterion 1}}
-- [ ] {{criterion 2}}
+- [ ] (R{{n}}) {{criterion 1}}
+- [ ] (R{{n}}) {{criterion 2}}
 - [ ] This plan's `queue-rounds.yaml` shows round `{{TOPIC}}` as `done`. {{If this is the final
       round:}}
-- [ ] The top-level `.implementation-plans/queue-plans.yaml` shows this plan as `done`.
+- [ ] The top-level `<plan-root>/queue-plans.yaml` shows this plan as `done`.
 
 ## Next Round
 
@@ -120,12 +121,12 @@ last round: "This is the final round."}}
 - Every round file must end with a "Final Step: Update the queue" that instructs the executor to set
   the round's `status` to `done` in the plan's `queue-rounds.yaml`.
 - The **final round** must additionally instruct the executor to set the plan's `status` to `done`
-  in the top-level `.implementation-plans/queue-plans.yaml`. **Nothing moves on disk** — there are
-  no `01-todo`/`02-done` directories.
+  in the top-level `<plan-root>/queue-plans.yaml`. **Nothing moves on disk** — there are no
+  `01-todo`/`02-done` directories.
 - Include enough code context (quoted lines, signatures) for the executor to locate exact insertion
   points. Do not just cite line numbers — they shift.
 
-## Template B — Plan directory `README.md` (`plans/<slug>/README.md`)
+## Template B — Plan directory `README.md` (`<plan-dir>/README.md`)
 
 The plan's human-facing index and decision record. The plan's `queue-rounds.yaml` (Template D) is
 the source of truth for round order and status; `README.md` mirrors it for readers but must not
@@ -142,43 +143,53 @@ become a competing status source.
 
 ## Strategy
 
-{{High-level approach. How the work is split into rounds and why this splitting was chosen. For L
-plans, 2–3 sentences. For XL, summarize and point to STRATEGY.md.}}
+{{High-level approach. How the work is split into rounds and why this splitting was chosen.}}
 
 ## Rounds
 
 {{A readable overview of the rounds, in order. The authoritative order and status live in
 `queue-rounds.yaml` — keep this list in sync but do not duplicate per-round status here.}}
 
-1. `{{topic-1}}.md` — {{one-line topic summary}}
-2. `{{topic-2}}.md` — {{one-line topic summary}}
+1. `rounds/{{topic-1}}.md` — {{one-line topic summary}}
+2. `rounds/{{topic-2}}.md` — {{one-line topic summary}}
+
+## Executor Routing
+
+{{One row per round: its rubric score, grade, the matched executor (from `cog power-grade match`),
+and the stamped prompt (assembled by `cog round-prompt build`). Reserved (`> 30`) rounds are never
+queued — they are split further (ADR-0056).}}
+
+| Round | Score | Grade | Matched executor | Prompt |
+| ----- | ----- | ----- | ---------------- | ------ |
+| `{{topic-1}}` | {{score}} | {{grade}} | `{{matched-executor}}` | `/{{matched-executor}} -ar {{ROUNDS_DIR}}/{{topic-1}}.md` |
 
 ## Execution Commands
 
 ```bash
-# Execute the next todo round (executor reads queue-rounds.yaml, runs the first todo round, then stops):
-/executor-prex -ar @.implementation-plans/plans/{{SLUG}}/
+# Run the whole plan (runner reads queue-rounds.yaml, runs the first todo round, then stops):
+/runner-plan -ar @{{PLAN_DIR}}/
 
-# Or target a specific round file directly:
-/executor-prex -ar .implementation-plans/plans/{{SLUG}}/{{topic-1}}.md
+# Or target a specific round file directly with its matched executor:
+/{{MATCHED_EXECUTOR}} -ar {{ROUNDS_DIR}}/{{topic-1}}.md
 ```
 
 ## Execution Discipline
 
 **Rounds must be executed one at a time.** Each round is a self-contained unit of work designed for
-a single `/executor-prex` session. Do not implement multiple rounds in one session.
+a single execution session. Do not implement multiple rounds in one session.
 
-When `/executor-prex` is pointed at this directory or this `README.md`, it MUST:
+When a runner is pointed at this directory or this `README.md`, it MUST:
 
 1. Read this plan's `queue-rounds.yaml`.
 2. Find the first round with status `todo`.
-3. Set that round's `status` to `doing`, execute ONLY that round, then set it to `done` and stop.
-4. End the session — a fresh `/executor-prex` session is launched for any subsequent round.
+3. Dispatch that round's `prompt` verbatim (set `status: doing`, run, set `done`), then stop.
+4. End the session — a fresh session is launched for any subsequent round.
 
 ## Decisions & Constraints
 
 {{Architectural decisions made during the interview. Include the reasoning behind each. Constraints
-that apply across all rounds. Always include an `Executor: {{EXECUTOR}} (EF {{FACTOR}})` line.}}
+that apply across all rounds. Complexity is executor-independent; the per-round executor lives in the
+Executor Routing table above, not in a sizing factor.}}
 
 ## Rejected Alternatives
 
@@ -192,13 +203,13 @@ accepted.}}
 ## Completion
 
 When all rounds are done, set each round `done` in this plan's `queue-rounds.yaml` and set this plan
-`done` in the top-level `.implementation-plans/queue-plans.yaml`. Nothing moves on disk.
+`done` in the top-level `<plan-root>/queue-plans.yaml`. Nothing moves on disk.
 ````
 
-## Template C — `STRATEGY.md` (XL plans only)
+## Template C — `STRATEGY.md` (very large plans only)
 
-Generated only for XL-grade plans where the round structure and cross-cutting concerns need detailed
-documentation.
+Generated only for very-high-grade plans where the round structure and cross-cutting concerns need
+detailed documentation.
 
 ````markdown
 # Strategy: {{Plan Title}}
@@ -234,9 +245,11 @@ introduced in the first round that later rounds must follow.}}
 Two flavors, same schema. `status` is one of `backlog | todo | doing | done`. Every entry carries a
 `prompt`.
 
-### Inner queue — `plans/<slug>/queue-rounds.yaml`
+### Inner queue — `<plan-dir>/queue-rounds.yaml`
 
-Lists the plan's rounds in execution order.
+Lists the plan's rounds in execution order. Each round `prompt` is `/<matched-executor> -ar
+<rounds-dir>/<topic>.md`, assembled by `cog round-prompt build` from the `cog power-grade match`
+result — never hardcoded to a fixed executor.
 
 ```yaml
 # Rounds for this plan, in execution order. status: backlog | todo | doing | done
@@ -244,53 +257,54 @@ rounds:
   - item: {{topic-1}}
     status: todo
     depends_on: []
-    prompt: /executor-prex -ar .implementation-plans/plans/{{SLUG}}/{{topic-1}}.md
+    prompt: /{{MATCHED_EXECUTOR}} -ar {{ROUNDS_DIR}}/{{topic-1}}.md
     notes: "{{one-line context}}"
   - item: {{topic-2}}
     status: todo
     depends_on: [{{topic-1}}]
-    prompt: /executor-prex -ar .implementation-plans/plans/{{SLUG}}/{{topic-2}}.md
+    prompt: /{{MATCHED_EXECUTOR}} -ar {{ROUNDS_DIR}}/{{topic-2}}.md
     notes: ""
 ```
 
-### Top-level ledger — `.implementation-plans/queue-plans.yaml`
+### Top-level ledger — `<plan-root>/queue-plans.yaml`
 
-The repo-wide queue. Append the new plan among the active items by priority; never reorder or
+The store-wide queue. Append the new plan among the active items by priority; never reorder or
 rewrite existing entries. `item` is the `<slug>` dir. If the file does not exist yet, bootstrap it
 with an empty `plans:` list.
 
 ```yaml
-# Source of truth for the .implementation-plans/ queue. Status & order live HERE, not in paths.
+# Source of truth for the plan-vault queue. Status & order live HERE, not in paths.
 # status: backlog | todo | doing | done
 plans:
   - item: {{SLUG}}
     status: todo
     depends_on: []
-    prompt: /executor-prex -ar @.implementation-plans/plans/{{SLUG}}/
+    prompt: /runner-plan -ar @{{PLAN_DIR}}/
     notes: "{{one-line context}}"
 ```
 
-## Template F — Root `README.md` (`.implementation-plans/README.md`)
+## Template F — Root `README.md` (`<plan-root>/README.md`)
 
-A static explainer of the plan system, bootstrapped the first time the generating skill runs in a
-repo and **never overwritten** afterwards. It carries no per-plan state.
+A static explainer of the plan system, bootstrapped the first time the generating skill runs against
+a store and **never overwritten** afterwards. It carries no per-plan state.
 
 ````markdown
 # Implementation Plans
 
-Implementation plans generated by the `plan-writer` skill and executed by `/executor-prex`. This tree is
-**flat and queue-driven**: a plan's status, order, dependencies, and execution command live in queue
-files — never in directory or file names.
+Implementation plans built by the `plan-builder-to-queue` skill and executed by the matched executor
+stamped into each round (`/runner-plan` dispatches them). This tree is **flat and queue-driven**: a
+plan's status, order, dependencies, and execution command live in queue files — never in directory or
+file names.
 
 ## Structure
 
 ```text
-.implementation-plans/
+<plan-root>/
 ├── README.md        this file — static explainer, no per-plan state
-├── queue-plans.yaml repo-wide ledger: every plan + status (source of truth)
+├── queue-plans.yaml store-wide ledger: every plan + status (source of truth)
 └── plans/
     └── <slug>/      plan directory (flat sibling, never nested): README.md,
-                     queue-rounds.yaml, <topic>.md round files, STRATEGY.md (XL only)
+                     queue-rounds.yaml, rounds/<topic>.md round files, STRATEGY.md (large plans only)
 ```
 
 Plan directories are flat siblings — a single level under `plans/`. Never nest a plan directory
@@ -304,9 +318,9 @@ disk**; status, not path, records the lifecycle state.
 
 ## Execution discipline
 
-- **One round per `/executor-prex` session.** When pointed at a plan directory or its `README.md`, the
-  executor reads that plan's `queue-rounds.yaml`, runs the first `todo` round, and stops. A fresh
-  session is launched for each subsequent round.
+- **One round per session.** When pointed at a plan directory or its `README.md`, the runner reads
+  that plan's `queue-rounds.yaml`, dispatches the first `todo` round's stamped prompt, and stops. A
+  fresh session is launched for each subsequent round.
 - **Status flips.** Set a round to `doing` when starting and `done` when finished.
 - **Completion.** After the final round, set the plan itself to `done` in this directory's
   `queue-plans.yaml`.

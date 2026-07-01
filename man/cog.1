@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "cog" "1" "2026-06-26"
+.TH "cog" "1" "2026-06-30"
 .PP
 .SH NAME
 .PP
@@ -201,6 +201,11 @@ Acquire or release a workflow run lock.\&
 Launch, poll, finalize, and cancel cog-owned durable long-running jobs.\&
 .PP
 .RE
+\fBmatch-telemetry\fR
+.RS 4
+Record and report plan→executor match-outcome telemetry.\&
+.PP
+.RE
 \fBmsg\fR
 .RS 4
 Emit uniform machine status lines.\&
@@ -219,6 +224,21 @@ Detect OBS/osc session prerequisites.\&
 \fBosc-probe-binary\fR
 .RS 4
 Resolve a binary RPM to an OBS source package.\&
+.PP
+.RE
+\fBplan\fR
+.RS 4
+Resolve and manage plan stores.\&
+.PP
+.RE
+\fBplan-builder-to-queue-setup\fR
+.RS 4
+Parse plan-builder-to-queue arguments and create plan-vault run state.\&
+.PP
+.RE
+\fBplan-complexity\fR
+.RS 4
+Extract and compare implementation plan complexity signals.\&
 .PP
 .RE
 \fBplan-doc\fR
@@ -244,11 +264,6 @@ Write and validate annotated plan review artifacts.\&
 \fBplan-slug\fR
 .RS 4
 Derive and validate an implementation plan slug.\&
-.PP
-.RE
-\fBplan-writer-multi-setup\fR
-.RS 4
-Parse plan-writer-multi arguments and create run state.\&
 .PP
 .RE
 \fBpower-grade\fR
@@ -406,6 +421,21 @@ Detect review technologies and bundled reference targets.\&
 Validate review findings JSON.\&
 .PP
 .RE
+\fBround-prompt\fR
+.RS 4
+Assemble and validate executor-stamped round prompts.\&
+.PP
+.RE
+\fBround-req\fR
+.RS 4
+Stamp and list round acceptance requirement IDs.\&
+.PP
+.RE
+\fBround-split\fR
+.RS 4
+Check split-round requirement coverage.\&
+.PP
+.RE
 \fBrundir\fR
 .RS 4
 Create a workflow run directory and optionally acquire its lock.\&
@@ -424,6 +454,11 @@ Parse runner commit result lines.\&
 \fBrunner-plan-setup\fR
 .RS 4
 Parse runner-plan arguments and create round queue run state.\&
+.PP
+.RE
+\fBskill-class\fR
+.RS 4
+Show and check core skill-class contracts and prerequisites.\&
 .PP
 .RE
 \fBskill-lint\fR

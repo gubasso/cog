@@ -19,8 +19,8 @@ calibration:
     provenance: skill-refs/plan-rounds/complexity-rubric.md
     provenance_adr: docs/decisions/0049-plan-complexity-rubric.md
   extreme_reserved:
-    # Rounds above this complexity are non-executable as a single round unless
-    # explicitly requested; a future /plan-writer splits each into two rounds.
+    # Rounds above this complexity are non-executable as a single round; plan-builder-to-queue
+    # routes each reserved round back through plan-split (ADR-0056), never queuing it.
     over_score: 30
     over_percent: 88.2
-    note: non-executable unless explicitly requested; future /plan-writer splits the round in two
+    note: non-executable as a single round; plan-builder-to-queue routes reserved rounds through plan-split

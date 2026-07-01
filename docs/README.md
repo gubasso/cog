@@ -60,6 +60,9 @@ This directory is organized using Diataxis zones.
 - [ADR-0053: Power Grade cell/tier vocabulary rename](decisions/0053-power-grade-cell-tier-rename.md)
 - [ADR-0054: Executor capability grading and complexity matching](decisions/0054-executor-capability-grading.md)
 - [ADR-0055: Explicit model/effort/power-grade references in skills](decisions/0055-explicit-model-reference-labeling.md)
+- [ADR-0056: Plan-round executor-routing contract](decisions/0056-plan-round-executor-routing-contract.md)
+- [ADR-0057: Plan-vault producer retarget and global git default](decisions/0057-plan-vault-producer-retarget-and-global-git.md)
+- [ADR-0058: Match-outcome telemetry and calibration loop](decisions/0058-match-outcome-telemetry-and-calibration-loop.md)
 
 ## Guides
 
@@ -84,6 +87,7 @@ This directory is organized using Diataxis zones.
 - [Codex single entrypoint](reference/codex-single-entrypoint.md)
 - [Orchestration contract](reference/orchestration-contract.md)
 - [Plan vault](reference/plan-vault.md)
+- [Match-outcome telemetry](reference/match-telemetry.md)
 - [Skill reference corpus](../skill-refs/)
 
 ## Explanation

@@ -6,7 +6,7 @@ description: >
   is already detailed (good-input), writing the vetted plan to a caller-supplied output.
 argument-hint: "<prompt-or-plan-path> [--output <abs.md>]"
 disable-model-invocation: true
-allowed-tools: Bash Read Write Edit Agent Grep Glob
+allowed-tools: Bash Read Write Edit Agent Skill Grep Glob
 ---
 
 <!-- trigger-tests: "plan-vetted", "produce one vetted plan", "vetted dual-engine plan", "generate or multi-review a plan" -->
@@ -60,7 +60,9 @@ from `<run-dir>/assess-input.json` and confirm with `cog assess-input validate
 cog executor prepare-step --executor plan-vetted --engine claude --route <needs-plan|good-input> --json
 ```
 
-Both producers are dual-engine Claude coordinators delegated through the Agent tool.
+Both producers are dual-engine Claude coordinators. The `needs-plan` generator runs inline via the
+`Skill` tool so its interview reaches the operator; the `good-input` reviewer is delegated through the
+Agent tool. Each keeps its inner opposite-engine Codex worker forked.
 
 ## Context Brief
 
@@ -85,12 +87,15 @@ cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief
 
 Write the prepared plan to `<run-dir>/prepared-plan.md`.
 
-- **`needs-plan` → generate (`/plan-multi`).** Delegate to a foreground Claude subagent through the
-  Agent tool (`subagent_type: general-purpose`) that reads `$HOME/.claude/skills/plan-multi/SKILL.md`
-  and follows it, passing `--output <run-dir>/prepared-plan.md` and `<run-dir>/brief.md` as the
-  complete orientation/context (the validated context brief built above).
-  The subagent runs non-interactively, treating every interview decision as a best default,
-  and runs both engines (not `--solo`). It returns the output path.
+- **`needs-plan` → generate (`/plan-multi`).** Run `/plan-multi` **inline via the `Skill` tool** in
+  this coordinator context, passing `--output <run-dir>/prepared-plan.md` and `<run-dir>/brief.md` as
+  the complete orientation/context (the validated context brief built above), running both engines (not
+  `--solo`). Running it inline lets `plan-multi`'s coordinator-level `AskUserQuestion` interview reach
+  the operator while building the plan. `plan-multi` interviews only in its coordinator and forbids its
+  workers from asking, so its inner opposite-engine Codex draft stays a forked isolation boundary. The
+  tradeoff is intentional: inline generation no longer fully isolates the generator's context from this
+  coordinator's, the deliberate cost of operator interviewing — the coordinator's own verdict is still
+  withheld from the forked review, where bias isolation matters.
 
 - **`good-input` → multi-review (`/review-plan-multi`).** Delegate to a foreground Claude subagent
   through the Agent tool that reads `$HOME/.claude/skills/review-plan-multi/SKILL.md` and follows it,

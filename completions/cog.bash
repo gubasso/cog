@@ -49,18 +49,19 @@ _cog() {
     lint-codex-wrapper
     lock
     longrun
+    match-telemetry
     msg
     noop
     osc-preflight
     osc-probe-binary
     plan
+    plan-builder-to-queue-setup
     plan-complexity
     plan-doc
     plan-init
     plan-multi-setup
     plan-review
     plan-slug
-    plan-writer-multi-setup
     power-grade
     precommit-apply-template
     precommit-detect
@@ -91,12 +92,14 @@ _cog() {
     review-scope
     review-tech-scope
     review-validate-findings
+    round-prompt
     round-req
     round-split
     rundir
     runner-all-setup
     runner-commit-parse
     runner-plan-setup
+    skill-class
     skill-lint
     skill-refs
     suckless-apply

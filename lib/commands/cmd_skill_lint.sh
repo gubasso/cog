@@ -150,7 +150,7 @@ __cog_skill_lint_input_fidelity_required() {
   case "${runtime}:${name}" in
     claude:plan-multi | \
       claude:plan-vetted | \
-      claude:plan-writer-multi | \
+      claude:plan-builder-to-queue | \
       claude:review-plan-multi | \
       claude:review-loop | \
       claude:context-builder | \
@@ -199,7 +199,7 @@ __cog_skill_lint_context_brief_gate_required() {
       claude:executor-prex | \
       claude:plan-oneshot-codex | \
       claude:plan-multi | \
-      claude:plan-writer-multi | \
+      claude:plan-builder-to-queue | \
       claude:review-plan-multi | \
       claude:review-loop | \
       claude:plan-vetted | \
@@ -806,7 +806,7 @@ __cog_skill_lint_scan_prose_file() {
 # Consumer skill name -> space-separated producer names it must not name in prose.
 __cog_skill_lint_producer_blind_producers() {
   case "$1" in
-    runner-all | runner-plan) printf '%s' "plan-writer plan-writer-multi" ;;
+    runner-all | runner-plan) printf '%s' "plan-builder-to-queue" ;;
     review-findings) printf '%s' "review-code-deep review-oneshot review-loop" ;;
     *) printf '%s' "" ;;
   esac
@@ -1010,6 +1010,36 @@ __cog_skill_lint_check_model_effort_prose_label() {
   return "$failed"
 }
 
+# skill-class-contract: one positive class-membership assertion that composes the
+# scattered facet checks (plan-mode-gate, skill-prefix-taxonomy, model-effort-tier,
+# producer-blindness, input-fidelity, context-brief, stage-agnostic) per the data
+# SoT in data/skill-class/contracts.yaml. The facet rules stay authoritative for
+# their facet; this rule asserts the per-class union is satisfied for the declared
+# class. An ungoverned (other-class) skill passes. See ADR-0016 / DP11.
+__cog_skill_lint_check_skill_class() {
+  local file="$1" runtime report class failed=0 item
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ -n $runtime ]] || return 0
+  report="$(cog::fn::skill_class::check_json "$file")"
+  jq -e '.ok == true' <<<"$report" >/dev/null && return 0
+  class="$(jq -r '.class' <<<"$report")"
+  while IFS= read -r item; do
+    [[ -n $item ]] || continue
+    __cog_skill_lint_finding "$file" 1 "skill-class-contract" \
+      "class '${class}' contract: missing prerequisite '${item}'" \
+      "satisfy the '${class}' class contract (cog skill-class show --class ${class})"
+    failed=1
+  done < <(jq -r '.missing[]?' <<<"$report")
+  while IFS= read -r item; do
+    [[ -n $item ]] || continue
+    __cog_skill_lint_finding "$file" 1 "skill-class-contract" \
+      "class '${class}' contract: forbidden '${item}' present" \
+      "remove the prohibited '${item}' (cog skill-class show --class ${class})"
+    failed=1
+  done < <(jq -r '.forbidden_present[]?' <<<"$report")
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -1051,6 +1081,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_model_effort_prose_label "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_skill_class "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

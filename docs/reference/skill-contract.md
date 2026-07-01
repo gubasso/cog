@@ -110,6 +110,23 @@ This taxonomy is related accepted skill governance alongside [ADR-0013](../decis
 (model/effort policy) and [ADR-0015](../decisions/0015-plan-skills-not-in-plan-mode.md) (plan-mode
 gate); those ADRs are referenced here, not changed.
 
+## Skill class contracts
+
+Each governed class — `plan`, `review`, `review-plan`, `executor`, `runner` — carries one positive
+membership contract: the markers, plan-mode-gate requirement, expected tier, and input/output
+obligations a skill of that class MUST satisfy. The source of truth is
+[`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml); the tier expectation
+cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
+list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.
+
+`cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks (`plan-mode-gate`,
+`skill-prefix-taxonomy`, `model-effort-tier`, `producer-blindness`, `input-fidelity`,
+`context-brief-gate`, `stage-agnostic-identifiers`) into a single class-membership assertion that
+fails closed on any missing prerequisite or present prohibition. The facet rules stay authoritative
+for their facet; the class rule asserts the per-class union. An ungoverned (`other`-class) skill is
+exempt. The full per-class table lives in
+[`skill-refs/skill-authoring/skill-class-contracts.md`](../../skill-refs/skill-authoring/skill-class-contracts.md).
+
 ## Model/effort tier enforcement
 
 A governed Claude skill's `model:`/`effort:` frontmatter must resolve to the named power/capability
@@ -194,7 +211,7 @@ it isn't. See [ADR-0019](../decisions/0019-lean-positive-skill-prose.md).
   (`skills/claude/<name>/SKILL.md`, `skills/codex/<name>/SKILL.md`, or the stale twin shape
   `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's
   installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead.
-  Reference sibling skills by their runtime name (`/plan-oneshot`, `$plan-writer`).
+  Reference sibling skills by their runtime name (`/plan-oneshot`, `$plan-multi`).
 
 Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), project-local runtime
 paths (`.claude/skills/<name>/SKILL.md`), `cog skill-refs path ...` resolvers, and authoring
@@ -216,8 +233,8 @@ for a forbidden producer name as a whole skill-name token, in both the frontmatt
 text and body prose, while ignoring fenced code blocks. Current map entries:
 
 ```text
-runner-all      -> plan-writer, plan-writer-multi
-runner-plan     -> plan-writer, plan-writer-multi
+runner-all      -> plan-builder-to-queue
+runner-plan     -> plan-builder-to-queue
 review-findings -> review-oneshot, review-loop
 ```
 

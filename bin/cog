@@ -37,6 +37,8 @@ source "${LIB_DIR}/functions/fn_prereq.sh"
 source "${LIB_DIR}/functions/fn_data.sh"
 # shellcheck source=../lib/functions/fn_skill.sh
 source "${LIB_DIR}/functions/fn_skill.sh"
+# shellcheck source=../lib/functions/fn_skill_class.sh
+source "${LIB_DIR}/functions/fn_skill_class.sh"
 # shellcheck source=../lib/functions/fn_review.sh
 source "${LIB_DIR}/functions/fn_review.sh"
 # shellcheck source=../lib/functions/fn_refactor.sh
@@ -71,6 +73,10 @@ source "${LIB_DIR}/functions/fn_plan_complexity.sh"
 source "${LIB_DIR}/functions/fn_round_req.sh"
 # shellcheck source=../lib/functions/fn_round_split.sh
 source "${LIB_DIR}/functions/fn_round_split.sh"
+# shellcheck source=../lib/functions/fn_round_prompt.sh
+source "${LIB_DIR}/functions/fn_round_prompt.sh"
+# shellcheck source=../lib/functions/fn_match_telemetry.sh
+source "${LIB_DIR}/functions/fn_match_telemetry.sh"
 # shellcheck source=../lib/functions/fn_plan_artifact.sh
 source "${LIB_DIR}/functions/fn_plan_artifact.sh"
 # shellcheck source=../lib/functions/fn_plan_doc.sh

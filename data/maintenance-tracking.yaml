@@ -59,6 +59,28 @@ entries:
       - skills/claude/executor-oneshot/SKILL.md
       - skills/claude/executor-vetted/SKILL.md
       - skills/claude/executor-prex/SKILL.md
+  - id: vacated-multi-codex-authoring-path
+    path: skills/claude/plan-builder-to-queue/SKILL.md
+    last_checked: 2026-06-30
+    cadence_days: 180
+    owner: plan authoring
+    why: "The multi-engine plan-writer-multi (Claude) and plan-writer (Codex) authoring surfaces were deleted outright (ADR-0056 / DP6), to be re-created from scratch at the proper time; this note tracks that intentionally-vacated surface so the rebuild is not forgotten."
+    revalidate_how: "Decide whether a from-scratch multi-engine / Codex plan-authoring surface is still wanted; if so, author it fresh against the current plan-vault + executor-routing contracts; otherwise extend the cadence."
+    references:
+      - docs/decisions/0056-plan-round-executor-routing-contract.md
+      - skills/claude/plan-builder-to-queue/SKILL.md
+  - id: match-telemetry-calibration
+    path: data/power-grade/executor-capability
+    last_checked: 2026-06-30
+    cadence_days: 30
+    owner: power-grade policy
+    why: "Plan→executor match-outcome telemetry accumulates cross-project; periodically review whether the executor-capability powers / complexity-rubric weights should be refit against observed over/under-powered rounds. Grades are never auto-mutated (ADR-0008)."
+    revalidate_how: "Run cog match-telemetry report; review the over-powered / under-powered / needs-review rows; decide whether to refit executor-capability powers or complexity-rubric weights; apply by hand if warranted, then update last_checked. Never auto-applied."
+    references:
+      - docs/decisions/0058-match-outcome-telemetry-and-calibration-loop.md
+      - data/power-grade/executor-capability/passes.yaml
+      - data/power-grade/executor-capability/calibration.yaml
+      - skill-refs/plan-rounds/complexity-rubric.md
   - id: research-shelf
     path: data/research-shelf/index.jsonl
     last_checked: 2026-06-20

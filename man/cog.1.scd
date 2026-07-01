@@ -126,6 +126,9 @@ The command list and short descriptions are sourced from command modules under
 *longrun*
 	Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
 
+*match-telemetry*
+	Record and report plan→executor match-outcome telemetry.
+
 *msg*
 	Emit uniform machine status lines.
 
@@ -140,6 +143,9 @@ The command list and short descriptions are sourced from command modules under
 
 *plan*
 	Resolve and manage plan stores.
+
+*plan-builder-to-queue-setup*
+	Parse plan-builder-to-queue arguments and create plan-vault run state.
 
 *plan-complexity*
 	Extract and compare implementation plan complexity signals.
@@ -158,9 +164,6 @@ The command list and short descriptions are sourced from command modules under
 
 *plan-slug*
 	Derive and validate an implementation plan slug.
-
-*plan-writer-multi-setup*
-	Parse plan-writer-multi arguments and create run state.
 
 *power-grade*
 	Inspect and validate model/effort power grades.
@@ -257,6 +260,9 @@ The command list and short descriptions are sourced from command modules under
 *review-validate-findings*
 	Validate review findings JSON.
 
+*round-prompt*
+	Assemble and validate executor-stamped round prompts.
+
 *round-req*
 	Stamp and list round acceptance requirement IDs.
 
@@ -274,6 +280,9 @@ The command list and short descriptions are sourced from command modules under
 
 *runner-plan-setup*
 	Parse runner-plan arguments and create round queue run state.
+
+*skill-class*
+	Show and check core skill-class contracts and prerequisites.
 
 *skill-lint*
 	Lint SKILL.md files against the skill/script boundary.

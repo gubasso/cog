@@ -27,7 +27,7 @@ __cog_plan_init_project_tree() {
 }
 
 cog::fn::plan_store_init_global() {
-  local with_git="${1:-false}" store_root config_path
+  local with_git="${1:-true}" store_root config_path
   store_root="$(cog::fn::plan_store_root)"
   mkdir -p "${store_root}/projects" "${store_root}/aliases" || cog::fn::error_raise "TempDirCreateFailed" \
     "could not create plan store directories" "path: ${store_root}" "" "check permissions"
@@ -38,13 +38,17 @@ cog::fn::plan_store_init_global() {
         "could not write plan store config" "path: ${config_path}" "" "check permissions"
   fi
   if [[ $with_git == true && ! -d ${store_root}/.git ]]; then
-    git -C "$store_root" init >/dev/null || cog::fn::error_raise "InvalidInput" \
+    git -C "$store_root" init >/dev/null 2>&1 || cog::fn::error_raise "InvalidInput" \
       "could not initialize plan store git repository" "path: ${store_root}" "" "check git availability"
   fi
 }
 
 cog::fn::plan_project_init_global() {
-  local root="${1:-}" project_dir
+  local root="${1:-}" with_git="${2:-true}" project_dir
+  # Git-init the global store on first use (ADR-0057 D2), so `cog plan new --global`
+  # and resolve-time creation produce a tracked vault, not only `cog plan store init`.
+  # `--no-git` threads through as with_git=false to skip git initialization.
+  cog::fn::plan_store_init_global "$with_git"
   project_dir="$(cog::fn::plan_project_dir "$root")"
   __cog_plan_init_project_tree "$project_dir" "$root"
   printf '%s\n' "$project_dir"
@@ -183,13 +187,13 @@ cog::fn::plan_resolve_json() {
 # honoring the same --store/config/trust precedence as plan_resolve_json. Echoes
 # two lines: STORE=<store> and ROOT=<plan-root>.
 __cog_plan_item_resolve_root() {
-  local project_root="${1:-}" store_flag="${2:-}" resolve_json selected_store plan_root
+  local project_root="${1:-}" store_flag="${2:-}" with_git="${3:-true}" resolve_json selected_store plan_root
   [[ -n $project_root ]] || project_root="$(pwd -P)"
   resolve_json="$(cog::fn::plan_resolve_json "$project_root" "$store_flag" "")"
   selected_store="$(jq -r '.store' <<<"$resolve_json")"
   case "$selected_store" in
     local) plan_root="$(cog::fn::plan_project_init_local "$project_root")" ;;
-    global) plan_root="$(cog::fn::plan_project_init_global "$project_root")" ;;
+    global) plan_root="$(cog::fn::plan_project_init_global "$project_root" "$with_git")" ;;
     custom)
       plan_root="$(jq -r '.plan_root' <<<"$resolve_json")"
       __cog_plan_init_project_tree "$plan_root" "$(realpath "$project_root")"
@@ -202,11 +206,11 @@ __cog_plan_item_resolve_root() {
 }
 
 cog::fn::plan_item_new() {
-  local project_root="${1:-}" store_flag="${2:-}" title="${3:-}"
+  local project_root="${1:-}" store_flag="${2:-}" title="${3:-}" with_git="${4:-true}"
   local resolved selected_store plan_root slug plan_dir rounds_queue readme
   [[ -n $title ]] || cog::fn::error_raise "MissingArgument" \
     "missing plan title" "option: --title" "" "pass --title <text>"
-  resolved="$(__cog_plan_item_resolve_root "$project_root" "$store_flag")"
+  resolved="$(__cog_plan_item_resolve_root "$project_root" "$store_flag" "$with_git")"
   selected_store="$(sed -n 's/^STORE=//p' <<<"$resolved")"
   plan_root="$(sed -n 's/^ROOT=//p' <<<"$resolved")"
   slug="$(cog::fn::plan_slug::derive "$title")"

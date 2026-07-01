@@ -100,9 +100,15 @@ format. The saved artifact must preserve the headings required by `cog plan-doc 
 ## Risks
 ```
 
-The body must include concrete files and commands where known, dependencies and ordering, acceptance
-criteria, assumptions, unresolved questions, risks, and the shelf entries reused or refreshed. Keep it
-implementable by a fresh session with no access to the prior conversation.
+The plan must be **maximally complete and explicitly phased** — write it as if it will be executed by
+an infinitely capable coding agent that does exactly and only what the plan says. Under `## Implementation
+Plan`, lay out every phase/stage/step in dependency order with concrete files, exact commands, and the
+specific edits each step makes; carry the full substance of each step rather than summarizing it. No
+collapsed steps, no "left as an exercise", no "etc.", no "and so on" — if a step is real, spell it out.
+Include dependencies and ordering, per-step acceptance criteria, assumptions, unresolved questions, risks,
+and the shelf entries reused or refreshed. Keep it self-contained and implementable by a fresh session
+with no access to the prior conversation. "Lean" governs format (one markdown artifact, the `plan-doc`
+headings — not a heavy directory/queue tree), never depth: depth is maximal.
 
 ## Phase 4: Save And Validate
 

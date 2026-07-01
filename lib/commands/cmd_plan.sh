@@ -11,13 +11,13 @@ __cog_plan_item_path_self_check='(.schema == "cog.plan.item-path.v1") and (.ok =
 
 __cog_plan_usage() {
   cog::fn::ui_data "Usage: cog plan store path [--json]"
-  cog::fn::ui_data "Usage: cog plan store init [--global|--local] [--git] [--json]"
+  cog::fn::ui_data "Usage: cog plan store init [--global|--local] [--no-git] [--json]"
   cog::fn::ui_data "Usage: cog plan project resolve [--project-root <dir>] [--plan-root <dir>] [--store auto|local|global] [--json]"
   cog::fn::ui_data "Usage: cog plan project link [--root <dir>] [--name <alias>] [--json]"
   cog::fn::ui_data "Usage: cog plan project list [--json]"
   cog::fn::ui_data "Usage: cog plan trust|distrust|trust-status [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog plan doctor [--json]"
-  cog::fn::ui_data "Usage: cog plan new --title <text> [--local|--global] [--project-root <dir>] [--json]"
+  cog::fn::ui_data "Usage: cog plan new --title <text> [--local|--global] [--no-git] [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog plan list [--local|--global] [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog plan path <plan-id> [--local|--global] [--project-root <dir>] [--json]"
 }
@@ -58,7 +58,7 @@ __cog_plan_store_path_cmd() {
 }
 
 __cog_plan_store_init_cmd() {
-  local scope="global" with_git=false want_json=false project_root init_root store_root json
+  local scope="global" with_git=true want_json=false project_root init_root store_root json
   project_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
@@ -74,9 +74,15 @@ __cog_plan_store_init_cmd() {
         scope="local"
         shift
         ;;
-      --git)
-        with_git=true
+      --no-git)
+        with_git=false
         shift
+        ;;
+      --git)
+        cog::fn::error_raise "InvalidInput" \
+          "the --git flag was removed" "option: --git" \
+          "the global plan vault is git-by-default (ADR-0057)" \
+          "drop --git, or pass --no-git to skip git initialization"
         ;;
       --project-root)
         [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
@@ -316,7 +322,7 @@ __cog_plan_doctor_cmd() {
 # Echoes PROJECT_ROOT=, STORE=, WANT_JSON=, and any leftover positional args as
 # ARG= lines (one per positional), for the caller to read.
 __cog_plan_item_parse_common() {
-  local project_root store="" want_json=false
+  local project_root store="" want_json=false with_git=true
   project_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
@@ -331,6 +337,16 @@ __cog_plan_item_parse_common() {
       --local)
         store="local"
         shift
+        ;;
+      --no-git)
+        with_git=false
+        shift
+        ;;
+      --git)
+        cog::fn::error_raise "InvalidInput" \
+          "the --git flag was removed" "option: --git" \
+          "the global plan vault is git-by-default (ADR-0057)" \
+          "drop --git, or pass --no-git to skip git initialization"
         ;;
       --store)
         [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" "missing store value" "option: --store" "" "run 'cog plan --help'"
@@ -361,16 +377,18 @@ __cog_plan_item_parse_common() {
   printf 'PROJECT_ROOT=%s\n' "$project_root"
   printf 'STORE=%s\n' "$store"
   printf 'WANT_JSON=%s\n' "$want_json"
+  printf 'WITH_GIT=%s\n' "$with_git"
 }
 
 __cog_plan_item_new_cmd() {
-  local parsed project_root store want_json title json
+  local parsed project_root store want_json title with_git json
   parsed="$(__cog_plan_item_parse_common "$@")" || return 0
   project_root="$(sed -n 's/^PROJECT_ROOT=//p' <<<"$parsed")"
   store="$(sed -n 's/^STORE=//p' <<<"$parsed")"
   want_json="$(sed -n 's/^WANT_JSON=//p' <<<"$parsed")"
   title="$(sed -n 's/^TITLE=//p' <<<"$parsed")"
-  json="$(cog::fn::plan_item_new "$project_root" "$store" "$title")"
+  with_git="$(sed -n 's/^WITH_GIT=//p' <<<"$parsed")"
+  json="$(cog::fn::plan_item_new "$project_root" "$store" "$title" "$with_git")"
   __cog_plan_emit "$__cog_plan_item_self_check" "$json" "$want_json" "$(jq -r '.plan_dir' <<<"$json")"
 }
 

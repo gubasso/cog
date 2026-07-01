@@ -72,6 +72,7 @@ this reference table.
 | `lint-codex-wrapper` | Enforce Codex single-entrypoint markdown snippets. |
 | `lock` | Acquire or release a workflow run lock. |
 | `longrun` | Launch, poll, finalize, and cancel cog-owned durable long-running jobs. |
+| `match-telemetry` | Record and report plan→executor match-outcome telemetry. |
 | `msg` | Emit uniform machine status lines. |
 | `noop` | Exercise command dispatch without side effects. |
 | `osc-preflight` | Detect OBS/osc session prerequisites. |
@@ -80,6 +81,7 @@ this reference table.
 | `plan-complexity` | Extract and compare implementation plan complexity signals. |
 | `plan-doc save` | Write one lean plan artifact. |
 | `plan-doc validate` | Validate one lean plan artifact. |
+| `plan-builder-to-queue-setup` | Parse plan-builder-to-queue arguments and create plan-vault run state. |
 | `plan-init` | Bootstrap implementation plan root files. |
 | `plan-multi-setup` | Parse plan-multi arguments and create run state. |
 | `plan-review` | Write and validate annotated plan review artifacts. |
@@ -87,7 +89,6 @@ this reference table.
 | `plan-review orchestrator` | Write a review artifact from absolute orchestrator input paths. |
 | `plan-review validate` | Validate one annotated plan review artifact. |
 | `plan-slug` | Derive and validate an implementation plan slug. |
-| `plan-writer-multi-setup` | Parse plan-writer-multi arguments and create run state. |
 | `review-plan-multi-setup` | Parse review-plan-multi arguments and create run state. |
 | `power-grade` | Inspect and validate model/effort power grades. |
 | `power-grade validate` | Validate the Power Grade matrix schema and source-cited cells. |
@@ -132,12 +133,14 @@ this reference table.
 | `review-scope` | Detect changed-file review scope. |
 | `review-tech-scope` | Detect review technologies and bundled reference targets. |
 | `review-validate-findings` | Validate review findings JSON. |
+| `round-prompt` | Assemble and validate executor-stamped round prompts. |
 | `round-req` | Stamp and list round acceptance requirement IDs. |
 | `round-split` | Check split-round requirement coverage. |
 | `rundir` | Create a workflow run directory and optionally acquire its lock. |
 | `runner-all-setup` | Parse runner-all arguments and create main queue run state. |
 | `runner-commit-parse` | Parse runner commit result lines. |
 | `runner-plan-setup` | Parse runner-plan arguments and create round queue run state. |
+| `skill-class` | Show and check core skill-class contracts and prerequisites. |
 | `skill-refs root` | Print the resolved skill-reference root. |
 | `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |

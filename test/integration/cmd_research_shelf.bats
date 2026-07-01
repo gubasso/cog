@@ -19,7 +19,7 @@ record_sample_entry() {
     --source-json "$(sample_source_json)" \
     --summary "Codex CLI release notes are the primary source for current CLI availability." \
     --revalidate-after 2026-09-20 \
-    --consuming-skills "openai-docs,plan-writer"
+    --consuming-skills "openai-docs,plan-builder-to-queue"
 }
 
 @test "cog research-shelf init creates shelf dir and index" {
@@ -42,7 +42,7 @@ record_sample_entry() {
     --source-json "$(sample_source_json)" \
     --summary "Codex CLI release notes are the primary source for current CLI availability." \
     --revalidate-after 2026-09-20 \
-    --consuming-skills "openai-docs,plan-writer"
+    --consuming-skills "openai-docs,plan-builder-to-queue"
 
   assert_success
   assert_line --regexp '^RESHELF_ID=rs-20260620-[0-9a-f]{8}$'
@@ -114,7 +114,7 @@ record_sample_entry() {
     --source-json "$(sample_source_json)" \
     --summary "Codex CLI release notes are the primary source for current CLI availability." \
     --revalidate-after 2026-09-20 \
-    --consuming-skills "openai-docs,plan-writer"
+    --consuming-skills "openai-docs,plan-builder-to-queue"
 
   assert_failure
   [[ $stderr == *"err.kind: InvalidInput"* ]]
@@ -155,7 +155,7 @@ record_sample_entry() {
     --source-json "$(sample_source_json)" \
     --summary "Codex CLI release notes are the primary source for current CLI availability." \
     --revalidate-after 2026-09-20 \
-    --consuming-skills "openai-docs,plan-writer"
+    --consuming-skills "openai-docs,plan-builder-to-queue"
   assert_success
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.research-shelf.v1" and

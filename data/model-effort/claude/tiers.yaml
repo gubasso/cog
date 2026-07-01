@@ -49,8 +49,7 @@ tiers:
       - ask
       - plan-oneshot
       - plan-multi
-      - plan-writer
-      - plan-writer-multi
+      - plan-builder-to-queue
       - plan-refactor-migration
       - plan-vetted
       - executor-prex

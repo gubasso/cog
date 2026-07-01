@@ -34,7 +34,8 @@ Chosen option: **sum-of-passes power + normalized-% overlay, derived at runtime.
   previous ceiling = next floor) and normalize a complexity score to a percent of `complexity_max_score`
   (34), then overlay: a score routes to the executor whose band contains its percent. Scores above the
   extreme cutoff (`> 30`, ≈88.2%) are reserved — non-executable as a single round unless explicitly
-  requested; a future `/plan-writer` splits each into two rounds.
+  requested; `plan-builder-to-queue` routes each reserved round back through `plan-split`
+  ([ADR-0056](0056-plan-round-executor-routing-contract.md)).
 - **Persist inputs, derive numbers.** `data/power-grade/executor-capability/passes.yaml` (the pass
   composition) and `calibration.yaml` (aggregation rule, `complexity_max_score` + provenance, the
   extreme cutoff) are the only persisted artifacts. Powers, %-bands, routing thresholds, and a round's
@@ -79,5 +80,8 @@ top, the extreme cutoff's score and percent agree), the `executor-capability` en
 
 Accepted. Implemented: `data/power-grade/executor-capability/{passes,calibration}.yaml`, the
 `cog power-grade executor` / `match` / `executor-validate` surfaces, the `executor-capability`
-maintenance-tracking entry, and integration tests. Follow-ups: calibrate against git history, make the
-rubric max machine-readable, and the `/plan-writer` extreme-round split.
+maintenance-tracking entry, and integration tests. The match→queue routing and the reserved-round
+split are wired by [ADR-0056](0056-plan-round-executor-routing-contract.md) (`plan-builder-to-queue` /
+`plan-split`); the calibration follow-up is built by
+[ADR-0058](0058-match-outcome-telemetry-and-calibration-loop.md) (match-outcome telemetry +
+cog-scoped, human-gated refit cadence). Remaining follow-up: make the rubric max machine-readable.

@@ -57,7 +57,7 @@ inline: read + compare both annotated reviews → steelman → verify disagreeme
 - **Never use the `Skill` tool** for these — nested `Skill` calls inline the child and stall the
   orchestrator. See `$(cog skill-refs path skills-and-orchestration.md)` (§Dispatch vs Delegation).
 - Orchestration plumbing (proof-of-delegation, parallel dispatch, graceful degradation) mirrors
-  `plan-writer-multi`. The contracts live in
+  `plan-multi`. The contracts live in
   `$(cog skill-refs path orchestration/orchestration-patterns.md)`.
 - Each Codex worker writes its review artifact through `cog plan-review`, so it runs write-capable:
   prepend the orientation from `cog codex-runner orientation write` and launch with

@@ -44,8 +44,6 @@ tiers:
       - plan/ask/review-plan work
     skills:
       - ask
-      - plan-writer
-      - plan-writer-multi
       - executor-prex
       - review-plan-oneshot
     use_when: |-

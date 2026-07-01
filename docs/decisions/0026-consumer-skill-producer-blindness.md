@@ -36,8 +36,8 @@ with deterministic mechanics.
 The initial map enforces:
 
 ```text
-runner-all      -> plan-writer, plan-writer-multi
-runner-plan     -> plan-writer, plan-writer-multi
+runner-all      -> plan-builder-to-queue
+runner-plan     -> plan-builder-to-queue
 review-findings -> review-oneshot, review-loop
 ```
 
