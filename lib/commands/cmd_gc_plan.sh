@@ -170,7 +170,7 @@ __cog_gc_plan_build_json() {
     fi
   done
 
-  local -a repo_objs=() rels=() changed=() extra=()
+  local -a repo_objs=() rels=() changed=() extra=() foreign_roots=()
   local c
   for root in "${accepted[@]}"; do
     mapfile -t rels <<<"${root_paths[$root]}"
@@ -181,6 +181,7 @@ __cog_gc_plan_build_json() {
       [[ -n $c ]] || continue
       __cog_gc_plan_in_list "$c" "${root_paths[$root]}" || extra+=("$c")
     done
+    [[ ${#extra[@]} -gt 0 ]] && foreign_roots+=("$root")
     repo_objs+=("$(jq -cn --arg root "$root" \
       --argjson paths "$(__cog_gc_plan_json_array "${rels[@]}")" \
       --argjson extra_dirty "$(__cog_gc_plan_json_array "${extra[@]}")" \
@@ -206,6 +207,7 @@ __cog_gc_plan_build_json() {
   for x in "${escapes[@]}"; do surprises+=("escape:$x"); done
   for x in "${undeclared[@]}"; do surprises+=("undeclared-repo:$x"); done
   for x in "${invalid_repos[@]}"; do surprises+=("invalid-repo:$x"); done
+  for x in "${foreign_roots[@]}"; do surprises+=("foreign-dirty:$x"); done
 
   local ok=true
   [[ ${#escapes[@]} -eq 0 ]] || ok=false

@@ -70,7 +70,22 @@ write_session() {
   printf '%s\n' "$output" | jq -e --arg a "$REPO_A" --arg b "$REPO_B" '
     .ok == true and
     (.repos[] | select(.root == $a and .paths == ["src/a.txt"] and .extra_dirty == ["src/extra.txt"])) and
-    (.repos[] | select(.root == $b and .paths == ["lib/b.txt"] and .extra_dirty == []))
+    (.repos[] | select(.root == $b and .paths == ["lib/b.txt"] and .extra_dirty == [])) and
+    (.surprises | index("foreign-dirty:" + $a)) and
+    (.surprises | index("foreign-dirty:" + $b) | not)
+  ' >/dev/null
+}
+
+@test "gc-plan does not flag foreign-dirty when every dirty path is declared" {
+  write_session "$REPO_A/src/a.txt" "$REPO_A/src/extra.txt" "$REPO_B/lib/b.txt"
+
+  run cog::cmd::gc_plan --session-files "${BATS_TEST_TMPDIR}/session.txt" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg a "$REPO_A" '
+    .ok == true and
+    (.repos[] | select(.root == $a and .extra_dirty == [])) and
+    (any(.surprises[]; startswith("foreign-dirty:")) | not)
   ' >/dev/null
 }
 

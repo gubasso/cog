@@ -18,8 +18,7 @@ tiers:
       - thin orchestration over cog subcommands
       - no real reasoning
       - fast/cheap is the priority
-    skills:
-      - gc
+    skills: []
     use_when: |-
       Bare execution of a simple routine where nearly all logic is deterministic and
       delegated to scripts or orchestrators; the model sequences calls and formats output.
@@ -90,6 +89,7 @@ tiers:
       - suckless-patcher
       - ast-grep
       - assess-input
+      - gc
       - gc-hook-fix
       - runner-all
       - runner-plan

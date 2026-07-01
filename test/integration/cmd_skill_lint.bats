@@ -1212,10 +1212,28 @@ EOF
 }
 
 @test "cog skill-lint resolves haiku without effort to the CHEAP tier" {
-  # 'gc' is registry-pinned cheap; haiku (no effort) resolves to cheap.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc haiku ""
+  # A haiku-without-effort skill classifies to the cheap tier. Use an ungoverned
+  # name so the tier rule is exempt and only the haiku->cheap classification is
+  # exercised without a registry pin conflict.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/cheap-demo" cheap-demo haiku ""
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/cheap-demo/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint pins gc to the LOW tier" {
+  # 'gc' is registry-pinned low (opus, effort=low) after the provenance hardening.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc opus low
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc/SKILL.md"
   assert_success
+}
+
+@test "cog skill-lint flags gc when pinned to haiku after the low promotion" {
+  # gc is registry-pinned low; haiku (which classifies cheap) must now fail.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc haiku ""
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc/SKILL.md"
+  assert_failure
+  [[ $stderr == *"model-effort-tier"* ]]
+  [[ $stderr == *"expects tier 'low'"* ]]
 }
 
 @test "cog skill-lint exempts an ungoverned skill regardless of model/effort" {

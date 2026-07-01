@@ -42,6 +42,10 @@ on `$REPO_ROOT` or `$SESSION_FILES_FILE` being live shell variables.
 - Never run `git commit`; the orchestrator owns the commit retry.
 - Never bypass hooks: no `--no-verify`, no `-n`, no `SKIP=...`, no hook removal, and
   no git config edits.
+- Never run history- or worktree-destroying git: no `git reset --hard`, no
+  `git restore`/`git checkout` on worktree files, no `git clean`, and no hand-rolled
+  content merges. If the tree reaches a state you cannot explain, STOP and record it
+  as out-of-scope for the user — never surgery your way out.
 
 ## Workflow
 

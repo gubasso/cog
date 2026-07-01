@@ -63,6 +63,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0056: Plan-round executor-routing contract](decisions/0056-plan-round-executor-routing-contract.md)
 - [ADR-0057: Plan-vault producer retarget and global git default](decisions/0057-plan-vault-producer-retarget-and-global-git.md)
 - [ADR-0058: Match-outcome telemetry and calibration loop](decisions/0058-match-outcome-telemetry-and-calibration-loop.md)
+- [ADR-0059: gc change-provenance foreign-dirty STOP](decisions/0059-gc-change-provenance-foreign-dirty-stop.md)
 
 ## Guides
 

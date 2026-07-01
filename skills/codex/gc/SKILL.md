@@ -31,9 +31,16 @@ this skill stays a thin orchestrator.
 - Do not touch live files outside the chosen session file list unless the user
   explicitly approves.
 - Commit every repo the session worked in by default. Deviate only when `gc-plan`
-  reports a surprise (a path in no git repo, an undeclared touched repo, or an
-  invalid declared dir) — then STOP and ask the user. Never silently drop a
-  touched repo.
+  reports a surprise (a path in no git repo, an undeclared touched repo, an
+  invalid declared dir, or a repo with foreign dirty paths) — then STOP and ask the
+  user. Never silently drop a touched repo.
+- During the commit flow never run history- or worktree-destroying git: no
+  `git reset --hard`, no `git restore`/`git checkout` on worktree files, no
+  `git clean`, and no hand-rolled content merges. If staging or commit reaches a
+  tree state you cannot explain, STOP and report it — never surgery your way out.
+- `cog gc-stage` is path-granular and stages whole files; it cannot isolate hunks
+  in a file that mixes session and non-session changes. Resolve a mixed file
+  (split it, or ask the user) before staging — never commit one wholesale.
 
 ## Cog Contract
 
@@ -82,9 +89,13 @@ judgment in the round loop below.
 
 `ok` is `false` only when there are `escapes` (paths in no git repo). A non-empty
 `surprises` list means the safety scan wants you to ask the user before committing.
-Pass `--repo <dir>` or `--repo-set <file>` for repos an orchestrator explicitly
-declared; this turns the declared set into an allowlist. With no declared repos,
-every touched repo is accepted and committed by default.
+Each surprise is a tagged string: `escape:<path>`, `undeclared-repo:<root>`,
+`invalid-repo:<dir>`, or `foreign-dirty:<root>`. A `foreign-dirty:<root>` entry means
+that accepted repo carries dirty or untracked paths the session did not declare
+(the repo's `extra_dirty` list) — a pre-existing or someone-else's change the commit
+must not sweep in. Pass `--repo <dir>` or `--repo-set <file>` for repos an
+orchestrator explicitly declared; this turns the declared set into an allowlist. With
+no declared repos, every touched repo is accepted and committed by default.
 
 ## Commit message format
 
@@ -147,9 +158,12 @@ in the commands below are these literal files.
 
 ## Workflow
 
-1. Establish the run directory (see "Working directory"), then snapshot context using
-   read-only commands: porcelain status, staged diff, unstaged diff, and recent log.
-   This informs the session file list and the commit message draft.
+1. Establish the run directory (see "Working directory"), then take a **fresh** baseline
+   in every touched repo with read-only commands: live `git status`, `git stash list`,
+   staged diff, unstaged diff, and recent log. Reconcile this live status against the
+   files the session actually edited; never trust the ambient session-start `gitStatus`
+   snapshot, which can be stale. This informs the session file list and the commit
+   message draft.
 
 2. Decide the session file list in prose. This remains judgment:
    - With `--all`/`-a`, include every dirty path the user asked to commit across the
@@ -171,10 +185,14 @@ in the commands below are these literal files.
 4. Safety branch:
    - If `.ok` is `false` (escapes): STOP. Report the paths that resolve to no git
      repo; do not commit anything.
-   - If `.surprises` is non-empty: STOP and ask the user, naming the undeclared repos
-     and any invalid declared dirs. Under `--all`/`-a`, instead of asking, seed
-     `$SESSION_FILES_FILE` from each accepted repo's `extra_dirty` and re-run
-     `gc-plan`.
+   - If `.surprises` is non-empty: STOP and ask the user, naming the undeclared repos,
+     any invalid declared dirs, and — for each `foreign-dirty:<root>` — the specific
+     foreign paths from that repo's `extra_dirty`. These are dirty or untracked files
+     the session never declared; do not commit until the user confirms whether they
+     belong. Under `--all`/`-a`, instead of asking, **union** each accepted repo's
+     `extra_dirty` into the existing `$SESSION_FILES_FILE` (append, never replace) and
+     re-run `gc-plan`; the foreign-dirty surprise then clears because those paths are
+     now declared.
    - Otherwise proceed.
 
 5. For each repo object in `.repos`, in order:
@@ -182,6 +200,10 @@ in the commands below are these literal files.
       (see "Working directory").
    2. `cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json`.
       If `ok` is not `true`, stop and ask before committing.
+      Then review `git diff --cached --stat` for the repo. If any staged file's churn
+      is materially larger than the edit the session intended — a "one-line" file that
+      staged dozens of lines — treat it as mixed: STOP and ask before committing, and
+      do not stage around it wholesale (`gc-stage` cannot isolate hunks).
    3. Draft the commit message from **that** repo's staged diff in the format under
       "Commit message format", and write it to `$MESSAGE_FILE`. Validate it with
       `cog gc-commit-lint --message-file "$MESSAGE_FILE" --repo-root "<root>" --json`;

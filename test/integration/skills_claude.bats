@@ -128,6 +128,18 @@ forbidden_scan_codex() {
   done
 }
 
+@test "gc skills document the change-provenance and destructive-recovery guards" {
+  local file
+  for file in "$repo_root/skills/claude/gc/SKILL.md" "$repo_root/skills/codex/gc/SKILL.md"; do
+    assert_file_contains "$file" "foreign-dirty"
+    assert_file_contains "$file" "git reset --hard"
+    assert_file_contains "$file" "git stash list"
+    assert_file_contains "$file" "git diff --cached --stat"
+    assert_file_contains "$file" "path-granular"
+  done
+  assert_file_contains "$repo_root/skills/claude/gc-hook-fix/SKILL.md" "git reset --hard"
+}
+
 @test "runner skills document delegate multi-repo commit flow" {
   local file
   for file in "$repo_root/skills/claude/runner-all/SKILL.md" "$repo_root/skills/claude/runner-plan/SKILL.md"; do
