@@ -1,0 +1,50 @@
+# CI workflow — lint, test, build.
+# Default path reuses the project's Nix devshell so CI runs the same toolchain
+# as local development: `nix develop --command <task>`, where the tasks are the
+# project task runner's recipe names (e.g. just lint / just test / just build).
+# When the project has no flake.nix, drop the "Install Nix" step from each job
+# and call the task runner directly (`just lint`, etc.) after setting up the
+# conventional toolchain for the language.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Lint
+        run: nix develop --command just lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Test
+        run: nix develop --command just test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Build
+        run: nix develop --command just build

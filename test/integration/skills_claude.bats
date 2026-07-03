@@ -51,7 +51,13 @@ forbidden_scan_codex() {
     plan-multi
     plan-vetted
     plan-builder-to-queue
-    pre-commit
+    bootstrap
+    bootstrap-precommit
+    bootstrap-editorconfig
+    bootstrap-nix
+    bootstrap-repo
+    bootstrap-ci
+    bootstrap-taskrunner
     plan-refactor-migration
     review-oneshot
     review-findings

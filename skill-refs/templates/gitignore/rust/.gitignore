@@ -1,0 +1,14 @@
+# Rust
+
+/target/
+**/*.rs.bk
+*.pdb
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+
+# Nix devshell
+.direnv/
+/result

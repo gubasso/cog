@@ -80,7 +80,13 @@ tiers:
       - bounded judgment
       - verbatim queue dispatch
     skills:
-      - pre-commit
+      - bootstrap
+      - bootstrap-precommit
+      - bootstrap-editorconfig
+      - bootstrap-nix
+      - bootstrap-repo
+      - bootstrap-ci
+      - bootstrap-taskrunner
       - test-review
       - review-findings
       - review-plan-implementation

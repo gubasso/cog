@@ -1,0 +1,15 @@
+# Bash / shell
+
+# Test and run artifacts
+*.log
+tmp/
+.bats-tmp/
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+
+# Nix devshell
+.direnv/
+/result

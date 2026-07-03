@@ -45,6 +45,12 @@ The command list and short descriptions are sourced from command modules under
 *assess-input*
 	Extract input-quality signals and persist the executor gate verdict.
 
+*ci-apply*
+	Apply a CI workflow template to a project.
+
+*ci-detect*
+	Detect the CI target from the project git remote.
+
 *classify-project*
 	Classify repository shape.
 
@@ -108,6 +114,12 @@ The command list and short descriptions are sourced from command modules under
 *gc-stage*
 	Reconcile and stage explicit session files.
 
+*gitignore-apply*
+	Apply a gitignore template to a project.
+
+*gitignore-detect*
+	Detect gitignore template type.
+
 *help*
 	Show generated help for cog or a subcommand.
 
@@ -119,6 +131,9 @@ The command list and short descriptions are sourced from command modules under
 
 *jira-ticket-creator*
 	Scaffold, write, and finalize retroactive JIRA ticket drafts.
+
+*license-apply*
+	Apply an SPDX LICENSE to a project.
 
 *lint-codex-wrapper*
 	Enforce Codex single-entrypoint markdown snippets.
@@ -134,6 +149,12 @@ The command list and short descriptions are sourced from command modules under
 
 *msg*
 	Emit uniform machine status lines.
+
+*nix-devshell-apply*
+	Apply a nix devshell template to a project.
+
+*nix-devshell-detect*
+	Detect nix devshell template type.
 
 *noop*
 	Exercise command dispatch without side effects.
@@ -211,6 +232,9 @@ The command list and short descriptions are sourced from command modules under
 
 *queue-status-set*
 	Set one queue item status with an expected-current-status guard.
+
+*readme-apply*
+	Apply a README skeleton to a project.
 
 *refactor-scan-drift*
 	Compute byte-stable source-scan fingerprint.
@@ -301,6 +325,12 @@ The command list and short descriptions are sourced from command modules under
 
 *suckless-preflight*
 	Detect suckless tree signals and clean state.
+
+*taskrunner-apply*
+	Apply a task-runner template to a project.
+
+*taskrunner-detect*
+	Detect the task-runner type for a project.
 
 *test-review-discover*
 	Detect test runner and test-review batch status.

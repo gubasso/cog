@@ -22,6 +22,8 @@ _cog() {
   )
   local -a commands=(
     assess-input
+    ci-apply
+    ci-detect
     classify-project
     claudemd-audit
     codex-runner
@@ -43,15 +45,20 @@ _cog() {
     gc-plan
     gc-push
     gc-stage
+    gitignore-apply
+    gitignore-detect
     help
     hook-guard
     init
     jira-ticket-creator
+    license-apply
     lint-codex-wrapper
     lock
     longrun
     match-telemetry
     msg
+    nix-devshell-apply
+    nix-devshell-detect
     noop
     osc-preflight
     osc-probe-binary
@@ -76,6 +83,7 @@ _cog() {
     queue-reorder
     queue-select
     queue-status-set
+    readme-apply
     refactor-scan-drift
     refactor-scan-source
     refactor-setup
@@ -106,6 +114,8 @@ _cog() {
     suckless-apply
     suckless-conflicts
     suckless-preflight
+    taskrunner-apply
+    taskrunner-detect
     test-review-discover
     test-review-lint
     test-review-manifest

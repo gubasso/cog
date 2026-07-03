@@ -1,0 +1,25 @@
+# C
+
+# Object and archive files
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+
+# Build directories
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+
+# Nix devshell
+.direnv/
+/result

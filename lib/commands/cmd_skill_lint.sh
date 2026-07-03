@@ -155,6 +155,7 @@ __cog_skill_lint_input_fidelity_required() {
       claude:review-loop | \
       claude:context-builder | \
       claude:ask | \
+      claude:bootstrap | \
       claude:executor-prex | \
       claude:executor-oneshot | \
       claude:executor-vetted | \
@@ -203,6 +204,7 @@ __cog_skill_lint_context_brief_gate_required() {
       claude:review-plan-multi | \
       claude:review-loop | \
       claude:plan-vetted | \
+      claude:bootstrap | \
       codex:executor-oneshot)
       return 0
       ;;

@@ -36,6 +36,8 @@ Global flags:
 
 Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
+  ci-apply       Apply a CI workflow template to a project.
+  ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
@@ -57,15 +59,20 @@ Commands:
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
+  gitignore-apply Apply a gitignore template to a project.
+  gitignore-detect Detect gitignore template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
+  license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
   match-telemetry Record and report plan→executor match-outcome telemetry.
   msg            Emit uniform machine status lines.
+  nix-devshell-apply Apply a nix devshell template to a project.
+  nix-devshell-detect Detect nix devshell template type.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
@@ -90,6 +97,7 @@ Commands:
   queue-reorder  Reorder mutable queue items by stable dependency topological sort.
   queue-select   Select the next runnable implementation plan round.
   queue-status-set Set one queue item status with an expected-current-status guard.
+  readme-apply   Apply a README skeleton to a project.
   refactor-scan-drift Compute byte-stable source-scan fingerprint.
   refactor-scan-source Run deterministic source static-analysis probes.
   refactor-setup Resolve refactor migration setup paths.
@@ -120,6 +128,8 @@ Commands:
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
+  taskrunner-apply Apply a task-runner template to a project.
+  taskrunner-detect Detect the task-runner type for a project.
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.
@@ -142,6 +152,8 @@ Global flags:
 
 Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
+  ci-apply       Apply a CI workflow template to a project.
+  ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
@@ -163,15 +175,20 @@ Commands:
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
+  gitignore-apply Apply a gitignore template to a project.
+  gitignore-detect Detect gitignore template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
+  license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
   match-telemetry Record and report plan→executor match-outcome telemetry.
   msg            Emit uniform machine status lines.
+  nix-devshell-apply Apply a nix devshell template to a project.
+  nix-devshell-detect Detect nix devshell template type.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
@@ -196,6 +213,7 @@ Commands:
   queue-reorder  Reorder mutable queue items by stable dependency topological sort.
   queue-select   Select the next runnable implementation plan round.
   queue-status-set Set one queue item status with an expected-current-status guard.
+  readme-apply   Apply a README skeleton to a project.
   refactor-scan-drift Compute byte-stable source-scan fingerprint.
   refactor-scan-source Run deterministic source static-analysis probes.
   refactor-setup Resolve refactor migration setup paths.
@@ -226,6 +244,8 @@ Commands:
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
+  taskrunner-apply Apply a task-runner template to a project.
+  taskrunner-detect Detect the task-runner type for a project.
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.

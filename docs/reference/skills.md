@@ -121,7 +121,13 @@ Utility skills outside the four governed behavioral prefixes, plus shipped agent
 - skills/claude/gc
 - skills/claude/gc-repo
 - skills/claude/osc-obs
-- skills/claude/pre-commit
+- skills/claude/bootstrap
+- skills/claude/bootstrap-precommit
+- skills/claude/bootstrap-editorconfig
+- skills/claude/bootstrap-nix
+- skills/claude/bootstrap-repo
+- skills/claude/bootstrap-ci
+- skills/claude/bootstrap-taskrunner
 - skills/claude/suckless-patcher
 - skills/claude/test-review
 - skills/codex/ask

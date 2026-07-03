@@ -1,0 +1,31 @@
+# CI pipeline — lint, test, build.
+# Default path reuses the project's Nix devshell so CI runs the same toolchain
+# as local development: `nix develop --command <task>`, where the tasks are the
+# project task runner's recipe names (e.g. just lint / just test / just build).
+# When the project has no flake.nix, swap `image: nixos/nix` for the project's
+# language image, drop the nix.conf line, and call the task runner directly
+# (`just lint`, etc.) after the conventional toolchain setup.
+stages:
+  - lint
+  - test
+  - build
+
+default:
+  image: nixos/nix:latest
+  before_script:
+    - echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+
+lint:
+  stage: lint
+  script:
+    - nix develop --command just lint
+
+test:
+  stage: test
+  script:
+    - nix develop --command just test
+
+build:
+  stage: build
+  script:
+    - nix develop --command just build

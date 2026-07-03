@@ -1,5 +1,5 @@
 ---
-name: pre-commit
+name: bootstrap-precommit
 description: >
   Delegates deterministic project-type detection and template copying to
   the cog CLI while preserving hook research, template updates, conflict
@@ -12,22 +12,27 @@ effort: low
 
 <!-- trigger-tests: "pre-commit", "set up pre-commit", "configure hooks", "add lint hooks", "install pre-commit" -->
 
-# Pre-commit Skill
+# Bootstrap Pre-commit Skill
 
-Set up a tailored `.pre-commit-config.yaml` for the current project by combining a broad cog
-template with repo-specific customization. Every setup also establishes a `.editorconfig` and its
-`editorconfig-checker` hook, with the `.editorconfig` aligned to the project's active formatters and
-linters.
+Set up a tailored `.pre-commit-config.yaml` for the current project by combining a broad cog template
+with repo-specific customization.
 
 Principle: templates are broad and general; local configs are precise and tailored — repo-specific
 customization belongs in the local config.
+
+## Boundary
+
+This skill owns the project's pre-commit configuration. Its config must include an
+`editorconfig-checker` hook consistent with the shared `.editorconfig` baseline — a structural
+contract this skill honors. The `.editorconfig` file's own content is authored and aligned elsewhere;
+this skill neither writes nor tunes it.
 
 ## Inputs
 
 - `$ARGUMENTS`: optional project type, such as `bash`, `python`, `rust`, `zig`, `c`, `node`, or
   `sveltekit`.
-- Template directories: cog's `skill-refs/templates/pre-commit/` and `skill-refs/templates/editorconfig/`
-  trees, or a caller-supplied `--template-root`.
+- Template directory: cog's `skill-refs/templates/pre-commit/` tree, or a caller-supplied
+  `--template-root`.
 - Current working directory: the target project.
 
 The `markdown` template exists in the cog-owned template tree but is not auto-detected by this skill
@@ -109,20 +114,6 @@ The helper's conflict policies are only `overwrite`, `skip`, and `abort`. Merge 
 and stays in this skill: inspect both files, decide the merge manually, then use the helper only for
 safe copies that remain.
 
-EditorConfig is its own cog-owned template domain. Detect and deploy the matching `.editorconfig`:
-
-```bash
-cog editorconfig-detect --json
-cog editorconfig-apply --type "$TYPE" --conflict "$EDITORCONFIG_POLICY" --json
-```
-
-`editorconfig-detect` emits the same shape as `precommit-detect` (with `template_root` under
-`skill-refs/templates/editorconfig` and `template_config` ending in `.editorconfig`).
-`editorconfig-apply` copies that one file to `<project>/.editorconfig` and emits
-`{ok, type, template_dir, copied[], skipped[], conflicts[], conflict, reason}`. Its `--conflict`
-policy is `overwrite`, `skip`, or `abort` (default `abort`); reconciling an existing project
-`.editorconfig` is judgment that stays in this skill.
-
 ## Workflow
 
 1. Resolve project type. If `$ARGUMENTS` provides a type, run `precommit-detect --type "$TYPE"` to
@@ -182,26 +173,16 @@ policy is `overwrite`, `skip`, or `abort` (default `abort`); reconciling an exis
     - add excludes only for generated, vendored, binary, external, or intentionally unmanaged paths;
     - tailor companion files such as `lychee.toml` or `.config/nextest.toml`.
 
-13. Establish and align `.editorconfig`. Deploy the matching template with `cog editorconfig-apply`
-    (reconcile a pre-existing project `.editorconfig` in prose rather than overwriting it), and confirm
-    the config carries the `editorconfig-checker` hook (the language templates ship it). Align the
-    settings with the project's active formatters and linters so the checker never fights them:
-    - add the project's language indent blocks to match its formatter: `[*.rs]` and `[*.zig]` space 4
-      (rustfmt, zig fmt); `[*.py]` space 4 (ruff-format); `[*.{sh,bash,bats}]` space 2 (shfmt `-i 2`);
-      `[*.{js,jsx,ts,tsx,svelte,vue,css,scss}]` space 2 (prettier `tabWidth`); leave C indent to
-      clang-format. The shared baseline already covers data formats (`json`/`yaml`/`toml` space 2)
-      and `Makefile` (tab);
-    - set `max_line_length` per glob only where a formatter or linter enforces a width (and
-      `max_line_length = off` for prose globs such as `[*.md]`);
-    - leave `insert_final_newline` and `trim_trailing_whitespace` owned by the housekeeping hooks,
-      and pass `-disable-insert-final-newline` to editorconfig-checker so final-newline ownership is
-      not duplicated;
-    - exclude `*.md` from editorconfig-checker, which mis-parses fenced blocks; markdown stays owned
-      by the markdown tooling, with `[*.md] trim_trailing_whitespace = false` preserving hard breaks.
+13. Confirm the config carries an `editorconfig-checker` hook consistent with the shared
+    `.editorconfig` baseline (the language templates ship it). Validate the config when the tool is
+    available:
+
+    ```bash
+    pre-commit validate-config
+    ```
 
 14. Present a final summary: template hooks added, updated, or removed; local hooks added, removed,
-    or adjusted; `.editorconfig` settings established or aligned; external tool requirements; and
-    next commands:
+    or adjusted; external tool requirements; and next commands:
 
     ```bash
     pre-commit install
