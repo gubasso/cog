@@ -46,6 +46,7 @@ _cog() {
     help
     hook-guard
     init
+    jira-ticket-creator
     lint-codex-wrapper
     lock
     longrun

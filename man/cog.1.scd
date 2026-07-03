@@ -117,6 +117,9 @@ The command list and short descriptions are sourced from command modules under
 *init*
 	Initialize cog runtime directories and prerequisites.
 
+*jira-ticket-creator*
+	Scaffold, write, and finalize retroactive JIRA ticket drafts.
+
 *lint-codex-wrapper*
 	Enforce Codex single-entrypoint markdown snippets.
 

@@ -202,6 +202,93 @@ cog::fn::git_recent_log_json() {
   __cog_git_json_object_array_from_lines "${commits[@]}"
 }
 
+# Emit a JSON array of commits for the given ranges and/or explicit SHAs, each
+# parsed into Conventional Commits fields:
+#   [{sha, short, subject, body, type, scope, description, breaking}]
+# Ranges walk normally; explicit SHAs resolve with --no-walk so non-contiguous
+# selections list once each. Commits selected more than once are de-duplicated,
+# first occurrence wins. `--repo <dir>` runs git in that worktree.
+cog::fn::git_log_range_json() {
+  __cog_git_require_git
+  __cog_git_require_jq
+
+  local repo=""
+  local -a ranges=() shas=()
+  while (($# > 0)); do
+    case "$1" in
+      --repo)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --repo value" "option: --repo" "" "pass a worktree path"
+        repo="$2"
+        shift 2
+        ;;
+      --range)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --range value" "option: --range" "" "pass a git range like A..B"
+        ranges+=("$2")
+        shift 2
+        ;;
+      --sha)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --sha value" "option: --sha" "" "pass a commit sha"
+        shas+=("$2")
+        shift 2
+        ;;
+      *)
+        cog::helpers::die "$EX_USAGE" "InvalidInput" \
+          "unknown git_log_range_json option" "option: $1" "" "use --repo, --range, or --sha"
+        ;;
+    esac
+  done
+
+  if ((${#ranges[@]} + ${#shas[@]} == 0)); then
+    jq -cn '[]'
+    return 0
+  fi
+
+  local -a gitcmd=(git)
+  [[ -n $repo ]] && gitcmd=(git -C "$repo")
+  local fmt='%H%x1f%h%x1f%s%x1f%b'
+
+  local -a recs=()
+  if ((${#ranges[@]} > 0)); then
+    local -a range_recs=()
+    mapfile -d '' -t range_recs < <("${gitcmd[@]}" log -z --format="$fmt" "${ranges[@]}" 2>/dev/null || true)
+    recs+=("${range_recs[@]}")
+  fi
+  if ((${#shas[@]} > 0)); then
+    local -a sha_recs=()
+    mapfile -d '' -t sha_recs < <("${gitcmd[@]}" log -z --no-walk --format="$fmt" "${shas[@]}" 2>/dev/null || true)
+    recs+=("${sha_recs[@]}")
+  fi
+
+  local rec sha short subject body rest parsed obj
+  local -a objs=()
+  for rec in "${recs[@]}"; do
+    [[ -n $rec ]] || continue
+    sha="${rec%%$'\x1f'*}"
+    rest="${rec#*$'\x1f'}"
+    short="${rest%%$'\x1f'*}"
+    rest="${rest#*$'\x1f'}"
+    subject="${rest%%$'\x1f'*}"
+    body="${rest#*$'\x1f'}"
+    parsed="$(cog::fn::git_parse_conventional_subject "$subject")"
+    obj="$(jq -cn \
+      --arg sha "$sha" \
+      --arg short "$short" \
+      --arg subject "$subject" \
+      --arg body "$body" \
+      --argjson cc "$parsed" \
+      '{sha: $sha, short: $short, subject: $subject, body: $body,
+        type: $cc.type, scope: $cc.scope, description: $cc.description,
+        breaking: $cc.breaking}')"
+    objs+=("$obj")
+  done
+
+  __cog_git_json_object_array_from_lines "${objs[@]}" \
+    | jq -c 'reduce .[] as $c ([]; if any(.[]; .sha == $c.sha) then . else . + [$c] end)'
+}
+
 cog::fn::git_classify_failure_log() {
   __cog_git_require_jq
 
@@ -447,6 +534,70 @@ __cog_cc_add_violation() {
   CC_VIOLATIONS+=("$(jq -cn --arg c "$1" --arg m "$2" --arg h "$3" '{code: $c, message: $m, hint: $h}')")
 }
 
+# Parse a Conventional Commits subject line into its components. Pure and
+# deterministic; the shared single source of truth for both the commit-message
+# linter and the range-log helper. Emits one JSON object:
+#   {sep_present, stem, type, scope, description, breaking,
+#    space_after_colon, after_empty, scope_malformed}
+# `stem` is the pre-colon text after stripping a breaking-change '!'.
+# `space_after_colon` is false only when text follows the colon with no leading
+# space; `after_empty` marks an empty post-colon remainder.
+cog::fn::git_parse_conventional_subject() {
+  __cog_git_require_jq
+
+  local subject="${1:-}"
+  local sep_present=false breaking=false space_after_colon=true after_empty=false scope_malformed=false
+  local stem="" type="" scope="" desc=""
+
+  if [[ $subject == *:* ]]; then
+    sep_present=true
+    local before="${subject%%:*}" after="${subject#*:}"
+
+    if [[ -z $after ]]; then
+      after_empty=true
+      desc=""
+    elif [[ $after == " "* ]]; then
+      desc="${after# }"
+    else
+      desc="$after"
+      space_after_colon=false
+    fi
+
+    # Strip an optional breaking-change '!' before parsing the scope.
+    [[ $before == *"!" ]] && {
+      breaking=true
+      before="${before%!}"
+    }
+
+    stem="$before"
+    type="$before"
+    if [[ $before == *"("* || $before == *")"* ]]; then
+      if [[ $before =~ ^([A-Za-z0-9_-]+)\((.+)\)$ ]]; then
+        type="${BASH_REMATCH[1]}"
+        scope="${BASH_REMATCH[2]}"
+      else
+        type="${before%%(*}"
+        scope_malformed=true
+      fi
+    fi
+  fi
+
+  jq -cn \
+    --argjson sep_present "$sep_present" \
+    --arg stem "$stem" \
+    --arg type "$type" \
+    --arg scope "$scope" \
+    --arg description "$desc" \
+    --argjson breaking "$breaking" \
+    --argjson space_after_colon "$space_after_colon" \
+    --argjson after_empty "$after_empty" \
+    --argjson scope_malformed "$scope_malformed" \
+    '{sep_present: $sep_present, stem: $stem, type: $type, scope: $scope,
+      description: $description, breaking: $breaking,
+      space_after_colon: $space_after_colon, after_empty: $after_empty,
+      scope_malformed: $scope_malformed}'
+}
+
 # Validate a commit message file against Conventional Commits, deferring to a
 # repo-native linter when one is present. Emits:
 #   {ok, deferred, linter, config, violations: [{code, message, hint}]}
@@ -509,32 +660,21 @@ cog::fn::git_commit_msg_lint() {
     __cog_cc_add_violation "missing-separator" "subject has no 'type: ' separator" \
       "use 'type(scope): description', e.g. 'feat(api): add token refresh'"
   else
-    local before="${subject%%:*}" after="${subject#*:}"
-    local desc
+    local parsed before type scope desc
+    parsed="$(cog::fn::git_parse_conventional_subject "$subject")"
+    before="$(jq -r '.stem' <<<"$parsed")"
+    type="$(jq -r '.type' <<<"$parsed")"
+    scope="$(jq -r '.scope' <<<"$parsed")"
+    desc="$(jq -r '.description' <<<"$parsed")"
 
-    if [[ -z $after ]]; then
-      desc=""
-    elif [[ $after == " "* ]]; then
-      desc="${after# }"
-    else
-      desc="$after"
+    if [[ "$(jq -r '.space_after_colon' <<<"$parsed")" == false ]]; then
       __cog_cc_add_violation "missing-space-after-colon" "no space after the ':' separator" \
         "write 'type(scope): description' with one space after the colon"
     fi
 
-    # Strip an optional breaking-change '!' before parsing the scope.
-    [[ $before == *"!" ]] && before="${before%!}"
-
-    local type="$before" scope=""
-    if [[ $before == *"("* || $before == *")"* ]]; then
-      if [[ $before =~ ^([A-Za-z0-9_-]+)\((.+)\)$ ]]; then
-        type="${BASH_REMATCH[1]}"
-        scope="${BASH_REMATCH[2]}"
-      else
-        type="${before%%(*}"
-        __cog_cc_add_violation "bad-scope" "malformed scope in '${before}'" \
-          "use 'type(scope): ...' with matching parens, e.g. 'fix(core/db): ...'"
-      fi
+    if [[ "$(jq -r '.scope_malformed' <<<"$parsed")" == true ]]; then
+      __cog_cc_add_violation "bad-scope" "malformed scope in '${before}'" \
+        "use 'type(scope): ...' with matching parens, e.g. 'fix(core/db): ...'"
     fi
 
     if ! __cog_cc_contains "$type" "${CC_ALLOWED_TYPES[@]}"; then

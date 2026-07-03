@@ -60,6 +60,7 @@ Commands:
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
+  jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
@@ -165,6 +166,7 @@ Commands:
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
+  jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.

@@ -89,6 +89,7 @@ tiers:
       - suckless-patcher
       - ast-grep
       - assess-input
+      - jira-ticket-creator
       - gc
       - gc-hook-fix
       - runner-all
