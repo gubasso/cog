@@ -2,10 +2,11 @@
 name: gc
 description: >
   Delegates deterministic git mechanics to the cog CLI while preserving
-  session-scope and hook-fix judgment in prose. Commits the work across every
-  git repo the session touched (source repo plus any satellite/SoT docs repo).
-  Use when the user says "gc", "commit", "commit this", "save changes", "stage
-  and commit", or "commit and push".
+  session-scope and safety judgment in prose. Commits the work across every git
+  repo the session touched (source repo plus any satellite/SoT docs repo) by
+  fanning out one independent commit worker per repo, in parallel. Use when the
+  user says "gc", "commit", "commit this", "save changes", "stage and commit",
+  or "commit and push".
 model: opus
 effort: low
 ---
@@ -14,68 +15,45 @@ effort: low
 
 # Commit changes
 
-The shared mechanical contract is identical to the Codex `gc` skill.
+`gc` is the coordinator for committing a session's work. It runs the one-time session partition and
+safety scan, then **fans out one independent commit worker per touched repo, all in parallel**, and
+aggregates their results. The per-repo commit routine — stage, draft a conforming message, run the
+fix-all round loop, optionally push — lives in a fresh-context worker; this skill owns session scope,
+the safety gates, and the fan-out.
 
-**Multi-repo by default.** When this session changed files in more than one git repo
-— a source repo plus a SoT docs repo, or an orchestrated run writing into a
-satellite project — commit the work in **every** touched repo, not just the one the
-shell sits in. The deterministic partition/stage/commit mechanics live in `cog`;
-this skill stays a thin orchestrator.
+**Multi-repo by default.** When this session changed files in more than one git repo — a source repo
+plus a SoT docs repo, or an orchestrated run writing into a satellite project — commit the work in
+**every** touched repo, not just the one the shell sits in. The deterministic partition mechanics live
+in `cog gc-plan`; per-repo commit mechanics live in the worker; this skill stays a thin coordinator.
 
 ## Non-negotiable rules
 
 - Never commit unless the user explicitly asks to commit.
-- Never mention AI, Claude, Codex, automation, assistance, or similar wording in
-  commit messages.
-- Never bypass hooks: no `--no-verify`, no `-n`, no `SKIP=...`, no hook removal,
-  and no git config edits.
-- Never use blanket staging. The only staging path goes through
-  `cog gc-stage --session-files "$PATHS_FILE"` (per repo, with `--repo-root` in
-  multi-repo mode).
-- Do not touch live files outside the chosen session file list unless the user
-  explicitly approves.
-- Commit every repo the session worked in by default. Deviate only when `gc-plan`
-  reports a surprise (a path in no git repo, an undeclared touched repo, an
-  invalid declared dir, or a repo with foreign dirty paths) — then STOP and ask the
-  user. Never silently drop a touched repo.
-- During the commit flow never run history- or worktree-destroying git: no
-  `git reset --hard`, no `git restore`/`git checkout` on worktree files, no
-  `git clean`, and no hand-rolled content merges. If staging or commit reaches a
-  tree state you cannot explain, STOP and report it — never surgery your way out.
-- `cog gc-stage` is path-granular and stages whole files; it cannot isolate hunks
-  in a file that mixes session and non-session changes. Resolve a mixed file
-  (split it, or ask the user) before staging — never commit one wholesale.
+- Commit every repo the session worked in by default. Deviate only when `gc-plan` reports a surprise
+  (a path in no git repo, an undeclared touched repo, an invalid declared dir, or a repo with foreign
+  dirty paths) — then STOP and ask the user. Never silently drop a touched repo.
+- Resolve every "ask the user" branch in this coordinator, before any worker spawns. A parallel worker
+  runs in fresh context and never asks the user; it fails closed instead.
+- During the commit flow never run history- or worktree-destroying git: no `git reset --hard`, no
+  `git restore`/`git checkout` on worktree files, no `git clean`, and no hand-rolled content merges.
+  If the baseline or a plan result reaches a tree state you cannot explain, STOP and report it — never
+  surgery your way out.
+- Do not touch live files outside the chosen session file list unless the user explicitly approves.
+- Delegate all per-repo staging and committing to the worker; never stage or commit inline in this
+  coordinator.
 
 ## Cog Contract
 
-Session files are written to a newline-delimited file of paths. In multi-repo mode
-write **absolute** paths (they may span repos); `gc-plan` partitions them by owning
-repo and converts to repo-relative per-repo path lists. Blank lines are ignored. NUL
-bytes and empty sets are rejected by the helpers.
+Session files are written to a newline-delimited file of paths. In multi-repo mode write **absolute**
+paths (they may span repos); `gc-plan` partitions them by owning repo and converts to repo-relative
+per-repo path lists. Blank lines are ignored. NUL bytes and empty sets are rejected by the helpers.
 
-Mechanical commands:
+The one-time partition + safety scan and the result aggregator are the coordinator's mechanics:
 
 ```bash
 cog gc-plan --session-files "$SESSION_FILES_FILE" [--repo <dir>]... [--repo-set <file>] --json
-cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json
-cog gc-commit-lint --message-file "$MESSAGE_FILE" [--repo-root "<root>"] --json
-cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json
-cog gc-classify-failure --log "$LOG_FILE" --json
-cog gc-loop-progress --current "$LOG_FILE" --previous "$PREV_LOG_FILE" --json
-cog gc-push --repo-root "<root>" --json
+cog runner-commit-parse "$RESULTS_FILE" --json
 ```
-
-`gc-commit` carries a `lint` object in its JSON (`{ok, deferred, linter, config,
-violations}`) from the pre-flight Conventional Commits gate; see "Commit message
-format".
-
-`gc-loop-progress` diffs two consecutive round reports and emits
-`{new, recurring, resolved, churn_ratio, counts}` keyed on failing-hook (or
-failure-class) signatures. It is the deterministic signal for the stuck-loop
-judgment in the round loop below.
-
-`--repo-root` makes `gc-stage`/`gc-commit`/`gc-push` target a specific repo without
-`cd`. Omit it for a single-repo commit in the current directory's repo.
 
 `gc-plan` emits:
 
@@ -91,97 +69,76 @@ judgment in the round loop below.
 }
 ```
 
-`ok` is `false` only when there are `escapes` (paths in no git repo). A non-empty
-`surprises` list means the safety scan wants you to ask the user before committing.
-Each surprise is a tagged string: `escape:<path>`, `undeclared-repo:<root>`,
-`invalid-repo:<dir>`, or `foreign-dirty:<root>`. A `foreign-dirty:<root>` entry means
-that accepted repo carries dirty or untracked paths the session did not declare
-(the repo's `extra_dirty` list) — a pre-existing or someone-else's change the commit
-must not sweep in. Pass `--repo <dir>` or `--repo-set <file>` for repos an
-orchestrator explicitly declared; this turns the declared set into an allowlist. With
-no declared repos, every touched repo is accepted and committed by default.
+`ok` is `false` only when there are `escapes` (paths in no git repo). A non-empty `surprises` list
+means the safety scan wants you to ask the user before committing. Each surprise is a tagged string:
+`escape:<path>`, `undeclared-repo:<root>`, `invalid-repo:<dir>`, or `foreign-dirty:<root>`. A
+`foreign-dirty:<root>` entry means that accepted repo carries dirty or untracked paths the session did
+not declare (the repo's `extra_dirty` list) — a pre-existing or someone-else's change the commit must
+not sweep in. Pass `--repo <dir>` or `--repo-set <file>` for repos an orchestrator explicitly
+declared; this turns the declared set into an allowlist. With no declared repos, every touched repo is
+accepted and committed by default.
 
-## Commit message format
-
-Every commit message is a Conventional Commit: `type(scope): description`.
-
-- **type**: one of `feat, fix, docs, style, refactor, perf, test, build, ci, chore,
-  revert`.
-- **scope** (optional, encouraged): a noun naming the area changed; may be
-  hierarchical, e.g. `module/sub-module`, `theme/sub-theme`.
-- **description**: imperative, lowercase, no trailing period; keep the subject ≤ 72
-  chars and put detail in the body after one blank line.
-- **breaking change**: add `!` before the colon (`feat(api)!: ...`) and/or a
-  `BREAKING CHANGE:` footer.
-
-`cog gc-commit-lint` checks this deterministically and `gc-commit` enforces it as a
-pre-flight gate. When the repo runs its own commit-message linter the check reports
-`deferred: true`; that linter prevails, so follow the project's rules.
+Each accepted repo object carries a repo-relative `.paths` list. Each worker receives its repo via
+`--repo-root <root>` and reuses the deterministic per-repo command surface (`cog gc-stage`,
+`gc-commit`, `gc-classify-failure`, `gc-loop-progress`, `gc-push`), all of which target a repo without
+`cd`. `cog runner-commit-parse` reads one `COMMIT_*` line per repo and fails closed if any repo's line
+is `*_FAILED`.
 
 ## Result Line Contract
 
-Emit one canonical status line per committed repo via `cog msg`, as the trailing
-block of the reply with nothing after it. In multi-repo mode each line carries a
-free-form `repo=<root>` suffix; for a single repo omit the suffix so the line is
-the canonical single-repo form:
+Each worker emits one canonical status line per repo to its own result-line file:
 
-```bash
-cog msg ok commit "$SHA"                                 # COMMIT_OK <sha>
-cog msg ok commit "$SHA repo=$ROOT"                      # COMMIT_OK <sha> repo=<root>
-cog msg ok commit-push "$SHA repo=$ROOT"                 # COMMIT_PUSH_OK <sha> repo=<root>
-cog msg failed commit "<reason> repo=$ROOT log=<path>"   # COMMIT_FAILED ...
-cog msg failed commit-push "<reason> repo=$ROOT"         # COMMIT_PUSH_FAILED ...
+```text
+COMMIT_OK <sha> repo=<root>
+COMMIT_PUSH_OK <sha> repo=<root>
+COMMIT_FAILED <reason> repo=<root>
+COMMIT_PUSH_FAILED <reason> repo=<root>
 ```
 
-Parent runners read these via
-`cog runner-commit-parse`, which accepts one line per repo and fails
-closed if any repo's line is `*_FAILED`.
+In single-repo mode the worker omits the `repo=` suffix, so the line is the canonical single-repo form
+`COMMIT_OK <sha>`. The coordinator concatenates every worker's line and runs `cog runner-commit-parse`,
+which fails closed on any `*_FAILED`. Emit the aggregated `COMMIT_*` block as the trailing block of the
+reply, with nothing after it.
 
 ## Working directory
 
-All scratch artifacts live under one deterministic run directory. Establish it before
-anything else, in the first Bash call:
+All scratch artifacts live under one deterministic run directory. Establish it before anything else,
+in the first Bash call:
 
 ```bash
 RUN_DIR="$(cog rundir gc | sed -n 's/^RUN_DIR=//p')"
 echo "RUN_DIR=$RUN_DIR"
 ```
 
-The skill's scratch files are fixed paths under that directory:
+The coordinator's scratch files are fixed paths under that directory:
 
-- `SESSION_FILES_FILE` = `$RUN_DIR/session-files.txt` — the chosen session paths.
-- For a single repo: `PATHS_FILE` = `$RUN_DIR/paths.txt`, `MESSAGE_FILE` =
-  `$RUN_DIR/message.txt`, `LOG_FILE` = `$RUN_DIR/round.log`, `PREV_LOG_FILE` =
-  `$RUN_DIR/prev-round.log`.
-- For multiple repos, give each repo its own `$RUN_DIR/<repo-slug>/` subdirectory (use
-  the repo basename) and place that repo's `paths.txt`, `message.txt`, `round.log`, and
-  `prev-round.log` inside it, so per-repo files never collide.
+- `SESSION_FILES_FILE` = `$RUN_DIR/session-files.txt` — the chosen session paths (absolute in
+  multi-repo mode).
+- Each accepted repo gets its own `$RUN_DIR/repos/<repo-slug>/` subdirectory, where `<repo-slug>` is
+  the repo basename plus a short hash of the absolute root so same-basename repos never collide. That
+  subdirectory holds the worker's `paths.txt` and `result-line.txt`.
+- `RESULTS_FILE` = `$RUN_DIR/commit-results.txt` — the concatenated per-repo result lines.
 
-Shell state does not persist between Bash tool calls. Substitute the literal `RUN_DIR`
-path echoed above — and the literal file paths under it — into every later command;
-never rely on `$SESSION_FILES_FILE`, `$PATHS_FILE`, `$MESSAGE_FILE`, `$LOG_FILE`, or
-`$PREV_LOG_FILE` being live shell variables in a later call. The `$VAR` names in the
-commands below are these literal files.
+Shell state does not persist between Bash tool calls. Substitute the literal `RUN_DIR` path echoed
+above — and the literal file paths under it — into every later command; never rely on the `$VAR` names
+being live shell variables in a later call.
 
 ## Workflow
 
-1. Establish the run directory (see "Working directory"), then take a **fresh** baseline
-   in every touched repo with read-only commands: live `git status`, `git stash list`,
-   staged diff, unstaged diff, and recent log. Reconcile this live status against the
-   files the session actually edited; never trust the ambient session-start `gitStatus`
-   snapshot, which can be stale. This informs the session file list and the commit
-   message draft.
+1. Establish the run directory (see "Working directory"), then take a **fresh** baseline in every
+   touched repo with read-only commands: live `git status`, `git stash list`, staged diff, unstaged
+   diff, and recent log. Reconcile this live status against the files the session actually edited;
+   never trust the ambient session-start `gitStatus` snapshot, which can be stale. This informs the
+   session file list.
 
 2. Decide the session file list in prose. This remains judgment:
-   - With `--all`/`-a`, include every dirty path the user asked to commit across the
-     repos the session is responsible for.
-   - Otherwise include only files this session created, modified, or the user
-     explicitly named.
+   - With `--all`/`-a`, include every dirty path the user asked to commit across the repos the session
+     is responsible for.
+   - Otherwise include only files this session created, modified, or the user explicitly named.
    - If the session made no code changes, do not fall back to all dirty files.
-   - If a file contains mixed session and non-session changes, ask the user.
 
-   Write the chosen paths to `$SESSION_FILES_FILE`, one per line. In multi-repo mode
-   write **absolute** paths.
+   Write the chosen paths to `$SESSION_FILES_FILE`, one per line. In multi-repo mode write **absolute**
+   paths.
 
 3. Partition and run the safety scan:
 
@@ -189,99 +146,61 @@ commands below are these literal files.
    cog gc-plan --session-files "$SESSION_FILES_FILE" [--repo <dir>]... [--repo-set <file>] --json
    ```
 
-4. Safety branch:
-   - If `.ok` is `false` (escapes): STOP. Report the paths that resolve to no git
-     repo; do not commit anything.
-   - If `.surprises` is non-empty: STOP and ask the user, naming the undeclared repos,
-     any invalid declared dirs, and — for each `foreign-dirty:<root>` — the specific
-     foreign paths from that repo's `extra_dirty`. These are dirty or untracked files
-     the session never declared; do not commit until the user confirms whether they
-     belong. Under `--all`/`-a`, instead of asking, **union** each accepted repo's
-     `extra_dirty` into the existing `$SESSION_FILES_FILE` (append, never replace) and
-     re-run `gc-plan`; the foreign-dirty surprise then clears because those paths are
-     now declared.
-   - Otherwise proceed.
+4. Safety branch (all resolved here, before any worker spawns):
+   - If `.ok` is `false` (escapes): STOP. Report the paths that resolve to no git repo; do not commit
+     anything.
+   - If `.surprises` is non-empty: STOP and ask the user, naming the undeclared repos, any invalid
+     declared dirs, and — for each `foreign-dirty:<root>` — the specific foreign paths from that repo's
+     `extra_dirty`. These are dirty or untracked files the session never declared; do not commit until
+     the user confirms whether they belong. Under `--all`/`-a`, instead of asking, **union** each
+     accepted repo's `extra_dirty` into `$SESSION_FILES_FILE` (append, never replace) and re-run
+     `gc-plan`; the foreign-dirty surprise then clears because those paths are now declared.
+   - Otherwise proceed. Set `MULTI_REPO=1` when `.repos` has more than one entry.
 
-5. For each repo object in `.repos`, in order:
-   1. Write its `.paths` (repo-relative) to that repo's `$PATHS_FILE` under `RUN_DIR`
-      (see "Working directory").
-   2. `cog gc-stage --session-files "$PATHS_FILE" --repo-root "<root>" --json`.
-      If `ok` is not `true`, stop and ask before committing.
-      Then review `git diff --cached --stat` for the repo. If any staged file's churn
-      is materially larger than the edit the session intended — a "one-line" file that
-      staged dozens of lines — treat it as mixed: STOP and ask before committing, and
-      do not stage around it wholesale (`gc-stage` cannot isolate hunks).
-   3. Draft the commit message from **that** repo's staged diff in the format under
-      "Commit message format", and write it to `$MESSAGE_FILE`. Validate it with
-      `cog gc-commit-lint --message-file "$MESSAGE_FILE" --repo-root "<root>" --json`;
-      if `ok` is `false` and `deferred` is `false`, revise per `violations` and
-      re-lint before committing.
-   4. Run the commit round loop below until that repo commits clean or the loop stops.
-   5. If `--push`/`-p` is active, `cog gc-push --repo-root "<root>" --json`.
+5. Prepare per-repo dispatch inputs. For each repo object in `.repos`, in order, create its
+   `$RUN_DIR/repos/<repo-slug>/` subdirectory (slug = repo basename + short hash of the absolute
+   root), write that repo's repo-relative `.paths` to `<work-dir>/paths.txt`, designate
+   `<work-dir>/result-line.txt` as its result file, and append that result-file path (one per line, in
+   `.repos` order) to the manifest `$RUN_DIR/result-files.txt`.
 
-6. Emit one result line per committed repo (see the result line contract), with the
-   `repo=` suffix in multi-repo mode and the bare line for a single repo. Emit
-   exactly this trailing block and nothing after it.
-
-### Per-Repo Commit Round Loop
-
-Each repo commits through a bounded round loop. Every round fixes the **whole** report
-at once, then retries — never one error per round.
-
-Round R:
-
-1. Attempt the commit:
+6. Fan out (parallel), with proof-of-delegation. This follows the Homogeneous Parallel Fan-Out pattern
+   in `$(cog skill-refs path orchestration/orchestration-patterns.md)`. Set
+   `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` before dispatch; never shell-background the Agent calls.
+   Take a pre-snapshot of `$RUN_DIR` and clear stale per-repo result/proof files:
 
    ```bash
-   cog gc-commit --message-file "$MESSAGE_FILE" --paths-file "$PATHS_FILE" --repo-root "<root>" --json
+   find "$RUN_DIR" -type f -printf '%p %T@\n' 2>/dev/null | sort > "$RUN_DIR/fanout-pre.snap"
    ```
 
-   `gc-commit` saves the full hook and git output to the file named by its `.log`;
-   that file is round R's report. Keep the previous round's `.log` as `$PREV_LOG_FILE`.
+   Then, in ONE assistant message, issue one **Agent** call per repo (`subagent_type:
+   general-purpose`, never the Skill tool). Each prompt tells the worker to read
+   `$HOME/.claude/skills/gc-repo/SKILL.md` and follow it end-to-end with its literal arguments:
+   `--repo-root <root>`, `--session-files <work-dir>/paths.txt`, `--run-dir <work-dir>`,
+   `--result-file <work-dir>/result-line.txt`, `--push` (only when `--push`/`-p` is active), and
+   `--multi-repo` (only when `MULTI_REPO=1`); and to return one line with its result-line path. All
+   calls go in the single message so they run concurrently.
 
-2. If `ok` is `true`, the repo is committed. Leave the round loop and emit its result
-   line.
-
-3. Otherwise classify the report:
+7. Post-snapshot and validate. After all workers return:
 
    ```bash
-   cog gc-classify-failure --log "$LOG_FILE" --json
+   find "$RUN_DIR" -type f -printf '%p %T@\n' 2>/dev/null | sort > "$RUN_DIR/fanout-post.snap"
+   diff -u "$RUN_DIR/fanout-pre.snap" "$RUN_DIR/fanout-post.snap" > "$RUN_DIR/fanout-proof.diff" || true
    ```
 
-   - `commit-message` (and any `gc-commit` pre-flight `lint`-only failure where
-     `git commit` was not attempted): revise the message per `lint.violations` and
-     retry. This stays in this loop; it needs no fix worker.
-   - `auto-fixer` or `content-fix`: delegate the fixes to a fresh opus worker, then
-     re-stage and retry (round R+1). See "Delegated fix".
-   - `push-hook`: delegate the fixes the same way, create a normal follow-up commit
-     through `gc-commit`, and retry.
-   - `setup-missing`, `push-setup-missing`, `push-non-hook`: report the failure and
-     stop; do not run git config or setup commands.
+   For each repo, fail closed if `<work-dir>/result-line.txt` is missing or empty, does not hold
+   exactly one `COMMIT_OK`/`COMMIT_PUSH_OK`/`COMMIT_FAILED`/`COMMIT_PUSH_FAILED` line, or (when
+   `MULTI_REPO=1`) lacks the `repo=<root>` suffix; or if `fanout-proof.diff` is empty. Do not
+   auto-retry; do not fall back to inline commit work. On missing proof, report it and ask the user.
 
-4. Stuck check. Before retrying into round 4 and every round after, compare the two
-   most recent reports:
+8. Aggregate and emit. Concatenate every worker's result line in `gc-plan` repo order and parse
+   fail-closed:
 
    ```bash
-   cog gc-loop-progress --current "$LOG_FILE" --previous "$PREV_LOG_FILE" --json
+   xargs -r -d '\n' cat < "$RUN_DIR/result-files.txt" > "$RUN_DIR/commit-results.txt"
+   cog runner-commit-parse "$RUN_DIR/commit-results.txt" --json
    ```
 
-   When `recurring` holds the same signatures with `resolved` empty and `churn_ratio`
-   at or near `0`, the loop is stuck. Redirect to a better path: broaden the fix scope,
-   address the root cause the earlier rounds skirted, or take on a class the loop kept
-   deferring, then re-delegate with that framing. If a redirected round still leaves
-   the same `recurring` signatures with no progress, stop and emit `COMMIT_FAILED` with
-   the recurring signatures and the round-log paths.
-
-### Delegated fix
-
-For `auto-fixer`, `content-fix`, and `push-hook`, delegate the remediation to a
-fresh-context Claude worker through the Agent tool (`subagent_type: general-purpose`),
-never the Skill tool. The prompt tells the worker to read
-`$HOME/.claude/skills/gc-hook-fix/SKILL.md` and follow it, passing the repo root, the
-repo's session `$PATHS_FILE`, and the failure report (`$LOG_FILE`). The worker fixes
-every reported issue at once within the session file scope and re-stages. On return,
-retry the commit; address any out-of-scope items it reports with the user.
-
-A failure in one repo does not roll back commits already made in earlier repos. Report
-each repo's actual outcome; the parent runner treats any `*_FAILED` line as a hard
-fail.
+   Emit the aggregated `COMMIT_*` lines (each carrying its `repo=<root>` suffix in multi-repo mode,
+   the bare form for a single repo) as the trailing block of the reply, with nothing after it. A
+   `*_FAILED` line (including a mixed-file reason) is a hard fail; surface those repos to the user. A
+   failure in one repo does not roll back commits already made in other repos.

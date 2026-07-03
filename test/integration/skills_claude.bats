@@ -82,7 +82,6 @@ forbidden_scan_codex() {
     ask
     assess-input
     ast-grep
-    gc
     implementation-reviewer
     plan-refactor-migration
     review-oneshot
@@ -115,28 +114,42 @@ forbidden_scan_codex() {
 }
 
 @test "gc skills document canonical multi-repo status contract" {
-  local file
-  for file in "$repo_root/skills/claude/gc/SKILL.md" "$repo_root/skills/codex/gc/SKILL.md"; do
-    assert_file_contains "$file" "cog msg ok commit"
-    assert_file_contains "$file" "COMMIT_OK <sha>"
-    assert_file_contains "$file" "COMMIT_PUSH_OK <sha> repo=<root>"
-    assert_file_contains "$file" "COMMIT_FAILED"
-    assert_file_contains "$file" "COMMIT_PUSH_FAILED"
-    assert_file_contains "$file" "nothing after it"
-    assert_file_contains "$file" "repo-root"
-    assert_file_contains "$file" "repo-set"
-  done
+  # The gc coordinator documents the aggregation view and result-line contract; the
+  # gc-repo worker emits the per-repo status lines.
+  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  assert_file_contains "$coordinator" "cog runner-commit-parse"
+  assert_file_contains "$coordinator" "COMMIT_OK <sha>"
+  assert_file_contains "$coordinator" "COMMIT_PUSH_OK <sha> repo=<root>"
+  assert_file_contains "$coordinator" "COMMIT_FAILED"
+  assert_file_contains "$coordinator" "COMMIT_PUSH_FAILED"
+  assert_file_contains "$coordinator" "nothing after it"
+  assert_file_contains "$coordinator" "repo-root"
+  assert_file_contains "$coordinator" "repo-set"
+
+  local worker="$repo_root/skills/claude/gc-repo/SKILL.md"
+  assert_file_contains "$worker" "cog msg ok commit"
+  assert_file_contains "$worker" "COMMIT_OK <sha>"
+  assert_file_contains "$worker" "COMMIT_PUSH_OK <sha> repo=<root>"
+  assert_file_contains "$worker" "COMMIT_FAILED"
+  assert_file_contains "$worker" "COMMIT_PUSH_FAILED"
+  assert_file_contains "$worker" "nothing after it"
+  assert_file_contains "$worker" "result-file"
+  assert_file_contains "$worker" "repo-root"
 }
 
 @test "gc skills document the change-provenance and destructive-recovery guards" {
-  local file
-  for file in "$repo_root/skills/claude/gc/SKILL.md" "$repo_root/skills/codex/gc/SKILL.md"; do
-    assert_file_contains "$file" "foreign-dirty"
-    assert_file_contains "$file" "git reset --hard"
-    assert_file_contains "$file" "git stash list"
-    assert_file_contains "$file" "git diff --cached --stat"
-    assert_file_contains "$file" "path-granular"
-  done
+  # Provenance/safety gates stay in the coordinator; the diffstat materiality and
+  # whole-file staging guards move into the per-repo worker.
+  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  assert_file_contains "$coordinator" "foreign-dirty"
+  assert_file_contains "$coordinator" "git reset --hard"
+  assert_file_contains "$coordinator" "git stash list"
+
+  local worker="$repo_root/skills/claude/gc-repo/SKILL.md"
+  assert_file_contains "$worker" "git reset --hard"
+  assert_file_contains "$worker" "git diff --cached --stat"
+  assert_file_contains "$worker" "path-granular"
+
   assert_file_contains "$repo_root/skills/claude/gc-hook-fix/SKILL.md" "git reset --hard"
 }
 

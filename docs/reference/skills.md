@@ -119,13 +119,13 @@ Utility skills outside the four governed behavioral prefixes, plus shipped agent
 - skills/claude/ast-grep
 - skills/claude/claudemd
 - skills/claude/gc
+- skills/claude/gc-repo
 - skills/claude/osc-obs
 - skills/claude/pre-commit
 - skills/claude/suckless-patcher
 - skills/claude/test-review
 - skills/codex/ask
 - skills/codex/ast-grep
-- skills/codex/gc
 - skills/codex/suckless-patcher
 - skills/codex/test-review
 - .claude/skills/cog-skill-creator

@@ -1236,6 +1236,22 @@ EOF
   [[ $stderr == *"expects tier 'low'"* ]]
 }
 
+@test "cog skill-lint pins gc-repo to the LOW tier" {
+  # The gc-repo per-repo commit worker is registry-pinned low (opus, effort=low).
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo opus low
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint flags gc-repo when pinned to haiku" {
+  # gc-repo is registry-pinned low; haiku (which classifies cheap) must fail.
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo haiku ""
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
+  assert_failure
+  [[ $stderr == *"model-effort-tier"* ]]
+  [[ $stderr == *"expects tier 'low'"* ]]
+}
+
 @test "cog skill-lint exempts an ungoverned skill regardless of model/effort" {
   write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-thing" demo-thing opus medium
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-thing/SKILL.md"

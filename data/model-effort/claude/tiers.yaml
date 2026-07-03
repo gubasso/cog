@@ -92,6 +92,7 @@ tiers:
       - jira-ticket-creator
       - gc
       - gc-hook-fix
+      - gc-repo
       - runner-all
       - runner-plan
       - executor-oneshot-codex

@@ -78,6 +78,67 @@ diff -u ... > "$RUN_DIR/<PROOF_DIFF>" || true
 NEW_DIR="$(comm -13 "$RUN_DIR/<STAGE>-pre.snap" "$RUN_DIR/<STAGE>-post.snap" | tail -1)"
 ```
 
+## Homogeneous Parallel Fan-Out
+
+When a coordinator has N independent units of the **same** work — one per repo, one per file, one per
+shard — dispatch one identical Agent subagent per unit **concurrently** rather than looping over them
+sequentially. The concurrency mechanism is issuing all N Agent tool calls in a single assistant
+message; each worker owns a disjoint durable artifact so there is no cross-worker contention. This
+generalizes the two-way heterogeneous fan-out (one Claude Agent + one Codex job) to N homogeneous
+Agent subagents.
+
+### Contract
+
+1. **Partition** — the coordinator computes the unit set once (e.g. `cog gc-plan` partitions session
+   files by owning repo) and gives each unit its own scratch subdirectory under the run directory and
+   its own single result-line file:
+
+   ```text
+   $RUN_DIR/<unit-slug>/            # slug must be collision-free (e.g. basename + short hash)
+   $RUN_DIR/<unit-slug>/result-line.txt
+   ```
+
+2. **Pre-snapshot** — capture run-directory state and clear stale per-unit result/proof files:
+
+   ```bash
+   find "$RUN_DIR" -type f -printf '%p %T@\n' 2>/dev/null | sort > "$RUN_DIR/<STAGE>-pre.snap"
+   ```
+
+3. **Dispatch (parallel)** — in ONE assistant message, issue one Agent call per unit
+   (`subagent_type: general-purpose`, never the Skill tool). Each prompt points the worker at its
+   skill file and passes that unit's literal arguments (its scratch dir, its result-line file, and
+   any per-unit flag). All calls go in the single message so they run concurrently.
+
+4. **Post-snapshot, diff, and validate** — after all workers return, snapshot again, diff, and fail
+   closed on missing evidence, per unit:
+
+   ```bash
+   find "$RUN_DIR" -type f -printf '%p %T@\n' 2>/dev/null | sort > "$RUN_DIR/<STAGE>-post.snap"
+   diff -u "$RUN_DIR/<STAGE>-pre.snap" "$RUN_DIR/<STAGE>-post.snap" > "$RUN_DIR/<PROOF_DIFF>" || true
+   ```
+
+   For every unit, fail closed if its `result-line.txt` is missing or empty, or if `<PROOF_DIFF>` is
+   empty. Do not auto-retry; do not fall back to inline work.
+
+5. **Aggregate** — concatenate the per-unit result-line files into one file and parse with a
+   fail-closed aggregator that rejects any failure line:
+
+   ```bash
+   cat "$RUN_DIR"/*/result-line.txt > "$RUN_DIR/<RESULTS>"
+   # commit fan-out: cog runner-commit-parse "$RUN_DIR/<RESULTS>" --json  (fails closed on any *_FAILED)
+   ```
+
+### Rules
+
+- Each worker owns a disjoint artifact; slugs must be collision-free (a shared basename across units
+  is not enough — append a short hash of a unique key).
+- Sibling workers share one depth level; each may independently spawn its own nested worker within
+  the fixed 5-level cap.
+- Require env-first no-backgrounding (`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`) before dispatch; never
+  shell-background the Agent calls.
+- A worker in fresh context cannot ask the user — it fails closed on any unresolved condition, and the
+  coordinator surfaces the failed units after aggregation.
+
 ## Lock File Management
 
 Multi-stage workflows use lock files to prevent concurrent sessions from interfering.
