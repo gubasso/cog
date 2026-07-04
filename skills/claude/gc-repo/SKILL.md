@@ -60,8 +60,11 @@ not persist between Bash tool calls, so never rely on them being live shell vari
 Every commit message is a Conventional Commit: `type(scope): description`.
 
 - **type**: one of `feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert`.
-- **scope** (optional, encouraged): a noun naming the area changed; may be hierarchical, e.g.
-  `module/sub-module`.
+- **scope** (optional, encouraged): a lowercase noun naming the area changed. Prefer a hierarchical
+  `scope/subscope`, e.g. `feat(auth/login): ...`; the subscope is optional, added only when the
+  parent area is broad enough that a narrower part adds signal — otherwise a single scope
+  (`feat(auth): ...`). Use lowercase kebab-case segments (`github-actions`), keep to ≤ 2 levels, and
+  omit the scope entirely for genuinely cross-cutting changes (`chore: relicense`).
 - **description**: imperative, lowercase, no trailing period; keep the subject ≤ 72 chars and put
   detail in the body after one blank line.
 - **breaking change**: add `!` before the colon (`feat(api)!: ...`) and/or a `BREAKING CHANGE:` footer.

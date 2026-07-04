@@ -42,6 +42,27 @@ lint() {
   jq -e '.ok == true and (.violations | length) == 0' <<<"$output" >/dev/null
 }
 
+@test "accepts a three-level hierarchical scope" {
+  mkmsg "feat(a/b/c): deep scope"
+  lint
+  assert_success
+  jq -e '.ok == true and (.violations | length) == 0' <<<"$output" >/dev/null
+}
+
+@test "rejects an empty scope" {
+  mkmsg "feat(): empty scope"
+  lint
+  assert_failure
+  jq -e '.violations | map(.code) | index("bad-scope")' <<<"$output" >/dev/null
+}
+
+@test "rejects a nested scope with an empty segment" {
+  mkmsg "feat(core//db): double slash"
+  lint
+  assert_failure
+  jq -e '.violations | map(.code) | index("bad-scope")' <<<"$output" >/dev/null
+}
+
 @test "accepts a breaking-change marker" {
   mkmsg "feat(api)!: drop v1 endpoints"
   lint
@@ -113,6 +134,19 @@ lint() {
   lint
   assert_success
   jq -e '.ok == true and .deferred == true and .linter == "pre-commit"' <<<"$output" >/dev/null
+}
+
+@test "enforces the project's allowed_scopes on the full nested scope string" {
+  printf 'style = "conventional"\nallowed_scopes = ["auth/login"]\n' >"$REPO/committed.toml"
+  mkmsg "feat(auth/login): matches the allowlisted full path"
+  lint
+  assert_success
+  jq -e '.ok == true' <<<"$output" >/dev/null
+
+  mkmsg "feat(auth/api): full path not in the allowlist"
+  lint
+  assert_failure
+  jq -e '.violations | map(.code) | index("disallowed-scope")' <<<"$output" >/dev/null
 }
 
 @test "uses the project's committed.toml allowed_types" {

@@ -46,6 +46,18 @@ commit() {
   jq -e '.type == "fix" and .scope == "core/db"' <<<"$output" >/dev/null
 }
 
+@test "parses a three-level hierarchical scope" {
+  run cog::fn::git_parse_conventional_subject "feat(a/b/c): deep scope"
+  assert_success
+  jq -e '.type == "feat" and .scope == "a/b/c" and .scope_malformed == false' <<<"$output" >/dev/null
+}
+
+@test "flags an empty scope as malformed" {
+  run cog::fn::git_parse_conventional_subject "feat(): empty scope"
+  assert_success
+  jq -e '.scope_malformed == true and .type == "feat" and .scope == ""' <<<"$output" >/dev/null
+}
+
 @test "flags a subject with no separator" {
   run cog::fn::git_parse_conventional_subject "add a thing without a type"
   assert_success

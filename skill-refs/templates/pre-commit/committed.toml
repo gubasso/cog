@@ -31,4 +31,11 @@ allowed_types = [
   "chore",
   "revert",
 ]
-# allowed_scopes intentionally unset -> any scope, incl. hierarchical "a/b/c"
+# Scope policy: the default subject form is `type(scope/subscope): summary`. The
+# scope is optional but encouraged (a lowercase kebab noun naming the area
+# changed); the subscope is optional, added only when it organizes the message
+# better, e.g. `feat(auth/login): ...`. Omit the scope for cross-cutting changes
+# (`chore: relicense`). allowed_scopes is intentionally unset -> every scope,
+# incl. hierarchical "a/b/c", passes. To restrict scopes per-project, list each
+# FULL scope string: committed does not split on "/", so "auth/login" must be
+# listed literally (listing "auth" alone would not admit "auth/login").
