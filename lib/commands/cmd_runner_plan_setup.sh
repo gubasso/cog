@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse runner-plan arguments and create round queue run state.'
 
-__cog_runner_plan_setup_self_check='(.run_dir|type=="string") and (.plan_dir|type=="string") and (.inner_queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array") and (.queue_schema=="rounds")'
+__cog_runner_plan_setup_self_check='(.run_dir|type=="string") and (.plan_dir|type=="string") and (.inner_queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_rounds") and (.repos|type=="array") and (.queue_schema=="rounds") and (.plan_root|type=="string") and (.main_queue|type=="string") and (.store|type=="string") and (.project_key|type=="string")'
 
 __cog_runner_plan_setup_usage() {
   cog::fn::ui_data "Usage: cog runner-plan-setup [--json] [arguments-string]"
@@ -76,12 +76,17 @@ __cog_runner_plan_setup_parse() {
 
 __cog_runner_plan_setup_write_ctx() {
   local ctx="$1" repo_root="$2" plan_dir="$3" inner_queue_path="$4" run_dir="$5" dry_run="$6" max_rounds="$7" repos_joined="$8"
+  local plan_root="$9" main_queue="${10}" store="${11}" project_key="${12}"
   {
     printf 'REPO_ROOT=%q\n' "$repo_root"
+    printf 'PLAN_ROOT=%q\n' "$plan_root"
+    printf 'MAIN_QUEUE_PATH=%q\n' "$main_queue"
     printf 'PLAN_DIR=%q\n' "$plan_dir"
     printf 'INNER_QUEUE_PATH=%q\n' "$inner_queue_path"
     printf 'QUEUE_PATH=%q\n' "$inner_queue_path"
     printf 'QUEUE_SCHEMA=%q\n' "rounds"
+    printf 'PLAN_STORE=%q\n' "$store"
+    printf 'PROJECT_KEY=%q\n' "$project_key"
     printf 'RUN_DIR=%q\n' "$run_dir"
     if [[ $dry_run == true ]]; then
       printf 'DRY_RUN=%q\n' "1"
@@ -95,7 +100,8 @@ __cog_runner_plan_setup_write_ctx() {
 }
 
 __cog_runner_plan_setup_build_json() {
-  local raw="$1" dry_run max_rounds target repo_root target_path plan_dir plans_dir inner_queue_path run_dir queue_select_json repos_json repos_joined=""
+  local raw="$1" dry_run max_rounds target repo_root target_path plan_dir inner_queue_path run_dir queue_select_json repos_json repos_joined=""
+  local resolve_json target_type plan_root main_queue store project_key
   local -a repos_arr=()
   __cog_runner_plan_setup_parse "$raw" dry_run max_rounds target
   repo_root="$(cog::fn::git_root)"
@@ -115,23 +121,29 @@ __cog_runner_plan_setup_build_json() {
 
   repo_root="$(realpath "$repo_root")"
   plan_dir="$(realpath "$target_path")"
-  plans_dir="${repo_root}/.implementation-plans/plans"
-  cog::fn::review_plan_implementation_assert_flat "$repo_root"
-  [[ "$(dirname -- "$plan_dir")" == "$plans_dir" ]] || cog::fn::error_raise "InvalidInput" \
-    "plan target must be a direct child of .implementation-plans/plans" "path: ${plan_dir}" "" \
-    "use .implementation-plans/plans/<slug>"
 
-  inner_queue_path="${plan_dir}/queue-rounds.yaml"
-  [[ -f $inner_queue_path ]] || cog::fn::error_raise "InvalidInput" \
-    "plan target has no queue-rounds.yaml" "path: ${plan_dir}" "" ""
-  cog::fn::queue_validate_file "$inner_queue_path" rounds
+  # Resolve the plan vault (local or global store) through the shared resolver,
+  # which asserts vault membership, flatness, and the presence + rounds schema of
+  # queue-rounds.yaml — fully replacing the old fixed-parent-directory gate.
+  resolve_json="$(cog::fn::plan_runner_resolve_json "$repo_root" "$plan_dir")"
+  target_type="$(jq -r '.target_type' <<<"$resolve_json")"
+  [[ $target_type == "plan-dir" ]] || cog::fn::error_raise "InvalidInput" \
+    "runner-plan target must be a plan directory" "target_type: ${target_type}" "" "pass -ar @<plan-dir>"
+  repo_root="$(jq -r '.repo_root' <<<"$resolve_json")"
+  plan_root="$(jq -r '.plan_root' <<<"$resolve_json")"
+  main_queue="$(jq -r '.main_queue' <<<"$resolve_json")"
+  plan_dir="$(jq -r '.plan_dir' <<<"$resolve_json")"
+  inner_queue_path="$(jq -r '.inner_queue_path' <<<"$resolve_json")"
+  store="$(jq -r '.store' <<<"$resolve_json")"
+  project_key="$(jq -r '.project_key' <<<"$resolve_json")"
+
   mapfile -t repos_arr < <(yq e -r '.repos[]?' "$inner_queue_path" 2>/dev/null || true)
   if ((${#repos_arr[@]} > 0)); then
     printf -v repos_joined '%s\n' "${repos_arr[@]}"
     repos_joined="${repos_joined%$'\n'}"
   fi
   run_dir="$(cog::fn::rundir_create runner-plan)"
-  __cog_runner_plan_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$plan_dir" "$inner_queue_path" "$run_dir" "$dry_run" "$max_rounds" "$repos_joined"
+  __cog_runner_plan_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$plan_dir" "$inner_queue_path" "$run_dir" "$dry_run" "$max_rounds" "$repos_joined" "$plan_root" "$main_queue" "$store" "$project_key"
 
   if ! declare -F __cog_queue_select_build_json >/dev/null; then
     # shellcheck source=/dev/null
@@ -147,11 +159,16 @@ __cog_runner_plan_setup_build_json() {
     --arg plan_dir "$plan_dir" \
     --arg inner_queue_path "$inner_queue_path" \
     --arg repo_root "$repo_root" \
+    --arg plan_root "$plan_root" \
+    --arg main_queue "$main_queue" \
+    --arg store "$store" \
+    --arg project_key "$project_key" \
     --argjson dry_run "$dry_run" \
     --arg max_rounds "$max_rounds" \
     --argjson repos "$repos_json" \
     '{run_dir: $run_dir, plan_dir: $plan_dir, inner_queue_path: $inner_queue_path,
-      queue_schema: "rounds", repo_root: $repo_root, dry_run: $dry_run,
+      queue_schema: "rounds", repo_root: $repo_root, plan_root: $plan_root,
+      main_queue: $main_queue, store: $store, project_key: $project_key, dry_run: $dry_run,
       max_rounds: (if $max_rounds == "" then null else $max_rounds end), repos: $repos}'
 }
 

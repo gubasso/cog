@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "cog" "1" "2026-07-03"
+.TH "cog" "1" "1980-01-01"
 .PP
 .SH NAME
 .PP
@@ -64,6 +64,16 @@ Increase verbosity.\&
 \fBassess-input\fR
 .RS 4
 Extract input-quality signals and persist the executor gate verdict.\&
+.PP
+.RE
+\fBbootstrap-audit\fR
+.RS 4
+Aggregate bootstrap domain present/missing status.\&
+.PP
+.RE
+\fBbootstrap-template-review\fR
+.RS 4
+Check or stamp bootstrap template review freshness.\&
 .PP
 .RE
 \fBci-apply\fR
@@ -436,19 +446,19 @@ Assemble and validate the review-loop terminal summary.\&
 Validate, sort, and severity-filter review findings JSON.\&
 .PP
 .RE
-\fBreview-plan-implementation-scan\fR
-.RS 4
-Inventory all implementation-plan queues and repo/plan fingerprints.\&
-.PP
-.RE
-\fBreview-plan-implementation-verify\fR
-.RS 4
-Verify a review-plan-implementation run against a before/after scan.\&
-.PP
-.RE
 \fBreview-plan-multi-setup\fR
 .RS 4
 Parse review-plan-multi arguments and create run state.\&
+.PP
+.RE
+\fBreview-queue-rounds-scan\fR
+.RS 4
+Inventory all plan-vault queues and repo/plan fingerprints.\&
+.PP
+.RE
+\fBreview-queue-rounds-verify\fR
+.RS 4
+Verify a review-queue-rounds run against a before/after scan.\&
 .PP
 .RE
 \fBreview-scope\fR

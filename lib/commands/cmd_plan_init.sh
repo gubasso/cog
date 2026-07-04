@@ -64,7 +64,7 @@ __cog_plan_init_build_json() {
     fi
 
     # Plan directories must be flat siblings under plans/; fail closed on any nested plan.
-    cog::fn::review_plan_implementation_assert_flat "$repo_root"
+    cog::fn::plan_assert_flat_root "$plan_root"
 
     if [[ -e $root_readme ]]; then
       existing+=("$root_readme")

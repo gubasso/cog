@@ -1,5 +1,8 @@
 # ADR-0011: Directory plan queue format
 
+> Note (ADR-0064): the revision boundary named `review-plan-implementation` below was renamed to
+> `review-queue-rounds`. This body is left as the historical record.
+
 ## Context and Problem Statement
 
 The plan-writer family now needs a durable format that supports large work, independent domain

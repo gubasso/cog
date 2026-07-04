@@ -1,5 +1,8 @@
 # ADR-0014: Review Implementation Plans Boundary
 
+> Note (ADR-0064): the `review-plan-implementation` boundary described here was renamed to
+> `review-queue-rounds` and made vault-store-aware. This body is left as the historical record.
+
 ## Context and Problem Statement
 
 ADR-0012 established a revision boundary that reconciles implementation-plan queues after committed

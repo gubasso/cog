@@ -136,7 +136,7 @@ deterministically, with explicit registry membership winning over the prefix def
 1. **Registry pin** — the skill name appears in a per-tier `skills` list in
    [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml). This is the authoritative registry and the
    single escape hatch: the known exceptions live here (`executor-prex` rides high; the codex
-   delegation launchers, `review-findings`, and `review-plan-implementation` ride low).
+   delegation launchers, `review-findings`, and `review-queue-rounds` ride low).
 2. **Prefix default** — otherwise the [prefix taxonomy](#prefix-taxonomy) default applies: `plan-*`
    and `review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium, `runner-*` → low.
 3. **Exempt** — a skill matching neither is ungoverned and skipped.
@@ -351,7 +351,7 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   (`plan-*`/`review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium, `runner-*` →
   low); ungoverned skills are `exempt` and skipped. Absent `model:`/`effort:` rides the session
   default (HIGH); the known exceptions (`executor-prex` → high, the codex delegation launchers,
-  `review-findings`, and `review-plan-implementation` → low) are registry pins, the single escape
+  `review-findings`, and `review-queue-rounds` → low) are registry pins, the single escape
   hatch. Authors verify a choice with `cog power-grade skill-tier --skill <name>` and resolve a tier
   to its cells with `cog power-grade tier --name <name>`. See
   [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md) and "Model/effort tier enforcement".

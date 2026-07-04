@@ -82,6 +82,7 @@ Code-review skills:
 - skills/claude/review-oneshot
 - skills/claude/review-findings
 - skills/claude/review-loop
+- skills/claude/review-queue-rounds
 - skills/codex/implementation-reviewer
 - skills/codex/review-oneshot
 - skills/codex/review-findings
@@ -92,7 +93,6 @@ Plan-review sub-namespace (`review-plan-*`):
 - skills/claude/review-plan-multi
 - skills/claude/review-plan-complexity
 - skills/codex/review-plan-oneshot
-- .claude/skills/review-plan-implementation
 
 ### executor-*
 

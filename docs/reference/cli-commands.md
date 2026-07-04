@@ -134,8 +134,8 @@ this reference table.
 | `research-shelf get <id>` | Print one stored research finding. |
 | `research-shelf validate` | Validate the research shelf index and entries. |
 | `review-comment` | Plan or post PR comments for review findings. |
-| `review-plan-implementation-scan` | Inventory all implementation-plan queues and repo/plan fingerprints. |
-| `review-plan-implementation-verify` | Verify a review-plan-implementation run against a before/after scan. |
+| `review-queue-rounds-scan` | Inventory all plan-vault queues and repo/plan fingerprints. |
+| `review-queue-rounds-verify` | Verify a review-queue-rounds run against a before/after scan. |
 | `review-init` | Create a review run directory and resolve output paths. |
 | `review-loop-input` | Build and validate review-loop handoff input JSON. |
 | `review-loop-progress` | Compare review findings across loop rounds. |
@@ -244,7 +244,7 @@ the `assess-input` skill.
 `/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`;
 the `prompts` array lists known executors as examples, not a closed allowlist. Top-level `plans:`
 queue entries dispatch nested runner prompts such as
-`/runner-plan -ar @.implementation-plans/plans/<slug>/` through `runner-all`.
+`/runner-plan -ar @<PLAN_ROOT>/plans/<slug>/` through `runner-all`.
 
 `cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
 and falling back to the repo checkout.
@@ -271,11 +271,17 @@ here, not in `research-shelf`.
 
 ## Implementation plan layout
 
-Plan directories are flat siblings, a single level under `.implementation-plans/plans/`
-(`plans/<slug>/`); ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the
-filesystem. Nesting fails closed at three boundaries: `cog plan-init` (producer bootstrap),
-`cog review-plan-implementation-scan` (revision inventory, via `cog::fn::review_plan_implementation_assert_flat`), and
-`cog runner-plan-setup` (the invocation target must be a direct child of `plans/`).
+Plans live in the resolved cog plan vault (`<PLAN_ROOT>`) — `<PLAN_ROOT>/queue-plans.yaml` is the
+top-level plans queue, and each plan is `<PLAN_ROOT>/plans/<slug>/` with an inner `queue-rounds.yaml`
+and round bodies under `<PLAN_ROOT>/plans/<slug>/rounds/*.md`. `<PLAN_ROOT>` is the local store
+(`<repo>/.cog/plans`) or the global store (`<store>/projects/<project_key>`); the runner setups and the
+revision boundary resolve it through `cog plan runner-resolve --target <plan_dir|queue> [--json]`.
+
+Plan directories are flat siblings a single level under `<PLAN_ROOT>/plans/`; ordering between plans
+lives only in `queue-plans.yaml` `depends_on`, never in the filesystem. Nesting fails closed at three
+boundaries: `cog plan-init` (legacy producer bootstrap), `cog review-queue-rounds-scan` (revision
+inventory, via `cog::fn::plan_assert_flat_root`), and `cog runner-plan-setup` (the invocation target
+must resolve to a flat plan directory via `cog plan runner-resolve`).
 
 Top-level plan queue entries may select different executors while still targeting flat sibling plan
 directories:
@@ -285,16 +291,16 @@ plans:
   - item: alpha
     status: todo
     depends_on: []
-    prompt: /runner-plan -ar @.implementation-plans/plans/alpha/
+    prompt: /runner-plan -ar @<PLAN_ROOT>/plans/alpha/
     notes: ""
   - item: beta
     status: todo
     depends_on: [alpha]
-    prompt: /runner-plan -ar @.implementation-plans/plans/beta/
+    prompt: /runner-plan -ar @<PLAN_ROOT>/plans/beta/
     notes: ""
   - item: gamma
     status: todo
     depends_on: [beta]
-    prompt: /runner-plan -ar @.implementation-plans/plans/gamma/
+    prompt: /runner-plan -ar @<PLAN_ROOT>/plans/gamma/
     notes: ""
 ```

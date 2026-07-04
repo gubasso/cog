@@ -1072,7 +1072,7 @@ __cog_skill_lint_check_artifact_write_ownership() {
 # authoritative registry in data/model-effort/claude (per-tier
 # `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
 # Absent model+effort rides the session default (HIGH). The known exceptions
-# (executor-prex high; codex launchers, review-findings, review-plan-implementation
+# (executor-prex high; codex launchers, review-findings, review-queue-rounds
 # low) live in the registry, not here. See docs/decisions/0047-enforce-prefix-tier-policy.md.
 __cog_skill_lint_check_model_effort_tier() {
   local file="$1" runtime name expected model effort actual

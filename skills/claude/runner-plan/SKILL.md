@@ -4,7 +4,7 @@ description: >
   Drive one implementation plan directory's rounds queue to completion. Select
   each runnable rounds: item, dispatch its prompt verbatim to a fresh
   claude-delegate, verify the round is done, commit, run the
-  review-plan-implementation boundary, and continue until complete or failed
+  review-queue-rounds boundary, and continue until complete or failed
   closed.
 model: opus
 effort: low
@@ -24,24 +24,28 @@ mode is on / that you must not make edits), **STOP** before any other work — p
 researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
 (`Shift+Tab`) and re-invoke `/runner-plan`. Do not call `ExitPlanMode`, and do not silently continue.
 
-Drive one flat plan directory under `.implementation-plans/plans/`. This skill runs inline in its
-own invocation; it never delegates its rounds loop. Each selected round carries the command to run in
-its `prompt:` field, and this runner sends that text unchanged to a queue-blind `claude-delegate`
-subagent.
+Drive one flat plan directory in the resolved cog plan vault (local or global store), resolved by
+`cog runner-plan-setup` via `cog plan runner-resolve`. This skill runs inline in its own invocation; it
+never delegates its rounds loop. Each selected round carries the command to run in its `prompt:` field,
+and this runner sends that text unchanged to a queue-blind `claude-delegate` subagent.
 
 ## Contract
 
 - `runner-plan` consumes only a plan directory containing `queue-rounds.yaml` with `rounds:` schema.
-- `cog runner-plan-setup` validates the `-ar @<plan-dir>` target with
-  `cog::fn::review_plan_implementation_assert_flat` and `cog::fn::queue_validate_file`.
+- `cog runner-plan-setup` validates the `-ar @<plan-dir>` target through `cog plan runner-resolve`,
+  which resolves the vault store, asserts flatness, and validates the `rounds` schema; setup emits the
+  resolved `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and `PROJECT_KEY` into `ctx.env`.
 - The selected round prompt is opaque data. Dispatch it exactly as read from `cog queue-select`.
 - The executor prompt owns the round's status flip. After the delegate returns, verify the round is
   exactly `done`; do not edit the round status in this skill.
 - `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`.
   Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is
   `{ok, commits[]}`.
-- After each committed round, run the project-local `review-plan-implementation` boundary. That
-  boundary performs `cog review-plan-implementation-scan` and `cog review-plan-implementation-verify`.
+- After each committed round, run the `review-queue-rounds` boundary. That boundary performs
+  `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
+- `ctx.env` carries `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_DIR`, `INNER_QUEUE_PATH`,
+  `QUEUE_PATH`, `QUEUE_SCHEMA`, `PLAN_STORE`, `PROJECT_KEY`, `RUN_DIR`, `DRY_RUN`, `MAX_ROUNDS`, and
+  `REPOS`.
 
 Depth budget: `runner-plan` at depth 1 when launched by `runner-all` dispatches an executor at depth
 2; executor review subagents run at depth 3, below the fixed cap of 5.
@@ -49,9 +53,11 @@ Depth budget: `runner-plan` at depth 1 when launched by `runner-all` dispatches 
 ## Usage
 
 ```bash
-/runner-plan -ar @.implementation-plans/plans/<slug>/
-/runner-plan --max 1 -ar @.implementation-plans/plans/<slug>/
-/runner-plan --dry-run -ar @.implementation-plans/plans/<slug>/
+# Local store (in-project vault), or global store (absolute out-of-project vault):
+/runner-plan -ar @.cog/plans/plans/<slug>/
+/runner-plan -ar @/abs/cog/plans/projects/<project-key>/plans/<slug>/
+/runner-plan --max 1 -ar @.cog/plans/plans/<slug>/
+/runner-plan --dry-run -ar @.cog/plans/plans/<slug>/
 ```
 
 `--max N` counts completed and committed rounds. `--dry-run` selects and prints the next round, its
@@ -59,7 +65,7 @@ verbatim prompt, remaining `todo` rounds, and the planned `/gc -a` flags without
 flipping status, committing, or running revision.
 
 The plan path must not contain whitespace. Arguments are tokenized by word splitting, matching the
-`.implementation-plans/` layout convention.
+vault layout convention.
 
 ## Algorithm
 
@@ -132,13 +138,14 @@ The plan path must not contain whitespace. Arguments are tokenized by word split
    cog runner-commit-parse "$RUN_DIR/commit-$RUN_COUNT.out" --json
    ```
 
-9. Run the revision boundary as a foreground `claude-delegate`. Resolve the canonical main queue at
-   revision time; do not persist a parent main-queue path in setup:
+9. Run the revision boundary as a foreground `claude-delegate`. Source `MAIN_QUEUE_PATH` from `ctx.env`
+   (emitted by setup) and re-resolve the vault to prove it is still consistent:
 
    ```bash
    . "$RUN_DIR/ctx.env"
-   REVISION_MAIN_QUEUE="$REPO_ROOT/.implementation-plans/queue-plans.yaml"
-   [ -f "$REVISION_MAIN_QUEUE" ] || { echo "ERROR: revision main queue not found: $REVISION_MAIN_QUEUE" >&2; exit 1; }
+   RESOLVE_JSON="$(cog plan runner-resolve --target "$PLAN_DIR" --json)" || exit 1
+   REVISION_MAIN_QUEUE="$(jq -r '.main_queue' <<<"$RESOLVE_JSON")"
+   [ "$REVISION_MAIN_QUEUE" = "$MAIN_QUEUE_PATH" ] || { echo "ERROR: resolver main queue drifted" >&2; exit 1; }
    ```
 
    Prompt:
@@ -146,19 +153,19 @@ The plan path must not contain whitespace. Arguments are tokenized by word split
    ```text
    Working repo (your cwd): <REPO_ROOT>
 
-   Run the project-local `review-plan-implementation` skill after the committed queue item:
+   Run the `review-queue-rounds` skill after the committed queue item:
 
        --repo-root <REPO_ROOT>
        --main-queue <REVISION_MAIN_QUEUE>
 
    Use RUN_DIR=<RUN_DIR> for scan, verify, and commit-output files. The boundary must run
-   `cog review-plan-implementation-scan` before changes and `cog review-plan-implementation-verify`
+   `cog review-queue-rounds-scan` before changes and `cog review-queue-rounds-verify`
    after changes, then commit verified drift through /gc in the foreground. Return STATUS: OK with
    both phases reported, using NO_DRIFT for a phase that changed nothing. Return STATUS: FAILED on
    scan, verify, graph-check, or commit failure.
    ```
 
-   Require `STATUS: OK`, proof that `cog review-plan-implementation-verify` passed, and a clean
+   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean
    verified postcondition before selecting more work.
 
 10. Increment `RUN_COUNT`, honor `--max N`, and loop.
@@ -172,7 +179,7 @@ repos:
   - /abs/path/to/satellite-repo
 rounds:
   - item: round-one
-    prompt: /executor-prex -ar .implementation-plans/plans/<plan>/round-one.md
+    prompt: /executor-prex -ar /abs/plan-root/plans/<plan>/rounds/round-one.md
 ```
 
 `runner-plan-setup` persists this list as newline-joined `REPOS`. Rebuild `--repo <path>` flags from

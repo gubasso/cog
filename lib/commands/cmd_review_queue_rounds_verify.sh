@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-: 'desc: Verify a review-plan-implementation run against a before/after scan.'
+: 'desc: Verify a review-queue-rounds run against a before/after scan.'
 
-__cog_review_plan_implementation_verify_scan_check='
+__cog_review_queue_rounds_verify_scan_check='
   (.ok == true) and
   (.repo_root | type == "string" and startswith("/")) and
   (.main_queue_path | type == "string" and startswith("/")) and
@@ -25,7 +25,7 @@ __cog_review_plan_implementation_verify_scan_check='
   ] | all)
 '
 
-__cog_review_plan_implementation_verify_self_check='
+__cog_review_queue_rounds_verify_self_check='
   (.ok == true) and
   (.changed | type == "boolean") and
   (.completed_history_preserved == true) and
@@ -39,22 +39,22 @@ __cog_review_plan_implementation_verify_self_check='
   (.graph_valid == true)
 '
 
-__cog_review_plan_implementation_verify_usage() {
-  cog::fn::ui_data "Usage: cog review-plan-implementation-verify --before <scan.json> --after <scan.json> [--allow-noop] (<out.json>|--json)"
+__cog_review_queue_rounds_verify_usage() {
+  cog::fn::ui_data "Usage: cog review-queue-rounds-verify --before <scan.json> --after <scan.json> [--allow-noop] (<out.json>|--json)"
 }
 
-__cog_review_plan_implementation_verify_read_scan() {
+__cog_review_queue_rounds_verify_read_scan() {
   local path="${1:-}"
   [[ -n $path ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-    "missing scan path" "function: review-plan-implementation-verify" "" ""
+    "missing scan path" "function: review-queue-rounds-verify" "" ""
   [[ -f $path ]] || cog::fn::error_raise "InputNotFound" \
     "scan file not found" "path: ${path}" "" "check the scan path"
-  jq -e "$__cog_review_plan_implementation_verify_scan_check" "$path" >/dev/null || cog::fn::error_raise "InvalidInput" \
-    "malformed review-plan-implementation scan" "path: ${path}" "" "rerun review-plan-implementation-scan"
+  jq -e "$__cog_review_queue_rounds_verify_scan_check" "$path" >/dev/null || cog::fn::error_raise "InvalidInput" \
+    "malformed review-queue-rounds scan" "path: ${path}" "" "rerun review-queue-rounds-scan"
   cat -- "$path"
 }
 
-__cog_review_plan_implementation_verify_validate_after_queues() {
+__cog_review_queue_rounds_verify_validate_after_queues() {
   local after_json="$1" graph_json report
   # Validate the captured after-scan contents (not live queue files) so the gate
   # judges the scan artifact it was given, with no time-of-check/time-of-use drift.
@@ -67,7 +67,7 @@ __cog_review_plan_implementation_verify_validate_after_queues() {
   done < <(jq -c '.queues[] | {queue_path: .path, schema: .schema, items: .items}' <<<"$after_json")
 }
 
-__cog_review_plan_implementation_verify_history_preserved() {
+__cog_review_queue_rounds_verify_history_preserved() {
   local before_json="$1" after_json="$2"
   jq -n -e --argjson before "$before_json" --argjson after "$after_json" '
     def flat($scan): [$scan.queues[]? | .items[]?];
@@ -85,15 +85,15 @@ __cog_review_plan_implementation_verify_history_preserved() {
   ' >/dev/null
 }
 
-__cog_review_plan_implementation_verify_build_json() {
+__cog_review_queue_rounds_verify_build_json() {
   local before_file="$1" after_file="$2"
   local before_json after_json changed completed_history_preserved=true
 
-  before_json="$(__cog_review_plan_implementation_verify_read_scan "$before_file")"
-  after_json="$(__cog_review_plan_implementation_verify_read_scan "$after_file")"
-  __cog_review_plan_implementation_verify_validate_after_queues "$after_json"
+  before_json="$(__cog_review_queue_rounds_verify_read_scan "$before_file")"
+  after_json="$(__cog_review_queue_rounds_verify_read_scan "$after_file")"
+  __cog_review_queue_rounds_verify_validate_after_queues "$after_json"
 
-  if ! __cog_review_plan_implementation_verify_history_preserved "$before_json" "$after_json"; then
+  if ! __cog_review_queue_rounds_verify_history_preserved "$before_json" "$after_json"; then
     completed_history_preserved=false
     cog::fn::error_raise "InvalidInput" \
       "completed history was modified" \
@@ -169,23 +169,23 @@ __cog_review_plan_implementation_verify_build_json() {
     '
 }
 
-cog::cmd::review_plan_implementation_verify() {
+cog::cmd::review_queue_rounds_verify() {
   local before="" after="" mode="" out="" json
   while (($# > 0)); do
     case "$1" in
       -h | --help)
-        __cog_review_plan_implementation_verify_usage
+        __cog_review_queue_rounds_verify_usage
         return 0
         ;;
       --before)
         [[ $# -ge 2 && -z $before ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-          "missing before scan" "option: --before" "" "run 'cog review-plan-implementation-verify --help'"
+          "missing before scan" "option: --before" "" "run 'cog review-queue-rounds-verify --help'"
         before="$2"
         shift 2
         ;;
       --after)
         [[ $# -ge 2 && -z $after ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-          "missing after scan" "option: --after" "" "run 'cog review-plan-implementation-verify --help'"
+          "missing after scan" "option: --after" "" "run 'cog review-queue-rounds-verify --help'"
         after="$2"
         shift 2
         ;;
@@ -194,18 +194,18 @@ cog::cmd::review_plan_implementation_verify() {
         ;;
       --json)
         [[ -z $mode ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "InvalidInput" \
-          "duplicate review-plan-implementation-verify output mode" "" "" "choose either --json or an output path"
+          "duplicate review-queue-rounds-verify output mode" "" "" "choose either --json or an output path"
         mode=json
         shift
         ;;
       -*)
         cog::fn::error_raise_with_exit "$EX_USAGE" "InvalidInput" \
-          "unknown review-plan-implementation-verify option" "option: $1" "" "run 'cog review-plan-implementation-verify --help'"
+          "unknown review-queue-rounds-verify option" "option: $1" "" "run 'cog review-queue-rounds-verify --help'"
         ;;
       *)
         [[ -z $mode && -z $out ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "TooManyArguments" \
-          "too many review-plan-implementation-verify output paths" "argument: $1" "" \
-          "run 'cog review-plan-implementation-verify --help'"
+          "too many review-queue-rounds-verify output paths" "argument: $1" "" \
+          "run 'cog review-queue-rounds-verify --help'"
         out="$1"
         mode="file"
         shift
@@ -214,17 +214,17 @@ cog::cmd::review_plan_implementation_verify() {
   done
 
   [[ -n $before && -n $after ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-    "missing review-plan-implementation-verify scan" \
-    "usage: cog review-plan-implementation-verify --before <scan.json> --after <scan.json> [--allow-noop] (<out.json>|--json)" "" \
-    "run 'cog review-plan-implementation-verify --help'"
+    "missing review-queue-rounds-verify scan" \
+    "usage: cog review-queue-rounds-verify --before <scan.json> --after <scan.json> [--allow-noop] (<out.json>|--json)" "" \
+    "run 'cog review-queue-rounds-verify --help'"
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise_with_exit "$EX_USAGE" "MissingArgument" \
-    "missing review-plan-implementation-verify output mode" "usage: cog review-plan-implementation-verify ... (<out.json>|--json)" "" \
-    "run 'cog review-plan-implementation-verify --help'"
+    "missing review-queue-rounds-verify output mode" "usage: cog review-queue-rounds-verify ... (<out.json>|--json)" "" \
+    "run 'cog review-queue-rounds-verify --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_review_plan_implementation_verify_build_json "$before" "$after")"
+  json="$(__cog_review_queue_rounds_verify_build_json "$before" "$after")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
-    cog::fn::json_emit "$__cog_review_plan_implementation_verify_self_check" "$json"
+    cog::fn::json_emit "$__cog_review_queue_rounds_verify_self_check" "$json"
   else
-    cog::fn::json_write_fragment "$out" "$__cog_review_plan_implementation_verify_self_check" "$json"
+    cog::fn::json_write_fragment "$out" "$__cog_review_queue_rounds_verify_self_check" "$json"
   fi
 }

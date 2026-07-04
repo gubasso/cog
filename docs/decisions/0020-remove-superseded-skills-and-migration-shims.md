@@ -1,5 +1,8 @@
 # ADR-0020: Remove Superseded Skills and Migration Shims; Complete Pending Renames
 
+> Note (ADR-0064): the `review-plan-implementation` rename completed here was itself superseded — the
+> boundary is now `review-queue-rounds`. This body is left as the historical record.
+
 ## Context and Problem Statement
 
 After ADR-0018 removed the `tsk`/`prex` surfaces, the repo still carried two classes of legacy:

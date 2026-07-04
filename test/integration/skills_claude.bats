@@ -63,6 +63,7 @@ forbidden_scan_codex() {
     review-findings
     review-loop
     review-plan-multi
+    review-queue-rounds
     runner-all
     runner-plan
     suckless-patcher
@@ -164,12 +165,25 @@ forbidden_scan_codex() {
   for file in "$repo_root/skills/claude/runner-all/SKILL.md" "$repo_root/skills/claude/runner-plan/SKILL.md"; do
     assert_file_contains "$file" "claude-delegate"
     assert_file_contains "$file" "cog queue-select"
-    assert_file_contains "$file" "review-plan-implementation"
+    assert_file_contains "$file" "review-queue-rounds"
     assert_file_contains "$file" "cog runner-commit-parse"
     assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"
     assert_file_contains "$file" "commits"
     assert_file_contains "$file" "verbatim"
   done
+}
+
+@test "review-queue-rounds is the shipped vault-aware revision boundary" {
+  local file="$repo_root/skills/claude/review-queue-rounds/SKILL.md"
+  assert_file_exists "$file"
+  assert_file_contains "$file" "cog plan runner-resolve"
+  assert_file_contains "$file" "cog review-queue-rounds-scan"
+  assert_file_contains "$file" "cog review-queue-rounds-verify"
+  assert_file_contains "$file" "/gc"
+  assert_file_contains "$file" "cog runner-commit-parse"
+  assert_file_contains "$file" "cog rundir review-queue-rounds"
+  # No plan-mode gate on a non-orchestrator boundary skill.
+  assert_file_not_contains "$file" "cog-plan-mode-gate"
 }
 
 @test "runner-all documents main reconcile and runner-plan documents round verify" {

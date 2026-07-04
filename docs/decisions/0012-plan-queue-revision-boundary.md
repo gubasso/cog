@@ -1,5 +1,8 @@
 # ADR-0012: Plan Queue Revision Boundary
 
+> Note (ADR-0064): the `review-plan-implementation` skill and its `cog` backing family named below
+> were renamed to `review-queue-rounds`. This body is left as the historical record.
+
 ## Context and Problem Statement
 
 Queue runners must reconcile implementation plans with repository state after committed work,

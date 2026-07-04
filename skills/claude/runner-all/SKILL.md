@@ -3,7 +3,7 @@ name: runner-all
 description: >
   Drive a top-level implementation plans queue to completion. Select each
   runnable plans: item, dispatch its prompt verbatim to a fresh claude-delegate,
-  reconcile the main item to done, commit, run the review-plan-implementation
+  reconcile the main item to done, commit, run the review-queue-rounds
   boundary, and continue until complete or failed closed.
 model: opus
 effort: low
@@ -23,7 +23,8 @@ mode is on / that you must not make edits), **STOP** before any other work — p
 researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
 (`Shift+Tab`) and re-invoke `/runner-all`. Do not call `ExitPlanMode`, and do not silently continue.
 
-Drive a `.implementation-plans/queue-plans.yaml` `plans:` queue. This skill runs inline in the
+Drive the resolved cog plan vault's top-level `queue-plans.yaml` `plans:` queue (local or global
+store), resolved by `cog runner-all-setup` via `cog plan runner-resolve`. This skill runs inline in the
 orchestrating session; it never delegates the main loop. Each selected main item carries the command
 to run in its `prompt:` field, and this runner sends that text unchanged to a queue-blind
 `claude-delegate` subagent.
@@ -33,14 +34,16 @@ to run in its `prompt:` field, and this runner sends that text unchanged to a qu
 - `runner-all` consumes only the structural `plans:` queue contract.
 - The selected item prompt is opaque data. Dispatch it exactly as read from `cog queue-select`.
 - The delegated subagent owns the selected prompt. For current plan queues that prompt is normally
-  `/runner-plan -ar @.implementation-plans/plans/<slug>/`.
+  `/runner-plan -ar @<plan-dir>/`, where the plan dir is an absolute vault path for a global store.
 - Main-plan `done` is plan-owned and runner-reconciled: after the delegate returns, ensure the main
   item is `done` with `cog queue-status-set --schema plans --from todo --to done --idempotent`.
 - `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`.
   Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is
   `{ok, commits[]}`.
-- After each committed main item, run the project-local `review-plan-implementation` boundary. That
-  boundary performs `cog review-plan-implementation-scan` and `cog review-plan-implementation-verify`.
+- `cog runner-all-setup` emits `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and
+  `PROJECT_KEY` into `ctx.env`.
+- After each committed main item, run the `review-queue-rounds` boundary. That boundary performs
+  `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
 
 Depth budget: `runner-all` at depth 0 dispatches `runner-plan` at depth 1; `runner-plan` dispatches
 an executor at depth 2; executor review subagents run at depth 3, below the fixed cap of 5.
@@ -48,9 +51,11 @@ an executor at depth 2; executor review subagents run at depth 3, below the fixe
 ## Usage
 
 ```bash
-/runner-all .implementation-plans/queue-plans.yaml
-/runner-all --max 1 .implementation-plans/queue-plans.yaml
-/runner-all --dry-run .implementation-plans/queue-plans.yaml
+# Local store (in-project vault), or global store (absolute out-of-project vault):
+/runner-all .cog/plans/queue-plans.yaml
+/runner-all /abs/cog/plans/projects/<project-key>/queue-plans.yaml
+/runner-all --max 1 .cog/plans/queue-plans.yaml
+/runner-all --dry-run .cog/plans/queue-plans.yaml
 ```
 
 `--max N` counts completed and committed main plans. `--dry-run` selects and prints the next main
@@ -58,7 +63,7 @@ item, its verbatim prompt, remaining `todo` plans, and the planned `/gc -a` step
 flipping status, committing, or running revision.
 
 The queue path must not contain whitespace. Arguments are tokenized by word splitting, matching the
-`.implementation-plans/` layout convention.
+vault layout convention.
 
 ## Algorithm
 
@@ -132,19 +137,19 @@ The queue path must not contain whitespace. Arguments are tokenized by word spli
    ```text
    Working repo (your cwd): <REPO_ROOT>
 
-   Run the project-local `review-plan-implementation` skill after the committed queue item:
+   Run the `review-queue-rounds` skill after the committed queue item:
 
        --repo-root <REPO_ROOT>
        --main-queue <MAIN_QUEUE_PATH>
 
    Use RUN_DIR=<RUN_DIR> for scan, verify, and commit-output files. The boundary must run
-   `cog review-plan-implementation-scan` before changes and `cog review-plan-implementation-verify`
+   `cog review-queue-rounds-scan` before changes and `cog review-queue-rounds-verify`
    after changes, then commit verified drift through /gc in the foreground. Return STATUS: OK with
    both phases reported, using NO_DRIFT for a phase that changed nothing. Return STATUS: FAILED on
    scan, verify, graph-check, or commit failure.
    ```
 
-   Require `STATUS: OK`, proof that `cog review-plan-implementation-verify` passed, and a clean
+   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean
    verified postcondition before selecting more work.
 
 10. Increment `RUN_COUNT`, honor `--max N`, and loop.

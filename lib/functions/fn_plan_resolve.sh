@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-__cog_plan_assert_flat_root() {
+cog::fn::plan_assert_flat_root() {
   local plan_root="${1:-}" plans_dir nested
   [[ -n $plan_root ]] || cog::fn::error_raise "MissingArgument" \
     "missing plan root" "function: plan assert flat" "" ""
@@ -23,7 +23,7 @@ __cog_plan_init_project_tree() {
   cog::fn::plan_write_project_file "$plan_root" "$project_root"
   cog::fn::queue_bootstrap_file "$queue_path" plans
   cog::fn::queue_validate_file "$queue_path" plans
-  __cog_plan_assert_flat_root "$plan_root"
+  cog::fn::plan_assert_flat_root "$plan_root"
 }
 
 cog::fn::plan_store_init_global() {
@@ -227,7 +227,7 @@ cog::fn::plan_item_new() {
   printf '# %s\n\nPlan slug: %s\n' "$title" "$slug" >"$readme" \
     || cog::fn::error_raise "JsonWriteFailed" \
       "could not write plan README" "path: ${readme}" "" "check permissions"
-  __cog_plan_assert_flat_root "$plan_root"
+  cog::fn::plan_assert_flat_root "$plan_root"
   jq -n \
     --arg schema "cog.plan.item.v1" \
     --arg store "$selected_store" \
@@ -272,4 +272,130 @@ cog::fn::plan_item_path() {
     --arg plan_slug "$plan_id" \
     --arg plan_dir "$plan_dir" \
     '{schema: $schema, ok: true, plan_root: $plan_root, plan_slug: $plan_slug, plan_dir: $plan_dir}'
+}
+
+# Map a runner target (a plan directory or a main queue-plans.yaml file) to the
+# resolved plan vault, labeling the store by matching the target-derived plan_root
+# against the config/custom, global, and local candidates from plan_resolve_json.
+# Role-named, stage-agnostic output; the single source of truth for runner and
+# revision-boundary vault resolution across local, global, and custom stores.
+cog::fn::plan_runner_resolve_json() {
+  local project_root="${1:-}" target="${2:-}"
+  # __rr_source/__rr_line are filled by the config loader via namerefs
+  # (invisible to shellcheck) — suppress the false SC2034.
+  # shellcheck disable=SC2034
+  local -A __rr_config=() __rr_source=() __rr_line=()
+  local rr_local_dir abs_target target_type plan_dir inner_queue_path plan_root main_queue plans_dir
+  local plan_home identity global_root local_root custom_root
+  local store project_key trust_json trust_status trust_mode
+
+  [[ -n $project_root ]] || project_root="$(pwd -P)"
+  [[ -d $project_root ]] || cog::fn::error_raise "InputNotFound" \
+    "project root not found" "path: ${project_root}" "" "check the project root"
+  project_root="$(realpath "$project_root")"
+
+  [[ -n $target ]] || cog::fn::error_raise "MissingArgument" \
+    "missing runner-resolve target" "function: plan runner-resolve" "" \
+    "pass --target <plan_dir|queue>"
+  # Runners pass -ar @<plan-dir>; strip one leading @ and trailing slashes.
+  target="${target#@}"
+  while [[ $target != "/" && $target == */ ]]; do target="${target%/}"; done
+  [[ $target == /* ]] || target="${project_root%/}/${target}"
+  abs_target="$(realpath -m "$target")"
+
+  # Load plan config to mirror the engine's local-dir precedence.
+  cog::fn::plan_config_load "$project_root" __rr_config __rr_source __rr_line
+  rr_local_dir="${__rr_config[COG_PLAN_LOCAL_DIR]}"
+
+  # Candidate roots: config/custom, global, and local. Derive each candidate
+  # directly from config and project identity rather than through a store resolve.
+  # A config-default resolve would fail closed on an untrusted or missing local store
+  # (config COG_PLAN_STORE=local), and a store=global resolve would still take config
+  # COG_PLAN_ROOT precedence and report the custom root as global. Deriving the global
+  # vault from plan_project_dir (project identity + store root) is independent of
+  # COG_PLAN_STORE, COG_PLAN_ROOT, and local trust, so every candidate is honored.
+  plan_home="${__rr_config[COG_PLAN_HOME]}"
+  identity="$(COG_PLAN_HOME="$plan_home" COG_PLAN_LOCAL_DIR="$rr_local_dir" cog::fn::plan_project_identity_json "$project_root")"
+  project_key="$(jq -r '.project_key' <<<"$identity")"
+  global_root="$(realpath -m "$(COG_PLAN_HOME="$plan_home" cog::fn::plan_project_dir "$project_root")")"
+  local_root="$(realpath -m "$(COG_PLAN_LOCAL_DIR="$rr_local_dir" cog::fn::plan_local_dir "$project_root")")"
+  custom_root=""
+  [[ -n ${__rr_config[COG_PLAN_ROOT]:-} ]] && custom_root="$(realpath -m "${__rr_config[COG_PLAN_ROOT]}")"
+
+  # Classify the target shape and derive its plan_root.
+  if [[ "$(basename -- "$abs_target")" == "queue-plans.yaml" ]]; then
+    target_type="main-queue"
+    plan_root="$(dirname -- "$abs_target")"
+    plan_dir="null"
+    inner_queue_path="null"
+  elif [[ -d $abs_target ]]; then
+    target_type="plan-dir"
+    [[ "$(basename -- "$(dirname -- "$abs_target")")" == "plans" ]] || cog::fn::error_raise "InvalidInput" \
+      "runner-resolve plan directory must be a direct child of plans/" "path: ${abs_target}" "" \
+      "pass <PLAN_ROOT>/plans/<slug>"
+    plan_root="$(dirname -- "$(dirname -- "$abs_target")")"
+    plan_dir="$abs_target"
+    inner_queue_path="${abs_target}/queue-rounds.yaml"
+    [[ -f $inner_queue_path ]] || cog::fn::error_raise "InvalidInput" \
+      "plan directory has no queue-rounds.yaml" "path: ${abs_target}" "" \
+      "pass a plan directory that contains queue-rounds.yaml"
+  else
+    cog::fn::error_raise "InvalidInput" \
+      "runner-resolve target must be a plan directory or a queue-plans.yaml file" \
+      "path: ${abs_target}" "" "pass <PLAN_ROOT>/plans/<slug> or <PLAN_ROOT>/queue-plans.yaml"
+  fi
+  plan_root="$(realpath -m "$plan_root")"
+
+  # Label the store by matching the derived plan_root against the candidates.
+  if [[ -n $custom_root && $plan_root == "$custom_root" ]]; then
+    store="custom"
+  elif [[ $plan_root == "$global_root" ]]; then
+    store="global"
+  elif [[ $plan_root == "$local_root" ]]; then
+    store="local"
+    # A local target is honored only under the same strict-trust rule the engine
+    # applies to an explicit --store local resolve.
+    trust_json="$(COG_PLAN_LOCAL_DIR="$rr_local_dir" cog::fn::plan_trust_status_json "$project_root")"
+    trust_status="$(jq -r '.status' <<<"$trust_json")"
+    trust_mode="${__rr_config[COG_PLAN_TRUST]:-strict}"
+    if [[ $trust_mode != off && $trust_status != trusted ]]; then
+      cog::fn::error_raise "InvalidInput" \
+        "local plan root is not trusted" "path: ${local_root}" "trust status: ${trust_status}" \
+        "run 'cog plan trust --project-root ${project_root}'"
+    fi
+  else
+    cog::fn::error_raise "InvalidInput" \
+      "target is not a member of the resolved plan vault" "path: ${abs_target}" \
+      "expected under: ${global_root}/plans or ${local_root}/plans" "run 'cog plan list'"
+  fi
+
+  # Flatness, main-queue presence, and schema validation.
+  cog::fn::plan_assert_flat_root "$plan_root"
+  main_queue="${plan_root%/}/queue-plans.yaml"
+  [[ -f $main_queue ]] || cog::fn::error_raise "InputNotFound" \
+    "resolved main queue not found" "path: ${main_queue}" "" "run 'cog plan new'"
+  cog::fn::queue_validate_file "$main_queue" plans
+  if [[ $target_type == plan-dir ]]; then
+    cog::fn::queue_validate_file "$inner_queue_path" rounds
+  fi
+
+  plans_dir="${plan_root%/}/plans"
+  jq -n \
+    --arg schema "cog.plan.runner-resolve.v1" \
+    --arg repo_root "$project_root" \
+    --arg target "$abs_target" \
+    --arg target_type "$target_type" \
+    --arg store "$store" \
+    --arg project_key "$project_key" \
+    --arg plan_root "$plan_root" \
+    --arg plans_dir "$plans_dir" \
+    --arg main_queue "$main_queue" \
+    --arg plan_dir "$plan_dir" \
+    --arg inner_queue_path "$inner_queue_path" \
+    '{schema: $schema, ok: true, repo_root: $repo_root, target: $target,
+      target_type: $target_type, store: $store, project_key: $project_key,
+      plan_root: $plan_root, plans_dir: $plans_dir, main_queue: $main_queue,
+      queue_path: $main_queue,
+      plan_dir: (if $plan_dir == "null" then null else $plan_dir end),
+      inner_queue_path: (if $inner_queue_path == "null" then null else $inner_queue_path end)}'
 }

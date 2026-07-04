@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse runner-all arguments and create main queue run state.'
 
-__cog_runner_all_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.main_queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_plans") and (.repos|type=="array") and (.queue_schema=="plans")'
+__cog_runner_all_setup_self_check='(.run_dir|type=="string") and (.queue_path|type=="string") and (.main_queue_path|type=="string") and (.repo_root|type=="string") and (.dry_run|type=="boolean") and has("max_plans") and (.repos|type=="array") and (.queue_schema=="plans") and (.plan_root|type=="string") and (.store|type=="string") and (.project_key|type=="string")'
 
 __cog_runner_all_setup_usage() {
   cog::fn::ui_data "Usage: cog runner-all-setup [--json] [arguments-string]"
@@ -62,11 +62,15 @@ __cog_runner_all_setup_parse() {
 
 __cog_runner_all_setup_write_ctx() {
   local ctx="$1" repo_root="$2" queue_path="$3" run_dir="$4" dry_run="$5" max_plans="$6" repos_joined="$7"
+  local plan_root="$8" store="$9" project_key="${10}"
   {
     printf 'REPO_ROOT=%q\n' "$repo_root"
+    printf 'PLAN_ROOT=%q\n' "$plan_root"
     printf 'QUEUE_PATH=%q\n' "$queue_path"
     printf 'QUEUE_SCHEMA=%q\n' "plans"
     printf 'MAIN_QUEUE_PATH=%q\n' "$queue_path"
+    printf 'PLAN_STORE=%q\n' "$store"
+    printf 'PROJECT_KEY=%q\n' "$project_key"
     printf 'RUN_DIR=%q\n' "$run_dir"
     if [[ $dry_run == true ]]; then
       printf 'DRY_RUN=%q\n' "1"
@@ -81,25 +85,33 @@ __cog_runner_all_setup_write_ctx() {
 
 __cog_runner_all_setup_build_json() {
   local raw="$1" dry_run max_plans target repo_root queue_path run_dir queue_select_json repos_json repos_joined=""
+  local resolve_json target_type plan_root store project_key
   local -a repos_arr=()
   __cog_runner_all_setup_parse "$raw" dry_run max_plans target
   repo_root="$(cog::fn::git_root)"
   queue_path="$target"
   [[ $queue_path == /* ]] || queue_path="${repo_root}/${queue_path}"
-  [[ -f $queue_path ]] || cog::fn::error_raise "InputNotFound" \
-    "main queue file not found" "path: ${queue_path}" "" "check the target path"
-  if [[ "$(yq e 'has("plans") and (has("rounds") | not)' "$queue_path")" != true ]]; then
-    cog::fn::error_raise "InvalidInput" \
-      "main queue must have plans schema only" "path: ${queue_path}" "expected plans and no rounds" ""
-  fi
-  cog::fn::queue_validate_file "$queue_path" plans
+
+  # Resolve the plan vault (local or global store) through the shared resolver,
+  # which validates the plans schema and cross-checks that the target is the
+  # <PLAN_ROOT>/queue-plans.yaml main queue — identical to runner-plan's view.
+  resolve_json="$(cog::fn::plan_runner_resolve_json "$repo_root" "$queue_path")"
+  target_type="$(jq -r '.target_type' <<<"$resolve_json")"
+  [[ $target_type == "main-queue" ]] || cog::fn::error_raise "InvalidInput" \
+    "runner-all target must be queue-plans.yaml" "target_type: ${target_type}" "" "pass <PLAN_ROOT>/queue-plans.yaml"
+  repo_root="$(jq -r '.repo_root' <<<"$resolve_json")"
+  queue_path="$(jq -r '.main_queue' <<<"$resolve_json")"
+  plan_root="$(jq -r '.plan_root' <<<"$resolve_json")"
+  store="$(jq -r '.store' <<<"$resolve_json")"
+  project_key="$(jq -r '.project_key' <<<"$resolve_json")"
+
   mapfile -t repos_arr < <(yq e -r '.repos[]?' "$queue_path" 2>/dev/null || true)
   if ((${#repos_arr[@]} > 0)); then
     printf -v repos_joined '%s\n' "${repos_arr[@]}"
     repos_joined="${repos_joined%$'\n'}"
   fi
   run_dir="$(cog::fn::rundir_create runner-all)"
-  __cog_runner_all_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$queue_path" "$run_dir" "$dry_run" "$max_plans" "$repos_joined"
+  __cog_runner_all_setup_write_ctx "${run_dir}/ctx.env" "$repo_root" "$queue_path" "$run_dir" "$dry_run" "$max_plans" "$repos_joined" "$plan_root" "$store" "$project_key"
 
   if ! declare -F __cog_queue_select_build_json >/dev/null; then
     # shellcheck source=/dev/null
@@ -115,11 +127,15 @@ __cog_runner_all_setup_build_json() {
     --arg queue_path "$queue_path" \
     --arg main_queue_path "$queue_path" \
     --arg repo_root "$repo_root" \
+    --arg plan_root "$plan_root" \
+    --arg store "$store" \
+    --arg project_key "$project_key" \
     --argjson dry_run "$dry_run" \
     --arg max_plans "$max_plans" \
     --argjson repos "$repos_json" \
     '{run_dir: $run_dir, queue_path: $queue_path, main_queue_path: $main_queue_path,
-      queue_schema: "plans", repo_root: $repo_root, dry_run: $dry_run,
+      queue_schema: "plans", repo_root: $repo_root, plan_root: $plan_root,
+      store: $store, project_key: $project_key, dry_run: $dry_run,
       max_plans: (if $max_plans == "" then null else $max_plans end), repos: $repos}'
 }
 

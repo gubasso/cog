@@ -97,9 +97,9 @@ _cog() {
     review-loop-progress
     review-loop-summary
     review-normalize-findings
-    review-plan-implementation-scan
-    review-plan-implementation-verify
     review-plan-multi-setup
+    review-queue-rounds-scan
+    review-queue-rounds-verify
     review-scope
     review-tech-scope
     review-validate-findings

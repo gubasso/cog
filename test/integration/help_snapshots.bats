@@ -111,9 +111,9 @@ Commands:
   review-loop-progress Compare review findings across loop rounds.
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
-  review-plan-implementation-scan Inventory all implementation-plan queues and repo/plan fingerprints.
-  review-plan-implementation-verify Verify a review-plan-implementation run against a before/after scan.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
+  review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
+  review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
@@ -229,9 +229,9 @@ Commands:
   review-loop-progress Compare review findings across loop rounds.
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
-  review-plan-implementation-scan Inventory all implementation-plan queues and repo/plan fingerprints.
-  review-plan-implementation-verify Verify a review-plan-implementation run against a before/after scan.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
+  review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
+  review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.

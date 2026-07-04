@@ -90,7 +90,7 @@ tiers:
       - bootstrap-taskrunner
       - test-review
       - review-findings
-      - review-plan-implementation
+      - review-queue-rounds
       - claudemd
       - osc-obs
       - suckless-patcher

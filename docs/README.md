@@ -68,6 +68,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0061: Skills obtain scratch space via cog rundir](decisions/0061-rundir-scratch-artifact-convention.md)
 - [ADR-0062: Bootstrap refreshes reviewed templates and reconciles by default](decisions/0062-bootstrap-refresh-reconcile-default.md)
 - [ADR-0063: Chain a disable-model-invocation coordinator via Agent delegation, not the Skill tool](decisions/0063-inline-coordinator-chaining-not-via-skill-tool.md)
+- [ADR-0064: Rename the revision boundary to review-queue-rounds](decisions/0064-rename-revision-boundary-to-review-queue-rounds.md)
 
 ## Guides
 

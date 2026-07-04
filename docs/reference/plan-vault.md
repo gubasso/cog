@@ -57,6 +57,7 @@ cog plan doctor [--json]
 cog plan new --title <text> [--local|--global] [--no-git] [--project-root <dir>] [--json]
 cog plan list [--local|--global] [--project-root <dir>] [--json]
 cog plan path <plan-id> [--local|--global] [--project-root <dir>] [--json]
+cog plan runner-resolve --target <plan_dir|queue> [--project-root <dir>] [--json]
 ```
 
 Plan-item verbs manage flat-sibling plan directories under the resolved plan root: `new` creates
@@ -64,6 +65,12 @@ Plan-item verbs manage flat-sibling plan directories under the resolved plan roo
 `--title`; `list` returns the plan slugs under the resolved root; `path` prints the directory for one
 plan id. All three resolve the root through the same `--store`/config/trust precedence as
 `project resolve`, initializing the project tree when needed.
+
+`runner-resolve` maps a runner target — a plan directory or a `queue-plans.yaml` main queue — to the
+resolved vault, labeling the store (`local`/`global`/`custom`) by matching the target-derived
+`plan_root` against the config, global, and local candidates. It is the single seam the `runner-*`
+setups and the `review-queue-rounds` revision boundary share, so all three see the same `plan_root` and
+`main_queue` regardless of store scope.
 
 ## JSON Schemas
 
@@ -85,6 +92,10 @@ identity
 trust
 sources
 ```
+
+`cog.plan.runner-resolve.v1` reports `repo_root`, `target`, `target_type` (`plan-dir`|`main-queue`),
+`store`, `project_key`, `plan_root`, `plans_dir`, `main_queue`, `queue_path`, and — for a plan-dir
+target — `plan_dir` and `inner_queue_path` (both `null` for a main-queue target).
 
 `cog.plan.trust.v1` reports trust status for one project.
 

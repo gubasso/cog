@@ -8,6 +8,7 @@ __cog_plan_doctor_self_check='(.schema == "cog.plan.doctor.v1") and (.ok|type=="
 __cog_plan_item_self_check='(.schema == "cog.plan.item.v1") and (.ok == true) and (.plan_root|type=="string") and (.plan_slug|type=="string") and (.plan_dir|type=="string")'
 __cog_plan_item_list_self_check='(.schema == "cog.plan.item-list.v1") and (.ok == true) and (.plan_root|type=="string") and (.plans|type=="array")'
 __cog_plan_item_path_self_check='(.schema == "cog.plan.item-path.v1") and (.ok == true) and (.plan_root|type=="string") and (.plan_slug|type=="string") and (.plan_dir|type=="string")'
+__cog_plan_runner_resolve_self_check='(.schema == "cog.plan.runner-resolve.v1") and (.ok == true) and (.store|type=="string") and (.plan_root|type=="string" and startswith("/")) and (.main_queue|type=="string" and startswith("/")) and (.project_key|type=="string") and (.target_type|test("^(plan-dir|main-queue)$")) and (has("plan_dir")) and (has("inner_queue_path"))'
 
 __cog_plan_usage() {
   cog::fn::ui_data "Usage: cog plan store path [--json]"
@@ -20,6 +21,7 @@ __cog_plan_usage() {
   cog::fn::ui_data "Usage: cog plan new --title <text> [--local|--global] [--no-git] [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog plan list [--local|--global] [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog plan path <plan-id> [--local|--global] [--project-root <dir>] [--json]"
+  cog::fn::ui_data "Usage: cog plan runner-resolve --target <plan_dir|queue> [--project-root <dir>] [--json]"
 }
 
 __cog_plan_emit() {
@@ -167,6 +169,42 @@ __cog_plan_project_resolve_cmd() {
   done
   json="$(cog::fn::plan_resolve_json "$project_root" "$store" "$plan_root")"
   __cog_plan_emit "$__cog_plan_resolve_self_check" "$json" "$want_json" "$(jq -r '.plan_root' <<<"$json")"
+}
+
+__cog_plan_runner_resolve_cmd() {
+  local project_root="" target="" want_json=false json
+  project_root="$(pwd -P)"
+  while (($# > 0)); do
+    case "$1" in
+      -h | --help)
+        __cog_plan_usage
+        return 0
+        ;;
+      --target)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
+          "missing runner-resolve target" "option: --target" "" "run 'cog plan --help'"
+        target="$2"
+        shift 2
+        ;;
+      --project-root)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
+          "missing project root" "option: --project-root" "" "run 'cog plan --help'"
+        project_root="$2"
+        shift 2
+        ;;
+      --json)
+        want_json=true
+        shift
+        ;;
+      -*) cog::fn::error_raise "InvalidInput" "unknown plan runner-resolve option" "option: $1" "" "run 'cog plan --help'" ;;
+      *) cog::fn::error_raise "TooManyArguments" "too many plan runner-resolve arguments" "argument: $1" "" "run 'cog plan --help'" ;;
+    esac
+  done
+  [[ -n $target ]] || cog::fn::error_raise "MissingArgument" \
+    "missing runner-resolve target" "option: --target" "" "pass --target <plan_dir|queue>"
+  json="$(cog::fn::plan_runner_resolve_json "$project_root" "$target")"
+  __cog_plan_emit "$__cog_plan_runner_resolve_self_check" "$json" "$want_json" \
+    "$(jq -r 'if .target_type=="plan-dir" then .plan_dir else .main_queue end' <<<"$json")"
 }
 
 __cog_plan_project_link_cmd() {
@@ -472,6 +510,10 @@ cog::cmd::plan() {
     path)
       shift
       __cog_plan_item_path_cmd "$@"
+      ;;
+    runner-resolve)
+      shift
+      __cog_plan_runner_resolve_cmd "$@"
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
