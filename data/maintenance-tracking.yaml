@@ -64,11 +64,12 @@ entries:
     last_checked: 2026-06-30
     cadence_days: 180
     owner: plan authoring
-    why: "The multi-engine plan-writer-multi (Claude) and plan-writer (Codex) authoring surfaces were deleted outright (ADR-0056 / DP6), to be re-created from scratch at the proper time; this note tracks that intentionally-vacated surface so the rebuild is not forgotten."
-    revalidate_how: "Decide whether a from-scratch multi-engine / Codex plan-authoring surface is still wanted; if so, author it fresh against the current plan-vault + executor-routing contracts; otherwise extend the cadence."
+    why: "The multi-engine plan-writer-multi (Claude) and plan-writer (Codex) authoring surfaces were deleted outright (ADR-0056 / DP6), to be re-created from scratch at the proper time; plan-builder-to-queue-vetted-multi now partially fulfills the rebuilt multi-engine authoring surface for the Claude plan-vault path."
+    revalidate_how: "Review plan-builder-to-queue-vetted-multi against the desired multi-engine / Codex plan-authoring surface; decide whether the remaining Codex-native surface is still wanted, then author it fresh against the current plan-vault + executor-routing contracts or extend the cadence."
     references:
       - docs/decisions/0056-plan-round-executor-routing-contract.md
       - skills/claude/plan-builder-to-queue/SKILL.md
+      - skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md
   - id: match-telemetry-calibration
     path: data/power-grade/executor-capability
     last_checked: 2026-06-30

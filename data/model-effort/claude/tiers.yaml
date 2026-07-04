@@ -49,6 +49,7 @@ tiers:
       - plan-oneshot
       - plan-multi
       - plan-builder-to-queue
+      - plan-builder-to-queue-vetted-multi
       - plan-refactor-migration
       - plan-vetted
       - executor-prex

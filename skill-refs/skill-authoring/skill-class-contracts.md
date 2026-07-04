@@ -30,6 +30,10 @@ facet rule):
 - **input-fidelity / context-brief gate** — a brief-building delegator at a
   fresh-context boundary carries both markers and builds/validates a brief.
 - **stage-agnostic identifiers** — artifact/field/flag names encode role, not stage.
+- **plan-quality principles** — a `plan`/`review-plan` skill's *output content* (not just its
+  wiring) follows `cog skill-refs path plan-rounds/plan-quality-principles.md`: concrete-over-abstract,
+  machine-checkable acceptance criteria, requirement traceability, an end-to-end verification gate,
+  explicit out-of-scope, and never-summarize-split-instead.
 
 The contract is data-backed, so adding or retiring a class prerequisite is a
 single edit to `data/skill-class/contracts.yaml` plus this reference.

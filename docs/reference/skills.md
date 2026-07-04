@@ -70,6 +70,7 @@ below maps each currently shipped artifact to its taxonomy class.
 - skills/claude/plan-multi
 - skills/claude/plan-split
 - skills/claude/plan-builder-to-queue
+- skills/claude/plan-builder-to-queue-vetted-multi
 - skills/claude/plan-refactor-migration
 - skills/codex/plan-oneshot
 - skills/codex/plan-refactor-migration

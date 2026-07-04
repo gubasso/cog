@@ -17,6 +17,10 @@ empty `plans:` list) are bootstrapped once, the first time the generating skill 
 All templates follow the repo's markdown rules: fenced code blocks must have language specifiers
 (MD040). Use `text` when no specific syntax applies.
 
+Template A renders the structure; the *content* each round must carry — concrete targets,
+machine-checkable acceptance criteria, requirement traceability, an end-to-end verification gate, and
+explicit out-of-scope — follows `cog skill-refs path plan-rounds/plan-quality-principles.md`.
+
 ## Template A — Round file (`<plan-dir>/rounds/<topic>.md`)
 
 Each round file is a self-contained task description for `/<executor> -ar`. The filename is the
@@ -29,6 +33,7 @@ Topic slugs must not be `readme`, `queue`, `strategy`, `queue-plans`, or `queue-
 
 > Plan: {{SLUG}} | Round: {{N}} of {{TOTAL}} | Complexity: {{GRADE}} | Generated: {{ISO_8601}} |
 > Repo: {{REPO_ROOT}}
+> Depends on: {{DEPENDENCIES_OR_NONE}} | Parallel with: {{PARALLEL_ROUNDS_OR_NONE}}
 
 ## Context
 
@@ -46,7 +51,8 @@ prior rounds."}}
 ## Scope of This Round
 
 {{Precise description of what this round implements. Explicitly state:}} {{- IN scope: what this
-round delivers.}} {{- OUT of scope: what is deferred to later rounds (scope creep prevention).}}
+round delivers.}} {{- OUT of scope: what is deferred to later rounds or intentionally excluded
+(scope creep prevention). Include "Nothing else is in scope for this round."}}
 
 ## Current State
 
@@ -87,14 +93,24 @@ Record completion in the queue — status lives in YAML; nothing moves on disk:
 2. All rounds are now done, so in the top-level `<plan-root>/queue-plans.yaml` set this plan's
    (`item: {{SLUG}}`) `status` to `done`. Leave the plan directory in place.
 
+## End-to-End Verification Gate
+
+{{Exact command(s), UI flow, or system check that proves this round works end to end from the user or
+caller boundary. Include expected observable output and any required setup data. This gate must be
+run before the final queue update unless explicitly impossible, in which case record the blocker and
+the closest completed verification.}}
+
 ## Acceptance Criteria
 
-{{Concrete, checkable criteria specific to THIS round. Each independently verifiable.}}
-{{Each criterion carries its `cog round-req`-stamped requirement ID: `- [ ] (R3) ...`. The IDs are
-allocated by `cog round-req stamp` and preserved across any split (`cog round-split coverage`).}}
+{{Concrete, checkable criteria specific to THIS round. Each independently verifiable and written in a
+Given-When-Then or EARS-checkable shape. Each criterion carries its `cog round-req`-stamped
+requirement ID: `- [ ] (R3) ...`. The IDs are allocated by `cog round-req stamp` and preserved across
+any split (`cog round-split coverage`).}}
 
-- [ ] (R{{n}}) {{criterion 1}}
-- [ ] (R{{n}}) {{criterion 2}}
+- [ ] (R{{n}}) GIVEN {{precondition}}, WHEN {{action or command}}, THEN {{observable result}}.
+- [ ] (R{{n}}) WHEN {{trigger or condition}}, THE SYSTEM SHALL {{required behavior}}.
+- [ ] (R{{n}}) GIVEN the implementation is complete, WHEN the end-to-end verification gate runs,
+      THEN it passes with {{expected output or signal}}.
 - [ ] This plan's `queue-rounds.yaml` shows round `{{TOPIC}}` as `done`. {{If this is the final
       round:}}
 - [ ] The top-level `<plan-root>/queue-plans.yaml` shows this plan as `done`.
