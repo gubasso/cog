@@ -4,6 +4,7 @@
 __cog_skill_refs_usage() {
   cog::fn::ui_data "Usage: cog skill-refs root"
   cog::fn::ui_data "Usage: cog skill-refs path <rel>"
+  cog::fn::ui_data "Usage: cog skill-refs inspect [--json]"
 }
 
 cog::cmd::skill_refs() {
@@ -47,9 +48,40 @@ cog::cmd::skill_refs() {
         "verify the rel path and that skill-refs is deployed"
       cog::fn::ui_data "$resolved"
       ;;
+    inspect)
+      shift
+      local json_mode=false inspect_json
+      while (($# > 0)); do
+        case "$1" in
+          --json)
+            json_mode=true
+            shift
+            ;;
+          -*)
+            cog::fn::error_raise "InvalidInput" "unknown skill-refs inspect option" \
+              "option: $1" "" "run 'cog skill-refs --help'"
+            ;;
+          *)
+            cog::fn::error_raise "TooManyArguments" "unexpected arguments to skill-refs inspect" \
+              "argument: $1" "" "run 'cog skill-refs --help'"
+            ;;
+        esac
+      done
+      inspect_json="$(cog::fn::skill_refs_origin_json)"
+      if [[ $json_mode == true || ${COG_UI_JSON:-false} == true ]]; then
+        cog::fn::json_emit \
+          '(.ok|type=="boolean") and (.origin|type=="string") and (.writable|type=="boolean") and (.candidate_xdg|type=="string") and (.candidate_repo|type=="string")' \
+          "$inspect_json"
+      else
+        cog::fn::ui_data "SKILLREFS_ROOT=$(jq -r '.root // ""' <<<"$inspect_json")"
+        cog::fn::ui_data "SKILLREFS_ORIGIN=$(jq -r '.origin' <<<"$inspect_json")"
+        cog::fn::ui_data "SKILLREFS_WRITABLE=$(jq -r '.writable' <<<"$inspect_json")"
+      fi
+      jq -e '.ok == true' <<<"$inspect_json" >/dev/null
+      ;;
     "")
       cog::fn::error_raise "MissingArgument" "missing skill-refs subcommand" \
-        "usage: cog skill-refs root | cog skill-refs path <rel>" "" \
+        "usage: cog skill-refs root | cog skill-refs path <rel> | cog skill-refs inspect" "" \
         "run 'cog skill-refs --help'"
       ;;
     *)

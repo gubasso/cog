@@ -66,6 +66,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0059: gc change-provenance foreign-dirty STOP](decisions/0059-gc-change-provenance-foreign-dirty-stop.md)
 - [ADR-0060: gc parallel repo fan-out and Codex twin removal](decisions/0060-gc-parallel-repo-fanout-and-codex-twin-removal.md)
 - [ADR-0061: Skills obtain scratch space via cog rundir](decisions/0061-rundir-scratch-artifact-convention.md)
+- [ADR-0062: Bootstrap refreshes reviewed templates and reconciles by default](decisions/0062-bootstrap-refresh-reconcile-default.md)
+- [ADR-0063: Chain a disable-model-invocation coordinator via Agent delegation, not the Skill tool](decisions/0063-inline-coordinator-chaining-not-via-skill-tool.md)
 
 ## Guides
 

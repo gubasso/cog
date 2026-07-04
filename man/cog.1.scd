@@ -48,6 +48,9 @@ The command list and short descriptions are sourced from command modules under
 *bootstrap-audit*
 	Aggregate bootstrap domain present/missing status.
 
+*bootstrap-template-review*
+	Check or stamp bootstrap template review freshness.
+
 *ci-apply*
 	Apply a CI workflow template to a project.
 

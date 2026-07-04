@@ -114,6 +114,25 @@ The helper's conflict policies are only `overwrite`, `skip`, and `abort`. Merge 
 and stays in this skill: inspect both files, decide the merge manually, then use the helper only for
 safe copies that remain.
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared template when stale or missing, stamp the
+review, then reconcile the target — installing when absent, applying improvements when present. Use the
+freshness `check` JSON `/bootstrap` supplied in the brief; when it is absent, resolve the type with
+`precommit-detect` and run it yourself:
+
+```bash
+cog bootstrap-template-review check --domain precommit --type "$TYPE" --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the hook research — go straight to
+tailoring and reconcile in the Workflow below. When it is `stale` or `missing`, do the hook research
+(steps 5-7), update `skill-refs/templates/pre-commit/<type>/` when justified, then stamp the review with
+`cog bootstrap-template-review stamp --domain precommit --type "$TYPE" ...` — even when the conclusion is
+"no template change" — before reconciling. `stamp` fails fast when the template SoT is not writable;
+surface that. The `editorconfig-checker` hook stays a verified reconcile postcondition (step 13).
+
 ## Workflow
 
 1. Resolve project type. If `$ARGUMENTS` provides a type, run `precommit-detect --type "$TYPE"` to

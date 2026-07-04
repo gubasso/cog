@@ -950,6 +950,74 @@ __cog_skill_lint_check_producer_blind() {
   return "$failed"
 }
 
+# Caller skill name -> space-separated disable-model-invocation target skill names
+# it chains inline. Chaining a DMI skill through the harness `Skill` tool fails at
+# runtime (the tool refuses a model-initiated call to a DMI skill), so these callers
+# must read the target's SKILL.md and execute it inline instead. See ADR-0063.
+__cog_skill_lint_inline_skill_tool_dmi_targets() {
+  case "$1" in
+    plan-vetted) printf '%s' "plan-multi review-plan-multi" ;;
+    plan-builder-to-queue) printf '%s' "plan-oneshot review-plan-complexity plan-split" ;;
+    plan-builder-to-queue-vetted-multi) printf '%s' "plan-vetted review-plan-multi review-plan-complexity plan-split" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
+# Returns 0 when the line instructs invoking a skill through the harness `Skill`
+# tool rather than reading its SKILL.md and following it inline. Matches the
+# phrasings the repo has used: "via the `Skill` tool", the "`Skill` ->" / "`Skill` →"
+# dispatch arrow (ASCII or Unicode), and "Use `Skill` to chain". The fixed form's
+# negative ("not through the `Skill` tool") contains none of these.
+# shellcheck disable=SC2016 # literal backticks in the Skill-tool phrasing, not command substitution
+__cog_skill_lint_line_invokes_skill_tool() {
+  local line="$1"
+  [[ $line == *'via the `Skill` tool'* ]] && return 0
+  [[ $line == *'`Skill` →'* ]] && return 0
+  [[ $line == *'`Skill` ->'* ]] && return 0
+  [[ $line == *'Use `Skill` to chain'* ]] && return 0
+  return 1
+}
+
+# inline-skill-tool-dmi: a coordinator that chains a disable-model-invocation skill
+# must read the target's SKILL.md and execute it inline, never invoke it through the
+# harness `Skill` tool (which refuses a model-initiated call to a DMI skill). Scans a
+# curated caller set for a Skill-tool-invocation instruction that names one of the
+# caller's DMI targets; fenced code blocks are skipped. See ADR-0063 and
+# docs/reference/skill-contract.md.
+__cog_skill_lint_check_inline_skill_tool_dmi() {
+  local file="$1"
+  local name targets
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  targets="$(__cog_skill_lint_inline_skill_tool_dmi_targets "$name")"
+  [[ -z $targets ]] && return 0
+
+  local line line_no=0 failed=0 in_fence=false target
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line =~ $fence_re ]]; then
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] && continue
+
+    __cog_skill_lint_line_invokes_skill_tool "$line" || continue
+    for target in $targets; do
+      if __cog_skill_lint_line_has_producer_token "$line" "$target"; then
+        __cog_skill_lint_finding "$file" "$line_no" "inline-skill-tool-dmi" \
+          "instructs invoking '${target}' through the Skill tool, but '${target}' sets disable-model-invocation" \
+          "invoke '${target}' through a claude-delegate Agent or read \$HOME/.claude/skills/${target}/SKILL.md and follow it inline; do not use the Skill tool"
+        failed=1
+      fi
+    done
+  done <"$file"
+
+  return "$failed"
+}
+
 # Native-execution executor skills produce the execution report in the
 # orchestrator's own session, so the orchestrator holds the Write tool and could
 # type a non-canonical filename. cog owns that write (`cog executor adopt`), so
@@ -1157,6 +1225,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_inline_skill_tool_dmi "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_artifact_write_ownership "$file"; then

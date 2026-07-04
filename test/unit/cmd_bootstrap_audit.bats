@@ -104,6 +104,50 @@ setup() {
   [ "$(jq -r '.domains[] | select(.domain == "precommit") | .requirements[] | select(.name == "editorconfig-checker-hook") | .satisfied' <<<"$output")" = "false" ]
 }
 
+@test "bootstrap-audit marks every domain in scope and assigns install to absent domains" {
+  run cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR" --json
+
+  assert_success
+  [ "$(jq -r 'all(.domains[]; .default_in_scope == true)' <<<"$output")" = "true" ]
+  [ "$(jq -r 'all(.domains[]; .default_action == "install")' <<<"$output")" = "true" ]
+}
+
+@test "bootstrap-audit assigns reconcile to present domains" {
+  local dir="$BATS_TEST_TMPDIR/full"
+  mkdir -p "$dir/.github/workflows"
+  touch "$dir/.pre-commit-config.yaml" "$dir/.editorconfig" "$dir/flake.nix" \
+    "$dir/.envrc" "$dir/.gitignore" "$dir/LICENSE" "$dir/README.md" \
+    "$dir/justfile" "$dir/.github/workflows/ci.yml"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  [ "$(jq -r 'all(.domains[]; .default_action == "reconcile")' <<<"$output")" = "true" ]
+}
+
+@test "bootstrap-audit reconciles a present pre-commit config with unsatisfied requirements" {
+  local dir="$BATS_TEST_TMPDIR/pcgap"
+  mkdir -p "$dir"
+  printf 'repos: []\n' >"$dir/.pre-commit-config.yaml"
+  printf 'root = true\n' >"$dir/.editorconfig"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "precommit")' <<<"$output")"
+  [ "$(jq -r '.default_action' <<<"$row")" = "reconcile" ]
+  [ "$(jq -r '.requirements_satisfied' <<<"$row")" = "false" ]
+}
+
+@test "bootstrap-audit requirements_satisfied is true for a domain with no requirements" {
+  run cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR" --json
+
+  assert_success
+  # editorconfig carries no content requirements, so the fold is vacuously true.
+  [ "$(jq -r '.domains[] | select(.domain == "editorconfig") | .requirements_satisfied' <<<"$output")" = "true" ]
+}
+
 @test "bootstrap-audit emits the full shape and fails on a bad root" {
   run cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR/nope" --json
 

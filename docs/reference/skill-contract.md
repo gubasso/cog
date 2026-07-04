@@ -321,6 +321,13 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   skill-name token. The scan covers frontmatter `description:` text and body prose while ignoring
   fenced code blocks, and is scoped to consumers in the curated consumer-to-producer map. See
   "Producer-blind consumers".
+- `inline-skill-tool-dmi`: a mapped coordinator instructs invoking a `disable-model-invocation` target
+  through the harness `Skill` tool (the phrasings "via the Skill tool", the "Skill ->" dispatch arrow,
+  or "Use Skill to chain"). The harness refuses a model-initiated `Skill` call to a DMI skill, so the
+  caller must instead delegate through a `claude-delegate` Agent or inline-chain (read the target's
+  `SKILL.md` and follow it) — never the `Skill` tool. The scan skips fenced code blocks and is scoped to
+  the curated caller-to-DMI-target map in `lib/commands/cmd_skill_lint.sh`. See
+  [ADR-0063](../decisions/0063-inline-coordinator-chaining-not-via-skill-tool.md).
 - `input-fidelity`: a mapped brief-building delegator is missing the
   `<!-- cog-skill: input-fidelity -->` marker. The rule is scoped to the curated runtime-aware
   delegator set in `lib/commands/cmd_skill_lint.sh`. See "Input fidelity (enrichment-only briefs)".

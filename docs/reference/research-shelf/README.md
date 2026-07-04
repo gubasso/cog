@@ -21,6 +21,13 @@ The shelf contract is intended for `lean-plan-and-review-skills`, `plan-*`, `rev
 executor skills. Those skills should treat the shelf as reusable context, not as deterministic
 mechanics. Persistence, validation, IDs, dates, and source shape are owned by `cog research-shelf`.
 
+The `bootstrap-*` workers are a deterministic exception: they select and record shelf entries through
+`cog bootstrap-template-review check|stamp`, which keys freshness on the
+`bootstrap-template,<domain>,<type>` topic-tag convention (for example
+`bootstrap-template,precommit,rust`) with `consuming-skills` of `bootstrap-<domain>`. That freshness
+selection lives in `bootstrap-template-review`, not in `research-shelf`, which still does not select
+entries by tag or skill.
+
 ## Entry Fields
 
 Each entry records:

@@ -37,6 +37,7 @@ Global flags:
 Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
+  bootstrap-template-review Check or stamp bootstrap template review freshness.
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
@@ -154,6 +155,7 @@ Global flags:
 Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
+  bootstrap-template-review Check or stamp bootstrap template review freshness.
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.

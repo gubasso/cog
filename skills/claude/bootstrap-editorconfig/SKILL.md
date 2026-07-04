@@ -82,6 +82,25 @@ policy is `overwrite`, `skip`, or `abort` (default `abort`). Reconciling a pre-e
 `.editorconfig` is judgment that stays in this skill: inspect the existing file and merge in prose
 rather than blind-overwriting a config the project already tuned.
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared template when stale or missing, stamp the
+review, then reconcile the target — installing when absent, aligning improvements when present. Use the
+freshness `check` JSON `/bootstrap` supplied in the brief; when it is absent, resolve the type with
+`editorconfig-detect` and run it yourself:
+
+```bash
+cog bootstrap-template-review check --domain editorconfig --type "$TYPE" --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the spec research — go straight to
+aligning the baseline in the Workflow below. When it is `stale` or `missing`, do the spec research
+(step 4), update `skill-refs/templates/editorconfig/<type>/` when justified, then stamp the review with
+`cog bootstrap-template-review stamp --domain editorconfig --type "$TYPE" ...` — even when the conclusion
+is "no template change" — before reconciling the project `.editorconfig`. `stamp` fails fast when the
+template SoT is not writable; surface that.
+
 ## Workflow
 
 1. Resolve project type. If `$ARGUMENTS` provides a type, run `editorconfig-detect --type "$TYPE"` to

@@ -66,6 +66,26 @@ policy is `overwrite`, `skip`, or `abort` (default `abort`). Reconciling a pre-e
 judgment that stays in this skill: inspect the existing pipeline and merge in prose rather than
 blind-overwriting a config the project already tuned.
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared template when stale or missing, stamp the
+review, then reconcile the target — installing when absent, applying improvements when present. The
+freshness type is the resolved CI target (`github` or `gitlab`). Use the freshness `check` JSON
+`/bootstrap` supplied in the brief; when it is absent, resolve the target with `ci-detect` and run it
+yourself:
+
+```bash
+cog bootstrap-template-review check --domain ci --type "$TARGET" --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the CI research — go straight to
+wiring the jobs in the Workflow below. When it is `stale` or `missing`, web-search current CI practice
+for the host (step 4), update `skill-refs/templates/ci/<target>/` when justified, then stamp the review
+with `cog bootstrap-template-review stamp --domain ci --type "$TARGET" ...` — even when the conclusion is
+"no template change" — before reconciling the CI files. Reuse the flake via `nix develop --command`
+whenever a `flake.nix` exists. `stamp` fails fast when the template SoT is not writable; surface that.
+
 ## Workflow
 
 1. Run `cog ci-detect --json` to resolve the target from the git remote.

@@ -1430,3 +1430,108 @@ EOF
   run grep -q 'plan-builder-to-queue' "$repo_root/lib/commands/cmd_skill_lint.sh"
   assert_success
 }
+
+# --- inline-skill-tool-dmi rule ---------------------------------------------
+
+@test "cog skill-lint flags a Skill-tool instruction targeting a disable-model-invocation skill" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'Run `/plan-multi` inline via the `Skill` tool in this coordinator context.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"inline-skill-tool-dmi"* ]]
+  [[ $stderr == *"plan-multi"* ]]
+}
+
+@test "cog skill-lint accepts read-and-follow-inline chaining of a DMI skill" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'Run `/plan-multi` inline: read `$HOME/.claude/skills/plan-multi/SKILL.md` and execute it here, not through the `Skill` tool.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  # Other rules may still flag the minimal fixture; this rule must not.
+  [[ $stderr != *"inline-skill-tool-dmi"* ]]
+}
+
+@test "cog skill-lint accepts claude-delegate Agent chaining of a DMI skill" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'Run `/plan-multi` through a foreground `claude-delegate` Agent, never the Skill tool.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  # claude-delegate delegation is a blessed resolution; this rule must not fire.
+  [[ $stderr != *"inline-skill-tool-dmi"* ]]
+}
+
+@test "cog skill-lint flags the Skill-tool arrow dispatch of a DMI splitter" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue" plan-builder-to-queue claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'If over ceiling: `Skill` → `plan-split <round>`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"inline-skill-tool-dmi"* ]]
+  [[ $stderr == *"plan-split"* ]]
+}
+
+@test "cog skill-lint flags the ASCII Skill-tool arrow dispatch of a DMI splitter" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue" plan-builder-to-queue claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'If over ceiling: `Skill` -> `plan-split <round>`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"inline-skill-tool-dmi"* ]]
+  [[ $stderr == *"plan-split"* ]]
+}
+
+@test "cog skill-lint does not flag a Skill-tool instruction for an unmapped caller" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
+  printf '\n%s\n' 'Run `/plan-multi` inline via the `Skill` tool.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+  [[ $stderr != *"inline-skill-tool-dmi"* ]]
+}
+
+@test "cog skill-lint ignores a Skill-tool phrasing inside a fenced block for a mapped caller" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md" <<'EOF'
+
+```text
+Run /plan-multi inline via the `Skill` tool.
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
+
+  [[ $stderr != *"inline-skill-tool-dmi"* ]]
+}
+
+@test "cog skill-lint passes the shipped plan-vetted skill (inline-skill-tool-dmi regression)" {
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  run cog skill-lint "$repo_root/skills/claude/plan-vetted/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint passes the shipped plan-builder-to-queue-vetted-multi skill" {
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  run cog skill-lint "$repo_root/skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md"
+  assert_success
+}

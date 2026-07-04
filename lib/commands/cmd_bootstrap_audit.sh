@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Aggregate bootstrap domain present/missing status.'
 
-__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==6) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requirements|type=="array") and (.requires_question|type=="boolean")))'
+__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==6) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requirements|type=="array") and (.requires_question|type=="boolean") and (.default_in_scope|type=="boolean") and (.default_action|type=="string") and (.requirements_satisfied|type=="boolean")))'
 
 __cog_bootstrap_audit_usage() {
   cog::fn::ui_data "Usage: cog bootstrap-audit [--project-root <dir>] (<out.json>|--json)"
@@ -27,6 +27,10 @@ __cog_bootstrap_audit_artifacts() {
 # requirements is a (possibly empty) JSON array of content-level {name, satisfied}
 # checks a present domain must still pass — cross-domain fragments a bare
 # file-existence check cannot see (nix ignore lines, the editorconfig-checker hook).
+# The scope model is machine-explicit (ADR-0062): every domain is in scope by
+# default (opt-out is an orchestrator decision), a present domain reconciles while
+# an absent one installs, and requirements_satisfied folds the content checks into
+# one boolean so the orchestrator reads the action instead of re-deriving it.
 __cog_bootstrap_audit_domain() {
   local domain="$1" present="$2" requires_question="$3" detail="$4" artifacts="$5" requirements="${6:-[]}"
   jq -cn \
@@ -36,6 +40,9 @@ __cog_bootstrap_audit_domain() {
     --argjson requirements "$requirements" \
     '{domain: $domain, present: $present, artifacts: $artifacts,
       requirements: $requirements, requires_question: $requires_question,
+      default_in_scope: true,
+      default_action: (if $present then "reconcile" else "install" end),
+      requirements_satisfied: ($requirements | all(.satisfied)),
       detail: (if $detail == "" then null else $detail end)}'
 }
 

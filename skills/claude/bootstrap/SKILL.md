@@ -4,9 +4,10 @@ description: >
   Scaffold or update a project's baseline configuration by interviewing the operator once
   and dispatching the bootstrap-* config skills (pre-commit, editorconfig, nix devshell,
   repo starter, CI workflow, taskrunner) as parallel fresh-context workers. Runs on a brand
-  new project or an existing one, filling in what is missing. Use when the user says
-  "bootstrap", "project bootstrap", "bootstrap a project", "scaffold a new project", or
-  "set up a project".
+  new project or an existing one; every run refreshes the reviewed templates and reconciles each
+  selected domain — installing what is absent and applying improvements to what is present. Use
+  when the user says "bootstrap", "project bootstrap", "bootstrap a project", "scaffold a new
+  project", or "set up a project".
 argument-hint: "[project-dir] <what to set up / free-form intent>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill AskUserQuestion Grep Glob
@@ -23,7 +24,9 @@ Scaffold a project's baseline tooling by interviewing the operator once, then di
 `bootstrap-*` config skills as parallel fresh-context workers. This orchestrator owns the interview,
 per-worker orientation, dispatch sequencing, and postcondition verification; each worker owns its own
 config domain and its deterministic `cog` mechanics. It runs on a new project or an existing one —
-detecting what is already present and setting up only what is missing.
+every run refreshes the reviewed templates and reconciles each selected domain, installing what is
+absent and applying improvements to what is present. Every worker follows the shared refresh routine at
+`$(cog skill-refs path bootstrap/template-refresh-routine.md)`.
 
 The dispatchable workers are `bootstrap-precommit`, `bootstrap-editorconfig`, `bootstrap-nix`,
 `bootstrap-repo`, `bootstrap-ci`, and `bootstrap-taskrunner`.
@@ -50,25 +53,32 @@ First establish the deterministic present/missing baseline across every domain i
 cog bootstrap-audit --json
 ```
 
-Each `domains[]` row reports `domain`, `present`, the per-artifact `artifacts` breakdown, and
-`requires_question`. This matrix is the authoritative scope: **every domain with `present=false` is in
-scope.** Free-form intent **orients** the interview but never **shrinks** this set — an example domain
-("set up what's missing, e.g. nix") names one instance, not the whole list.
+Each `domains[]` row reports `domain`, `present`, the per-artifact `artifacts` breakdown,
+`requires_question`, and the machine-explicit scope fields `default_in_scope`, `default_action`
+(`install` when `present=false`, `reconcile` when `present=true`), and `requirements_satisfied`. This
+matrix is the authoritative scope: **every domain is in scope by default, dispatched in its
+`default_action` mode**, unless the operator explicitly opts it out. Free-form intent **orients** the
+interview but never **shrinks** this set — an example domain ("set up what's missing, e.g. nix") names
+one instance, not the whole list. Read each domain's `default_action` rather than re-deriving it.
 
 Interview the operator with `AskUserQuestion` — this orchestrator is the only interactive component, and
 asking here is expected. Ground every question in the audit matrix and resolve:
 
-- Any missing domain the operator explicitly opts **out** of. Absent an explicit opt-out, every
-  `present=false` domain stays in scope.
-- The destructive-change policy (overwrite, merge, skip) for any `present=true` domain the operator
-  still wants re-run.
+- Any domain the operator explicitly opts **out** of. Absent an explicit opt-out, every domain stays in
+  scope in its `default_action` mode — a present domain reconciles rather than being skipped.
+- The conflict policy (overwrite, merge, skip) for any domain whose worker may need overwrite authority
+  to apply improvements. Reconcile never becomes an unprompted destructive overwrite; present domains no
+  longer need an opt-in to run.
 - Language/runtime specifics that the workers cannot infer.
 - License SPDX id, holder, and year whenever the `repo` row reports `requires_question=true` (asked,
   never silently defaulted).
 - CI target whenever the `ci` row reports `requires_question=true` (no github/gitlab remote detected).
 - Taskrunner preference (default `just`; `make` only when a `Makefile` already exists).
 
-If the intent already answers a question, confirm rather than re-ask.
+If the intent already answers a question, confirm rather than re-ask. The template review runs on a
+default 14-day freshness window, applied when a worker stamps a review (a review stays fresh until its
+recorded date plus the window); the operator may choose a longer window (e.g. 30 days) for a looser
+re-review cadence, carried in each worker's brief so its stamp uses it.
 
 ## Phase B: Run directory and per-worker briefs
 
@@ -93,6 +103,18 @@ cog gitignore-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
 ```
+
+Once a domain's detector resolves its template type, capture the template-review freshness so the
+worker can skip re-research when a recent review already covers this domain and type, and fold that JSON
+into the worker's brief:
+
+```bash
+cog bootstrap-template-review check --domain <domain> --type "$TYPE" --json
+```
+
+Each row reports `review.state` (fresh/stale/missing/invalid), `review.fresh`, the cached `summary`, and
+the `skill_refs` origin/writability that tells the worker whether a template write lands in the tracked
+repo or the installed, uncommitted tree.
 
 Then build one validated context brief per in-scope worker under `$RUN_DIR`. Assemble each brief inline
 with the `context-builder` skill, carrying the operator's answers as precise orientation, the raw
@@ -119,10 +141,14 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
 - **Wave 2 (consume Wave 1):** `bootstrap-precommit` (reads the established `.editorconfig` baseline),
   `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names).
 
-Give each subagent its validated brief as the complete orientation. After each wave, verify the durable
-postcondition by re-running `cog bootstrap-audit --json` and confirming every dispatched domain now
-reports `present=true` (or was intentionally opted out) with every `requirements[]` entry `satisfied`,
-and that each touched `SKILL.md` lints clean, before starting the next wave.
+Give each subagent its validated brief as the complete orientation, including the freshness `check` JSON
+so a worker with a fresh review reuses the cached summary instead of re-searching. Dispatch every
+selected domain, present or missing, in these waves — a present domain reconciles in place. After each
+wave, verify the durable postcondition by re-running `cog bootstrap-audit --json` and confirming every
+dispatched domain now reports `present=true` (or was intentionally opted out) with
+`requirements_satisfied==true`, that each worker either reused a fresh review or recorded a new stamp
+(reporting any changed template paths), and that each touched `SKILL.md` lints clean, before starting
+the next wave.
 
 ## Phase D: Reconcile and report
 
@@ -135,18 +161,25 @@ cog gitignore-apply --type nix --append --json
 ```
 
 Re-run `cog bootstrap-audit --json` as the final postcondition: every in-scope domain must report
-`present=true` **and** every `requirements[]` entry `satisfied` — a `present` domain with an unsatisfied
+`present=true` **and** `requirements_satisfied==true` — a `present` domain with an unsatisfied
 requirement (a nix devshell whose `.gitignore` lacks `.direnv/`/`/result`, a pre-commit config missing
 the `editorconfig-checker` hook, an existing CI pipeline that does not reuse the flake) is incomplete
-and must be reconciled before reporting done. Summarize what each worker produced, list follow-ups
-(`nix flake lock` on a nix host, `pre-commit install`, `direnv allow`), and surface any conflicts or
-still-missing domains that need an operator decision.
+and must be reconciled before reporting done. Summarize what each worker produced — the target files
+changed, the shared template paths updated, the research-shelf review entry ids, and whether the
+template root resolved from the tracked `repo` checkout or the installed `xdg` tree (installed-tree
+writes are local and uncommitted). List follow-ups (`nix flake lock` on a nix host, `pre-commit
+install`, `direnv allow`), and surface any conflicts or still-missing domains that need an operator
+decision.
 
 ## Guardrails
 
 - The orchestrator is the only interactive component; workers never interview.
-- The audit's `present=false` set is the authoritative scope; an example domain in the intent never
-  shrinks it.
+- Every audited domain is in scope by default in its `default_action` mode (install when absent,
+  reconcile when present); only an explicit operator opt-out removes one, and an example domain in the
+  intent never shrinks the set.
+- Every worker follows the shared refresh routine at
+  `$(cog skill-refs path bootstrap/template-refresh-routine.md)`; installed-tree (`origin=xdg`) template
+  writes are local and uncommitted and must be surfaced in the report.
 - Scratch and intermediate artifacts live under the `cog rundir bootstrap` directory; never write them
   into the project tree or CWD.
 - Keep the interview, brief-building, and dispatch foreground; never background them.

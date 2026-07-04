@@ -319,3 +319,31 @@ cog::fn::research::get_json() {
     --argjson entry "$entry_json" \
     '{schema: $schema, ok: true, action: $action, root: $root, index: $index, entry: $entry}'
 }
+
+# Select shelf entries whose topic-tags include EVERY requested tag and whose
+# revalidate-after is on or after <as_of>. revalidate-after is validated
+# YYYY-MM-DD on record, so a lexical `>=` equals a chronological comparison.
+# Reads the JSONL leniently (unparseable/blank lines are skipped, matching the
+# read-side tolerance of record_json); an empty or missing index yields [].
+# Args: <index-path> <tags-json-array> <as_of-date>.
+cog::fn::research::fresh_entries() {
+  local index="${1:-}" tags_json="${2:-[]}" as_of="${3:-}"
+
+  cog::fn::research::require_jq
+  [[ -n $index ]] || cog::fn::error_raise "MissingArgument" \
+    "missing research shelf index" "function: cog::fn::research::fresh_entries" "" ""
+  [[ -n $as_of ]] || cog::fn::error_raise "MissingArgument" \
+    "missing as-of date" "function: cog::fn::research::fresh_entries" "" ""
+  [[ -n $tags_json ]] || tags_json='[]'
+  if [[ ! -f $index ]]; then
+    jq -cn '[]'
+    return 0
+  fi
+  jq -R -s -c --argjson tags "$tags_json" --arg as_of "$as_of" '
+    [ split("\n")[] | select(length > 0) | (fromjson? // empty) ]
+    | map(select(
+        ((."topic-tags" // []) as $t | (($tags - $t) | length) == 0)
+        and (((."revalidate-after") // "0000-00-00") >= $as_of)
+      ))
+  ' "$index"
+}

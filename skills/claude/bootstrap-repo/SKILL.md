@@ -72,6 +72,27 @@ cog readme-apply --conflict "$POLICY" --json
 Each helper emits `{ok, ...}` with `copied`, `skipped`, and `conflicts` arrays (gitignore adds
 `mode` and `appended`; license adds `spdx`); treat that output as mechanics only.
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared templates when stale or missing, stamp the
+review, then reconcile the target — installing when absent, applying improvements when present. The
+freshness type is the gitignore type. Use the freshness `check` JSON `/bootstrap` supplied in the brief;
+when it is absent, resolve the type with `gitignore-detect` and run it yourself:
+
+```bash
+cog bootstrap-template-review check --domain repo --type "$TYPE" --json
+```
+
+`check` reports the `gitignore`, `license`, and `readme` template roots in `template_roots[]`. When
+`review.fresh` is `true`, reuse the cached `summary` and skip the research — go straight to reconcile in
+the Workflow below. When it is `stale` or `missing`, web-research current ignore patterns and README
+conventions for the stack (step 6), update the relevant `skill-refs/templates/{gitignore,license,readme}/`
+trees when justified, then stamp the review with `cog bootstrap-template-review stamp --domain repo
+--type "$TYPE" ...` — even when the conclusion is "no template change" — before reconciling `.gitignore`,
+`LICENSE`, and `README.md`. Preserve the operator-confirmed SPDX id, holder, and year; never default a
+license. `stamp` fails fast when the template SoT is not writable; surface that.
+
 ## Workflow
 
 1. Resolve the `.gitignore` type. If `$ARGUMENTS` provides a type, validate it with

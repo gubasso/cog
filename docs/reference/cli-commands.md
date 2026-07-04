@@ -33,6 +33,9 @@ this reference table.
 
 | Command | Summary |
 | ------- | ------- |
+| `bootstrap-template-review` | Check or stamp bootstrap template review freshness. |
+| `bootstrap-template-review check --domain <d> --type <t> [--research-root <dir>] --json` | Report a domain/type template review's freshness (`fresh`/`stale`/`missing`/`invalid`) with skill-refs origin and template roots. |
+| `bootstrap-template-review stamp --domain <d> --type <t> --summary <text> --source-json <json> [--changed-template <path> ...] [--freshness-days <n>] --json` | Record a dated template review through the shelf; fails fast when the skill-refs template SoT is unwritable. |
 | `ci-apply` | Apply a CI workflow template to a project. |
 | `ci-detect` | Detect the CI target from the project git remote. |
 | `classify-project` | Classify repository shape. |
@@ -151,6 +154,7 @@ this reference table.
 | `skill-class` | Show and check core skill-class contracts and prerequisites. |
 | `skill-refs root` | Print the resolved skill-reference root. |
 | `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
+| `skill-refs inspect [--json]` | Report the resolved root with its origin (`repo`/`xdg`), writability, and a vcs note. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
 | `suckless-apply` | Check, apply, and build a suckless patch. |
 | `suckless-conflicts` | List suckless patch conflict artifacts. |
@@ -246,6 +250,24 @@ queue entries dispatch nested runner prompts such as
 and falling back to the repo checkout.
 
 `cog skill-refs path <rel>` prints an existing file under the resolved skill-reference root.
+
+`cog skill-refs inspect [--json]` reports the resolved root together with its `origin` (`repo` or
+installed `xdg`), `writable`, and a `vcs_note`, so a caller can see whether a template write lands in the
+tracked repo or the installed, uncommitted tree.
+
+`cog bootstrap-audit --json` reports, per domain, the machine-explicit scope fields `default_in_scope`,
+`default_action` (`install` when the domain is absent, `reconcile` when present), and
+`requirements_satisfied` alongside the existing `present`/`requirements[]` layers. The orchestrator
+reads `default_action` rather than re-deriving scope (ADR-0062).
+
+`cog bootstrap-template-review check|stamp` is the freshness-cached template-review surface the six
+`bootstrap-*` workers share. `check` selects a fresh research-shelf entry for a domain and detected type
+(the freshness key is `bootstrap-template,<domain>,<type>`) by comparing today against the stamped
+`revalidate-after`, and folds in the skill-refs origin and template roots; `stamp` records a dated
+review through `cog research-shelf record`, sets `revalidate-after` to the recorded date plus its
+`--freshness-days` window (default 14), and fails fast when the skill-refs template SoT is not writable.
+The freshness window is chosen at stamp time, so `check` only compares dates. Freshness selection lives
+here, not in `research-shelf`.
 
 ## Implementation plan layout
 

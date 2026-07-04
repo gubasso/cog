@@ -71,6 +71,26 @@ template fresh when the file is absent:
 cog taskrunner-apply --type "$TYPE" --append --json
 ```
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared template when stale or missing, stamp the
+review, then reconcile the target — installing when absent, augmenting when present. Use the freshness
+`check` JSON `/bootstrap` supplied in the brief; when it is absent, resolve the runner type with
+`taskrunner-detect` and run it yourself:
+
+```bash
+cog bootstrap-template-review check --domain taskrunner --type "$TYPE" --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the research — go straight to
+tailoring recipes in the Workflow below. When it is `stale` or `missing`, review current `just`/`make`
+recipe conventions for the detected toolchain, update `skill-refs/templates/taskrunner/<type>/` when
+justified, then stamp the review with `cog bootstrap-template-review stamp --domain taskrunner --type
+"$TYPE" ...` — even when the conclusion is "no template change" — before reconciling. Reconcile an
+existing runner through `--append` where possible, never a wholesale overwrite. `stamp` fails fast when
+the template SoT is not writable; surface that.
+
 ## Workflow
 
 1. Run `cog taskrunner-detect --json` to resolve the runner type and read the build-tool signals.

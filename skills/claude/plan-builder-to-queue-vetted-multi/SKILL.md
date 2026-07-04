@@ -62,8 +62,10 @@ these resolved paths (and `cog plan new` / `cog plan path`), never a hardcoded
 
 Interview the operator with `AskUserQuestion` to settle open decisions (2–3 concrete questions only
 when the orientation leaves them open; record skill-chosen defaults for anything deferred). Then chain
-`plan-vetted` **inline** via the `Skill` tool with the orientation, writing its vetted plan to
-`DRAFT_PATH`:
+`plan-vetted` as a fresh full run — a `claude-delegate` Agent, or an inline-chain (read
+`$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it in this context) — never through the `Skill`
+tool (`plan-vetted` sets `disable-model-invocation`), with the orientation and the decisions settled
+above, writing its vetted plan to `DRAFT_PATH`:
 
 - Run `plan-vetted` in this same context so its own `AskUserQuestion` interview reaches the operator.
 - Pass the orientation as the prompt plus `--output "$DRAFT_PATH"`. `plan-vetted` accepts
@@ -86,7 +88,9 @@ cog round-req stamp "$DRAFT_PATH" --json
 
 ## Phase 3 — Dual-engine review with `review-plan-multi` (inline)
 
-Chain `review-plan-multi` **inline** via the `Skill` tool over `DRAFT_PATH` as a plan file. It builds
+Chain `review-plan-multi` as a fresh full run — a `claude-delegate` Agent, or an inline-chain (read
+`$HOME/.claude/skills/review-plan-multi/SKILL.md` and follow it in this context) — never through the
+`Skill` tool (it sets `disable-model-invocation`), over `DRAFT_PATH` as a plan file. It builds
 its own request brief from the live context and dispatches its two reviewers — Claude via Agent and
 Codex via `cog codex-runner` — itself.
 
@@ -104,10 +108,12 @@ and this build continues.
 Seed a work queue with the finalized plan as the single parent round. Loop until every round is at or
 under the single-session ceiling or the splitter reports an irreducible round:
 
-1. Grade the round inline: `Skill` → `review-plan-complexity <round> "$WORK_DIR/complexity-reports/<round-slug>.yaml"`.
+1. Grade the round through a `claude-delegate` Agent or an inline-chain (read
+   `$HOME/.claude/skills/review-plan-complexity/SKILL.md` and follow it), not the `Skill` tool: `review-plan-complexity <round> "$WORK_DIR/complexity-reports/<round-slug>.yaml"`.
    Read `grade`, `score`, `splittable`, and `seam_hints` (requirement-ID partitions) from the report.
 2. `cog plan-complexity over-ceiling --grade "<grade>" --json` — if not over ceiling, the round is final.
-3. If over ceiling: `Skill` → `plan-split <round> <seam-hints> "$WORK_DIR/split-verdicts/<round-slug>.yaml"`.
+3. If over ceiling, split through a `claude-delegate` Agent or an inline-chain (read
+   `$HOME/.claude/skills/plan-split/SKILL.md` and follow it), not the `Skill` tool: `plan-split <round> <seam-hints> "$WORK_DIR/split-verdicts/<round-slug>.yaml"`.
    The splitter re-stamps children (`cog round-req stamp`) and verifies no requirement loss via
    `cog round-split coverage --parent <p> --children <a> <b> --json` (refuses a lossy split).
    Re-enqueue both children; discard the parent.
@@ -177,8 +183,9 @@ not run git and do not implement anything.
 - This skill only WRITES the vault plan; it does not implement.
 - Producer-blind: resolve every output path through `cog plan` verbs; never hardcode `.implementation-plans/`.
 - Reserved (`>30`) rounds are never queued — hard split-or-fail (route through `plan-split`).
-- Use `Skill` to chain `plan-vetted` / `review-plan-multi` / `review-plan-complexity` /
-  `plan-split` inline (same context).
+- Chain `plan-vetted` / `review-plan-multi` / `review-plan-complexity` / `plan-split` through a
+  `claude-delegate` Agent or an inline-chain (read each target's `$HOME/.claude/skills/<name>/SKILL.md`
+  and follow it); never through the `Skill` tool (all four set `disable-model-invocation`).
 - Review runs through `review-plan-multi`; if its Codex reviewer is down, degrade gracefully to its
   Claude-only vetted review with the recorded note.
 - Full scope is never summarized or capped — length is resolved only by the split phase.

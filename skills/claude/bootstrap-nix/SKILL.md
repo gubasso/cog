@@ -74,6 +74,26 @@ companion_conflict, reason}`. The helper never runs `nix flake lock`, edits `.gi
 Reconciling a pre-existing `flake.nix` or `.envrc` is judgment: inspect both files, decide the merge
 in prose, and use the helper only for safe copies. Never blind-overwrite an existing flake or envrc.
 
+## Template refresh
+
+Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on
+every run: check freshness, review and update the shared template when stale or missing, stamp the
+review, then reconcile the target — installing when absent, tuning improvements when present. Use the
+freshness `check` JSON `/bootstrap` supplied in the brief; when it is absent, resolve the type with
+`nix-devshell-detect` and run it yourself:
+
+```bash
+cog bootstrap-template-review check --domain nix --type "$TYPE" --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the flake research — go straight to
+tuning the deployed flake in the Workflow below. When it is `stale` or `missing`, web-research current
+flake / `nix develop` / nix-direnv practice for the type, update `skill-refs/templates/nix/<type>/` when
+justified, then stamp the review with `cog bootstrap-template-review stamp --domain nix --type "$TYPE"
+...` — even when the conclusion is "no template change" — before reconciling `flake.nix` / `.envrc`.
+`stamp` fails fast when the template SoT is not writable; surface that. The `.gitignore` and CI files
+stay owned by their own domains.
+
 ## Workflow
 
 1. Resolve the type. If `$ARGUMENTS` gives one, run `nix-devshell-detect --type "$TYPE"` to validate

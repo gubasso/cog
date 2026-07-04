@@ -103,6 +103,8 @@ source "${LIB_DIR}/functions/fn_codex.sh"
 source "${LIB_DIR}/functions/fn_skill_refs.sh"
 # shellcheck source=../lib/functions/fn_template.sh
 source "${LIB_DIR}/functions/fn_template.sh"
+# shellcheck source=../lib/functions/fn_bootstrap_review.sh
+source "${LIB_DIR}/functions/fn_bootstrap_review.sh"
 # shellcheck source=../lib/functions/fn_nix.sh
 source "${LIB_DIR}/functions/fn_nix.sh"
 # shellcheck source=../lib/core.sh
