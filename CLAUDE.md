@@ -47,6 +47,13 @@ role or content, not stage number. Enforced by cog skill-lint (stage-agnostic-id
 docs/decisions/0040-stage-agnostic-identifiers.md and docs/reference/skill-contract.md
 ("Stage-agnostic identifiers").
 
+Non-negotiable: a skill that needs scratch or intermediate space obtains a run directory via cog rundir
+<prefix> (resolving under $XDG_STATE_HOME/cog/runs through cog::fn::rundir_base) and writes every
+scratch/intermediate artifact under it; scratch never lands in the project tree or CWD, and deliverables
+go to their real destination. Enforced by cog skill-lint (scratch-in-project). See
+docs/decisions/0061-rundir-scratch-artifact-convention.md and docs/reference/skill-contract.md
+("Run directory (scratch artifact convention)").
+
 Non-negotiable: the plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan or
 review workers. Every Claude executor-*/runner- skill carries a Phase 0 plan-mode gate
 (cog-plan-mode-gate marker); every other Claude skill must not. The gate wording is a single source of

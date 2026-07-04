@@ -197,6 +197,28 @@ space, such as `Stage N` or `stage N`, are allowed for sequence descriptions.
 bodies plus each skill's `references/` filenames and contents. See
 [ADR-0040](../decisions/0040-stage-agnostic-identifiers.md).
 
+## Run directory (scratch artifact convention)
+
+A skill that needs scratch or intermediate space obtains a run directory via `cog rundir <prefix>` and
+writes every scratch/intermediate artifact under it. Scratch never lands in the project tree or the
+current working directory. The canonical binding is:
+
+```bash
+RUN_DIR="$(cog rundir <prefix> | sed -n 's/^RUN_DIR=//p')"
+[ -n "$RUN_DIR" ] || { echo "ERROR: cog rundir did not emit RUN_DIR" >&2; exit 1; }
+```
+
+`cog rundir` resolves under `$XDG_STATE_HOME/cog/runs` through `cog::fn::rundir_base`, so run
+directories are uniformly locatable and share one lifecycle. **Deliverables** — the files a skill exists
+to produce in the user's project — are out of scope and go to their real destination; only scratch and
+intermediate artifacts (briefs, snapshots, parse outputs, staging bodies) are bound to the run
+directory.
+
+`cog skill-lint`'s `scratch-in-project` rule fails a skill that assigns a run/scratch/temp/work
+directory from `$(pwd)`, `${PWD}`, or a `./`-relative path. A skill that must write a working file into
+the project records an explicit `<!-- cog-skill-lint: allow-scratch-in-project <reason> -->` suppression
+on the preceding line. See [ADR-0061](../decisions/0061-rundir-scratch-artifact-convention.md).
+
 ## Lean positive prose
 
 Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what
@@ -305,6 +327,11 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
 - `stage-agnostic-identifiers`: a runtime skill body or skill `references/` filename/content uses a
   stage-numbered machine identifier matching the banned identifier patterns. Human prose forms like
   `Stage N` and `stage N` are allowed. See "Stage-agnostic identifiers".
+- `scratch-in-project`: a runtime skill body assigns a run/scratch/temp/work directory from a
+  working-tree root (`$(pwd)`, `${PWD}`, or a `./`-relative path) instead of `cog rundir <prefix>`. The
+  scan skips frontmatter and honors an inline `<!-- cog-skill-lint: allow-scratch-in-project <reason> -->`
+  suppression on the preceding line. See "Run directory (scratch artifact convention)" and
+  [ADR-0061](../decisions/0061-rundir-scratch-artifact-convention.md).
 - `artifact-write-ownership`: a curated native-execution executor skill (`executor-oneshot`,
   `executor-vetted`) instructs a direct write to the canonical execution artifact
   (`execution-report.md`) instead of routing through `cog executor adopt`. The orchestrator produces

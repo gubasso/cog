@@ -58,6 +58,14 @@ not stage number. Enforcement is the `stage-agnostic-identifiers` rule in `cog s
 `docs/decisions/0040-stage-agnostic-identifiers.md` and `docs/reference/skill-contract.md`
 ("Stage-agnostic identifiers").
 
+A skill that needs scratch or intermediate space obtains a run directory via `cog rundir <prefix>`
+(resolving under `$XDG_STATE_HOME/cog/runs` through `cog::fn::rundir_base`) and writes every
+scratch/intermediate artifact under it. Scratch never lands in the project tree or the current working
+directory; deliverables — the files a skill exists to produce in the user's project — go to their real
+destination. Enforcement is the `scratch-in-project` rule in `cog skill-lint`. See
+`docs/decisions/0061-rundir-scratch-artifact-convention.md` and `docs/reference/skill-contract.md`
+("Run directory (scratch artifact convention)").
+
 The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers: the
 caller a user launches gates once at entry (plan mode is read-only and blocks writes), then delegates to
 gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a Phase 0 plan-mode gate marked

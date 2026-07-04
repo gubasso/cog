@@ -382,6 +382,86 @@ __cog_skill_lint_check_forbidden_runtime_refs() {
   return "$failed"
 }
 
+# A run/scratch/temp/work directory built from a working-tree root: $(pwd),
+# ${PWD}, $PWD, or a ./-relative or dotdir path assigned to a scratch-named
+# variable, or an mkdir of a working-tree-rooted path. The canonical
+# `cog rundir <prefix>` binding uses none of these, so it is not matched.
+__cog_skill_lint_line_scratch_in_project() {
+  local line="$1"
+  local scratch_assign='(^|[[:space:]])(export[[:space:]]+)?(RUN|RUNDIR|RUN_DIR|SCRATCH|SCRATCH_DIR|TMP|TMPDIR|TEMP|TEMPDIR|WORK|WORKDIR|WORK_DIR)='
+  # shellcheck disable=SC2016 # literal regex metacharacters for $(pwd)/${PWD}, not expansions
+  local cwd_root='\$\(pwd\)|\$\{PWD\}|\$PWD'
+  if [[ $line =~ $scratch_assign ]]; then
+    [[ $line =~ ($cwd_root) ]] && return 0
+    [[ $line =~ =\"?\.\/ ]] && return 0
+    [[ $line =~ =\"?\.[a-zA-Z0-9_-] ]] && return 0
+  fi
+  if [[ $line =~ (^|[[:space:]])mkdir[[:space:]] ]]; then
+    [[ $line =~ ($cwd_root) ]] && return 0
+  fi
+  return 1
+}
+
+__cog_skill_lint_check_scratch_in_project() {
+  # A skill that needs scratch space obtains a run directory via `cog rundir
+  # <prefix>`; scratch never lands in the project tree or CWD. This fails a
+  # run/scratch/temp/work directory rooted in the working tree. The scan covers
+  # fenced code blocks — the anti-pattern most often lives in a bash fence — and
+  # skips only frontmatter. An inline
+  # <!-- cog-skill-lint: allow-scratch-in-project <reason> --> on the preceding
+  # nonblank line suppresses the next content line. See
+  # docs/decisions/0061-rundir-scratch-artifact-convention.md.
+  local file="$1"
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false
+  local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-scratch-in-project[[:space:]]+.+-->'
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    # Fence delimiters and blank lines never consume a pending suppression, so a
+    # marker placed immediately before a fence still suppresses the first
+    # offending line inside it.
+    [[ $line =~ $fence_re ]] && continue
+    [[ -z ${line//[[:space:]]/} ]] && continue
+
+    if [[ $line =~ $allow_re ]]; then
+      suppress_next=true
+      continue
+    fi
+
+    if __cog_skill_lint_line_scratch_in_project "$line"; then
+      if [[ $suppress_next == true ]]; then
+        suppress_next=false
+        continue
+      fi
+      # shellcheck disable=SC2016 # literal Markdown backticks in the fix hint, not command substitution
+      __cog_skill_lint_finding "$file" "$line_no" "scratch-in-project" \
+        "scratch or run directory rooted in the project tree or CWD" \
+        'obtain a run directory with `cog rundir <prefix>` and keep scratch under it'
+      failed=1
+      continue
+    fi
+    suppress_next=false
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_line_has_stage_identifier() {
   local line="$1"
   [[ $line =~ stage[0-9]+[-_.] ]] && return 0
@@ -1071,6 +1151,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_stage_agnostic "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_scratch_in_project "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then

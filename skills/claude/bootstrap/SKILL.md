@@ -42,25 +42,47 @@ context-brief build` and confirm it with `cog context-brief validate` before dis
 free-form intent describing what to set up. The intent orients the interview; it is never assumed to be
 complete.
 
-## Phase A: Interview
+## Phase A: Audit and interview
+
+First establish the deterministic present/missing baseline across every domain in one call:
+
+```bash
+cog bootstrap-audit --json
+```
+
+Each `domains[]` row reports `domain`, `present`, the per-artifact `artifacts` breakdown, and
+`requires_question`. This matrix is the authoritative scope: **every domain with `present=false` is in
+scope.** Free-form intent **orients** the interview but never **shrinks** this set — an example domain
+("set up what's missing, e.g. nix") names one instance, not the whole list.
 
 Interview the operator with `AskUserQuestion` — this orchestrator is the only interactive component, and
-asking here is expected. Resolve the cross-cutting decisions that orient every worker:
+asking here is expected. Ground every question in the audit matrix and resolve:
 
-- Whether this is a new or existing project, and the destructive-change policy (overwrite, merge, skip).
-- Which config domains to run: `bootstrap-precommit`, `bootstrap-editorconfig`, `bootstrap-nix`,
-  `bootstrap-repo`, `bootstrap-ci`, `bootstrap-taskrunner`.
+- Any missing domain the operator explicitly opts **out** of. Absent an explicit opt-out, every
+  `present=false` domain stays in scope.
+- The destructive-change policy (overwrite, merge, skip) for any `present=true` domain the operator
+  still wants re-run.
 - Language/runtime specifics that the workers cannot infer.
-- License SPDX id, holder, and year (asked, never silently defaulted).
-- CI target when no git remote is detected.
+- License SPDX id, holder, and year whenever the `repo` row reports `requires_question=true` (asked,
+  never silently defaulted).
+- CI target whenever the `ci` row reports `requires_question=true` (no github/gitlab remote detected).
 - Taskrunner preference (default `just`; `make` only when a `Makefile` already exists).
 
 If the intent already answers a question, confirm rather than re-ask.
 
-## Phase B: Preflight and per-worker briefs
+## Phase B: Run directory and per-worker briefs
 
-Gather deterministic orientation by running each selected domain's detector against the project, so each
-brief carries the true starting state:
+Open a run directory for every scratch and intermediate artifact this orchestration produces. Obtain it
+the canonical way and substitute the literal path it echoes into the commands below — scratch never
+lands in the project tree or CWD:
+
+```bash
+RUN_DIR="$(cog rundir bootstrap | sed -n 's/^RUN_DIR=//p')"
+[ -n "$RUN_DIR" ] || { echo "ERROR: cog rundir did not emit RUN_DIR" >&2; exit 1; }
+```
+
+Write the raw request to `$RUN_DIR/request.md`. Gather per-worker orientation by running each in-scope
+domain's detector against the project, so each brief carries the true starting state:
 
 ```bash
 cog classify-project --json
@@ -72,16 +94,16 @@ cog ci-detect --json
 cog taskrunner-detect --json
 ```
 
-Then build one validated context brief per selected worker. Assemble each brief inline with the
-`context-builder` skill, carrying the operator's answers as precise orientation, the raw request
-attached as-is, and the full substantive context and detector findings that bear on that worker —
-omitting your own proposed solution:
+Then build one validated context brief per in-scope worker under `$RUN_DIR`. Assemble each brief inline
+with the `context-builder` skill, carrying the operator's answers as precise orientation, the raw
+request attached as-is, and the full substantive context and detector findings that bear on that worker
+— omitting your own proposed solution:
 
 ```bash
-cog context-brief template --out "<run>/brief-body-<worker>.md"
+cog context-brief template --out "$RUN_DIR/brief-body-<worker>.md"
 # fill the body for that worker, then:
-cog context-brief build --request "<run>/request.md" --body "<run>/brief-body-<worker>.md" --out "<run>/brief-<worker>.md"
-cog context-brief validate "<run>/brief-<worker>.md"
+cog context-brief build --request "$RUN_DIR/request.md" --body "$RUN_DIR/brief-body-<worker>.md" --out "$RUN_DIR/brief-<worker>.md"
+cog context-brief validate "$RUN_DIR/brief-<worker>.md"
 ```
 
 ## Phase C: Dispatch in dependency-aware waves
@@ -96,17 +118,24 @@ through its brief.
   `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names).
 
 Give each subagent its validated brief as the complete orientation. After each wave, verify the durable
-postcondition — the expected files exist (or were intentionally skipped) and each touched `SKILL.md`
-lints clean — before starting the next wave.
+postcondition by re-running `cog bootstrap-audit --json` and confirming every dispatched domain now
+reports `present=true` (or was intentionally opted out), and that each touched `SKILL.md` lints clean,
+before starting the next wave.
 
 ## Phase D: Reconcile and report
 
-Summarize what each worker produced, list follow-ups (`nix flake lock` on a nix host, `pre-commit
-install`, `direnv allow`), and surface any conflicts that still need an operator decision.
+Re-run `cog bootstrap-audit --json` as the final postcondition: every in-scope domain must now report
+`present=true`. Summarize what each worker produced, list follow-ups (`nix flake lock` on a nix host,
+`pre-commit install`, `direnv allow`), and surface any conflicts or still-missing domains that need an
+operator decision.
 
 ## Guardrails
 
 - The orchestrator is the only interactive component; workers never interview.
+- The audit's `present=false` set is the authoritative scope; an example domain in the intent never
+  shrinks it.
+- Scratch and intermediate artifacts live under the `cog rundir bootstrap` directory; never write them
+  into the project tree or CWD.
 - Keep the interview, brief-building, and dispatch foreground; never background them.
 - Deterministic mechanics stay behind `cog` subcommands and the worker skills.
 - Do not run git commands unless the operator authorizes it.

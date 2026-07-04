@@ -388,6 +388,51 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint flags a scratch directory rooted in the project tree" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+RUN="$(pwd)/.bootstrap-run"; mkdir -p "$RUN"
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"scratch-in-project"* ]]
+}
+
+@test "cog skill-lint accepts the canonical cog rundir idiom" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+RUN_DIR="$(cog rundir demo | sed -n 's/^RUN_DIR=//p')"
+mkdir -p "$RUN_DIR/repos"
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint honors an allow-scratch-in-project suppression" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+<!-- cog-skill-lint: allow-scratch-in-project deliverable staging is intentional -->
+```bash
+WORKDIR="$(pwd)/.staging"
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
 @test "cog skill-lint flags a direct execution-report write in a native executor" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot" executor-oneshot claude
   # shellcheck disable=SC2016  # literal markdown path written to a fixture file

@@ -64,6 +64,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0057: Plan-vault producer retarget and global git default](decisions/0057-plan-vault-producer-retarget-and-global-git.md)
 - [ADR-0058: Match-outcome telemetry and calibration loop](decisions/0058-match-outcome-telemetry-and-calibration-loop.md)
 - [ADR-0059: gc change-provenance foreign-dirty STOP](decisions/0059-gc-change-provenance-foreign-dirty-stop.md)
+- [ADR-0060: gc parallel repo fan-out and Codex twin removal](decisions/0060-gc-parallel-repo-fanout-and-codex-twin-removal.md)
+- [ADR-0061: Skills obtain scratch space via cog rundir](decisions/0061-rundir-scratch-artifact-convention.md)
 
 ## Guides
 

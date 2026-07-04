@@ -124,7 +124,7 @@ Fix every reported issue before presenting the draft.
    (or `other`), then read its contract with `cog skill-class show --class <c> --json`.
 
 4. Interview for intent. Cover purpose, triggers, argument shape, side effects, preflight state,
-   expected outputs, and trigger tests.
+   expected outputs, scratch/intermediate-artifact needs, and trigger tests.
 
 5. Fix the name's taxonomy prefix to match the class. If the user's chosen name conflicts with what the
    skill does, propose a compliant name before drafting.
@@ -133,6 +133,10 @@ Fix every reported issue before presenting the draft.
    - identify every deterministic routine the skill would need;
    - reuse an existing `cog` subcommand or `cog::fn::*` helper when one exists;
    - when no helper exists, plan the new `cog` command before embedding any shell;
+   - when the skill needs scratch or intermediate space, bind a run directory with
+     `RUN_DIR="$(cog rundir <prefix> | sed -n 's/^RUN_DIR=//p')"` and write every scratch/intermediate
+     artifact under `$RUN_DIR`; scratch never lands in the project tree or CWD, and deliverables go to
+     their real destination;
    - keep only sequencing, judgment, escalation, and runtime orchestration in the skill body.
 
 7. For orchestration skills, run the orchestration interview:
@@ -213,10 +217,14 @@ skill that carries it. Codex skills are exempt.
 - Never skip the approval gate.
 - Never treat `cog-skill-creator-scaffold` output as permission to write. It is path computation only.
 - Never embed deterministic shell when a `cog` subcommand or shared helper should own it.
+- Never write scratch or intermediate artifacts into the project tree or CWD; obtain a run directory
+  with `cog rundir <prefix>` and keep scratch under it.
 
 ## Guardrails
 
 - If the user's intent is vague, stop and ask instead of guessing.
+- If the skill needs scratch space, wire it through `cog rundir <prefix>` and keep every
+  scratch/intermediate artifact under the returned directory.
 - If Codex parity is requested, draft a separate `skills/codex/<name>/SKILL.md` with Codex-only
   frontmatter and the same base name.
 - If a references split is needed, propose it before drafting companion files.

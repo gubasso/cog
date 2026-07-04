@@ -22,6 +22,7 @@ _cog() {
   )
   local -a commands=(
     assess-input
+    bootstrap-audit
     ci-apply
     ci-detect
     classify-project

@@ -45,6 +45,9 @@ The command list and short descriptions are sourced from command modules under
 *assess-input*
 	Extract input-quality signals and persist the executor gate verdict.
 
+*bootstrap-audit*
+	Aggregate bootstrap domain present/missing status.
+
 *ci-apply*
 	Apply a CI workflow template to a project.
 
