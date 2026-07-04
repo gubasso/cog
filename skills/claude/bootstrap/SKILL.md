@@ -31,6 +31,12 @@ absent and applying improvements to what is present. Every worker follows the sh
 The dispatchable workers are `bootstrap-precommit`, `bootstrap-editorconfig`, `bootstrap-nix`,
 `bootstrap-repo`, `bootstrap-ci`, and `bootstrap-taskrunner`.
 
+`bootstrap-rust` is a conditional **language** worker rather than a domain: it is dispatched only when
+the project is Rust (per `cog classify-project`) or the operator's intent is a new Rust project. It owns
+the Rust crate skeleton (`Cargo.toml`, `src/`) plus optional rust config, and is intentionally **not**
+part of `cog bootstrap-audit` — the audit's every-domain-in-scope matrix stays language-orthogonal, so
+rust never reads as a "missing" domain on a non-rust project.
+
 <!-- cog-context-brief-gate -->
 
 **Context-brief gate.** Before `/bootstrap` dispatches to any fresh-context worker — an Agent subagent
@@ -96,6 +102,7 @@ domain's detector against the project, so each brief carries the true starting s
 
 ```bash
 cog classify-project --json
+cog cargo-detect --json          # when classify-project reports Rust (drives bootstrap-rust)
 cog precommit-detect --json
 cog editorconfig-detect --json
 cog nix-devshell-detect --json
@@ -103,6 +110,10 @@ cog gitignore-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
 ```
+
+When `classify-project` reports Rust — or the intent is a new Rust project — include `bootstrap-rust`
+in the dispatch and build its brief from `cog cargo-detect` (scaffold state, crate kind, and how cargo
+is reachable).
 
 Once a domain's detector resolves its template type, capture the template-review freshness so the
 worker can skip re-research when a recent review already covers this domain and type, and fold that JSON
@@ -137,6 +148,11 @@ other workers need through its brief. Cross-domain ignore fragments that outlive
 nix devshell's `.direnv/` and `/result` — are guaranteed deterministically in Phase D, so they land even
 when the `repo` domain was already present and `bootstrap-repo` never ran.
 
+- **Wave 0 (Rust skeleton, conditional):** when the project is Rust, dispatch `bootstrap-rust` first so
+  the `Cargo.toml`/`src/` skeleton exists before the type-sensitive detectors resolve `--type rust`. For
+  a greenfield Rust project, gather the remaining workers' detector orientation after this wave so they
+  observe the now-present `Cargo.toml`; on an already-scaffolded crate `bootstrap-rust` reconciles in
+  place and may run alongside Wave 1.
 - **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`.
 - **Wave 2 (consume Wave 1):** `bootstrap-precommit` (reads the established `.editorconfig` baseline),
   `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names).

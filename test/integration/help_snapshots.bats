@@ -38,6 +38,8 @@ Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
   bootstrap-template-review Check or stamp bootstrap template review freshness.
+  cargo-detect   Detect Rust project scaffold state.
+  cargo-scaffold-apply Scaffold a Rust project with the cargo CLI.
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
@@ -156,6 +158,8 @@ Commands:
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
   bootstrap-template-review Check or stamp bootstrap template review freshness.
+  cargo-detect   Detect Rust project scaffold state.
+  cargo-scaffold-apply Scaffold a Rust project with the cargo CLI.
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.

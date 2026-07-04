@@ -107,6 +107,8 @@ source "${LIB_DIR}/functions/fn_template.sh"
 source "${LIB_DIR}/functions/fn_bootstrap_review.sh"
 # shellcheck source=../lib/functions/fn_nix.sh
 source "${LIB_DIR}/functions/fn_nix.sh"
+# shellcheck source=../lib/functions/fn_cargo.sh
+source "${LIB_DIR}/functions/fn_cargo.sh"
 # shellcheck source=../lib/core.sh
 source "${LIB_DIR}/core.sh"
 

@@ -58,6 +58,7 @@ forbidden_scan_codex() {
     bootstrap-repo
     bootstrap-ci
     bootstrap-taskrunner
+    bootstrap-rust
     plan-refactor-migration
     review-oneshot
     review-findings

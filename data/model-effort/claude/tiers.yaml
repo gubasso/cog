@@ -88,6 +88,7 @@ tiers:
       - bootstrap-repo
       - bootstrap-ci
       - bootstrap-taskrunner
+      - bootstrap-rust
       - test-review
       - review-findings
       - review-queue-rounds

@@ -51,6 +51,12 @@ The command list and short descriptions are sourced from command modules under
 *bootstrap-template-review*
 	Check or stamp bootstrap template review freshness.
 
+*cargo-detect*
+	Detect Rust project scaffold state.
+
+*cargo-scaffold-apply*
+	Scaffold a Rust project with the cargo CLI.
+
 *ci-apply*
 	Apply a CI workflow template to a project.
 

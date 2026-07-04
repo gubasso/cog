@@ -24,6 +24,8 @@ _cog() {
     assess-input
     bootstrap-audit
     bootstrap-template-review
+    cargo-detect
+    cargo-scaffold-apply
     ci-apply
     ci-detect
     classify-project
