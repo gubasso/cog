@@ -1,1 +1,6 @@
 .draft/
+
+# Nix / direnv
+.direnv/
+.envrc.local
+/result
