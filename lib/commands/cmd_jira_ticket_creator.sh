@@ -7,7 +7,7 @@ __cog_jira_ticket_creator_finalize_self_check='(.ok|type=="boolean") and (.index
 
 __cog_jira_ticket_creator_usage() {
   cog::fn::ui_data "Usage: cog jira-ticket-creator setup [--root <dir>] [--draft-root <dir>] [--range <A..B>]... [--sha <sha>]... [--path <p>]... (<out.json>|--json)"
-  cog::fn::ui_data "Usage: cog jira-ticket-creator write --draft-dir <dir> --title <text> --issue-type <Epic|Story|Task|Bug> --body-file <path> [--seq <NN>] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog jira-ticket-creator write --draft-dir <dir> --title <text> --issue-type <Epic|Story|Task|Bug|Sub-task> --body-file <path> [--seq <NN>] [--group <name>] (<out.json>|--json)"
   cog::fn::ui_data "Usage: cog jira-ticket-creator finalize --draft-dir <dir> --manifest <manifest.json> (<out.json>|--json)"
 }
 
@@ -131,15 +131,15 @@ __cog_jira_ticket_creator_setup() {
 # --- write --------------------------------------------------------------------
 
 __cog_jira_ticket_creator_write_build_json() {
-  local draft_dir="$1" title="$2" issue_type="$3" body_file="$4" seq="$5"
-  local slug type_lc filename ticket_path content bytes
+  local draft_dir="$1" title="$2" issue_type="$3" body_file="$4" seq="$5" group="$6"
+  local slug type_lc filename group_seg ticket_dir ticket_path content bytes
 
   cog::fn::plan_artifact::require_absolute_path "$draft_dir" draft-dir
   [[ -d $draft_dir ]] || cog::fn::error_raise "InputNotFound" \
     "draft directory not found" "path: ${draft_dir}" "" "run 'cog jira-ticket-creator setup' first"
   case "$issue_type" in
-    Epic | Story | Task | Bug) ;;
-    *) cog::fn::error_raise "InvalidInput" "invalid issue type" "issue_type: ${issue_type}" "" "use one of: Epic, Story, Task, Bug" ;;
+    Epic | Story | Task | Bug | Sub-task) ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid issue type" "issue_type: ${issue_type}" "" "use one of: Epic, Story, Task, Bug, Sub-task" ;;
   esac
   [[ -r $body_file ]] || cog::fn::error_raise "InputUnreadable" \
     "body file is not readable" "path: ${body_file}" "" "pass a readable --body-file"
@@ -156,7 +156,19 @@ __cog_jira_ticket_creator_write_build_json() {
   else
     filename="${type_lc}-${slug}.md"
   fi
-  ticket_path="$draft_dir/$filename"
+
+  # A grouped ticket (an epic and its children, or a parent and its subtasks) lands in a shared
+  # subdirectory so the group reads and navigates as one unit. Sanitize the group to a safe single
+  # path segment without truncation, so the whole group resolves to the same directory.
+  ticket_dir="$draft_dir"
+  group_seg=""
+  if [[ -n $group ]]; then
+    group_seg="$(printf '%s' "$group" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9]+#-#g; s/^-+//; s/-+$//')"
+    [[ -n $group_seg ]] || cog::fn::error_raise "InvalidInput" \
+      "could not derive a group directory from --group" "group: ${group}" "" "pass a --group with letters or digits"
+    ticket_dir="$draft_dir/$group_seg"
+  fi
+  ticket_path="$ticket_dir/$filename"
 
   content="$(cat -- "$body_file")"
   cog::fn::plan_artifact::write_file "$ticket_path" "$content"
@@ -167,15 +179,17 @@ __cog_jira_ticket_creator_write_build_json() {
     --arg issue_type "$issue_type" \
     --arg slug "$slug" \
     --arg seq "$seq" \
+    --arg group "$group_seg" \
     --arg ticket_path "$ticket_path" \
     --argjson bytes "$bytes" \
     '{ok: true, issue_type: $issue_type, slug: $slug,
       seq: (if $seq == "" then null else $seq end),
+      group: (if $group == "" then null else $group end),
       ticket_path: $ticket_path, bytes: $bytes}'
 }
 
 __cog_jira_ticket_creator_write() {
-  local draft_dir="" title="" issue_type="" body_file="" seq="" mode="" out="" json
+  local draft_dir="" title="" issue_type="" body_file="" seq="" group="" mode="" out="" json
   while (($# > 0)); do
     case "$1" in
       -h | --help)
@@ -207,6 +221,11 @@ __cog_jira_ticket_creator_write() {
         seq="$2"
         shift 2
         ;;
+      --group)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing --group value" "option: --group" "" "pass a group directory name"
+        group="$2"
+        shift 2
+        ;;
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate write output mode" "" "" "choose either --json or an output path"
         mode=json
@@ -229,7 +248,7 @@ __cog_jira_ticket_creator_write() {
   [[ -n $body_file ]] || cog::fn::error_raise "MissingArgument" "missing --body-file" "" "" "run 'cog jira-ticket-creator --help'"
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing write output mode" "usage: cog jira-ticket-creator write ... (<out.json>|--json)" "" "run 'cog jira-ticket-creator --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_jira_ticket_creator_write_build_json "$draft_dir" "$title" "$issue_type" "$body_file" "$seq")"
+  json="$(__cog_jira_ticket_creator_write_build_json "$draft_dir" "$title" "$issue_type" "$body_file" "$seq" "$group")"
   __cog_jira_ticket_creator_emit "$mode" "$out" "$__cog_jira_ticket_creator_write_self_check" "$json"
 }
 
@@ -261,25 +280,56 @@ __cog_jira_ticket_creator_finalize_build_json() {
        duplicated: $duplicated}
   ' "$manifest")"
 
-  index_text="$(jq -r '
+  index_text="$(jq -r --arg draft_dir "$draft_dir" '
+    def bn: sub(".*/"; "");
+    def rp: ltrimstr($draft_dir + "/");
     (.all_shas // []) as $all
     | ([.tickets[].shas // [] | .[]]) as $flat
     | ($flat | unique) as $claimedset
     | ($all - $claimedset) as $unclaimed
     | ($flat | group_by(.) | map(select(length > 1) | .[0])) as $duplicated
-    | ([.tickets[] | select(.issue_type == "Epic")] | length) as $epics
-    | "h1. JIRA tickets — retroactive registry",
+    | (.tickets) as $tickets
+    | ($tickets | map({key: (.path | bn), value: (.path | rp)}) | from_entries) as $relByBase
+    | ([$tickets[] | select(.issue_type == "Epic")] | length) as $epics
+    | def kids($p): [$tickets[] | select((.epic_link // "" | bn) == $p)];
+      def hasKids($p): (kids($p) | length) > 0;
+      def render($p; $depth):
+        kids($p)[]
+        | (.path | bn) as $cbn
+        | (.path | rp) as $crp
+        | (("  " * $depth) + "- [\($crp)](\($crp)) — \(.title // "")"),
+          render($cbn; $depth + 1);
+      ([$tickets[] | select((.epic_link // "") == "") | select(.issue_type == "Epic" or hasKids(.path | bn))]) as $roots
+    | "# JIRA tickets",
       "",
-      "One file per ticket. Copy each file'"'"'s Summary and Description into JIRA.",
+      "One file per ticket — paste the Summary and Description blocks into JIRA.",
       "",
-      "*Tickets:* \(.tickets | length)   *Epics:* \($epics)   *SHA coverage:* \(($all - $unclaimed) | length)/\($all | length)",
+      "**Tickets:** \($tickets | length)   **Epics:** \($epics)   **SHA coverage:** \(($all - $unclaimed) | length)/\($all | length)",
       "",
-      "|| Ticket file || Type || Epic Link || Source SHAs ||",
-      (.tickets[]
-        | "| \((.path // "") | sub(".*/"; "")) | \(.issue_type // "-") | \(if (.epic_link // "") == "" then "-" else .epic_link end) | \(if ((.shas // []) | length) == 0 then "-" else ((.shas // []) | join(", ")) end) |"),
+      (if ($roots | length) > 0 then
+        ("## Create order (parent → its children)",
+         "",
+         "Create each parent first, then create every child under it and set the child'"'"'s Epic Link to it.",
+         "",
+         ($roots[]
+           | (.path | bn) as $rbn
+           | (.path | rp) as $rrp
+           | ("- [\($rrp)](\($rrp)) — \(.title // "")"),
+             render($rbn; 1)),
+         "")
+       else empty end),
+      "## Tickets",
       "",
-      (if ($unclaimed | length) > 0 then "*Unclaimed SHAs:* \($unclaimed | join(", "))" else "*All source commits are claimed.*" end),
-      (if ($duplicated | length) > 0 then "*Duplicated SHAs:* \($duplicated | join(", "))" else empty end)
+      "| Ticket file | Type | Epic Link (file) | Source SHAs |",
+      "| --- | --- | --- | --- |",
+      ($tickets[]
+        | (.path | rp) as $tf
+        | (.epic_link // "" | bn) as $el
+        | ($relByBase[$el] // "") as $elRel
+        | "| [\($tf)](\($tf)) | \(.issue_type // "-") | \(if $el == "" then "-" else "[\($elRel)](\($elRel))" end) | \(if ((.shas // []) | length) == 0 then "-" else ((.shas // []) | join(", ")) end) |"),
+      "",
+      (if ($unclaimed | length) > 0 then "**Unclaimed SHAs:** \($unclaimed | join(", "))" else "**All source commits are claimed.**" end),
+      (if ($duplicated | length) > 0 then "**Duplicated SHAs:** \($duplicated | join(", "))" else empty end)
   ' "$manifest")"
 
   cog::fn::plan_artifact::write_file "$index_path" "$index_text"

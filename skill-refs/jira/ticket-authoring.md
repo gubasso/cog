@@ -31,16 +31,21 @@ labelled `spike`, and a chore as a Task with a `chore`/`tooling` label.
 4. Third-pass **fold supporting commits** — `refactor`, `chore`, `test`, `docs`, `style`, `build`,
    `ci`, `perf` commits for the same deliverable collapse into that deliverable's ticket as evidence
    lines, not standalone tickets.
-5. Fourth-pass **attach each ticket to an Epic** (its theme).
+5. Fourth-pass **attach each ticket to an Epic** (its theme) — but only raise an Epic for a theme
+   that holds **two or more** child tickets. A theme with a single deliverable becomes that one
+   Story/Task directly, with no Epic wrapper; the same rule governs Sub-tasks — do not split a
+   parent into a lone Sub-task.
 6. Right-size check: reject a group that is too large (no single clear acceptance criterion — split
-   it) or too small (a lone supporting commit with no independent value — fold it).
+   it) or too small (a lone supporting commit with no independent value — fold it); collapse any
+   Epic or parent left with a single child into that child.
 
 Group by delivered behaviour, never by date, author, or branch — those are evidence fields, not
 scope.
 
 ## 3. Issue-type decision rule (top-down, first match wins)
 
-1. A spanning theme over several deliverables → **Epic**.
+1. A spanning theme over **two or more** distinct deliverables → **Epic**; a theme with a single
+   deliverable is that one Story/Task, not an Epic.
 2. Dominant `feat` commits delivering a user/consumer-facing capability → **Story**.
 3. Dominant `fix` commits repairing broken behaviour → **Bug**.
 4. Dominant `refactor`/`chore`/`build`/`ci`/`test`/`docs`/`perf` with a coherent technical
@@ -62,31 +67,95 @@ splitting.
 
 ## 5. Ticket template
 
-Each ticket file carries a plain-text **Summary** (to paste into the JIRA summary field) and a
-**Description** body in JIRA wiki syntax with these sections:
+Each ticket is a **normal Markdown file**. JIRA-wiki syntax appears only inside the two fenced
+code blocks that are the exact strings pasted into the two JIRA fields — the **Summary** field
+and the **Description** field. Everything else in the file is readable Markdown for the human
+who is creating the tickets. Prescribed shape:
 
-- Summary — imperative, outcome-first (for example "Add subscription-type-aware BYOS preflight
-  registration"), never a copied commit subject.
-- Issue Type — Epic / Story / Task / Bug.
-- Epic Link — the parent epic's summary or slug (children only).
-- Description — context/why, and for a Story the "As a … I want … so that …" line.
-- Acceptance Criteria — 2–5 testable pass/fail bullets describing the observed end state.
-- Technical Notes — folded supporting changes, worth-knowing implementation detail.
-- Source Commits — the SHAs (and any PR link) this ticket represents.
+````text
+# NN · <Type> · <short title>
 
-## 6. Integrity rules for retroactive tickets
+**Issue type:** <Epic|Story|Task|Bug>
+**Epic Link:** [NN-epic-<slug>.md](NN-epic-<slug>.md) — <epic summary>   (children only; create that Epic first, then set this ticket's Epic Link to it)
 
+## Children   (epics only)
+
+Create this Epic first, then create each child below and set its Epic Link to this Epic.
+
+- [NN-<type>-<slug>.md](NN-<type>-<slug>.md) — <child summary>
+- …
+
+## Summary — paste into the JIRA *Summary* field
+
+```text
+<imperative, outcome-first summary line — for example "Add subscription-type-aware BYOS preflight registration", never a copied commit subject>
+```
+
+## Description — paste into the JIRA *Description* field
+
+```text
+h2. Description
+… context/why; for a Story the "As a … I want … so that …" line …
+
+h2. Acceptance Criteria
+* 2–5 testable pass/fail bullets describing the observed end state
+
+h2. Technical Notes
+… folded supporting changes, worth-knowing implementation detail …
+
+h2. Source Commits
+… the SHAs (and any PR link) this ticket represents …
+```
+````
+
+Rules:
+
+- The file body is normal Markdown (`#`/`##` headings, `-` bullets, `[text](file.md)` links);
+  JIRA-wiki syntax (`h2.`, `*bold*`, `{{mono}}`, `{code}`, `||table||`) belongs **only inside the
+  two fenced code blocks**, because those are copy-pasted verbatim into JIRA.
+- **Epic Link** (children only) is orientation for the human, not a paste block — JIRA's Epic
+  Link field takes the epic's issue key, which does not exist until the epic is created. Render it
+  as a clickable relative link: `[NN-epic-<slug>.md](NN-epic-<slug>.md) — <epic summary>`.
+- **Children** (epics only) list every child under a `## Children` heading as
+  `[NN-<type>-<slug>.md](NN-<type>-<slug>.md) — <summary>`, introduced by the create-order line
+  above.
+- Grouped or related tickets reference each other by clickable relative Markdown file link in
+  **both directions** — epic↔child, and the same convention for any parent↔subtask grouping — so a
+  reader navigates the group by clicking.
+- Source Commits stays inside the Description block; JIRA has no separate field for it.
+
+**Directory layout.** A grouped parent and its children live together in **one subdirectory**, so
+the group reads and navigates as a single unit; a standalone ticket stays at the draft-directory
+root. Because a parent and its children are siblings in the same subdirectory, their cross-links are
+bare filenames (`[NN-task-<slug>.md](NN-task-<slug>.md)`). `INDEX.md` at the root links every ticket
+by its path relative to the draft directory.
+
+```text
+.draft/jira-tickets-<ts>/
+  INDEX.md
+  <group>/                       # epic (or parent) + its children
+    NN-epic-<slug>.md
+    NN-task-<slug>.md
+    NN-sub-task-<slug>.md        # a parent's subtasks share its group
+  NN-story-<slug>.md             # standalone ticket, no group
+```
+
+## 6. Integrity rules
+
+- Author every ticket as a standard ticket created **before** implementation — an outcome-first
+  Summary and forward-looking Acceptance Criteria that read as work to be done. The visible
+  Summary and Description carry no "retroactive", "backfill", or "work landed" wording, no
+  date-range banner, and no registry framing; the ticket reads exactly like one written ahead of
+  the work.
 - Every input SHA is claimed by exactly one ticket — no orphans, no double-counting.
 - Never one ticket per commit (it inflates throughput) and never one mega-ticket (it destroys
   traceability).
-- Mark each ticket `retroactive` and state the date range, so it is not mistaken for work the ticket
-  drove.
 - Represent the work in a single, unambiguous done/resolved state with honest timestamps; do not
   stage it through an in-progress flow to fabricate cycle time.
 - Do not assign story points to backfilled work unless governance requires it — velocity is a
   forecasting measure, not a productivity score.
-- Do not rewrite git history to inject issue keys; record the SHAs in the ticket body instead. Use
-  issue-key prefixes only in future commits.
+- Do not rewrite git history to inject issue keys; record the SHAs in the Source Commits block
+  instead. Use issue-key prefixes only in future commits.
 
 ## 7. JIRA wiki syntax cheat-sheet
 
