@@ -20,11 +20,11 @@ setup() {
   run cog license-apply --project-root "${BATS_TEST_TMPDIR}/repo" --spdx mit --holder "Jane Doe" --year 2026 --json
 
   assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .spdx == "mit"' >/dev/null
   [ -f "${BATS_TEST_TMPDIR}/repo/LICENSE" ]
   grep -qF 'Copyright (c) 2026 Jane Doe' "${BATS_TEST_TMPDIR}/repo/LICENSE"
   run ! grep -qF '{{HOLDER}}' "${BATS_TEST_TMPDIR}/repo/LICENSE"
   run ! grep -qF '{{YEAR}}' "${BATS_TEST_TMPDIR}/repo/LICENSE"
-  printf '%s\n' "$output" | jq -e '.ok == true and .spdx == "mit"' >/dev/null
 }
 
 @test "cog license-apply rejects an unknown SPDX id" {

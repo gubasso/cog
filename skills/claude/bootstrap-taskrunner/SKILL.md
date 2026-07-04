@@ -58,9 +58,18 @@ cog taskrunner-apply --type "$TYPE" --conflict "$POLICY" --json
 ```
 
 `taskrunner-apply` copies one file — `justfile` for `just`, `Makefile` for `make` — to the project
-root and emits `{ok, type, template_dir, copied[], skipped[], conflicts[], conflict, reason}`. Its
+root and emits `{ok, type, mode, copied[], skipped[], conflicts[], appended[], conflict, reason}`. Its
 `--conflict` policy is `overwrite`, `skip`, or `abort` (default `abort`). A pre-existing `Makefile`
 is preserved under `skip`/`abort`; reconciling it stays this skill's judgment.
+
+`--append` augments an existing runner in place: it injects only the standard
+`lint`/`test`/`build`/`fmt`/`check` targets the file is missing, inside a managed block, and preserves
+every target the project already defines. It is idempotent (a re-run adds nothing) and copies the full
+template fresh when the file is absent:
+
+```bash
+cog taskrunner-apply --type "$TYPE" --append --json
+```
 
 ## Workflow
 
@@ -70,10 +79,10 @@ is preserved under `skip`/`abort`; reconciling it stays this skill's judgment.
 2. For a fresh project (no `Makefile`), deploy the `justfile` with
    `cog taskrunner-apply --type just --conflict abort --json`.
 
-3. For a project that already ships a `Makefile`, keep `make`. Read the existing `Makefile`, compare
-   it against the `make` template's phony targets, and add only the missing `lint`/`test`/`build`/
-   `fmt`/`check` targets in prose and targeted edits. Preserve every existing target; never overwrite
-   the file. Use `--conflict skip`/`abort` so the helper refuses to clobber it.
+3. For a project that already ships a `Makefile`, keep `make`. Inject the missing standard targets
+   deterministically with `cog taskrunner-apply --type make --append --json`, which preserves every
+   existing target and is idempotent. Then tailor the injected placeholders in prose. Never overwrite
+   the file.
 
 4. Tailor recipes to the detected toolchain. Generate a recipe only when a signal backs it — for
    example `cargo build`/`cargo test`/`cargo clippy` for a Cargo project, `npm run`/`npm test` for a

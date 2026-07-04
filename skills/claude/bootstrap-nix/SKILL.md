@@ -114,9 +114,14 @@ in prose, and use the helper only for safe copies. Never blind-overwrite an exis
    uses the same pinned toolchain as the shell. Hand these steps to the CI scaffolding contract rather
    than writing CI files here.
 
-7. Ensure `.gitignore` carries `.direnv/` and `/result`. Delegate that write to the gitignore domain,
-   which owns the `.gitignore` path; surface the required ignore fragments to it rather than editing
-   `.gitignore` here.
+7. Ensure `.gitignore` carries `.direnv/` and `/result`. The gitignore domain owns the `.gitignore`
+   path; surface the required ignore fragments to it rather than editing `.gitignore` here. The nix
+   fragment has a dedicated, type-independent, idempotent top-up that guarantees both lines land even
+   when the `.gitignore` deliverable already exists:
+
+   ```bash
+   cog gitignore-apply --type nix --append --json
+   ```
 
 8. Present a summary: the deployed type, flake packages added or removed, the runtime pin, how to
    enter the shell (`direnv allow` / `nix develop`), the non-interactive command form, and next steps:

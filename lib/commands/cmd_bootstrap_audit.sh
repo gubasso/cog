@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Aggregate bootstrap domain present/missing status.'
 
-__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==6) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requires_question|type=="boolean")))'
+__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==6) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requirements|type=="array") and (.requires_question|type=="boolean")))'
 
 __cog_bootstrap_audit_usage() {
   cog::fn::ui_data "Usage: cog bootstrap-audit [--project-root <dir>] (<out.json>|--json)"
@@ -24,15 +24,43 @@ __cog_bootstrap_audit_artifacts() {
 
 # Emit one domain object. present is computed by the caller (AND across
 # deliverables for most domains, OR for taskrunner, existing_ci for ci).
+# requirements is a (possibly empty) JSON array of content-level {name, satisfied}
+# checks a present domain must still pass — cross-domain fragments a bare
+# file-existence check cannot see (nix ignore lines, the editorconfig-checker hook).
 __cog_bootstrap_audit_domain() {
-  local domain="$1" present="$2" requires_question="$3" detail="$4" artifacts="$5"
+  local domain="$1" present="$2" requires_question="$3" detail="$4" artifacts="$5" requirements="${6:-[]}"
   jq -cn \
     --arg domain "$domain" --argjson present "$present" \
     --argjson requires_question "$requires_question" \
     --arg detail "$detail" --argjson artifacts "$artifacts" \
+    --argjson requirements "$requirements" \
     '{domain: $domain, present: $present, artifacts: $artifacts,
-      requires_question: $requires_question,
+      requirements: $requirements, requires_question: $requires_question,
       detail: (if $detail == "" then null else $detail end)}'
+}
+
+# Emit one {name, satisfied} requirement object.
+__cog_bootstrap_audit_req() {
+  jq -cn --arg n "$1" --argjson s "$2" '{name: $n, satisfied: $s}'
+}
+
+# Print true when the file under root exists and contains every fixed-string
+# pattern; false otherwise. Backs the content-level requirement checks.
+__cog_bootstrap_audit_file_has() {
+  local root="$1" rel="$2"
+  shift 2
+  local f="$root/$rel" p
+  [[ -f $f ]] || {
+    printf 'false'
+    return
+  }
+  for p in "$@"; do
+    grep -qF -- "$p" "$f" || {
+      printf 'false'
+      return
+    }
+  done
+  printf 'true'
 }
 
 __cog_bootstrap_audit_build_json() {
@@ -49,10 +77,16 @@ __cog_bootstrap_audit_build_json() {
   local -a rows=()
   local arts present
 
-  # precommit: one deliverable config file.
+  # precommit: one deliverable config file. When an .editorconfig baseline
+  # exists, the config must carry a matching editorconfig-checker hook.
   arts="$(__cog_bootstrap_audit_artifacts "$project_root" ".pre-commit-config.yaml")"
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
-  rows+=("$(__cog_bootstrap_audit_domain precommit "$present" false "pre-commit hooks" "$arts")")
+  local pc_reqs='[]'
+  if [[ $present == true && -e "$project_root/.editorconfig" ]]; then
+    pc_reqs="[$(__cog_bootstrap_audit_req editorconfig-checker-hook \
+      "$(__cog_bootstrap_audit_file_has "$project_root" ".pre-commit-config.yaml" "editorconfig-checker")")]"
+  fi
+  rows+=("$(__cog_bootstrap_audit_domain precommit "$present" false "pre-commit hooks" "$arts" "$pc_reqs")")
 
   # editorconfig: one deliverable.
   arts="$(__cog_bootstrap_audit_artifacts "$project_root" ".editorconfig")"
@@ -60,9 +94,16 @@ __cog_bootstrap_audit_build_json() {
   rows+=("$(__cog_bootstrap_audit_domain editorconfig "$present" false "editor defaults" "$arts")")
 
   # nix: devshell flake plus its direnv autoloader; present when both exist.
+  # A present devshell requires the .direnv/ and /result ignore lines in
+  # .gitignore, applied via `cog gitignore-apply --type nix --append`.
   arts="$(__cog_bootstrap_audit_artifacts "$project_root" "flake.nix" ".envrc")"
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
-  rows+=("$(__cog_bootstrap_audit_domain nix "$present" false "nix devshell + direnv" "$arts")")
+  local nix_reqs='[]'
+  if [[ $present == true ]]; then
+    nix_reqs="[$(__cog_bootstrap_audit_req gitignore-nix-lines \
+      "$(__cog_bootstrap_audit_file_has "$project_root" ".gitignore" ".direnv/" "/result")")]"
+  fi
+  rows+=("$(__cog_bootstrap_audit_domain nix "$present" false "nix devshell + direnv" "$arts" "$nix_reqs")")
 
   # repo: gitignore, license, readme are the bootstrap-repo deliverable set;
   # a missing LICENSE needs operator-supplied SPDX/holder/year.
@@ -99,7 +140,21 @@ __cog_bootstrap_audit_build_json() {
     ci_arts="$(jq -cn --arg n "$ci_placeholder" '[{name: $n, present: false}]')"
   fi
   ci_detail="host: ${ci_host}, target: ${ci_target}"
-  rows+=("$(__cog_bootstrap_audit_domain ci "$ci_present" "$ci_rq" "$ci_detail" "$ci_arts")")
+  # When a flake.nix exists, an existing pipeline must reuse it (`nix develop`)
+  # so CI and local development share one toolchain.
+  local ci_reqs='[]'
+  if [[ $ci_present == true && -e "$project_root/flake.nix" ]]; then
+    local ci_flake=false ci_file
+    while IFS= read -r ci_file; do
+      [[ -n $ci_file ]] || continue
+      if [[ -f "$project_root/$ci_file" ]] && grep -qF -- "nix develop" "$project_root/$ci_file"; then
+        ci_flake=true
+        break
+      fi
+    done < <(jq -r '.existing_ci[]' <<<"$ci_json")
+    ci_reqs="[$(__cog_bootstrap_audit_req ci-flake-reuse "$ci_flake")]"
+  fi
+  rows+=("$(__cog_bootstrap_audit_domain ci "$ci_present" "$ci_rq" "$ci_detail" "$ci_arts" "$ci_reqs")")
 
   # taskrunner: any recognized runner file satisfies the domain. Report a single
   # runner artifact named for whichever variant exists (default justfile) so the

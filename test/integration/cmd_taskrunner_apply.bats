@@ -53,6 +53,37 @@ setup() {
   printf '%s\n' "$output" | jq -e '.ok == false and .reason == "type must be just or make"' >/dev/null
 }
 
+@test "cog taskrunner-apply --append injects only the missing targets, preserving existing ones" {
+  printf '.PHONY: build\n\nbuild:\n\t@echo my-build\n' >"${BATS_TEST_TMPDIR}/repo/Makefile"
+
+  run cog taskrunner-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type make --append --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .mode == "append" and (.appended | index("check")) and (.appended | index("build") | not)' >/dev/null
+  grep -q '@echo my-build' "${BATS_TEST_TMPDIR}/repo/Makefile"
+  grep -qE '^lint:' "${BATS_TEST_TMPDIR}/repo/Makefile"
+  grep -qE '^check: fmt lint test' "${BATS_TEST_TMPDIR}/repo/Makefile"
+  grep -qE '^\.PHONY: lint test fmt check' "${BATS_TEST_TMPDIR}/repo/Makefile"
+}
+
+@test "cog taskrunner-apply --append is idempotent" {
+  printf '.PHONY: build\n\nbuild:\n\t@echo my-build\n' >"${BATS_TEST_TMPDIR}/repo/Makefile"
+  cog taskrunner-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type make --append --json >/dev/null
+
+  run cog taskrunner-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type make --append --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and (.appended | length) == 0' >/dev/null
+}
+
+@test "cog taskrunner-apply --append copies a fresh file when none exists" {
+  run cog taskrunner-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type make --append --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and ([.copied[].dst] | any(endswith("/Makefile")))' >/dev/null
+  grep -qE '^\.PHONY:' "${BATS_TEST_TMPDIR}/repo/Makefile"
+}
+
 @test "cog taskrunner-apply --help dispatches" {
   run cog taskrunner-apply --help
 

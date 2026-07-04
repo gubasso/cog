@@ -76,6 +76,28 @@ setup() {
   grep -qxF '/result' "${BATS_TEST_TMPDIR}/repo/.gitignore"
 }
 
+@test "cog gitignore-apply nix fragment tops up an existing gitignore of any type" {
+  printf '# existing\n*.tmp\n' >"${BATS_TEST_TMPDIR}/repo/.gitignore"
+
+  run cog gitignore-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type nix --append --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .mode == "append" and (.appended | index(".direnv/")) and (.appended | index("/result"))' >/dev/null
+  grep -qxF '*.tmp' "${BATS_TEST_TMPDIR}/repo/.gitignore"
+  grep -qxF '.direnv/' "${BATS_TEST_TMPDIR}/repo/.gitignore"
+  grep -qxF '/result' "${BATS_TEST_TMPDIR}/repo/.gitignore"
+}
+
+@test "cog gitignore-apply nix fragment is idempotent" {
+  printf '*.tmp\n' >"${BATS_TEST_TMPDIR}/repo/.gitignore"
+  cog gitignore-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type nix --append --json >/dev/null
+
+  run cog gitignore-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type nix --append --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and (.appended | length) == 0' >/dev/null
+}
+
 @test "cog gitignore-apply --help dispatches" {
   run cog gitignore-apply --help
 

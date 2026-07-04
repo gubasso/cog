@@ -174,8 +174,9 @@ safe copies that remain.
     - tailor companion files such as `lychee.toml` or `.config/nextest.toml`.
 
 13. Confirm the config carries an `editorconfig-checker` hook consistent with the shared
-    `.editorconfig` baseline (the language templates ship it). Validate the config when the tool is
-    available:
+    `.editorconfig` baseline (the language templates ship it). This is a verified postcondition: when
+    reconciling a pre-existing config that lacks the hook while an `.editorconfig` is present, add the
+    hook rather than leaving it absent. Validate the config when the tool is available:
 
     ```bash
     pre-commit validate-config

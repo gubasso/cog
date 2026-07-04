@@ -110,8 +110,10 @@ cog context-brief validate "$RUN_DIR/brief-<worker>.md"
 
 Dispatch the selected workers as foreground Agent subagents (env-first, no backgrounding; respect the
 fixed 5-level subagent depth budget). Assign every shared output path exactly one owning writer per run:
-`bootstrap-repo` is the sole writer of `.gitignore` and receives any ignore fragments other workers need
-through its brief.
+`bootstrap-repo` is the sole writer of `.gitignore` during the waves and receives any ignore fragments
+other workers need through its brief. Cross-domain ignore fragments that outlive a worker's scope — the
+nix devshell's `.direnv/` and `/result` — are guaranteed deterministically in Phase D, so they land even
+when the `repo` domain was already present and `bootstrap-repo` never ran.
 
 - **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`.
 - **Wave 2 (consume Wave 1):** `bootstrap-precommit` (reads the established `.editorconfig` baseline),
@@ -119,15 +121,26 @@ through its brief.
 
 Give each subagent its validated brief as the complete orientation. After each wave, verify the durable
 postcondition by re-running `cog bootstrap-audit --json` and confirming every dispatched domain now
-reports `present=true` (or was intentionally opted out), and that each touched `SKILL.md` lints clean,
-before starting the next wave.
+reports `present=true` (or was intentionally opted out) with every `requirements[]` entry `satisfied`,
+and that each touched `SKILL.md` lints clean, before starting the next wave.
 
 ## Phase D: Reconcile and report
 
-Re-run `cog bootstrap-audit --json` as the final postcondition: every in-scope domain must now report
-`present=true`. Summarize what each worker produced, list follow-ups (`nix flake lock` on a nix host,
-`pre-commit install`, `direnv allow`), and surface any conflicts or still-missing domains that need an
-operator decision.
+Guarantee the cross-domain ignore fragments before the final check. Whenever the `nix` domain was in
+scope, apply its ignore lines through the gitignore domain's own idempotent mechanic — regardless of
+whether the `repo` domain ran:
+
+```bash
+cog gitignore-apply --type nix --append --json
+```
+
+Re-run `cog bootstrap-audit --json` as the final postcondition: every in-scope domain must report
+`present=true` **and** every `requirements[]` entry `satisfied` — a `present` domain with an unsatisfied
+requirement (a nix devshell whose `.gitignore` lacks `.direnv/`/`/result`, a pre-commit config missing
+the `editorconfig-checker` hook, an existing CI pipeline that does not reuse the flake) is incomplete
+and must be reconciled before reporting done. Summarize what each worker produced, list follow-ups
+(`nix flake lock` on a nix host, `pre-commit install`, `direnv allow`), and surface any conflicts or
+still-missing domains that need an operator decision.
 
 ## Guardrails
 
@@ -139,4 +152,5 @@ operator decision.
 - Keep the interview, brief-building, and dispatch foreground; never background them.
 - Deterministic mechanics stay behind `cog` subcommands and the worker skills.
 - Do not run git commands unless the operator authorizes it.
-- Verify a durable postcondition at every wave boundary.
+- Verify a durable postcondition — every in-scope domain `present` with all `requirements[]` satisfied —
+  at every wave boundary and again at the final reconcile.
