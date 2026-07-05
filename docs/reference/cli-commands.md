@@ -156,6 +156,7 @@ this reference table.
 | `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
 | `skill-refs inspect [--json]` | Report the resolved root with its origin (`repo`/`xdg`), writability, and a vcs note. |
 | `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
+| `spec-leakage-scan` | scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage |
 | `suckless-apply` | Check, apply, and build a suckless patch. |
 | `suckless-conflicts` | List suckless patch conflict artifacts. |
 | `suckless-preflight` | Detect suckless tree signals and clean state. |

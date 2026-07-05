@@ -118,6 +118,7 @@ _cog() {
     skill-class
     skill-lint
     skill-refs
+    spec-leakage-scan
     suckless-apply
     suckless-conflicts
     suckless-preflight

@@ -50,8 +50,8 @@ tiers:
       - plan-multi
       - plan-builder-to-queue
       - plan-builder-to-queue-vetted-multi
-      - plan-refactor-migration
       - plan-vetted
+      - executor-greenfield-from-spec
       - executor-prex
       - review-plan-oneshot
       - review-plan-multi

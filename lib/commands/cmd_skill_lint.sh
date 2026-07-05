@@ -156,6 +156,7 @@ __cog_skill_lint_input_fidelity_required() {
       claude:context-builder | \
       claude:ask | \
       claude:bootstrap | \
+      claude:executor-greenfield-from-spec | \
       claude:executor-prex | \
       claude:executor-oneshot | \
       claude:executor-vetted | \
@@ -205,6 +206,7 @@ __cog_skill_lint_context_brief_gate_required() {
       claude:review-loop | \
       claude:plan-vetted | \
       claude:bootstrap | \
+      claude:executor-greenfield-from-spec | \
       codex:executor-oneshot)
       return 0
       ;;
@@ -890,6 +892,9 @@ __cog_skill_lint_producer_blind_producers() {
   case "$1" in
     runner-all | runner-plan) printf '%s' "plan-builder-to-queue plan-builder-to-queue-vetted-multi" ;;
     review-findings) printf '%s' "review-code-deep review-oneshot review-loop" ;;
+    review-plan-capability-spec) printf '%s' "plan-capability-spec" ;;
+    plan-solution-spec) printf '%s' "plan-capability-spec" ;;
+    review-plan-solution-spec) printf '%s' "plan-solution-spec plan-capability-spec" ;;
     *) printf '%s' "" ;;
   esac
 }

@@ -15,4 +15,5 @@ _common_setup() {
   ((${#git_env_vars[@]})) && unset "${git_env_vars[@]}"
 
   PATH="${BATS_TEST_DIRNAME}/../../bin:${PATH}"
+  export XDG_DATA_HOME="${XDG_DATA_HOME:-${BATS_TEST_TMPDIR}/data}"
 }

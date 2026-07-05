@@ -524,10 +524,11 @@ cog::fn::power_grade::executor_validate_json() {
     --argjson exec "$exec_json" \
     --argjson skills "$skills_json" '
       ($capability.executor_passes // []) as $passes
+      | ($capability.non_routable_executors // []) as $non_routable
       | ($passes | map(.executor)) as $graded
       | (($matrix.model_cells | map(.id)) + ($matrix.model_cells | map(.slug))) as $known_cells
       | ($capability.calibration) as $cal
-      | ([$skills[] | select((. as $s | $graded | index($s)) == null)]) as $missing
+      | ([$skills[] | select((. as $s | (($graded + $non_routable) | index($s))) == null)]) as $missing
       | ([$passes[] | .executor as $ex | .stages[].members[]
           | select((.cell as $c | $known_cells | index($c)) == null)
           | {executor: $ex, cell: .cell}]) as $unknown_cells

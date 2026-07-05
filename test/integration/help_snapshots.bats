@@ -132,6 +132,7 @@ Commands:
   skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
+  spec-leakage-scan scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
@@ -255,6 +256,7 @@ Commands:
   skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
+  spec-leakage-scan scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.

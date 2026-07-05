@@ -255,9 +255,12 @@ for a forbidden producer name as a whole skill-name token, in both the frontmatt
 text and body prose, while ignoring fenced code blocks. Current map entries:
 
 ```text
-runner-all      -> plan-builder-to-queue
-runner-plan     -> plan-builder-to-queue
-review-findings -> review-oneshot, review-loop
+runner-all                 -> plan-builder-to-queue
+runner-plan                -> plan-builder-to-queue
+review-findings            -> review-oneshot, review-loop
+review-plan-capability-spec -> plan-capability-spec
+plan-solution-spec          -> plan-capability-spec
+review-plan-solution-spec   -> plan-solution-spec, plan-capability-spec
 ```
 
 The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy producer name
@@ -281,10 +284,10 @@ In-scope runtime skills carry this marker near the frontmatter:
 `<!-- cog-skill: input-fidelity -->`.
 
 Enforcement is the `input-fidelity` lint rule, keyed off a curated runtime-aware delegator set in
-`lib/commands/cmd_skill_lint.sh` (which includes `context-builder` and `review-loop`). The marker name
-is retained for stability; its meaning is fidelity to intent and substance, not verbatim copying. The
-marker asserts the contract structurally; the best-constructed standard remains prose judgment in the
-skill body.
+`lib/commands/cmd_skill_lint.sh` (which includes `context-builder`, `review-loop`, and
+`executor-greenfield-from-spec`). The marker name is retained for stability; its meaning is fidelity
+to intent and substance, not verbatim copying. The marker asserts the contract structurally; the
+best-constructed standard remains prose judgment in the skill body.
 
 ## Context brief (general input convention)
 
@@ -467,6 +470,8 @@ missing the stanza, has drifted wording, or never builds/validates a brief, and 
 any skill outside the set. Read-only Q&A relays (`ask`), inline same-context chainers
 (`executor-vetted`, `context-builder`), and verbatim transport runners (`runner-*`, `gc`) are out of
 scope; the human top-level operator orients the first skill directly and is exempt.
+`executor-greenfield-from-spec` is in scope because it builds validated briefs for fresh-context
+pipeline workers.
 
 ## Premise Lint Checks
 

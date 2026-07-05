@@ -8,6 +8,9 @@
 # frontmatter model/effort; driven-effort = the effort the pass is launched with
 # (Codex run-exec / inline plan-oneshot); medium-default = no declared frontmatter,
 # graded at the model-tiers medium rung. Powers reproduced by `cog power-grade executor`.
+non_routable_executors:
+  - executor-doc-writeback
+  - executor-greenfield-from-spec
 executor_passes:
   - executor: executor-oneshot
     heaviest_route: single-engine

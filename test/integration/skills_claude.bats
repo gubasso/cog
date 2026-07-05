@@ -59,7 +59,6 @@ forbidden_scan_codex() {
     bootstrap-ci
     bootstrap-taskrunner
     bootstrap-rust
-    plan-refactor-migration
     review-oneshot
     review-findings
     review-loop
@@ -91,7 +90,6 @@ forbidden_scan_codex() {
     assess-input
     ast-grep
     implementation-reviewer
-    plan-refactor-migration
     review-oneshot
     suckless-patcher
     test-review

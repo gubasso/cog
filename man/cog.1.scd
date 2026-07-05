@@ -338,6 +338,9 @@ The command list and short descriptions are sourced from command modules under
 *skill-refs*
 	Resolve in-repo/installed skill-source reference files.
 
+*spec-leakage-scan*
+	scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
+
 *suckless-apply*
 	Check, apply, and build a suckless patch.
 

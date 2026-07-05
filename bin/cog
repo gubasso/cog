@@ -35,6 +35,8 @@ source "${LIB_DIR}/functions/fn_json_write.sh"
 source "${LIB_DIR}/functions/fn_prereq.sh"
 # shellcheck source=../lib/functions/fn_data.sh
 source "${LIB_DIR}/functions/fn_data.sh"
+# shellcheck source=../lib/functions/fn_spec_leakage.sh
+source "${LIB_DIR}/functions/fn_spec_leakage.sh"
 # shellcheck source=../lib/functions/fn_skill.sh
 source "${LIB_DIR}/functions/fn_skill.sh"
 # shellcheck source=../lib/functions/fn_skill_class.sh

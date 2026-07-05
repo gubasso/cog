@@ -76,6 +76,16 @@ append_orchestrator_gate() {
   } >>"$file"
 }
 
+append_context_brief_gate() {
+  local file="$1" name="$2"
+  {
+    printf '\n'
+    cog gate render --id context-brief --skill "$name"
+    # shellcheck disable=SC2016  # literal Markdown fence text in a fixture.
+    printf '\n\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
+  } >>"$file"
+}
+
 @test "cog skill-lint accepts a valid Claude skill" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
 
@@ -194,6 +204,17 @@ append_orchestrator_gate() {
   [[ $stderr == *"input-fidelity"* ]]
 }
 
+@test "cog skill-lint maps executor-greenfield-from-spec into the input-fidelity set" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec claude
+  append_orchestrator_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
+  append_context_brief_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"input-fidelity"* ]]
+}
+
 @test "cog skill-lint accepts non-delegators without input-fidelity marker" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
 
@@ -291,6 +312,17 @@ write_boundary_skill() {
   assert_failure
   [[ $stderr == *"context-brief-gate"* ]]
   [[ $stderr == *"never builds or validates"* ]]
+}
+
+@test "cog skill-lint requires the context-brief gate on executor-greenfield-from-spec" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec claude
+  sed -i '/trigger-tests/a <!-- cog-skill: input-fidelity -->' "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
+  append_orchestrator_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"context-brief-gate"* ]]
 }
 
 @test "cog skill-lint rejects the context-brief gate on a non-boundary skill" {
@@ -1088,15 +1120,15 @@ write_mapped_consumer() {
   # except for any extra lines the caller appends afterward.
   local dir="$1" name="$2"
   mkdir -p "$dir"
-  # The mapped consumers (runner-all, runner-plan, review-findings) are all
-  # registry-pinned to the LOW tier, so the fixture rides opus+low to satisfy
-  # the model-effort-tier rule while these tests exercise producer-blindness.
+  local tier_fm=""
+  case "$name" in
+    runner-* | review-findings) tier_fm=$'model: opus\neffort: low\n' ;;
+  esac
   cat >"$dir/SKILL.md" <<EOF
 ---
 name: $name
 description: Consumer skill that reads a structural input contract.
-model: opus
-effort: low
+${tier_fm}
 ---
 
 <!-- trigger-tests: "demo" -->
@@ -1108,6 +1140,9 @@ EOF
   # executor-*/runner-* consumers are orchestrators and must carry the gate.
   case "$name" in
     executor-* | runner-*) append_orchestrator_gate "$dir/SKILL.md" "$name" ;;
+  esac
+  case "$name" in
+    plan-* | review-plan-*) append_plan_emitter "$dir/SKILL.md" ;;
   esac
 }
 
@@ -1186,6 +1221,34 @@ EOF
 
   assert_success
   [[ $stderr != *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint flags greenfield capability spec consumers naming producers" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec" review-plan-capability-spec
+  printf '%s\n' 'This reviewer names plan-capability-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
+}
+
+@test "cog skill-lint flags greenfield solution spec consumers naming producers" {
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec" plan-solution-spec
+  printf '%s\n' 'This planner names plan-capability-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
+
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec" review-plan-solution-spec
+  printf '%s\n' 'This reviewer names plan-solution-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"producer-blindness"* ]]
 }
 
 # --- model-effort-tier rule -------------------------------------------------
@@ -1309,6 +1372,12 @@ EOF
   # unrelated gate rules, so assert the tier rule specifically does not fire.)
   write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex "" ""
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
+  [[ $stderr != *"model-effort-tier"* ]]
+}
+
+@test "cog skill-lint honors the greenfield executor high registry exception" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec "" ""
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
   [[ $stderr != *"model-effort-tier"* ]]
 }
 
