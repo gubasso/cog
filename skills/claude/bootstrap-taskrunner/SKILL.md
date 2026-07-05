@@ -107,7 +107,9 @@ the template SoT is not writable; surface that.
 4. Tailor recipes to the detected toolchain. Generate a recipe only when a signal backs it — for
    example `cargo build`/`cargo test`/`cargo clippy` for a Cargo project, `npm run`/`npm test` for a
    Node project, `poetry run` for a Poetry project. Leave a recipe as a documented placeholder when no
-   tool backs it yet.
+   tool backs it yet. When the brief carries publishing recipe fragments, or the project ships
+   `scripts/publish`/`scripts/publish-dry`/`scripts/release` helpers, back `publish`/`publish-dry`/`release`
+   recipes on those.
 
 5. When a `flake.nix` is present, wire each recipe through the devshell so tasks run in the pinned
    environment: prefix the command with `nix develop --command`, e.g. `nix develop --command cargo

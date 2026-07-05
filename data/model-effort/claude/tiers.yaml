@@ -89,6 +89,7 @@ tiers:
       - bootstrap-ci
       - bootstrap-taskrunner
       - bootstrap-rust
+      - bootstrap-cargo-publish
       - test-review
       - review-findings
       - review-queue-rounds

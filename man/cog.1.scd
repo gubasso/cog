@@ -54,6 +54,15 @@ The command list and short descriptions are sourced from command modules under
 *cargo-detect*
 	Detect Rust project scaffold state.
 
+*cargo-publish-apply*
+	Apply Rust cargo publishing helper templates.
+
+*cargo-publish-check*
+	Run cargo publish dry-run readiness checks.
+
+*cargo-publish-detect*
+	Detect Rust crate publishing readiness.
+
 *cargo-scaffold-apply*
 	Scaffold a Rust project with the cargo CLI.
 

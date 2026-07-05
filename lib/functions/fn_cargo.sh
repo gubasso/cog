@@ -167,3 +167,199 @@ cog::fn::cargo::scaffold_json() {
     '{ok: $ok, project_root: $project_root, cargo_runner: $cargo_runner,
       ran: $ran, skipped: $skipped, reason: (if $ok then null else $reason end)}'
 }
+
+# Convert the positional args into a JSON string array. Self-contained so the
+# publish helpers work when fn_cargo.sh is sourced on its own.
+cog::fn::cargo::_strarray() {
+  if [[ $# -eq 0 ]]; then jq -cn '[]'; else printf '%s\n' "$@" | jq -R . | jq -s .; fi
+}
+
+# Grep a set of paths for a fixed pattern, quietly, tolerating missing files.
+cog::fn::cargo::_matches() {
+  local pattern="$1"
+  shift
+  local p
+  for p in "$@"; do
+    [[ -e $p ]] || continue
+    if grep -rqsF -- "$pattern" "$p" 2>/dev/null; then return 0; fi
+  done
+  return 1
+}
+
+# Build the cargo-publish-detect JSON for a project root. Pure file inspection:
+# no cargo exec, no auth, no credential access. Reports the release-readiness
+# landscape the publish-judgment layer reasons over.
+cog::fn::cargo::publish_detect_json() {
+  local project_root="$1"
+  local ok=true reason="" manifest="$project_root/Cargo.toml"
+  local crate_kind runner
+  local is_publishable=true publishable_reason=""
+  local ci_provider=none
+  local release_name=none release_present=false
+  local semver_present=false ships_hint=false
+  local -a release_signals=() semver_signals=() binary_signals=()
+  local wf_dir="$project_root/.github/workflows"
+  local -a scan_paths=("$manifest" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/Makefile")
+
+  if [[ ! -d $project_root ]]; then
+    jq -n --arg project_root "$project_root" --arg reason "project root is not a directory" \
+      '{ok: false, project_root: $project_root, crate_kind: "none", is_publishable: false,
+        publishable_reason: null, ci_provider: "none",
+        release_tool: {name: "none", present: false, signals: []},
+        semver_tool: {present: false, signals: []},
+        ships_binaries: {hint: false, signals: []},
+        cargo_runner: "absent", reason: $reason}'
+    return 0
+  fi
+
+  crate_kind="$(cog::fn::cargo::_kind "$project_root")"
+  runner="$(cog::fn::cargo::runner "$project_root")"
+
+  # Publishability: no manifest, or an active `publish = false` line, blocks it.
+  if [[ ! -f $manifest ]]; then
+    is_publishable=false
+    publishable_reason="no Cargo.toml"
+  elif grep -Eq '^[[:space:]]*publish[[:space:]]*=[[:space:]]*false' "$manifest"; then
+    is_publishable=false
+    publishable_reason="Cargo.toml sets publish = false"
+  elif [[ $crate_kind == workspace ]]; then
+    publishable_reason="workspace root; member crates need package-level review"
+  fi
+
+  # CI provider (github wins when both are present).
+  if [[ -d $wf_dir ]] && find "$wf_dir" -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print -quit 2>/dev/null | grep -q .; then
+    ci_provider=github
+  elif [[ -f $project_root/.gitlab-ci.yml ]]; then
+    ci_provider=gitlab
+  fi
+
+  # Release tool signals.
+  local rp=false cr=false
+  if [[ -f $project_root/release-plz.toml ]]; then
+    rp=true
+    release_signals+=("release-plz.toml")
+  fi
+  if cog::fn::cargo::_matches "release-plz" "$wf_dir"; then
+    rp=true
+    release_signals+=(".github/workflows mentions release-plz")
+  fi
+  if [[ -f $project_root/release.toml || -f $project_root/.release.toml ]]; then
+    cr=true
+    release_signals+=("release.toml")
+  fi
+  if [[ -f $manifest ]] && grep -Eq '^\[(workspace|package)\.metadata\.release\]' "$manifest"; then
+    cr=true
+    release_signals+=("Cargo.toml [metadata.release]")
+  fi
+  if cog::fn::cargo::_matches "cargo release" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/Makefile"; then
+    cr=true
+    release_signals+=("workflow/taskrunner mentions cargo release")
+  fi
+  if [[ $rp == true && $cr == true ]]; then
+    release_name=multiple
+    release_present=true
+  elif [[ $rp == true ]]; then
+    release_name=release-plz
+    release_present=true
+  elif [[ $cr == true ]]; then
+    release_name=cargo-release
+    release_present=true
+  fi
+
+  # SemVer tooling (release-plz runs cargo-semver-checks natively for lib crates).
+  if cog::fn::cargo::_matches "semver-checks" "${scan_paths[@]}"; then
+    semver_present=true
+    semver_signals+=("cargo-semver-checks referenced")
+  fi
+  if [[ $rp == true ]]; then
+    semver_present=true
+    semver_signals+=("release-plz runs semver-check for lib crates")
+  fi
+
+  # Binary distribution hint.
+  if [[ $crate_kind == bin ]]; then
+    ships_hint=true
+    binary_signals+=("crate kind is bin")
+  fi
+  if [[ -f $project_root/src/main.rs ]]; then
+    ships_hint=true
+    binary_signals+=("src/main.rs")
+  fi
+  if [[ -d $project_root/src/bin ]]; then
+    ships_hint=true
+    binary_signals+=("src/bin/")
+  fi
+  if [[ -f $manifest ]] && grep -Eq '^\[\[bin\]\]' "$manifest"; then
+    ships_hint=true
+    binary_signals+=("Cargo.toml [[bin]]")
+  fi
+  if [[ -f $project_root/dist-workspace.toml || -f $project_root/dist.toml ]] || { [[ -f $manifest ]] && grep -Eq '^\[(workspace|package)\.metadata\.dist\]' "$manifest"; }; then
+    ships_hint=true
+    binary_signals+=("cargo-dist config")
+  fi
+
+  jq -n \
+    --argjson ok "$ok" --arg project_root "$project_root" --arg crate_kind "$crate_kind" \
+    --argjson is_publishable "$is_publishable" --arg publishable_reason "$publishable_reason" \
+    --arg ci_provider "$ci_provider" \
+    --arg release_name "$release_name" --argjson release_present "$release_present" \
+    --argjson release_signals "$(cog::fn::cargo::_strarray "${release_signals[@]}")" \
+    --argjson semver_present "$semver_present" \
+    --argjson semver_signals "$(cog::fn::cargo::_strarray "${semver_signals[@]}")" \
+    --argjson ships_hint "$ships_hint" \
+    --argjson binary_signals "$(cog::fn::cargo::_strarray "${binary_signals[@]}")" \
+    --arg cargo_runner "$runner" \
+    '{ok: $ok, project_root: $project_root, crate_kind: $crate_kind,
+      is_publishable: $is_publishable,
+      publishable_reason: (if $publishable_reason == "" then null else $publishable_reason end),
+      ci_provider: $ci_provider,
+      release_tool: {name: $release_name, present: $release_present, signals: $release_signals},
+      semver_tool: {present: $semver_present, signals: $semver_signals},
+      ships_binaries: {hint: $ships_hint, signals: $binary_signals},
+      cargo_runner: $cargo_runner, reason: null}'
+}
+
+# Build the cargo-publish-check JSON: go/no-go readiness via `cargo publish
+# --dry-run` and `cargo package --list`. No auth is required or inspected. When
+# cargo is unreachable, report it rather than running anything.
+cog::fn::cargo::publish_check_json() {
+  local project_root="$1"
+  local runner
+  if [[ ! -d $project_root ]]; then
+    jq -n --arg project_root "$project_root" --arg reason "project root is not a directory" \
+      '{ok: false, project_root: $project_root, cargo_runner: "absent",
+        dry_run: null, package_list: null, reason: $reason}'
+    return 0
+  fi
+  runner="$(cog::fn::cargo::runner "$project_root")"
+  if [[ $runner == absent ]]; then
+    jq -n --arg project_root "$project_root" \
+      --arg reason "cargo is not reachable (no cargo on PATH, no .envrc+direnv, no flake.nix+nix)" \
+      '{ok: false, project_root: $project_root, cargo_runner: "absent",
+        dry_run: null, package_list: null, reason: $reason}'
+    return 0
+  fi
+
+  local dry_out dry_status=0 list_out list_status=0 dry_tail list_tail list_files
+  dry_out="$(cog::fn::cargo::exec "$project_root" "$runner" publish --dry-run 2>&1)" || dry_status=$?
+  dry_tail="$(printf '%s' "$dry_out" | tail -n1)"
+  list_out="$(cog::fn::cargo::exec "$project_root" "$runner" package --list 2>&1)" || list_status=$?
+  list_tail="$(printf '%s' "$list_out" | tail -n1)"
+  if [[ $list_status -eq 0 ]]; then
+    list_files="$(printf '%s\n' "$list_out" | grep -c .)"
+  else
+    list_files=0
+  fi
+
+  local ok=true
+  [[ $dry_status -eq 0 && $list_status -eq 0 ]] || ok=false
+
+  jq -n \
+    --argjson ok "$ok" --arg project_root "$project_root" --arg cargo_runner "$runner" \
+    --argjson dry_status "$dry_status" --arg dry_tail "$dry_tail" \
+    --argjson list_status "$list_status" --arg list_tail "$list_tail" --argjson list_files "$list_files" \
+    '{ok: $ok, project_root: $project_root, cargo_runner: $cargo_runner,
+      dry_run: {ok: ($dry_status == 0), status: $dry_status, command: "cargo publish --dry-run", tail: $dry_tail},
+      package_list: {ok: ($list_status == 0), status: $list_status, command: "cargo package --list", files: $list_files, tail: $list_tail},
+      reason: (if $ok then null else "readiness check failed" end)}'
+}

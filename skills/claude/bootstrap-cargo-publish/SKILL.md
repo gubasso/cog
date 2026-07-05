@@ -1,0 +1,140 @@
+---
+name: bootstrap-cargo-publish
+description: >
+  Set up cargo crate publishing for the current project: a conditional Rust +
+  publishing bootstrap worker, sibling of bootstrap-rust. Deploys auth-gated
+  publish/dry-run/release helper scripts, a PUBLISHING.md runbook, and optional
+  release-plz/cargo-dist config, and owns the publish-judgment layer (auth mode,
+  release tool, semver gating, optional binary distribution, go/no-go readiness).
+  Delegates deterministic detection and template copying to the cog CLI; the auth
+  check lives only inside the deployed scripts, never in a skill or in cog. Use
+  when the user says "bootstrap-cargo-publish", "set up cargo publishing",
+  "publish to crates.io", "cargo publish setup", "release-plz", or "cargo-dist".
+model: opus
+effort: low
+---
+
+<!-- trigger-tests: "bootstrap-cargo-publish", "set up cargo publishing", "publish to crates.io", "cargo publish setup", "release-plz", "cargo-dist" -->
+
+# Bootstrap Cargo Publish Skill
+
+Set up cargo crate publishing for the current project — the release workflow, the auth-gated helper
+scripts, and the `PUBLISHING.md` runbook that make the crate publishable and keep releasing it
+repeatable. This is a conditional **Rust + publishing** worker, sibling of `bootstrap-rust`: the crate
+skeleton and its crates.io metadata stay with `bootstrap-rust`, and this skill owns the publish
+judgment on top.
+
+Principle: deterministic detection and template copying come from the cog CLI; the tooling and auth
+choices are prose judgment grounded in `$(cog skill-refs path rust/rust-publish-conventions.md)`. The
+crates.io auth check is a single deliberate exception — it lives inside the deployed `publish` helper
+script, so no skill and no `cog` verb ever reads a credential.
+
+## Boundary
+
+This skill owns the publish-judgment layer plus the artifacts that carry it: the auth-gated helper
+scripts (`scripts/publish`, `scripts/publish-dry`, `scripts/release`), `PUBLISHING.md`, `release-plz.toml`,
+and the optional `dist-workspace.toml`. Everything else is delivered by its owner and surfaced as a
+fragment rather than written here:
+
+- crates.io metadata in `Cargo.toml` (`description`, `license`, `repository`, `keywords`, `readme`,
+  `publish`) — `bootstrap-rust`.
+- publish/version task recipes, when a task runner is present — taskrunner domain (`--type rust`).
+- the release CI workflow (release-plz job, OIDC permissions, optional `dist` job) — CI domain
+  (`--type rust`).
+
+The auth gate is an intentional project-helper behavior inside the deployed `publish` script; `cog` and
+this skill's prose never inspect a credential env var or file.
+
+## Inputs
+
+- `$ARGUMENTS`: optional release-tool preference (`release-plz` or `cargo-release`), binary-distribution
+  intent (whether the crate ships prebuilt binaries), and a local-only preference.
+- Current working directory: the target project.
+
+## Cog Contract
+
+`cog` must be installed and on `PATH`; a bare call fails legibly if it is missing. Read the publishing
+landscape before deciding anything:
+
+```bash
+cog cargo-publish-detect --json
+```
+
+It emits `{ok, project_root, crate_kind, is_publishable, publishable_reason, ci_provider, release_tool,
+semver_tool, ships_binaries, cargo_runner, reason}`: `crate_kind` is `bin`/`lib`/`workspace`/`none`;
+`is_publishable` is false when there is no `Cargo.toml` or `publish = false` is set; `ci_provider` is
+`github`/`gitlab`/`none`; `release_tool`/`semver_tool`/`ships_binaries` carry a presence flag plus the
+`signals` that matched.
+
+Gate go/no-go readiness with the dry-run checks — no token required:
+
+```bash
+cog cargo-publish-check --json
+```
+
+It runs `cargo publish --dry-run` and `cargo package --list` through the resolved cargo runner and emits
+`{ok, cargo_runner, dry_run, package_list, reason}`; when cargo is unreachable it reports
+`cargo_runner=absent` rather than running anything.
+
+Deploy the helper scripts and runbook:
+
+```bash
+cog cargo-publish-apply --doc-dir <docs|.> [--with-release-plz] [--with-dist] --conflict <policy> --json
+```
+
+It copies `scripts/publish`, `scripts/publish-dry`, `scripts/release`, and `PUBLISHING.md` into the
+project (scripts land executable), adds `release-plz.toml` with `--with-release-plz` and
+`dist-workspace.toml` with `--with-dist`, and honors `--conflict overwrite|skip|abort`.
+
+There is no `cog cargo-publish-auth` command. The crates.io auth check is a deliberate script-local
+exception inside the deployed `publish` script; no `cog` verb and no skill prose reads a credential.
+
+## Workflow
+
+1. Run `cog cargo-publish-detect --json`. Read `crate_kind`, `is_publishable`, `ci_provider`,
+   `release_tool`, `semver_tool`, `ships_binaries`, and `cargo_runner`.
+
+2. If there is no `Cargo.toml` (`crate_kind=none`), report that `bootstrap-rust` must scaffold the crate
+   first and stop — this skill publishes an existing crate, it does not create one.
+
+3. Decide the **auth mode** from `$(cog skill-refs path rust/rust-publish-conventions.md)`: Trusted
+   Publishing/OIDC when `ci_provider` is `github`/`gitlab`, else a local token via `cargo login`. The
+   first publish is always manual.
+
+4. Decide the **release tool**: `release-plz` by default when CI is present, `cargo-release` for an
+   explicit local/no-bot preference.
+
+5. Decide **binary distribution**: include cargo-dist (`--with-dist`) only when the crate is a CLI/app
+   that ships prebuilt binaries (`ships_binaries.hint` plus operator intent).
+
+6. Note that the **SemVer gate** is load-bearing when `crate_kind=lib` (`cargo-semver-checks`, native in
+   release-plz); a bin-only crate documents a policy but needs no API check.
+
+7. Resolve the docs destination: `--doc-dir docs` when a `docs/` directory exists, else `--doc-dir .`
+   to land `PUBLISHING.md` at the repo root.
+
+8. Run `cog cargo-publish-apply` with the chosen flags and conflict policy to deploy the scripts,
+   runbook, and any selected config.
+
+9. Run `cog cargo-publish-check --json` for go/no-go readiness and report the result.
+
+10. Surface fragments to their owners rather than writing those paths: publish/version recipes that
+    invoke `scripts/publish-dry`/`scripts/publish`/`scripts/release` to the taskrunner domain, and the
+    release CI requirements (release-plz job with `id-token: write` and no `CARGO_REGISTRY_TOKEN`, the
+    manual first publish, an optional `dist` workflow) to the CI domain — each `--type rust`. Note any
+    crates.io metadata gaps for `bootstrap-rust`.
+
+11. Present a summary: the auth mode, release tool, and cargo-dist decision; the deployed files; the
+    readiness result; the fragments handed to other domains; the first-publish-is-manual reminder; and
+    next steps.
+
+## Guardrails
+
+- Deterministic mechanics stay behind `cog cargo-publish-detect`/`-check`/`-apply`; the only script-local
+  shell is the deployed auth gate.
+- Never read, echo, or inspect a credential; the dry-run path is never auth-gated; the first publish is
+  manual; never run a real `cargo publish`.
+- Surface fragments to their owners: crates.io metadata to `bootstrap-rust`, task recipes to the
+  taskrunner domain, the release CI workflow to the CI domain — each `--type rust`.
+- When cargo is unreachable, report it and stop; readiness needs a reachable cargo, not a token.
+- Do not run git commands unless the operator authorizes it.

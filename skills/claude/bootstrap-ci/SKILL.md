@@ -107,7 +107,10 @@ whenever a `flake.nix` exists. `stamp` fails fast when the template SoT is not w
    justfile, `just lint`, `just test`, `just build`). When no flake is present, set up the
    conventional toolchain for the language and call the task runner directly. Flake reuse is a verified
    postcondition: when reconciling a pre-existing pipeline that predates the flake, add the
-   `nix develop` wrapping rather than leaving CI on a divergent toolchain.
+   `nix develop` wrapping rather than leaving CI on a divergent toolchain. When the brief carries
+   publishing or release workflow requirements, add the release job they describe (for a release-plz
+   crate: `permissions: id-token: write` and no `CARGO_REGISTRY_TOKEN`, the first publish stays manual,
+   and an optional binary-distribution job), reconciled under the conflict policy.
 
 7. Present a final summary: the target deployed, the jobs wired to the flake or conventional
    toolchain, the task names each job runs, and any pre-existing pipeline reconciled.

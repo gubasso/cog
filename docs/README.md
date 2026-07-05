@@ -70,6 +70,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0063: Chain a disable-model-invocation coordinator via Agent delegation, not the Skill tool](decisions/0063-inline-coordinator-chaining-not-via-skill-tool.md)
 - [ADR-0064: Rename the revision boundary to review-queue-rounds](decisions/0064-rename-revision-boundary-to-review-queue-rounds.md)
 - [ADR-0065: Bootstrap language workers scaffold from the official CLI](decisions/0065-bootstrap-language-workers-and-cargo-cli-scaffold.md)
+- [ADR-0066: Bootstrap cargo-publish worker with script-local auth](decisions/0066-bootstrap-cargo-publish-worker-and-script-local-auth.md)
 
 ## Guides
 

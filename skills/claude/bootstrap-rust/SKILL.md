@@ -80,7 +80,9 @@ and never re-initialize or blind-overwrite a crate that is already scaffolded.
 1. Run `cog cargo-detect --json`. Read `scaffolded`, `kind`, `edition`, `configs`, and `cargo_runner`.
 
 2. If `scaffolded=true`, reconcile in prose — confirm the crate kind and edition match the intent, note
-   any drift, and do **not** re-scaffold. Skip to step 4.
+   any drift, and do **not** re-scaffold. When the brief carries crates.io publishing metadata gaps
+   (`description`, `license`, `repository`, `keywords`, `readme`), reconcile them into `Cargo.toml`,
+   which this skill owns. Skip to step 4.
 
 3. If `scaffolded=false`, resolve the crate kind (`bin` unless the intent is a library or workspace) and
    run `cog cargo-scaffold-apply --kind "$KIND" [--name <crate>] --json`. When `cargo_runner=absent`,

@@ -37,6 +37,12 @@ the Rust crate skeleton (`Cargo.toml`, `src/`) plus optional rust config, and is
 part of `cog bootstrap-audit` — the audit's every-domain-in-scope matrix stays language-orthogonal, so
 rust never reads as a "missing" domain on a non-rust project.
 
+`bootstrap-cargo-publish` is a conditional **Rust + publishing** worker, dispatched only when the
+project is Rust (per `cog classify-project`) **and** the operator's intent involves publishing or
+release setup (crates.io, `cargo publish`, `release-plz`, `cargo-release`, `cargo dist`, `publish`,
+`release`). Like `bootstrap-rust` it is not a `bootstrap-audit` domain, keeping the audit matrix
+language-orthogonal.
+
 <!-- cog-context-brief-gate -->
 
 **Context-brief gate.** Before `/bootstrap` dispatches to any fresh-context worker — an Agent subagent
@@ -103,6 +109,7 @@ domain's detector against the project, so each brief carries the true starting s
 ```bash
 cog classify-project --json
 cog cargo-detect --json          # when classify-project reports Rust (drives bootstrap-rust)
+cog cargo-publish-detect --json  # when Rust plus publishing intent is in scope (drives bootstrap-cargo-publish)
 cog precommit-detect --json
 cog editorconfig-detect --json
 cog nix-devshell-detect --json
@@ -113,7 +120,10 @@ cog taskrunner-detect --json
 
 When `classify-project` reports Rust — or the intent is a new Rust project — include `bootstrap-rust`
 in the dispatch and build its brief from `cog cargo-detect` (scaffold state, crate kind, and how cargo
-is reachable).
+is reachable). When the project is Rust **and** the intent involves publishing or release setup, also
+include `bootstrap-cargo-publish` and build its brief from `cog cargo-publish-detect` (crate kind,
+publishability, CI provider, release tool, semver tooling, and binary-distribution hints) plus the
+operator's publishing intent and any known CI target and taskrunner type.
 
 Once a domain's detector resolves its template type, capture the template-review freshness so the
 worker can skip re-research when a recent review already covers this domain and type, and fold that JSON
@@ -153,9 +163,13 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
   a greenfield Rust project, gather the remaining workers' detector orientation after this wave so they
   observe the now-present `Cargo.toml`; on an already-scaffolded crate `bootstrap-rust` reconciles in
   place and may run alongside Wave 1.
-- **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`.
+- **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`, and — when Rust
+  plus publishing intent is in scope — `bootstrap-cargo-publish`, dispatched after `bootstrap-rust` so
+  the crate exists; it surfaces publish/version task-recipe fragments to `bootstrap-taskrunner` and
+  release-CI fragments to `bootstrap-ci` (each `--type rust`).
 - **Wave 2 (consume Wave 1):** `bootstrap-precommit` (reads the established `.editorconfig` baseline),
-  `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names).
+  `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names, and reconcile any
+  publishing fragments surfaced by `bootstrap-cargo-publish`).
 
 Give each subagent its validated brief as the complete orientation, including the freshness `check` JSON
 so a worker with a fresh review reuses the cached summary instead of re-searching. Dispatch every
@@ -183,9 +197,11 @@ the `editorconfig-checker` hook, an existing CI pipeline that does not reuse the
 and must be reconciled before reporting done. Summarize what each worker produced — the target files
 changed, the shared template paths updated, the research-shelf review entry ids, and whether the
 template root resolved from the tracked `repo` checkout or the installed `xdg` tree (installed-tree
-writes are local and uncommitted). List follow-ups (`nix flake lock` on a nix host, `pre-commit
-install`, `direnv allow`), and surface any conflicts or still-missing domains that need an operator
-decision.
+writes are local and uncommitted), and — when `bootstrap-cargo-publish` ran — the deployed publishing
+helper scripts and `PUBLISHING.md`, the auth-mode/release-tool/cargo-dist decisions, and the fragments
+handed to the taskrunner and CI owners. List follow-ups (`nix flake lock` on a nix host, `pre-commit
+install`, `direnv allow`, the manual first `cargo publish`), and surface any conflicts or still-missing
+domains that need an operator decision.
 
 ## Guardrails
 

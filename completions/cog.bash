@@ -25,6 +25,9 @@ _cog() {
     bootstrap-audit
     bootstrap-template-review
     cargo-detect
+    cargo-publish-apply
+    cargo-publish-check
+    cargo-publish-detect
     cargo-scaffold-apply
     ci-apply
     ci-detect
