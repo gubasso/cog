@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Detect Rust crate publishing readiness.'
 
-__cog_cargo_publish_detect_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.crate_kind|type=="string") and (.is_publishable|type=="boolean") and (.ci_provider|type=="string") and (.release_tool|type=="object") and (.semver_tool|type=="object") and (.ships_binaries|type=="object")'
+__cog_cargo_publish_detect_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.crate_kind|type=="string") and (.is_publishable|type=="boolean") and (.ci_provider|type=="string") and (.release_tool|type=="object") and (.semver_tool|type=="object") and (.ships_binaries|type=="object") and (.metadata|type=="object")'
 
 __cog_cargo_publish_detect_usage() {
   cog::fn::ui_data "Usage: cog cargo-publish-detect [--project-root <dir>] (<out.json>|--json)"

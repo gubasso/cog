@@ -61,10 +61,13 @@ cog cargo-publish-detect --json
 ```
 
 It emits `{ok, project_root, crate_kind, is_publishable, publishable_reason, ci_provider, release_tool,
-semver_tool, ships_binaries, cargo_runner, reason}`: `crate_kind` is `bin`/`lib`/`workspace`/`none`;
-`is_publishable` is false when there is no `Cargo.toml` or `publish = false` is set; `ci_provider` is
-`github`/`gitlab`/`none`; `release_tool`/`semver_tool`/`ships_binaries` carry a presence flag plus the
-`signals` that matched.
+semver_tool, ships_binaries, metadata, cargo_runner, reason}`: `crate_kind` is
+`bin`/`lib`/`workspace`/`none`; `is_publishable` is false when there is no `Cargo.toml` or
+`publish = false` is set; `ci_provider` is `github`/`gitlab`/`none`;
+`release_tool`/`semver_tool`/`ships_binaries` carry a presence flag plus the `signals` that matched.
+`metadata` is pure manifest inspection — `{has_description, has_license, has_repository, has_readme,
+has_exclude, has_include, keywords_count, categories_count}` — so metadata gaps surface without a
+reachable cargo.
 
 Gate go/no-go readiness with the dry-run checks — no token required:
 
@@ -92,41 +95,54 @@ exception inside the deployed `publish` script; no `cog` verb and no skill prose
 ## Workflow
 
 1. Run `cog cargo-publish-detect --json`. Read `crate_kind`, `is_publishable`, `ci_provider`,
-   `release_tool`, `semver_tool`, `ships_binaries`, and `cargo_runner`.
+   `release_tool`, `semver_tool`, `ships_binaries`, `metadata`, and `cargo_runner`.
 
 2. If there is no `Cargo.toml` (`crate_kind=none`), report that `bootstrap-rust` must scaffold the crate
    first and stop — this skill publishes an existing crate, it does not create one.
 
-3. Decide the **auth mode** from `$(cog skill-refs path rust/rust-publish-conventions.md)`: Trusted
-   Publishing/OIDC when `ci_provider` is `github`/`gitlab`, else a local token via `cargo login`. The
-   first publish is always manual.
+3. Read the `metadata` block and surface precise crates.io metadata gaps to `bootstrap-rust`:
+   `has_description` and `has_license` are the required, publish-rejecting fields — crates.io hard-rejects
+   a publish that lacks either; `has_repository`, `keywords_count`, and `categories_count` (canonical
+   slugs, or the publish fails) are recommended for discovery. This skill surfaces the gaps to the
+   metadata owner and never edits `Cargo.toml` itself.
 
-4. Decide the **release tool**: `release-plz` by default when CI is present, `cargo-release` for an
+4. Decide the **auth mode** from `$(cog skill-refs path rust/rust-publish-conventions.md)`: Trusted
+   Publishing/OIDC when `ci_provider` is `github`/`gitlab`, else a local token via `cargo login`. The
+   first publish is always manual, with a `publish-new`, exact-crate-scoped, shortest-expiry token that
+   is revoked once OIDC is live.
+
+5. Decide the **release tool**: `release-plz` by default when CI is present, `cargo-release` for an
    explicit local/no-bot preference.
 
-5. Decide **binary distribution**: include cargo-dist (`--with-dist`) only when the crate is a CLI/app
+6. Decide **binary distribution**: include cargo-dist (`--with-dist`) only when the crate is a CLI/app
    that ships prebuilt binaries (`ships_binaries.hint` plus operator intent).
 
-6. Note that the **SemVer gate** is load-bearing when `crate_kind=lib` (`cargo-semver-checks`, native in
+7. Note that the **SemVer gate** is load-bearing when `crate_kind=lib` (`cargo-semver-checks`, native in
    release-plz); a bin-only crate documents a policy but needs no API check.
 
-7. Resolve the docs destination: `--doc-dir docs` when a `docs/` directory exists, else `--doc-dir .`
+8. Resolve the docs destination: `--doc-dir docs` when a `docs/` directory exists, else `--doc-dir .`
    to land `PUBLISHING.md` at the repo root.
 
-8. Run `cog cargo-publish-apply` with the chosen flags and conflict policy to deploy the scripts,
+9. Run `cog cargo-publish-apply` with the chosen flags and conflict policy to deploy the scripts,
    runbook, and any selected config.
 
-9. Run `cog cargo-publish-check --json` for go/no-go readiness and report the result.
+10. Run `cog cargo-publish-check --json` for go/no-go readiness and report the result. Review its
+    `package_list` for non-build-input junk (`docs/`, `.github/`, `scripts/`, `release-plz.toml`,
+    `dist-workspace.toml`, `justfile`, `flake.nix`, editor/lint configs) and surface a recommended
+    `exclude` denylist to `bootstrap-rust` to keep the `.crate` lean; note the SPDX-`license` footgun
+    (an `include` allowlist must list `README` and `LICENSE` explicitly, since neither is auto-included
+    when `license` is an SPDX expression). `metadata.has_exclude`/`has_include` show whether trimming is
+    already configured.
 
-10. Surface fragments to their owners rather than writing those paths: publish/version recipes that
+11. Surface fragments to their owners rather than writing those paths: publish/version recipes that
     invoke `scripts/publish-dry`/`scripts/publish`/`scripts/release` to the taskrunner domain, and the
     release CI requirements (release-plz job with `id-token: write` and no `CARGO_REGISTRY_TOKEN`, the
-    manual first publish, an optional `dist` workflow) to the CI domain — each `--type rust`. Note any
-    crates.io metadata gaps for `bootstrap-rust`.
+    manual first publish, an optional `dist` workflow) to the CI domain — each `--type rust`. Hand the
+    metadata gaps and the recommended `exclude` denylist to `bootstrap-rust`.
 
-11. Present a summary: the auth mode, release tool, and cargo-dist decision; the deployed files; the
-    readiness result; the fragments handed to other domains; the first-publish-is-manual reminder; and
-    next steps.
+12. Present a summary: the auth mode, release tool, and cargo-dist decision; the deployed files; the
+    readiness result; the metadata and tarball-hygiene gaps and the fragments handed to other domains;
+    the first-publish-is-manual reminder; and next steps.
 
 ## Guardrails
 

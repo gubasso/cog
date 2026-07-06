@@ -89,6 +89,41 @@ setup() {
   printf '%s\n' "$output" | jq -e '.semver_tool.present == true' >/dev/null
 }
 
+@test "cog cargo-publish-detect reports a full metadata block" {
+  cat >"${BATS_TEST_TMPDIR}/repo/Cargo.toml" <<'TOML'
+[package]
+name = "x"
+description = "A crate"
+license = "MIT OR Apache-2.0"
+repository = "https://example.com/x"
+readme = "README.md"
+keywords = ["cli", "tooling"]
+categories = ["command-line-utilities"]
+exclude = ["/docs"]
+TOML
+
+  run cog cargo-publish-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.metadata.has_description == true and .metadata.has_license == true and .metadata.has_repository == true and .metadata.has_readme == true and .metadata.has_exclude == true and .metadata.has_include == false and .metadata.keywords_count == 2 and .metadata.categories_count == 1' >/dev/null
+}
+
+@test "cog cargo-publish-detect flags a missing description and accepts license-file" {
+  printf '[package]\nname = "x"\nlicense-file = "LICENSE"\n' >"${BATS_TEST_TMPDIR}/repo/Cargo.toml"
+
+  run cog cargo-publish-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.metadata.has_description == false and .metadata.has_license == true and .metadata.keywords_count == 0' >/dev/null
+}
+
+@test "cog cargo-publish-detect emits an empty metadata block when no manifest exists" {
+  run cog cargo-publish-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.metadata.has_description == false and .metadata.has_license == false and .metadata.keywords_count == 0 and .metadata.categories_count == 0' >/dev/null
+}
+
 @test "cog cargo-publish-detect --help dispatches" {
   run cog cargo-publish-detect --help
 

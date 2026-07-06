@@ -186,6 +186,28 @@ cog::fn::cargo::_matches() {
   return 1
 }
 
+# True when the manifest has a top-level key assignment (leading whitespace
+# tolerated), e.g. `description = "..."`. Distinguishes `license` from
+# `license-file`, which is a separate key.
+cog::fn::cargo::_manifest_has_key() {
+  local manifest="$1" key="$2"
+  [[ -f $manifest ]] || return 1
+  grep -Eq "^[[:space:]]*${key}[[:space:]]*=" "$manifest"
+}
+
+# Count quoted entries in the first array-valued assignment of a key on a single
+# line, e.g. `keywords = ["cli", "tooling"]` -> 2. Absent or empty -> 0.
+cog::fn::cargo::_manifest_array_count() {
+  local manifest="$1" key="$2" line count
+  [[ -f $manifest ]] || {
+    printf '0\n'
+    return 0
+  }
+  line="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" "$manifest" | head -n1 || true)"
+  count="$(printf '%s\n' "$line" | grep -oE '"[^"]*"' | grep -c . || true)"
+  printf '%s\n' "${count:-0}"
+}
+
 # Build the cargo-publish-detect JSON for a project root. Pure file inspection:
 # no cargo exec, no auth, no credential access. Reports the release-readiness
 # landscape the publish-judgment layer reasons over.
@@ -208,6 +230,9 @@ cog::fn::cargo::publish_detect_json() {
         release_tool: {name: "none", present: false, signals: []},
         semver_tool: {present: false, signals: []},
         ships_binaries: {hint: false, signals: []},
+        metadata: {has_description: false, has_license: false, has_repository: false,
+          has_readme: false, has_exclude: false, has_include: false,
+          keywords_count: 0, categories_count: 0},
         cargo_runner: "absent", reason: $reason}'
     return 0
   fi
@@ -298,6 +323,22 @@ cog::fn::cargo::publish_detect_json() {
     binary_signals+=("cargo-dist config")
   fi
 
+  # crates.io metadata presence (pure manifest inspection). description + a
+  # license are the publish-rejecting required fields; the rest are recommended
+  # or hygiene signals the judgment layer surfaces to the metadata owner.
+  local md_desc=false md_license=false md_repo=false md_readme=false md_exclude=false md_include=false
+  local md_keywords=0 md_categories=0
+  if [[ -f $manifest ]]; then
+    cog::fn::cargo::_manifest_has_key "$manifest" description && md_desc=true
+    { cog::fn::cargo::_manifest_has_key "$manifest" license || cog::fn::cargo::_manifest_has_key "$manifest" license-file; } && md_license=true
+    cog::fn::cargo::_manifest_has_key "$manifest" repository && md_repo=true
+    cog::fn::cargo::_manifest_has_key "$manifest" readme && md_readme=true
+    cog::fn::cargo::_manifest_has_key "$manifest" exclude && md_exclude=true
+    cog::fn::cargo::_manifest_has_key "$manifest" include && md_include=true
+    md_keywords="$(cog::fn::cargo::_manifest_array_count "$manifest" keywords)"
+    md_categories="$(cog::fn::cargo::_manifest_array_count "$manifest" categories)"
+  fi
+
   jq -n \
     --argjson ok "$ok" --arg project_root "$project_root" --arg crate_kind "$crate_kind" \
     --argjson is_publishable "$is_publishable" --arg publishable_reason "$publishable_reason" \
@@ -308,6 +349,9 @@ cog::fn::cargo::publish_detect_json() {
     --argjson semver_signals "$(cog::fn::cargo::_strarray "${semver_signals[@]}")" \
     --argjson ships_hint "$ships_hint" \
     --argjson binary_signals "$(cog::fn::cargo::_strarray "${binary_signals[@]}")" \
+    --argjson md_desc "$md_desc" --argjson md_license "$md_license" --argjson md_repo "$md_repo" \
+    --argjson md_readme "$md_readme" --argjson md_exclude "$md_exclude" --argjson md_include "$md_include" \
+    --argjson md_keywords "$md_keywords" --argjson md_categories "$md_categories" \
     --arg cargo_runner "$runner" \
     '{ok: $ok, project_root: $project_root, crate_kind: $crate_kind,
       is_publishable: $is_publishable,
@@ -316,6 +360,9 @@ cog::fn::cargo::publish_detect_json() {
       release_tool: {name: $release_name, present: $release_present, signals: $release_signals},
       semver_tool: {present: $semver_present, signals: $semver_signals},
       ships_binaries: {hint: $ships_hint, signals: $binary_signals},
+      metadata: {has_description: $md_desc, has_license: $md_license, has_repository: $md_repo,
+        has_readme: $md_readme, has_exclude: $md_exclude, has_include: $md_include,
+        keywords_count: $md_keywords, categories_count: $md_categories},
       cargo_runner: $cargo_runner, reason: null}'
 }
 

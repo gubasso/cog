@@ -16,6 +16,29 @@ Everything else stays with its owner:
 - publish/version task recipes, when a task runner is present — taskrunner domain.
 - the release CI workflow file — CI domain.
 
+## Crate metadata gate
+
+crates.io validates `[package]` metadata at publish time, and a missing required field is the single
+most common first-publish blocker. `description` **and** a license (`license` SPDX expression or
+`license-file`) are **required** — crates.io hard-rejects a publish that lacks either. `repository`
+warns and drives the crate-page link; `keywords` (≤5, ≤20 chars each) and `categories` improve
+discovery, and `categories` must match the canonical crates.io slugs exactly or the publish fails.
+`cog cargo-publish-detect` reports these as a read-only `metadata` block so gaps surface even when
+cargo is unreachable. The publish worker surfaces any gap to the metadata owner (`bootstrap-rust`);
+it never edits `Cargo.toml`.
+
+## Tarball hygiene
+
+Keep the published `.crate` lean: Cargo packages the whole working tree by default, so project docs,
+CI, and dev tooling ship as dead weight unless trimmed. Prefer an `exclude` denylist (robust against
+dropping future `src/` files) over an `include` allowlist, and exclude non-build inputs such as
+`/docs`, `/.github`, `/scripts`, `/release-plz.toml`, `/dist-workspace.toml`, `/justfile`,
+`/flake.nix`, and editor/lint configs. Footgun: with an SPDX `license` expression, Cargo does **not**
+auto-include a plain `README` or `LICENSE`, so an `include` allowlist must list them explicitly.
+crates.io enforces a hard 10 MB limit; for a binary crate no consumer ever reads the tarball, so docs
+and tooling are pure waste. `cargo package --list` (via `cog cargo-publish-check`) shows exactly what
+would ship; the publish worker surfaces a recommended `exclude` list to `bootstrap-rust`.
+
 ## Publishing workflow and release tool
 
 `release-plz` is the CI-first default. It opens a release PR that bumps the version and updates the
@@ -38,6 +61,11 @@ write`, sets **no** `CARGO_REGISTRY_TOKEN`, and does **not** use `rust-lang/crat
 `rust-lang/crates-io-auth-action` to mint the token. A long-lived `CARGO_REGISTRY_TOKEN` secret is a
 fallback only when OIDC is unavailable or when publishing purely locally.
 
+Token-scope hygiene for the manual first publish: create one narrow, per-crate token scoped to the
+exact crate name with the `publish-new` endpoint scope (the first upload creates the crate;
+`publish-update` does not apply yet), pick the shortest expiry offered, and revoke it once OIDC is
+live. A local escape-hatch token uses `publish-update`; avoid the unscoped `legacy` scope.
+
 No skill and no `cog` verb ever reads or writes a credential: the operator configures crates.io auth,
 and the only auth check is a configuration check inside the deployed `publish` helper script.
 
@@ -57,7 +85,9 @@ cargo-publish-check`. Neither needs auth, so they run before any credential is c
 `dist` (cargo-dist) packages application binaries, installers, and GitHub-release artifacts. Offer it
 only when the crate is a CLI or application that ships prebuilt binaries; the judgment layer decides
 inclusion from the crate kind (`bin`) and the operator's intent. Library-crate publishing to crates.io
-never needs it.
+never needs it. `dist` generates its own CI workflow from `dist-workspace.toml`: treat that workflow as
+an artifact — change the config and regenerate with `dist generate`, never hand-edit the YAML — and
+keep it as a separate file from the crates.io release workflow so neither disturbs the other.
 
 External references (optional enhancers): the crates.io Trusted Publishing docs, the Cargo publishing
 reference, release-plz.dev, the cargo-release and cargo-semver-checks project READMEs, and the
