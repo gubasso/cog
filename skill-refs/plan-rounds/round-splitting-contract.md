@@ -212,8 +212,8 @@ else hard-codes a bin.
   `queue-rounds.yaml` reconciliation, either after each loop or at the end.
 - **Queue-mutation closure.** Only `cog round-rightsize record-split` appends rounds, and only after
   `round-split coverage` passes; the seed is always exactly one parent round. No verb accepts a list of
-  rounds or reads a draft's authored sections, so a caller cannot materialize many rounds up front
-  ([ADR-0069]).
+  rounds, and `init` rejects a baseline that already carries authored `### Round N` sections, so a
+  caller cannot materialize many rounds up front ([ADR-0069]).
 
 [ADR-0026]: ../../docs/decisions/0026-consumer-skill-producer-blindness.md
 

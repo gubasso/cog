@@ -48,6 +48,21 @@ EOF
 EOF
 }
 
+# Write a complexity report whose grade/score match the recorded values and
+# echo its path, so record-grade's report cross-check passes.
+_report() {
+  local grade="$1" score="$2"
+  local p="${T}/rep-${grade// /_}-${score}.yaml"
+  cat >"$p" <<EOF
+grade: ${grade}
+score: ${score}
+splittable: false
+axis_scores: {}
+seam_hints: []
+EOF
+  printf '%s' "$p"
+}
+
 @test "init seeds exactly one parent round" {
   _write_baseline
   run cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md"
@@ -83,7 +98,7 @@ EOF
 @test "record-grade under ceiling marks final and never grows the queue" {
   _write_baseline
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false ""
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report Low 8)"
   assert_success
   printf '%s\n' "$output" | jq -e '.over==false and .status=="final"' >/dev/null
   jq -e '(.queue|length)==1' "$ST" >/dev/null
@@ -92,14 +107,14 @@ EOF
 @test "record-grade Extreme splittable marks awaiting-split; not-splittable marks irreducible" {
   _write_baseline
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true ""
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)"
   assert_success
   printf '%s\n' "$output" | jq -e '.over==true and .status=="awaiting-split"' >/dev/null
 
   # Fresh state for the not-splittable branch.
   rm -f "$ST"
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 false ""
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 false "$(_report Extreme 31)"
   assert_success
   printf '%s\n' "$output" | jq -e '.status=="irreducible-over-ceiling"' >/dev/null
 }
@@ -108,7 +123,7 @@ EOF
   _write_baseline
   _write_children
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   run cog::fn::round_rightsize::record_split "$ST" full-plan-draft true "${T}/a.md" "${T}/b.md"
   assert_success
   printf '%s\n' "$output" | jq -e '.ok==true and (.enqueued|length)==2' >/dev/null
@@ -132,7 +147,7 @@ EOF
 - [ ] (R2) B is reversible.
 EOF
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   # The command layer maps ok:false to EX_DATAERR.
   run cog::cmd::round_rightsize record-split --state "$ST" --round-id full-plan-draft \
     --split-performed true --child "${T}/a.md" --child "${T}/lossy.md" --json
@@ -145,7 +160,7 @@ EOF
   _write_baseline
   _write_children
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   run cog::fn::round_rightsize::record_split "$ST" full-plan-draft true "${T}/a.md" ""
   assert_failure
 }
@@ -153,7 +168,7 @@ EOF
 @test "record-split split-performed false marks irreducible without enqueue" {
   _write_baseline
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   run cog::fn::round_rightsize::record_split "$ST" full-plan-draft false "" ""
   assert_success
   jq -e '(.queue|length)==1 and .queue[0].status=="irreducible-over-ceiling"' "$ST" >/dev/null
@@ -162,7 +177,7 @@ EOF
 @test "reopen flips a final round back to awaiting-split" {
   _write_baseline
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report Low 8)" >/dev/null
   run cog::fn::round_rightsize::reopen "$ST" full-plan-draft executor-reserved
   assert_success
   printf '%s\n' "$output" | jq -e '.queue[0].status=="awaiting-split" and .queue[0].reopened_for=="executor-reserved"' >/dev/null
@@ -172,7 +187,7 @@ EOF
   _write_baseline
   _write_children
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   cog::fn::round_rightsize::record_split "$ST" full-plan-draft true "${T}/a.md" "${T}/b.md" >/dev/null
   run cog::fn::round_rightsize::finalize_json "$ST"
   assert_failure
@@ -182,10 +197,10 @@ EOF
   _write_baseline
   _write_children
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Extreme 31 true "$(_report Extreme 31)" >/dev/null
   cog::fn::round_rightsize::record_split "$ST" full-plan-draft true "${T}/a.md" "${T}/b.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" a Low 8 false "" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" b Low 6 false "" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" a Low 8 false "$(_report Low 8)" >/dev/null
+  cog::fn::round_rightsize::record_grade "$ST" b Low 6 false "$(_report Low 6)" >/dev/null
   run cog::fn::round_rightsize::finalize_json "$ST"
   assert_success
   printf '%s\n' "$output" | jq -e '.ok==true and .coverage_ok==true and (.final_rounds|length)==2 and (.final_rounds|map(.grade)|all(.=="Low")) and (.final_rounds|map(.score)|sort==[6,8])' >/dev/null
@@ -195,10 +210,92 @@ EOF
 @test "record-grade is an idempotent replay on identical inputs and conflicts otherwise" {
   _write_baseline
   cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
-  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "" >/dev/null
-  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false ""
+  cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report Low 8)" >/dev/null
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report Low 8)"
   assert_success
   printf '%s\n' "$output" | jq -e '.status=="final"' >/dev/null
-  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft High 20 true ""
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft High 20 true "$(_report High 20)"
   assert_failure
+}
+
+@test "init fails closed on a baseline that carries authored round sections" {
+  cat >"${T}/full-plan-draft.md" <<'EOF'
+# Draft
+
+## Acceptance Criteria
+
+- [ ] (R1) A fails closed.
+
+### Round 1 — first slice
+
+### Round 2 — second slice
+EOF
+  run cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md"
+  assert_failure
+  [[ $output == *"authored round sections"* || $stderr == *"authored round sections"* ]]
+}
+
+@test "init accepts a plan with a single stray round heading" {
+  cat >"${T}/full-plan-draft.md" <<'EOF'
+# Draft
+
+## Acceptance Criteria
+
+- [ ] (R1) A fails closed.
+
+### Round 1 — a lone mention that must not trip the guard
+EOF
+  run cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md"
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.queue|length)==1' >/dev/null
+}
+
+@test "record-grade fails closed without a report" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  run cog::cmd::round_rightsize record-grade --state "$ST" --round-id full-plan-draft \
+    --grade Low --score 8 --splittable false --json
+  assert_failure
+  [[ $output == *"report"* || $stderr == *"report"* ]]
+}
+
+@test "record-grade fails closed on a missing report file" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "${T}/nope.yaml"
+  assert_failure
+}
+
+@test "record-grade fails closed when the report grade disagrees with --grade" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report High 8)"
+  assert_failure
+  [[ $output == *"does not match"* || $stderr == *"does not match"* ]]
+}
+
+@test "record-grade fails closed when the report score disagrees with --score" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$(_report Low 9)"
+  assert_failure
+  [[ $output == *"does not match"* || $stderr == *"does not match"* ]]
+}
+
+@test "record-grade fails closed on a report with no grade" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  printf 'score: 8\n' >"${T}/no-grade.yaml"
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "${T}/no-grade.yaml"
+  assert_failure
+}
+
+@test "record-grade accepts a matching report and stores its path" {
+  _write_baseline
+  cog::fn::round_rightsize::init "$ST" "${T}/full-plan-draft.md" >/dev/null
+  local rpath
+  rpath="$(_report Low 8)"
+  run cog::fn::round_rightsize::record_grade "$ST" full-plan-draft Low 8 false "$rpath"
+  assert_success
+  jq -e --arg p "$rpath" '.queue[0].report_path==$p' "$ST" >/dev/null
 }

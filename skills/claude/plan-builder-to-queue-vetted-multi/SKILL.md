@@ -80,7 +80,9 @@ The draft is the maximally-complete **parent round** the rest of the pipeline ri
 full scope: every phase, stage, and step in dependency order; concrete files and exact commands;
 machine-checkable acceptance criteria; explicit scope and out-of-scope; and an end-to-end
 verification step. Do not summarize, collapse steps, use "etc.", or impose a size cap. Length is
-never trimmed here; Phase 4-5 converts length into rounds.
+never trimmed here; Phase 4-5 converts length into rounds. The draft is one undivided full-scope
+plan and carries no `### Round N` headings — rounds are created only by the Phase 4-5 loop's
+coverage-checked splits.
 
 ## Phase 2 — Stamp requirement IDs
 

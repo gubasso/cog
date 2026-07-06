@@ -24,10 +24,18 @@ it does not change [ADR-0050]'s three-role, serialized-judgment decision. Judgme
 where-to-split) stays in the `review-plan-complexity` evaluator and `plan-split` splitter; the skill
 only runs those workers on the exact round cog hands back and feeds their structured verdicts in.
 
-The determinism guarantee is structural: `init` takes exactly one baseline and seeds a one-item queue;
-no verb accepts a list of rounds or reads a draft's authored sections; the sole appender is
-`record-split`, which enqueues exactly two children and only after `round-split coverage` passes. The
-observed "many rounds up front" deviation is therefore impossible.
+The determinism guarantee is structural and enforced by cog at the seam, not by trusting the caller:
+`init` takes exactly one baseline, **rejects** a baseline that already carries authored `### Round N`
+sections (a materialized round list), and seeds a one-item queue; no verb accepts a list of rounds;
+`record-grade` **rejects** a grade that is not backed by a parsing, self-consistent
+`review-plan-complexity` report (its `grade`/`score` must match the recorded values); and the sole
+appender is `record-split`, which enqueues exactly two children and only after `round-split coverage`
+passes. The observed "many rounds up front" deviation is rejected at the seed, and a self-invented
+grade with no backing report is rejected at `record-grade`.
+
+This is a fail-closed entry/grading guard, not a claim that the model cannot err inside a worker: a
+model can still author a well-formed report whose grade it decided badly — cog enforces that a report
+exists, parses, and self-agrees with the recorded grade/score, not that the grade is correct.
 
 Correctness pin: the `score > 30` executor-reserved compare stays out of the loop (Phase 6 `cog
 power-grade match`); `reopen` is a bare status flip, so the loop remains executor-independent per

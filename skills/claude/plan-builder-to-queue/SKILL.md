@@ -79,7 +79,9 @@ above, capturing its lean plan-doc to `DRAFT_PATH`:
 - Run `plan-oneshot` in this same context so its own `AskUserQuestion` interview reaches the operator.
 - Pass `--output "$DRAFT_PATH"` and the orientation; let it research the repo as needed.
 
-The draft is the maximally-complete **parent round** the rest of the pipeline right-sizes.
+The draft is the maximally-complete **parent round** the rest of the pipeline right-sizes. The draft
+is one undivided full-scope plan and carries no `### Round N` headings — rounds are created only by
+the Phase 4-5 loop's coverage-checked splits.
 
 ## Phase 2 — Stamp requirement IDs
 

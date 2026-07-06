@@ -81,6 +81,12 @@ __cog_round_rightsize_entry_count() {
   jq --arg id "$id" '[.queue[] | select(.round_id==$id)] | length' <<<"$state"
 }
 
+# Count authored round-section headings (### Round N) — a right-sizing artifact,
+# never present in a single undivided seed.
+__cog_round_rightsize_authored_round_count() {
+  grep -cE '^#{2,6}[[:space:]]+Round[[:space:]]+[0-9]' -- "$1" 2>/dev/null || true
+}
+
 # init --------------------------------------------------------------------
 # Seed the queue with exactly one parent round (the whole stamped draft).
 cog::fn::round_rightsize::init() {
@@ -99,8 +105,13 @@ cog::fn::round_rightsize::init() {
   [[ -f $baseline && -s $baseline ]] || cog::fn::error_raise "InputNotFound" \
     "baseline draft is missing or empty" "path: ${baseline}" "" "generate the plan draft first"
 
-  local baseline_abs list_json
+  local baseline_abs list_json authored_rounds
   baseline_abs="$(cog::fn::round_req::abs_path "$baseline")"
+  authored_rounds="$(__cog_round_rightsize_authored_round_count "$baseline_abs")"
+  [[ ${authored_rounds:-0} -lt 2 ]] || cog::fn::error_raise "InvalidInput" \
+    "baseline contains authored round sections" "path: ${baseline_abs}" \
+    "found ${authored_rounds} '### Round <n>' headings; a seed must be one undivided plan" \
+    "seed one full-scope plan; rounds are created only by the loop's coverage-checked splits"
   list_json="$(cog::fn::round_req::list_json "$baseline_abs")"
   jq -e '.ok == true and .stamped == true' <<<"$list_json" >/dev/null 2>&1 \
     || cog::fn::error_raise "InvalidInput" \
@@ -167,6 +178,27 @@ cog::fn::round_rightsize::record_grade() {
     true | false) ;;
     *) cog::fn::error_raise "InvalidInput" "splittable must be true or false" "option: --splittable" "value: ${splittable}" "pass --splittable true|false" ;;
   esac
+
+  # The grade must be backed by a parsing, self-consistent complexity report; a
+  # bare CLI grade with no matching report is rejected.
+  [[ -n $report ]] || cog::fn::error_raise "MissingArgument" \
+    "missing complexity report" "option: --report" "" "pass --report <complexity-report.yaml>"
+  [[ -f $report && -s $report ]] || cog::fn::error_raise "InputNotFound" \
+    "complexity report is missing or empty" "path: ${report}" "" \
+    "write it with 'review-plan-complexity <round> <report.yaml>'"
+  local report_json rgrade rscore
+  report_json="$(yq e -o=json '.' "$report" 2>/dev/null)" || cog::fn::error_raise "InvalidInput" \
+    "complexity report is not valid YAML" "path: ${report}" "" "regenerate it with review-plan-complexity"
+  rgrade="$(jq -r '.grade // ""' <<<"$report_json")"
+  rscore="$(jq -r 'if (.score|type)=="number" then (.score|tostring) else "" end' <<<"$report_json")"
+  [[ -n $rgrade ]] || cog::fn::error_raise "InvalidInput" \
+    "complexity report has no grade" "path: ${report}" "" "report must declare a grade"
+  [[ -n $rscore ]] || cog::fn::error_raise "InvalidInput" \
+    "complexity report has no numeric score" "path: ${report}" "" "report must declare a numeric score"
+  [[ $rgrade == "$grade" ]] || cog::fn::error_raise "InvalidInput" \
+    "report grade does not match --grade" "report: ${rgrade}, cli: ${grade}" "" "pass the grade the report states"
+  [[ "$(jq -n --argjson c "$score" --argjson r "$rscore" '$c == $r')" == true ]] || cog::fn::error_raise "InvalidInput" \
+    "report score does not match --score" "report: ${rscore}, cli: ${score}" "" "pass the score the report states"
 
   local state over_json over status now new entry
   state="$(cog::fn::round_rightsize::read_state "$state_file")"

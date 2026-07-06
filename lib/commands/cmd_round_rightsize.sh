@@ -13,7 +13,7 @@ __cog_round_rightsize_finalize_check='(.schema=="cog.round-rightsize.finalize.v1
 __cog_round_rightsize_usage() {
   cog::fn::ui_data "Usage: cog round-rightsize init --state <file> --baseline <stamped-draft.md> [--ceiling <grade>] --json"
   cog::fn::ui_data "Usage: cog round-rightsize pending --state <file> --json"
-  cog::fn::ui_data "Usage: cog round-rightsize record-grade --state <file> --round-id <id> --grade <G> --score <n> --splittable true|false [--report <path>] --json"
+  cog::fn::ui_data "Usage: cog round-rightsize record-grade --state <file> --round-id <id> --grade <G> --score <n> --splittable true|false --report <path> --json"
   cog::fn::ui_data "Usage: cog round-rightsize record-split --state <file> --round-id <id> --split-performed true|false [--child <a.md> --child <b.md>] --json"
   cog::fn::ui_data "Usage: cog round-rightsize reopen --state <file> --round-id <id> [--reason <text>] --json"
   cog::fn::ui_data "Usage: cog round-rightsize status --state <file> --json"
@@ -125,6 +125,7 @@ __cog_round_rightsize_record_grade() {
   [[ -n $grade ]] || cog::fn::error_raise "MissingArgument" "missing grade" "option: --grade" "" "run 'cog round-rightsize --help'"
   [[ -n $score ]] || cog::fn::error_raise "MissingArgument" "missing score" "option: --score" "" "run 'cog round-rightsize --help'"
   [[ -n $splittable ]] || cog::fn::error_raise "MissingArgument" "missing splittable" "option: --splittable" "" "run 'cog round-rightsize --help'"
+  [[ -n $report ]] || cog::fn::error_raise "MissingArgument" "missing report" "option: --report" "" "run 'cog round-rightsize --help'"
   __cog_round_rightsize_require_mode "$mode" record-grade
   json="$(cog::fn::round_rightsize::record_grade "$state" "$id" "$grade" "$score" "$splittable" "$report")"
   cog::fn::json_emit "$__cog_round_rightsize_grade_check" "$json"

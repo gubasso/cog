@@ -38,6 +38,19 @@ _valid_state() {
   jq -e '(.schema=="cog.round-rightsize.v1") and (.state|type=="string") and (.queue|type=="array")' "$ST" >/dev/null
 }
 
+# Write a complexity report whose grade/score match the recorded values and
+# echo its path, so record-grade's report cross-check passes.
+_report() {
+  local grade="$1" score="$2"
+  local p="${T}/rep-${grade// /_}-${score}.yaml"
+  cat >"$p" <<EOF
+grade: ${grade}
+score: ${score}
+splittable: false
+EOF
+  printf '%s' "$p"
+}
+
 @test "round-rightsize drives a full seed -> split -> finalize loop" {
   run cog round-rightsize init --state "$ST" --baseline "${T}/full-plan-draft.md" --json
   assert_success
@@ -49,7 +62,7 @@ _valid_state() {
   printf '%s\n' "$output" | jq -e '.terminal==false and (.awaiting_grade|length)==1' >/dev/null
 
   run cog round-rightsize record-grade --state "$ST" --round-id full-plan-draft \
-    --grade Extreme --score 31 --splittable true --json
+    --grade Extreme --score 31 --splittable true --report "$(_report Extreme 31)" --json
   assert_success
   printf '%s\n' "$output" | jq -e '.status=="awaiting-split"' >/dev/null
   _valid_state
@@ -65,10 +78,10 @@ _valid_state() {
   printf '%s\n' "$output" | jq -e '.terminal==false and (.awaiting_grade|length)==2' >/dev/null
 
   run cog round-rightsize record-grade --state "$ST" --round-id a \
-    --grade Low --score 8 --splittable false --json
+    --grade Low --score 8 --splittable false --report "$(_report Low 8)" --json
   assert_success
   run cog round-rightsize record-grade --state "$ST" --round-id b \
-    --grade Moderate --score 12 --splittable false --json
+    --grade Moderate --score 12 --splittable false --report "$(_report Moderate 12)" --json
   assert_success
 
   run cog round-rightsize pending --state "$ST" --json
@@ -92,7 +105,7 @@ _valid_state() {
 EOF
   cog round-rightsize init --state "$ST" --baseline "${T}/full-plan-draft.md" --json >/dev/null
   cog round-rightsize record-grade --state "$ST" --round-id full-plan-draft \
-    --grade Extreme --score 31 --splittable true --json >/dev/null
+    --grade Extreme --score 31 --splittable true --report "$(_report Extreme 31)" --json >/dev/null
   run cog round-rightsize record-split --state "$ST" --round-id full-plan-draft \
     --split-performed true --child "${T}/a.md" --child "${T}/lossy.md" --json
   assert_failure
@@ -110,5 +123,29 @@ EOF
 - [ ] No requirement tag here.
 EOF
   run cog round-rightsize init --state "$ST" --baseline "${T}/unstamped.md" --json
+  assert_failure
+}
+
+@test "round-rightsize init fails closed on a baseline with authored round sections" {
+  cat >"${T}/pre-split.md" <<'EOF'
+# Draft
+
+## Acceptance Criteria
+
+- [ ] (R1) A fails closed.
+
+### Round 1 — first slice
+
+### Round 2 — second slice
+EOF
+  run cog round-rightsize init --state "$ST" --baseline "${T}/pre-split.md" --json
+  assert_failure
+  [[ $output == *"authored round sections"* || $stderr == *"authored round sections"* ]]
+}
+
+@test "round-rightsize record-grade fails closed without --report" {
+  cog round-rightsize init --state "$ST" --baseline "${T}/full-plan-draft.md" --json >/dev/null
+  run cog round-rightsize record-grade --state "$ST" --round-id full-plan-draft \
+    --grade Low --score 8 --splittable false --json
   assert_failure
 }
