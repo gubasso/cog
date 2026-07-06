@@ -110,6 +110,7 @@ _cog() {
     review-validate-findings
     round-prompt
     round-req
+    round-rightsize
     round-split
     rundir
     runner-all-setup

@@ -82,5 +82,7 @@ Implemented. The deterministic `cog plan-complexity`, `cog round-req`, and `cog 
 exists; the Claude evaluator (`review-plan-complexity`) and splitter (`plan-split`) worker skills
 exist; the requirement-ID spine, ID-based seam hints, queue-blind splitter contract, and coverage
 semantics are registered in the shipped plan-round references. The orchestrator role is implemented by
-`skills/claude/plan-builder-to-queue/`, and grade↔executor matching is implemented by
+`skills/claude/plan-builder-to-queue/`, with the loop control flow itself owned by the `cog
+round-rightsize` state machine per [ADR-0069](0069-rightsize-loop-cog-state-machine.md); grade↔executor
+matching is implemented by
 [ADR-0056](0056-plan-round-executor-routing-contract.md) / [ADR-0054](0054-executor-capability-grading.md).

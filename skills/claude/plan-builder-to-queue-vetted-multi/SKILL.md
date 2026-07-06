@@ -112,23 +112,63 @@ only to genuinely wrong or redundant content; size reduction is the split phase'
 `review-plan-multi`'s Codex reviewer is unavailable, it proceeds Claude-only with a degradation note
 and this build continues.
 
-## Phase 4-5 — Grade and recursive right-sizing (ADR-0050 orchestrator)
+## Phase 4-5 — Recursive right-sizing (ADR-0050, cog-owned loop)
 
-Seed a work queue with the finalized plan as the single parent round. Loop until every round is at or
-under the single-session ceiling or the splitter reports an irreducible round:
+`cog round-rightsize` owns the queue and every control decision — the single-parent seed, the
+over-ceiling compare, the coverage-gated enqueue of split children, termination, and the baseline
+conservation assertion. This skill runs only the grader and splitter workers on the exact round cog
+hands back and feeds their structured verdicts in. Rounds enter the queue only through a
+coverage-passing binary split cog performs.
 
-1. Grade the round through a `claude-delegate` Agent or an inline-chain (read
-   `$HOME/.claude/skills/review-plan-complexity/SKILL.md` and follow it), not the `Skill` tool: `review-plan-complexity <round> "$WORK_DIR/complexity-reports/<round-slug>.yaml"`.
-   Read `grade`, `score`, `splittable`, and `seam_hints` (requirement-ID partitions) from the report.
-2. `cog plan-complexity over-ceiling --grade "<grade>" --json` — if not over ceiling, the round is final.
-3. If over ceiling, split through a `claude-delegate` Agent or an inline-chain (read
-   `$HOME/.claude/skills/plan-split/SKILL.md` and follow it), not the `Skill` tool: `plan-split <round> <seam-hints> "$WORK_DIR/split-verdicts/<round-slug>.yaml"`.
-   The splitter re-stamps children (`cog round-req stamp`) and verifies no requirement loss via
-   `cog round-split coverage --parent <p> --children <a> <b> --json` (refuses a lossy split).
-   Re-enqueue both children; discard the parent.
-4. Terminate per ADR-0050: a round is final when at/under ceiling **or** when `plan-split` returns
-   `split_performed: false` (irreducible) — the splitter's fact overrides the evaluator's prediction,
-   so the loop cannot run forever.
+Seed the loop with the finalized, stamped draft as the single parent round:
+
+```bash
+cog round-rightsize init --state "$WORK_DIR/rightsize.state.json" --baseline "$DRAFT_PATH" --json
+```
+
+Advance the state machine until it reports terminal:
+
+1. Read the current batch: `cog round-rightsize pending --state "$WORK_DIR/rightsize.state.json" --json`.
+   When `terminal` is true, go to finalize; otherwise process both buckets this pass.
+2. For each round in `awaiting_grade` (fan out in parallel), grade it through a `claude-delegate`
+   Agent or an inline-chain (read `$HOME/.claude/skills/review-plan-complexity/SKILL.md` and follow
+   it), not the `Skill` tool: `review-plan-complexity <round-path> "$WORK_DIR/complexity-reports/<round-id>.yaml"`.
+   Feed each report's `grade`, `score`, and `splittable` back — cog runs the ceiling compare and marks
+   the round final, awaiting-split, or irreducible:
+
+   ```bash
+   cog round-rightsize record-grade --state "$WORK_DIR/rightsize.state.json" \
+     --round-id "<round-id>" --grade "<grade>" --score "<score>" \
+     --splittable "<true|false>" --report "$WORK_DIR/complexity-reports/<round-id>.yaml" --json
+   ```
+
+3. For each round in `awaiting_split` (fan out in parallel over disjoint rounds), split it through a
+   `claude-delegate` Agent or an inline-chain (read `$HOME/.claude/skills/plan-split/SKILL.md` and
+   follow it), not the `Skill` tool, passing the round and its `seam_hints` from the report and writing
+   the two children under `$WORK_DIR/rounds-work/`:
+   `plan-split <round-path> <seam-hints> "$WORK_DIR/split-verdicts/<round-id>.yaml"`. Feed the verdict
+   back — cog runs `round-split coverage` and enqueues the two children, or fails closed on a lossy
+   split:
+
+   ```bash
+   cog round-rightsize record-split --state "$WORK_DIR/rightsize.state.json" \
+     --round-id "<round-id>" --split-performed "<true|false>" \
+     --child "<child-a.md>" --child "<child-b.md>" --json
+   ```
+
+   When `record-split` fails closed on coverage, surface the lost requirements and stop; do not
+   hand-patch the split.
+4. Loop back to step 1.
+
+When `pending` reports `terminal`, close the loop; cog asserts the final union still covers the
+baseline and returns each round with its retained grade and score:
+
+```bash
+cog round-rightsize finalize --state "$WORK_DIR/rightsize.state.json" --json
+```
+
+Read `final_rounds[]` (each carries `round_id`, `path`, `grade`, `score`, `status`) — the input to
+Phase 6 and Phase 7. If finalize fails the conservation assertion, fail closed and surface it.
 
 ## Phase 6 — Executor association
 
@@ -138,9 +178,17 @@ For each final round, take its rubric score (from the grade report's determinist
 cog power-grade match --score "<n>" --json   # -> {executor, reserved}
 ```
 
-If `reserved: true` (`score > 30`, `executor: null`), route the round back to Phase 5 to force a
-split. If it is still reserved and irreducible, **fail closed** and surface that round to the operator
-— never stamp `executor-prex` as a fallback.
+If `reserved: true` (`score > 30`, `executor: null`), reopen that round in the loop and re-run
+Phase 4-5 over it:
+
+```bash
+cog round-rightsize reopen --state "$WORK_DIR/rightsize.state.json" --round-id "<round-id>" \
+  --reason executor-reserved --json
+```
+
+Then resume Phase 4-5 (`pending` → grade/split → `finalize`) and re-match the resulting rounds. If a
+reopened round returns irreducible (`split_performed: false`), **fail closed** and surface it to the
+operator — never stamp `executor-prex` as a fallback.
 
 ## Phase 7 — Write the vault plan
 
@@ -192,6 +240,8 @@ not run git and do not implement anything.
 - This skill only WRITES the vault plan; it does not implement.
 - Producer-blind: resolve every output path through `cog plan` verbs; never hardcode `.implementation-plans/`.
 - Reserved (`>30`) rounds are never queued — hard split-or-fail (route through `plan-split`).
+- The right-sizing queue is a cog-owned state machine (`cog round-rightsize`); never seed rounds or
+  edit its state file — rounds enter only through cog's coverage-checked binary splits.
 - Chain `plan-vetted` / `review-plan-multi` / `review-plan-complexity` / `plan-split` through a
   `claude-delegate` Agent or an inline-chain (read each target's `$HOME/.claude/skills/<name>/SKILL.md`
   and follow it); never through the `Skill` tool (all four set `disable-model-invocation`).

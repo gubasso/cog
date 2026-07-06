@@ -314,6 +314,9 @@ The command list and short descriptions are sourced from command modules under
 *round-req*
 	Stamp and list round acceptance requirement IDs.
 
+*round-rightsize*
+	Drive the recursive round right-sizing queue.
+
 *round-split*
 	Check split-round requirement coverage.
 

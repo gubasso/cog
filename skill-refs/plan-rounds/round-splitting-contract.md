@@ -125,7 +125,9 @@ the final-plan criterion is matched by normalized exact text.
 
 ### Orchestrator dispatch
 
-The orchestrator switches on the two verdicts plus one `cog` compare. No branch contains analysis:
+`cog round-rightsize` switches on the two worker verdicts plus one internal ceiling compare; the
+orchestrating skill only relays the verdicts. No branch contains analysis. This dispatch table is the
+behavioral spec of cog's `record-grade`/`record-split` verbs:
 
 ```text
 report := evaluate(round)                                  # review-plan-* worker, fanned out
@@ -164,6 +166,14 @@ over-ceiling round with its two children. The recursion bottoms out when every r
 the ceiling or flagged irreducible. Because every child is re-graded, an unbalanced intermediate
 self-corrects and a natural three-way split is reached over two passes.
 
+This loop is implemented by the `cog round-rightsize` state machine ([ADR-0069]): `init` seeds the
+single parent round; `pending` drains a pass into its two parallel buckets; `record-grade` runs the
+ceiling compare; `record-split` runs coverage and enqueues the two children; `finalize` asserts the
+baseline conservation. The orchestrating skill advances it step by step and supplies only worker
+judgment; it never mutates the queue.
+
+[ADR-0069]: ../../docs/decisions/0069-rightsize-loop-cog-state-machine.md
+
 ## Ceiling policy
 
 The ceiling is the rubric bin above which a round must split: the largest grade a single execution
@@ -200,6 +210,10 @@ else hard-codes a bin.
   which skill produced them ([ADR-0026]).
 - **Queue-blind splitting.** The splitter writes child rounds and a verdict only. The caller owns
   `queue-rounds.yaml` reconciliation, either after each loop or at the end.
+- **Queue-mutation closure.** Only `cog round-rightsize record-split` appends rounds, and only after
+  `round-split coverage` passes; the seed is always exactly one parent round. No verb accepts a list of
+  rounds or reads a draft's authored sections, so a caller cannot materialize many rounds up front
+  ([ADR-0069]).
 
 [ADR-0026]: ../../docs/decisions/0026-consumer-skill-producer-blindness.md
 
@@ -215,9 +229,13 @@ The judgment lives in the three skills; the deterministic mechanics they call li
   coverage of a split (and of the final union against the baseline); fail closed on any `lost` item.
 - `cog round-req stamp <round-or-plan-path>` — idempotently assign plan-scoped requirement IDs.
 - `cog round-req list <round>` — read requirement IDs and normalized criterion text.
+- `cog round-rightsize <init|pending|record-grade|record-split|reopen|status|finalize>` — the loop
+  state machine itself. cog owns the durable JSON work queue, the single-parent seed, the over-ceiling
+  compare, the coverage-gated binary enqueue, termination, and the baseline conservation assertion.
 
-The work queue is a run-directory artifact the orchestrator drives; `cog` owns the partition, compare,
-and coverage predicates so no skill reimplements them in prose.
+The work queue is a durable JSON state file owned by `cog round-rightsize`, not orchestrator prose. The
+skill supplies only the grade and split verdicts; it cannot add a round except through a
+coverage-passing split, so no skill reimplements the loop in prose.
 
 ## Parallelism and isolation
 

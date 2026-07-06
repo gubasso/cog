@@ -124,6 +124,7 @@ Commands:
   review-validate-findings Validate review findings JSON.
   round-prompt   Assemble and validate executor-stamped round prompts.
   round-req      Stamp and list round acceptance requirement IDs.
+  round-rightsize Drive the recursive round right-sizing queue.
   round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
   runner-all-setup Parse runner-all arguments and create main queue run state.
@@ -248,6 +249,7 @@ Commands:
   review-validate-findings Validate review findings JSON.
   round-prompt   Assemble and validate executor-stamped round prompts.
   round-req      Stamp and list round acceptance requirement IDs.
+  round-rightsize Drive the recursive round right-sizing queue.
   round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
   runner-all-setup Parse runner-all arguments and create main queue run state.

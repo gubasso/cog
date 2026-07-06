@@ -77,6 +77,8 @@ source "${LIB_DIR}/functions/fn_round_req.sh"
 source "${LIB_DIR}/functions/fn_round_split.sh"
 # shellcheck source=../lib/functions/fn_round_prompt.sh
 source "${LIB_DIR}/functions/fn_round_prompt.sh"
+# shellcheck source=../lib/functions/fn_round_rightsize.sh
+source "${LIB_DIR}/functions/fn_round_rightsize.sh"
 # shellcheck source=../lib/functions/fn_match_telemetry.sh
 source "${LIB_DIR}/functions/fn_match_telemetry.sh"
 # shellcheck source=../lib/functions/fn_plan_artifact.sh
