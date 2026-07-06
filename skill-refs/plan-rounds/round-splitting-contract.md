@@ -98,6 +98,10 @@ Acceptance criteria may carry a leading plan-scoped requirement tag:
 - [ ] (R3) The command fails closed when coverage loses a parent requirement.
 ```
 
+The requirement tag is the parenthesized `(R<n>)` form on an acceptance-criteria bullet. It is a
+distinct textual form from a content-named round identifier (the `id` field) and from bare `R<n>`
+round references or `### Round N` headings, so those never collide with requirement-tag parsing.
+
 `cog round-req stamp <round-or-plan-path>` owns allocation. It scans the plan directory for the
 current max, assigns monotonic `R1`, `R2`, ... tags to untagged non-boilerplate acceptance criteria,
 and never renumbers existing tags. Directory targets stamp every round file in the plan directory,

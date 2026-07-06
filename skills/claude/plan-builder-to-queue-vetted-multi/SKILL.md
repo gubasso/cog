@@ -58,6 +58,11 @@ these resolved paths (and `cog plan new` / `cog plan path`), never a hardcoded
 `.implementation-plans/`. If a `--store local` resolve fails closed as untrusted, surface the
 `cog plan trust` instruction it prints and stop.
 
+`TITLE` is auto-derived from the orientation's first line and is overridable: pass a top-level
+`--title "<multi-word text>"` to `cog plan-builder-to-queue-setup` for a clean title up front, or
+supply `--title "$TITLE"` at Phase 7's `cog plan new`. A weak auto-derived title never requires
+re-running setup.
+
 ## Phase 1 — Interview, then generate one full-scope plan with `plan-vetted` (inline)
 
 Interview the operator with `AskUserQuestion` to settle open decisions (2–3 concrete questions only
@@ -85,6 +90,10 @@ coverage can anchor:
 ```bash
 cog round-req stamp "$DRAFT_PATH" --json
 ```
+
+Stamped requirement IDs take the parenthesized `(R<n>)` form on acceptance-criteria bullets; bare
+`R<n>` round references and `### Round N` headings are a distinct textual form that the stamper and
+`cog round-split coverage` never read as requirement IDs.
 
 ## Phase 3 — Dual-engine review with `review-plan-multi` (inline)
 

@@ -4,7 +4,7 @@
 __cog_plan_builder_to_queue_setup_self_check='(.run_dir|type=="string") and (.repo_root|type=="string") and (.orientation_file|type=="string") and (.title|type=="string") and (.store|type=="string") and (.plan_root|type=="string") and (.plans_dir|type=="string") and (.queue_path|type=="string") and (.request_path|type=="string") and (.brief_body|type=="string") and (.brief_file|type=="string") and (.draft_path|type=="string") and (.review_path|type=="string") and (.work_dir|type=="string")'
 
 __cog_plan_builder_to_queue_setup_usage() {
-  cog::fn::ui_data "Usage: cog plan-builder-to-queue-setup [--json] [arguments-string]"
+  cog::fn::ui_data "Usage: cog plan-builder-to-queue-setup [--json] [--title <text>] [--store auto|local|global] [arguments-string]"
 }
 
 # Consume only the leading --store/--title flags; keep the remaining orientation
@@ -74,9 +74,20 @@ __cog_plan_builder_to_queue_setup_parse() {
 }
 
 __cog_plan_builder_to_queue_setup_build_json() {
-  local raw="$1" store title orientation run_dir repo_root orientation_file resolve_json
+  local raw="$1" title_override="${2:-}" store_override="${3:-}"
+  local store title orientation run_dir repo_root orientation_file resolve_json
   local selected_store plan_root plans_dir queue_path first_line
   __cog_plan_builder_to_queue_setup_parse "$raw" store title orientation
+  # Genuine top-level --title/--store flags take precedence over any in-string flags,
+  # and carry multi-word values the single-token in-string parser cannot.
+  [[ -n $title_override ]] && title="$title_override"
+  if [[ -n $store_override ]]; then
+    case "$store_override" in
+      auto | local | global) store="$store_override" ;;
+      *) cog::fn::error_raise_with_exit 2 "InvalidInput" \
+        "invalid store" "option: --store ${store_override}" "expected auto, local, or global" "use --store auto|local|global" ;;
+    esac
+  fi
   run_dir="$(cog::fn::rundir_create plan-builder-to-queue)"
   repo_root="$(cog::fn::git_root)"
   orientation_file="${run_dir}/orientation.txt"
@@ -123,19 +134,48 @@ __cog_plan_builder_to_queue_setup_build_json() {
 }
 
 cog::cmd::plan_builder_to_queue_setup() {
-  local mode=human raw="" json
-  if [[ ${1:-} == --json ]]; then
-    mode="json"
-    shift
-  fi
-  case "${1:-}" in
-    -h | --help)
-      __cog_plan_builder_to_queue_setup_usage
-      return 0
-      ;;
-  esac
-  raw="${1:-}"
-  json="$(__cog_plan_builder_to_queue_setup_build_json "$raw")"
+  local mode=human raw="" title_override="" store_override="" have_raw=false json
+  while (($# > 0)); do
+    case "$1" in
+      -h | --help)
+        __cog_plan_builder_to_queue_setup_usage
+        return 0
+        ;;
+      --json)
+        mode="json"
+        shift
+        ;;
+      --title=*)
+        title_override="${1#--title=}"
+        shift
+        ;;
+      --title)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
+          "missing title" "option: --title" "" "run 'cog plan-builder-to-queue-setup --help'"
+        title_override="$2"
+        shift 2
+        ;;
+      --store=*)
+        store_override="${1#--store=}"
+        shift
+        ;;
+      --store)
+        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
+          "missing store" "option: --store" "" "run 'cog plan-builder-to-queue-setup --help'"
+        store_override="$2"
+        shift 2
+        ;;
+      *)
+        [[ $have_raw == false ]] || cog::fn::error_raise_with_exit 2 "TooManyArguments" \
+          "too many arguments" "argument: $1" "" \
+          "usage: cog plan-builder-to-queue-setup [--json] [--title <text>] [--store auto|local|global] [arguments-string]"
+        raw="$1"
+        have_raw=true
+        shift
+        ;;
+    esac
+  done
+  json="$(__cog_plan_builder_to_queue_setup_build_json "$raw" "$title_override" "$store_override")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_plan_builder_to_queue_setup_self_check" "$json"
   else

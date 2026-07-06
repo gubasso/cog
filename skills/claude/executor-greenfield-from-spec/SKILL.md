@@ -50,6 +50,9 @@ The workflow needs:
 3. A free-form target objective.
 4. User-supplied target reference-doc paths for stack, architecture, conventions, and project
    constraints.
+5. Acceptance priorities that rank the target's success criteria.
+6. Whether the target environment needs a `bootstrap` scaffold.
+7. Execution scope for the queue tail: `runner-plan` for one plan or `runner-all` for the whole queue.
 
 Ask one focused question when any required input is missing or ambiguous. Confirm that source and
 target paths differ before creating artifacts.
@@ -87,7 +90,8 @@ Deliverables go to the target project only when the implementation tail writes t
 10. Dispatch solution review. Loop solution planning and review until the bundle is approved.
 11. Dispatch `bootstrap` for target environment scaffold when the target needs setup.
 12. Run the human setup pause in `references/pause-and-handoff.md`.
-13. Hand the approved solution bundle to the plan-to-queue tail and run the selected runner.
+13. Hand the approved solution bundle to `plan-builder-to-queue-vetted-multi` as the plan-to-queue
+    tail, then run the selected runner (`runner-plan` or `runner-all`) per the chosen execution scope.
 14. Write a run report under `RUN_DIR` with artifact paths, review verdicts, leakage scan results,
    setup postcondition, runner result, and remaining risks.
 

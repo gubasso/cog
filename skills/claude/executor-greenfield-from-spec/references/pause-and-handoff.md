@@ -20,7 +20,8 @@ postcondition and ask for correction.
 
 Use the approved solution bundle as the implementation input for the plan-to-queue tail:
 
-- run the existing plan-to-queue skill or command path required by the target repo;
+- run `plan-builder-to-queue-vetted-multi` as the plan-to-queue tail — its dual-engine generation
+  and dual-engine review fit a blind greenfield reimplementation;
 - preserve requirement IDs in queue prompts;
 - use `cog round-split coverage` against `requirement-trace.yaml` before runner dispatch;
 - dispatch `runner-plan` or `runner-all` according to the user's chosen execution scope.
