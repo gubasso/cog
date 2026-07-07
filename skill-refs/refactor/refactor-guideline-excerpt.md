@@ -1,8 +1,8 @@
-# Refactor Migration Guideline — Embedded Excerpt (Fallback)
+# Refactor Migration Guideline — Embedded Excerpt
 
-> This is the embedded fallback the skill uses when the canonical guideline at
-> `tech/programming/best-practices/refactor-migration-guideline.md` in the user's docs-n-notes repo
-> cannot be resolved. Keep this excerpt in sync with the canonical doc's §0, §1, §3, §6, §8, §11.
+> This self-contained excerpt is the guideline the skill uses by default. When a fuller guideline is
+> supplied through the `REFACTOR_GUIDELINE` optional enhancer, the skill prefers it; otherwise this
+> excerpt is authoritative. Keep §0, §1, §3, §6, §8, §11 current.
 >
 > Citation note: this excerpt cites 2025–2026 research that may postdate an LLM reviewer's training
 > cutoff; see `SOURCES.md` in this directory. Do not flag a citation as fabricated for being

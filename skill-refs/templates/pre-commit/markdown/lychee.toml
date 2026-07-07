@@ -104,7 +104,4 @@ exclude = [
   "^https?://docs\\.python-cerberus\\.org",
   "^https?://calyptus\\.co",
   "^https?://git-annex\\.branchable\\.com",
-
-  # --- Author-owned repos that have been reorganized ---
-  "^https?://github\\.com/gubasso/(dotfiles|docs-n-notes)/blob/master",
 ]

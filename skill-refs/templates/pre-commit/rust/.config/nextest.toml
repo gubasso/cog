@@ -25,9 +25,9 @@ failure-output = "immediate-final"
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 2 }
 
-# Unit-test lane. Per docs-n-notes 08-testing-strategy.md, unit tests
-# run at BOTH `pre-commit` (gate every commit) and `pre-push` (gate every
-# push — guards against rebases/amends bypassing pre-commit).
+# Unit-test lane. Unit tests run at BOTH `pre-commit` (gate every commit)
+# and `pre-push` (gate every push — guards against rebases/amends bypassing
+# pre-commit).
 #
 # `kind(lib)` matches unit tests in library crates; `kind(bin)` matches
 # unit tests inside `[[bin]]` targets (binary-only crates with no [lib]).
@@ -47,7 +47,7 @@ failure-output = "immediate-final"
 # from tests/*.rs.
 #
 # True E2E (real external systems, real subprocess, real network) is NOT
-# layered here. Per docs-n-notes 08-testing-strategy.md it runs in CI only.
+# layered here; it runs in CI only.
 #
 # `fail-fast` is off so a single failure does not hide other regressions.
 [profile.pre-push]
