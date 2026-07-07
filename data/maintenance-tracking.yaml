@@ -72,15 +72,16 @@ entries:
       - skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md
   - id: match-telemetry-calibration
     path: data/power-grade/executor-capability
-    last_checked: 2026-06-30
+    last_checked: 2026-07-07
     cadence_days: 30
     owner: power-grade policy
     why: "Plan→executor match-outcome telemetry accumulates cross-project; periodically review whether the executor-capability powers / complexity-rubric weights should be refit against observed over/under-powered rounds. Grades are never auto-mutated (ADR-0008)."
-    revalidate_how: "Run cog match-telemetry report; review the over-powered / under-powered / needs-review rows; decide whether to refit executor-capability powers or complexity-rubric weights; apply by hand if warranted, then update last_checked. Never auto-applied."
+    revalidate_how: "Run cog match-telemetry report; review the over-powered / under-powered / needs-review rows; decide whether to refit executor-capability powers or complexity-rubric weights; append a review entry to calibration-reviews.yaml recording the corpus, rollup, decision, and rationale (freeze the report JSON under calibration-reports/); apply a refit by hand only if warranted; then update last_checked. Never auto-applied."
     references:
       - docs/decisions/0058-match-outcome-telemetry-and-calibration-loop.md
       - data/power-grade/executor-capability/passes.yaml
       - data/power-grade/executor-capability/calibration.yaml
+      - data/power-grade/executor-capability/calibration-reviews.yaml
       - skill-refs/plan-rounds/complexity-rubric.md
   - id: research-shelf
     path: data/research-shelf/index.jsonl

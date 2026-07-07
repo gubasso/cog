@@ -63,3 +63,24 @@ grades:
 
 The refit decision is human-gated by the `match-telemetry-calibration` entry in
 `data/maintenance-tracking.yaml`, surfaced on `cog tracking-scan`.
+
+## Calibration review log
+
+The telemetry stream is the raw evidence corpus; it does not record the human's verdict. Each
+`report`-based review appends one entry to the decision journal at
+`data/power-grade/executor-capability/calibration-reviews.yaml` — a hand-maintained YAML with a
+`schema_version` and a `reviews:` list, so the *what/when/why* of every calibration decision
+accumulates over time. A review entry is self-contained:
+
+- `date`, `reviewer`, and `scope` (`project_key` + `plan_slug` reviewed).
+- `corpus` and `rollup` — the report's counts and verdict tallies at review time.
+- `rounds` — the per-round `score`/`grade`/`executor`/`result`/`marginal_value`/`quality` reviewed.
+- `decision` (`no-refit` or a description of the applied refit) and a prose `rationale`.
+- `report_snapshot` — path to the frozen `cog match-telemetry report --json` output for this cycle,
+  committed under `data/power-grade/executor-capability/calibration-reports/<date>-<scope>.json` as
+  byte-exact evidence.
+
+A review cycle is: run `report`, append a `reviews:` entry, freeze the report JSON snapshot, apply a
+refit by hand only if warranted, then bump the entry's `last_checked` in
+`data/maintenance-tracking.yaml`. The journal is not read by the CLI — it is the durable human-decision
+history beside the machine corpus.

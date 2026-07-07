@@ -1,0 +1,104 @@
+{
+  "schema": "cog.match-telemetry.report.v1",
+  "ok": true,
+  "filters": {
+    "project_key": "podbox-746b98779154d4c8",
+    "since": ""
+  },
+  "predictions": 24,
+  "outcomes": 5,
+  "matched": 5,
+  "unmatched_outcomes": 0,
+  "pending_predictions": 19,
+  "rows": [
+    {
+      "project_key": "podbox-746b98779154d4c8",
+      "plan_slug": "podbox-greenfield-implementation-from-spec",
+      "round_id": "config-and-composition-core",
+      "predicted_executor": "executor-prex",
+      "actual_executor": "executor-prex",
+      "score": 27,
+      "grade": "Very High",
+      "result": "pass",
+      "reverted": false,
+      "retries": 0,
+      "marginal_value": 7,
+      "matched_prediction": true,
+      "match_quality": "well-matched",
+      "needs_review": false
+    },
+    {
+      "project_key": "podbox-746b98779154d4c8",
+      "plan_slug": "podbox-greenfield-implementation-from-spec",
+      "round_id": "adapters-services-and-diagnostics",
+      "predicted_executor": "executor-prex",
+      "actual_executor": "executor-prex",
+      "score": 25,
+      "grade": "Very High",
+      "result": "pass",
+      "reverted": false,
+      "retries": 0,
+      "marginal_value": 1,
+      "matched_prediction": true,
+      "match_quality": "well-matched",
+      "needs_review": false
+    },
+    {
+      "project_key": "podbox-746b98779154d4c8",
+      "plan_slug": "podbox-greenfield-implementation-from-spec",
+      "round_id": "microvm-backend-and-guest-channel",
+      "predicted_executor": "executor-prex",
+      "actual_executor": "executor-prex",
+      "score": 30,
+      "grade": "Very High",
+      "result": "pass",
+      "reverted": false,
+      "retries": 0,
+      "marginal_value": 1,
+      "matched_prediction": true,
+      "match_quality": "well-matched",
+      "needs_review": false
+    },
+    {
+      "project_key": "podbox-746b98779154d4c8",
+      "plan_slug": "podbox-greenfield-implementation-from-spec",
+      "round_id": "workspace-lifecycle-and-network",
+      "predicted_executor": "executor-prex",
+      "actual_executor": "executor-prex",
+      "score": 26,
+      "grade": "Very High",
+      "result": "pass",
+      "reverted": false,
+      "retries": 0,
+      "marginal_value": 5,
+      "matched_prediction": true,
+      "match_quality": "well-matched",
+      "needs_review": false
+    },
+    {
+      "project_key": "podbox-746b98779154d4c8",
+      "plan_slug": "podbox-greenfield-implementation-from-spec",
+      "round_id": "product-surface-and-verification",
+      "predicted_executor": "executor-prex",
+      "actual_executor": "executor-prex",
+      "score": 25,
+      "grade": "Very High",
+      "result": "pass",
+      "reverted": false,
+      "retries": 0,
+      "marginal_value": 6,
+      "matched_prediction": true,
+      "match_quality": "well-matched",
+      "needs_review": false
+    }
+  ],
+  "rollup": {
+    "well-matched": 5,
+    "over-powered": 0,
+    "under-powered": 0,
+    "needs_review": 0,
+    "by_executor": {
+      "executor-prex": 5
+    }
+  }
+}
