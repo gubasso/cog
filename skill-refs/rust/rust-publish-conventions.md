@@ -41,6 +41,10 @@ would ship; the publish worker surfaces a recommended `exclude` list to `bootstr
 
 ## Publishing workflow and release tool
 
+Version source of truth (shared model, see `release/release-workflow-conventions.md`): `Cargo.toml`
+`[package] version` is the committed authoring source of truth, bumped in place by the release tool;
+the annotated `vX.Y.Z` tag is derived from it and is the published record.
+
 `release-plz` is the CI-first default. It opens a release PR that bumps the version and updates the
 changelog, `Cargo.toml`, and `Cargo.lock`, then tags, releases, and publishes on merge; it runs
 `cargo-semver-checks` natively for library packages. Prefer it whenever the project publishes from CI.

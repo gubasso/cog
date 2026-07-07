@@ -92,3 +92,13 @@ entries:
     revalidate_how: "Run cog tracking-scan, re-research overdue shelf topics from current sources, append refreshed findings with cog research-shelf record, then update this registry entry's last_checked date."
     references:
       - docs/reference/research-shelf/README.md
+  - id: release-workflow-conventions
+    path: skill-refs/release/release-workflow-conventions.md
+    last_checked: 2026-07-07
+    cadence_days: 180
+    owner: bootstrap-ci
+    why: "Per-ecosystem release tooling, release-please's extra-files behavior, and trusted-publishing practice drift; the bootstrap release setup rests on them."
+    revalidate_how: "Web-research authoritative sources (git-cliff, release-plz.dev, Changesets, release-please, crates.io Trusted Publishing docs); re-confirm the per-ecosystem table and the release-please plain-file disqualification, then update last_checked and any release templates."
+    references:
+      - skills/claude/bootstrap-ci/SKILL.md
+      - skill-refs/templates/release/github

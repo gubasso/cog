@@ -25,6 +25,25 @@ setup() {
   printf '%s\n' "$output" | jq -e '[.copied[].dst] | any(endswith("/.gitlab-ci.yml"))' >/dev/null
 }
 
+@test "cog ci-apply --with-release also lands the release workflow, cliff.toml, and VERSION" {
+  run cog ci-apply --project-root "${BATS_TEST_TMPDIR}/repo" --target github --with-release --json
+
+  assert_success
+  [ -f "${BATS_TEST_TMPDIR}/repo/.github/workflows/ci.yml" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/.github/workflows/release.yml" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/cliff.toml" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/VERSION" ]
+  printf '%s\n' "$output" | jq -e '.ok == true and ([.copied[].dst] | any(endswith("/.github/workflows/release.yml")) and any(endswith("/VERSION")) and any(endswith("/cliff.toml")))' >/dev/null
+}
+
+@test "cog ci-apply without --with-release leaves release files out" {
+  run cog ci-apply --project-root "${BATS_TEST_TMPDIR}/repo" --target github --json
+
+  assert_success
+  [ ! -f "${BATS_TEST_TMPDIR}/repo/.github/workflows/release.yml" ]
+  [ ! -f "${BATS_TEST_TMPDIR}/repo/VERSION" ]
+}
+
 @test "cog ci-apply rejects an unknown target" {
   run --separate-stderr cog ci-apply --project-root "${BATS_TEST_TMPDIR}/repo" --target bitbucket --json
 

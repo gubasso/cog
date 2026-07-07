@@ -23,6 +23,8 @@ project's actual task runner and toolchain.
 ## Inputs
 
 - Template directory: cog's `skill-refs/templates/ci/` tree, or a caller-supplied `--template-root`.
+- Release-workflow reference: `$(cog skill-refs path release/release-workflow-conventions.md)` — the
+  version source-of-truth model and the release tool to pick per ecosystem.
 - Current working directory: the target project.
 
 ## Cog Contract
@@ -108,9 +110,14 @@ whenever a `flake.nix` exists. `stamp` fails fast when the template SoT is not w
    conventional toolchain for the language and call the task runner directly. Flake reuse is a verified
    postcondition: when reconciling a pre-existing pipeline that predates the flake, add the
    `nix develop` wrapping rather than leaving CI on a divergent toolchain. When the brief carries
-   publishing or release workflow requirements, add the release job they describe (for a release-plz
-   crate: `permissions: id-token: write` and no `CARGO_REGISTRY_TOKEN`, the first publish stays manual,
-   and an optional binary-distribution job), reconciled under the conflict policy.
+   publishing or release workflow requirements, pick the release tooling from the release-workflow
+   reference by ecosystem. For a Bash or other no-registry project the committed `VERSION` is the
+   version source of truth bumped in place by git-cliff, and the annotated `v*` tag mirrors it; deploy
+   the git-cliff + tag-triggered release core with `cog ci-apply --with-release` (adds `release.yml`,
+   `cliff.toml`, and a committed `VERSION`), then wire `release.yml` to the flake and task runner like
+   the other jobs. For a release-plz crate keep the release-plz job shape (`permissions: id-token:
+   write`, no `CARGO_REGISTRY_TOKEN`, first publish manual, optional binary-distribution job).
+   Reconcile every release file under the conflict policy.
 
 7. Present a final summary: the target deployed, the jobs wired to the flake or conventional
    toolchain, the task names each job runs, and any pre-existing pipeline reconciled.

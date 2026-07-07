@@ -1,0 +1,44 @@
+# Release workflow — triggered by a v* tag, which mirrors the committed VERSION.
+# The committed VERSION is the source of truth; the tag is the published record.
+# Cut a release locally with the git-cliff ritual (see cliff.toml):
+#   git-cliff --bump -o CHANGELOG.md      # write changelog + compute next version
+#   NEW=$(git-cliff --bumped-version)     # e.g. v0.2.0
+#   printf '%s\n' "${NEW#v}" > VERSION    # VERSION mirrors the tag
+#   git commit -am "chore(release): ${NEW}"
+#   git tag -s "${NEW}" -m "${NEW}"
+#   git push --follow-tags                # this workflow takes it from here
+#
+# Default path reuses the project's Nix devshell so CI runs the same toolchain as
+# local development. When the project has no flake.nix, drop the "Install Nix"
+# step and call the task runner directly after setting up the language toolchain.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Test
+        run: nix develop --command just test
+      - name: Build distribution tarball
+        run: nix develop --command just dist
+      - name: Generate release notes
+        run: nix develop --command git-cliff --latest --strip header -o RELEASE_NOTES.md
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md dist/*
