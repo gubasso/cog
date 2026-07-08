@@ -5,7 +5,7 @@ setup() {
   export HOME="${BATS_TEST_TMPDIR}/home"
   export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
-  unset RUN_DIR RIPTASK_REPO
+  unset RUN_DIR
   export REFACTOR_GUIDELINE="${BATS_TEST_TMPDIR}/guideline.md"
   mkdir -p "$HOME" "$XDG_DATA_HOME/cog/skill-refs/refactor" "$XDG_STATE_HOME" "${BATS_TEST_TMPDIR}/source" "${BATS_TEST_TMPDIR}/target"
   printf 'templates\n' >"${XDG_DATA_HOME}/cog/skill-refs/refactor/refactor-plan-templates.md"

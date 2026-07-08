@@ -35,4 +35,6 @@ while deterministic resolution of shipped reference content lives in `cog`.
 ## Status
 
 Accepted. Enacted by [`cog skill-refs`](../../lib/commands/cmd_skill_refs.sh) and the packaged
-`skill-refs/` tree.
+`skill-refs/` tree. The "optional enhancer" framing in the Decision Outcome is generalized and
+superseded by [ADR-0071](0071-repository-self-containment.md): a load-bearing dependency on any
+external/local/personalized resource is disallowed, not merely discouraged.

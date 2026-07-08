@@ -81,4 +81,5 @@ commit result lines.
 ## Status
 
 Accepted / Implemented (2026-06-17). Current queue orchestration uses `runner-all`, `runner-plan`,
-`claude-delegate`, and executor skills. Mirrored as ADR-0001 in the dotfiles and `cog` repos.
+`claude-delegate`, and executor skills. Recorded in-repo as
+[ADR-0007](../../docs/decisions/0007-in-session-subagent-delegation.md).

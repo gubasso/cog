@@ -18,8 +18,9 @@ This is the generic, portable OBS skill. It reads configuration from environment
 same skill can drive any OBS overlay project. Per-project copies may hard-code constants, but this
 generic version stays environment-driven.
 
-The skill's generic OBS reference content lives at `~/DocsNNotes/tech/tools/osc-obs/`. Project-
-specific references may be supplied through `$OBS_DOCS_DIR`.
+The skill's generic OBS reference content ships in-repo and resolves through
+`cog skill-refs path osc-obs/<file>`. Project-specific references may be supplied through
+`$OBS_DOCS_DIR`.
 
 Per-lane runbooks are inputs to the skill. They are not skill-owned and are not edited
 unilaterally.
@@ -43,13 +44,12 @@ You may only edit files under:
 - `$OBS_DOCS_DIR/` if set
 - the log directory supplied by the invoker for the current runbook run
 
-All other paths are off-limits, including the consumer project's source tree, user-owned
-configuration, and generic DocsNNotes paths outside `~/DocsNNotes/tech/tools/osc-obs/`, except where
-this skill explicitly says to persist reusable generic findings.
+All other paths are off-limits, including the consumer project's source tree and user-owned
+configuration. The shipped `osc-obs/` reference tree is read-only and is never an edit target.
 
 If a step asks you to edit outside the allowed roots, stop and surface the issue to the user.
 
-## Agent-helper Contract
+## Cog Contract
 
 `cog` must be installed and on `PATH`; a bare call fails
 legibly if it is missing. Create the run directory and output paths:
@@ -76,7 +76,7 @@ If `osc-preflight` exits non-zero, stop. Surface `.reason` and the checks whose 
 `pass`. If `.checks.auth_probe.details.auth_class` is present, map it to the remediation below:
 
 - `creds_invalid`: re-seed the `oscrc` per
-  `~/DocsNNotes/tech/tools/osc-obs/auth-in-devcontainers.md`, Tier 1.
+  `$(cog skill-refs path osc-obs/auth-in-devcontainers.md)`, Tier 1.
 - `keyring_unavailable`: use a headless-friendly `oscrc` with
   `credentials_mgr_class = osc.credentials.ObfuscatedConfigFileCredentialsManager`.
 - `network`: check network egress, proxy, DNS, TLS, or firewall before any further step.
@@ -261,7 +261,7 @@ semantics, OBS resolver rules, or package versions from memory.
 Consult sources in this order:
 
 1. `$OBS_DOCS_DIR/` if supplied.
-2. `~/DocsNNotes/tech/tools/osc-obs/`.
+2. The shipped `osc-obs/` reference tree (`cog skill-refs path osc-obs/...`).
 3. Invoker-supplied runbook and log directory.
 4. `osc --help`, `osc <verb> --help`, `man osc`, and read-only API probes.
 5. Upstream OBS/openSUSE/SUSE docs and the OBS web UI.
@@ -274,8 +274,8 @@ Cite the URL or local path in the structured output summary when it drove the de
 Always record the source URL or local path in the run's closing log next to the decision it
 informed.
 
-Reusable generic findings may be appended to `~/DocsNNotes/tech/tools/osc-obs/<topic>.md` and the
-subtree index. Project-specific findings go to `$OBS_DOCS_DIR/<topic>.md` when set.
+Project-specific findings go to `$OBS_DOCS_DIR/<topic>.md` when set; otherwise they stay in the
+run's log directory. The shipped `osc-obs/` reference tree is read-only and is not a findings sink.
 
 ## Structured Output
 

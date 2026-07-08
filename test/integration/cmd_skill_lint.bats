@@ -538,7 +538,7 @@ EOF
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   assert_failure
-  [[ $stderr == *"skill-docs-notes-repo-reference"* ]]
+  [[ $stderr == *"skill-external-repo-dependency"* ]]
 }
 
 @test "cog skill-lint forbidden reference rules ignore governance docs" {
@@ -550,7 +550,7 @@ EOF
 
   assert_failure
   [[ $stderr != *"skill-codex-conventions-reference"* ]]
-  [[ $stderr != *"skill-docs-notes-repo-reference"* ]]
+  [[ $stderr != *"skill-external-repo-dependency"* ]]
 }
 
 @test "cog skill-lint accepts multi-line while-read argv builders" {
@@ -1086,7 +1086,7 @@ EOF
   run --separate-stderr cog skill-lint "$ref"
 
   assert_failure
-  [[ $stderr == *"skill-refs-docs-notes-repo-reference"* ]]
+  [[ $stderr == *"skill-refs-external-repo-dependency"* ]]
 }
 
 @test "cog skill-lint accepts a clean runtime skill-refs file" {
@@ -1112,7 +1112,7 @@ EOF
 
   # templates/ is a deploy payload, not a runtime ref: the self-containment rule
   # does not fire (the default scan and pre-commit hook both exclude templates/).
-  [[ $stderr != *"skill-refs-docs-notes-repo-reference"* ]]
+  [[ $stderr != *"skill-refs-external-repo-dependency"* ]]
 }
 
 write_mapped_consumer() {

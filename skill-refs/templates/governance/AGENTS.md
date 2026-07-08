@@ -8,10 +8,12 @@ read one authored document.
 ## Self-Containment
 
 Non-negotiable: this project is self-contained. The knowledge it depends on is held in-repo. An
-external reference is allowed only as a public external link or citation for further reading, never
-as a load-bearing internal dependency: if an external document is required to understand, build, or
-operate this project, copy its essential knowledge into the repository (a doc, an ADR, or an inline
-comment) so the repo stays complete on its own.
+external reference is allowed only as a public link or citation for further reading — never as a
+load-bearing dependency on a resource outside the repository, and in particular never on an
+external, local, personalized, or mutating repository, path, or tool. If an external document, repo,
+or personal path is required to understand, build, or operate this project, copy its essential
+knowledge into the repository (a doc, an ADR, or an inline comment) so the repo stays complete on
+its own.
 
 ## Decisions
 

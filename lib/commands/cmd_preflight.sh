@@ -286,7 +286,7 @@ __cog_preflight_agents() {
     if [[ $no_cache == false && -n $cache_file ]] && __cog_preflight_cache_fresh "$cache_file"; then
       jq 'del(._cache_stamp)' "$cache_file" >"$out" || cog::fn::error_raise "JsonWriteFailed" \
         "could not materialize cached preflight fragment" "path: ${out}" "" "check output path permissions"
-      jq -e '.docs_notes_repo != null' "$out" >/dev/null 2>&1 || cog::fn::error_raise "InvalidJsonOutput" \
+      jq -e '.skill_refs != null' "$out" >/dev/null 2>&1 || cog::fn::error_raise "InvalidJsonOutput" \
         "cached preflight fragment failed validation" "path: ${cache_file}" "" "rerun without cache"
       cog::fn::ui_data "RESOLVED ${out}"
       return 0
@@ -312,8 +312,8 @@ __cog_preflight_agents() {
     --argjson available "$docs_available" \
     --arg path "$refs_root" \
     --argjson refs "$refs_json" \
-    '{classification: $classification, docs_notes_repo: {available: $available, path: $path, relevant_agents_md: $refs}}')"
-  __cog_preflight_write "$out" '.docs_notes_repo != null' "$json"
+    '{classification: $classification, skill_refs: {available: $available, path: $path, relevant_agents_md: $refs}}')"
+  __cog_preflight_write "$out" '.skill_refs != null' "$json"
 
   if [[ $no_cache == false && -n $cache_file ]]; then
     mkdir -p "$(dirname "$cache_file")"

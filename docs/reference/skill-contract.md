@@ -29,9 +29,10 @@ Codex invocation mechanics are exposed to skills through `cog codex-runner` subc
 `docs/reference/` is maintenance documentation for that command surface, not a runtime skill
 dependency.
 
-External docs shelves, including DocsNNotes, are optional runtime enhancers only. When guidance is
-load-bearing for a shipped skill, import it into `skill-refs/` and resolve it with `cog skill-refs
-path`.
+Any external or local docs repository is optional further reading only, never a load-bearing runtime
+dependency. When guidance is load-bearing for a shipped skill, import it into `skill-refs/` and
+resolve it with `cog skill-refs path`. See
+[ADR-0071](../decisions/0071-repository-self-containment.md).
 
 ## SoT executor delegation
 
@@ -373,13 +374,13 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
 - `skill-codex-conventions-reference`: a runtime skill body references the maintenance-only Codex
   conventions document instead of the `cog codex-runner` command surface. The scan skips
   frontmatter and applies only to `skills/**/SKILL.md` runtime skill files.
-- `skill-docs-notes-repo-reference`: a runtime skill body references `DOCS_NOTES_REPO` instead of a
-  bundled `skill-refs/` resource. The scan skips frontmatter and applies only to runtime skill
-  files.
-- `skill-refs-codex-conventions-reference` / `skill-refs-docs-notes-repo-reference`: a runtime
+- `skill-external-repo-dependency`: a runtime skill body takes a load-bearing dependency on an
+  external or local docs repository (e.g. a `DOCS_NOTES_REPO`-style shelf) instead of a bundled
+  `skill-refs/` resource. The scan skips frontmatter and applies only to runtime skill files.
+- `skill-refs-codex-conventions-reference` / `skill-refs-external-repo-dependency`: a runtime
   `skill-refs/**` reference (the docs skills load via `cog skill-refs path`) names the maintenance-only
-  Codex conventions document or `DOCS_NOTES_REPO`. The same golden rules bind the refs a skill loads,
-  not just the `SKILL.md` body. The `skill-refs/templates/**` deploy payload is exempt.
+  Codex conventions document or an external/local docs repository. The same golden rules bind the refs
+  a skill loads, not just the `SKILL.md` body. The `skill-refs/templates/**` deploy payload is exempt.
 
 Codex skills do not require `trigger-tests`.
 

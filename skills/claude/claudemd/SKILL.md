@@ -26,7 +26,7 @@ Deterministic audit mechanics are delegated to
 
 If no CLAUDE.md is found, tell the user and stop. Suggest running `/init` to create one.
 
-## Agent-helper Contract
+## Cog Contract
 
 `cog` must be installed and on `PATH`; a bare call fails
 legibly if it is missing. Create the run directory and audit output path:

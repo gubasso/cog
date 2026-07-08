@@ -6,7 +6,7 @@ setup() {
   export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
   export RUN_DIR="${BATS_TEST_TMPDIR}/run"
-  unset DOCS_NOTES_REPO REFACTOR_GUIDELINE RIPTASK_REPO
+  unset REFACTOR_GUIDELINE
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$RUN_DIR" "${BATS_TEST_TMPDIR}/repo/skills/claude" "${BATS_TEST_TMPDIR}/repo/skills/codex"
 }
 

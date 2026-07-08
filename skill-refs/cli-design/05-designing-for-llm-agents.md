@@ -515,7 +515,7 @@ test-writing skill):
 - **Surface coverage AND mutation score.** Coverage alone is the wrong signal; a `make mutate` (or
   equivalent) target keeps mutation testing one keystroke away. See
   [08a § Mutation testing](08-testing-and-quality/testing-tools.md#mutation-testing).
-- **Audit existing tests with the `test-review` skill.** The skill ships with the dotfiles (Claude
+- **Audit existing tests with the `test-review` skill.** The skill ships with cog (Claude
   planner + Codex implementer) and lints any project's test suite against the principles file,
   producing a refactor plan tied to the specific heuristic each finding violates.
 

@@ -31,7 +31,7 @@ The user provides:
 2. Patch URL - the suckless.org page for this patch, such as
    `https://dwm.suckless.org/patches/vanitygaps/`.
 
-## Agent-helper Contract
+## Cog Contract
 
 `cog` must be installed and on `PATH`; a bare call fails legibly if it is
 missing. Create the run directory and output paths:

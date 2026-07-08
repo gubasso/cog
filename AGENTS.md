@@ -94,19 +94,27 @@ itself. CLI data is YAML split one file per top-level table, except append-only 
 
 ## Reference Self-Containment
 
-`skill-refs/` is the single source of truth for every skill-external resource: read-only references
-live under `skill-refs/<area>/`, and deploy-payload templates that commands copy into a user's project
-live under `skill-refs/templates/<domain>/` (e.g. `pre-commit`, `editorconfig`). The whole tree ships
-in-repo, installs to `$XDG_DATA_HOME/cog/skill-refs`, and resolves through `cog skill-refs` /
-`cog::fn::skill_refs_root` (`cog::fn::template::root <domain>` for template roots). External docs are
-optional runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
-internal runtime dependency. See `docs/decisions/0017-reference-self-containment.md` and
+Non-negotiable: this repository depends only on knowledge held in-repo. An external reference is
+allowed only as a public link or citation for further reading — never as a load-bearing dependency
+on a resource outside the repository, and in particular never on an external, local, personalized,
+or mutating repository, path, or tool. When external knowledge is load-bearing, copy its essential
+substance in-repo (a doc, an ADR, a `skill-refs/` reference, or an inline note) so the repo stays
+complete on its own. See `docs/decisions/0071-repository-self-containment.md`. The same principle is
+seeded into every bootstrapped project by the governance domain.
+
+The mechanics that keep cog self-contained: `skill-refs/` is the single source of truth for every
+skill-external resource — read-only references live under `skill-refs/<area>/`, and deploy-payload
+templates that commands copy into a user's project live under `skill-refs/templates/<domain>/` (e.g.
+`pre-commit`, `editorconfig`). The whole tree ships in-repo, installs to
+`$XDG_DATA_HOME/cog/skill-refs`, and resolves through `cog skill-refs` / `cog::fn::skill_refs_root`
+(`cog::fn::template::root <domain>` for template roots). Public online docs are welcome as further
+reading only. See `docs/decisions/0017-reference-self-containment.md` and
 `docs/decisions/0023-skill-refs-unified-resource-sot.md`.
 
-Runtime skills never depend on `docs/reference/codex-conventions.md` or `DOCS_NOTES_REPO`. Codex
-behavior comes from `cog codex-runner`, and load-bearing shared references are imported to
-`skill-refs/` and resolved with `cog skill-refs path`. Shared judgment workflows delegate to a
-canonical runtime skill instead of reimplementing the workflow inline. See
+Runtime skills never depend on `docs/reference/codex-conventions.md` or on any external or local
+docs repository. Codex behavior comes from `cog codex-runner`, and load-bearing shared references
+are imported to `skill-refs/` and resolved with `cog skill-refs path`. Shared judgment workflows
+delegate to a canonical runtime skill instead of reimplementing the workflow inline. See
 `docs/decisions/0024-skill-reference-self-containment-golden-rules.md` and
 `docs/decisions/0025-sot-executor-delegation.md`.
 

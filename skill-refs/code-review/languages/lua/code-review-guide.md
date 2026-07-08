@@ -68,4 +68,5 @@ Lua is rarely the host language for a standalone CLI. If reviewing one:
 
 - General: [../code-quality-universal.md](../code-quality-universal.md),
   [../common-bugs.md](../common-bugs.md).
-- Neovim user-config conventions: project-specific (`lua/host-<hostname>.lua` per dotfiles pattern).
+- Neovim user-config conventions: project-specific (`lua/host-<hostname>.lua` per common
+  host-specific config practice).

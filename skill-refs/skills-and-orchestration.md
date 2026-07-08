@@ -189,11 +189,11 @@ parent literally cannot observe the child's intermediate tool calls.
 `Agent(general-purpose, "Read the skill file at … and follow it")` prompt must reference the skill
 via an **absolute path** rooted at `$HOME/.claude/skills/<name>/SKILL.md`, never a repo-relative
 `claude/.claude/skills/…`. Forked subagents inherit the parent's cwd, which is the **target repo**
-where the orchestrator was invoked — not the dotfiles repo. A relative path only resolves when the
-user happens to be running the orchestrator from inside `~/.dotfiles`, and silently fails with a
-misleading "skill file does not exist" error from every other repo. `$HOME/.claude/skills/` is the
-stow-symlinked tree the Claude Code harness already indexes, so it is guaranteed present whenever
-the skill is dispatchable at all. This rule applies to every delegation site across `executor-prex` and any
+where the orchestrator was invoked — not wherever the skills were authored. A relative path only
+resolves when the user happens to be running the orchestrator from inside the skills' source
+checkout, and silently fails with a misleading "skill file does not exist" error from every other
+repo. `$HOME/.claude/skills/` is the installed tree the Claude Code harness already indexes, so it
+is guaranteed present whenever the skill is dispatchable at all. This rule applies to every delegation site across `executor-prex` and any
 future orchestrator.
 
 Command shims under `claude/.claude/commands/*.md` are the **only** legitimate use of the `Skill`
@@ -225,8 +225,8 @@ the correct lane depends on (a) whether the target skill has `disable-model-invo
    the harness intercepts the string and re-dispatches it as a command. Chain-expansion through
    shims is not a mechanism. This is why the `/pre`, `/prea`, `/prear` shims (which used to inject a
    mode marker and call the Skill tool) have been deleted: the Skill-tool path is blocked, and the
-   chain-to-slash-command path does not exist. See the Claude Code Invocation Cheatsheet (optional
-   external DocsNNotes reference) for the replacement syntax.
+   chain-to-slash-command path does not exist. See the public Claude Code documentation for the
+   replacement invocation syntax.
 
 3. **Forking sub-skills dispatched from a shim still work.** When the target sub-skill declares
    `context: fork` + `agent:` in its frontmatter, the harness forks a real subagent on dispatch and
@@ -253,8 +253,7 @@ dispatch a `disable-model-invocation: true` orchestrator via the Skill tool and 
 - `claude/.claude/commands/prea.md` → use `/executor-prex -a <task>`
 - `claude/.claude/commands/prear.md` → use `/executor-prex -ar <task>`
 
-See the Claude Code Invocation Cheatsheet (optional external DocsNNotes reference) for the one-page
-user-facing reference.
+See the public Claude Code documentation for the user-facing invocation reference.
 
 ## Orchestrator Recipe
 
@@ -565,8 +564,8 @@ optimistically.
 ## See Also
 
 - [`skill-authoring/skill-script-extraction.md`](skill-authoring/skill-script-extraction.md) — when
-  to move deterministic shell out of a `SKILL.md` body into a versioned `agent-helper` subcommand,
+  to move deterministic shell out of a `SKILL.md` body into a versioned `cog` subcommand,
   and the `msg` output/status contract parents parse.
-- ~/.dotfiles/claude/.claude/skills/executor-prex/SKILL.md
-- ~/.dotfiles/claude/.claude/skills/review-plan-oneshot/SKILL.md
-- ~/.dotfiles/claude/.claude/skills/review-loop/SKILL.md
+- `skills/claude/executor-prex/SKILL.md`
+- `skills/claude/review-plan-oneshot/SKILL.md`
+- `skills/claude/review-loop/SKILL.md`

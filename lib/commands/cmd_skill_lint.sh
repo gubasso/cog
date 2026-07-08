@@ -374,8 +374,8 @@ __cog_skill_lint_check_forbidden_runtime_refs() {
       failed=1
     fi
     if [[ $line == *"DOCS_NOTES_REPO"* ]]; then
-      __cog_skill_lint_finding "$file" "$line_no" "skill-docs-notes-repo-reference" \
-        "runtime skill references DOCS_NOTES_REPO" \
+      __cog_skill_lint_finding "$file" "$line_no" "skill-external-repo-dependency" \
+        "runtime skill takes a load-bearing dependency on an external/local docs repository" \
         "import load-bearing references to skill-refs and resolve them with cog skill-refs path"
       failed=1
     fi
@@ -540,8 +540,8 @@ __cog_skill_lint_check_skill_refs_forbidden() {
       failed=1
     fi
     if [[ $line == *"DOCS_NOTES_REPO"* ]]; then
-      __cog_skill_lint_finding "$file" "$line_no" "skill-refs-docs-notes-repo-reference" \
-        "runtime skill-refs references DOCS_NOTES_REPO" \
+      __cog_skill_lint_finding "$file" "$line_no" "skill-refs-external-repo-dependency" \
+        "runtime skill-refs takes a load-bearing dependency on an external/local docs repository" \
         "import the reference into skill-refs and resolve it with cog skill-refs path"
       failed=1
     fi

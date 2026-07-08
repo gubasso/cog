@@ -617,10 +617,9 @@ asserting about.
 
 ---
 
-These heuristics drive the lint rules in the
-[`test-review` skill](../../../.../dotfiles/claude/.claude/skills/test-review/) (Claude planner +
-Codex implementer, ships with the dotfiles). Invoke the skill on any project to audit the suite
-against this principles file and produce a refactor plan.
+These heuristics drive the lint rules in the `test-review` skill (`skills/claude/test-review/`;
+Claude planner + Codex implementer, ships with cog). Invoke the skill on any project to audit the
+suite against this principles file and produce a refactor plan.
 
 ## What to mock, what not to mock
 

@@ -5,7 +5,7 @@ setup() {
   export HOME="${BATS_TEST_TMPDIR}/home"
   export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
-  unset RUN_DIR DOCS_NOTES_REPO REFACTOR_GUIDELINE RIPTASK_REPO
+  unset RUN_DIR REFACTOR_GUIDELINE
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "${BATS_TEST_TMPDIR}/source/src" "${BATS_TEST_TMPDIR}/run"
   printf '[package]\nname = "demo"\n' >"${BATS_TEST_TMPDIR}/source/Cargo.toml"
   printf '# Demo\n' >"${BATS_TEST_TMPDIR}/source/README.md"
