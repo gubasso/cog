@@ -45,6 +45,7 @@ tiers:
       - ask
       - executor-prex
       - review-plan-oneshot
+      - review-oneshot
     use_when: |-
       Open-ended reasoning: exploring a codebase, planning, asking or answering questions,
       reviewing a plan, and deciding an approach. The hard reasoning happens during the task.
@@ -119,8 +120,7 @@ tiers:
       - broad/multi-subsystem scope
       - security-critical or expensive to reverse
       - runs as an evaluation
-    skills:
-      - review-oneshot
+    skills: []
     use_when: |-
       Hardest single-pass execution or full from-scratch review. The escalation rung above
       the session default.

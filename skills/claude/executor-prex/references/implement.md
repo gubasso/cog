@@ -1,4 +1,4 @@
-## Stage 2: Implement
+## Stage 3: Implement
 
 Implement the vetted plan with Codex as a fresh durable `exec`. There is no planning thread to resume,
 so the prompt is fully self-contained: inline every piece of context the run needs directly in the
@@ -17,7 +17,7 @@ appears FIRST and gates everything that follows:
 5. Relevant repo constraints and conventions from `CLAUDE.md`.
 6. The implementation instructions: implement phases in order, avoid silent deviations, report files
    changed and uncertainties, `Do not run any git commands.`, and the literal `Files changed:` section
-   header rule that stage 3 parses.
+   header rule that the implementation-review stage parses.
 
 Keep the prompt-file rule: write the complete prompt to a file inside `RUN_DIR` first (e.g.
 `$RUN_DIR/impl-prompt.md`), then pass it to `cog codex-runner run-exec`. Do not inline multi-line
@@ -59,10 +59,10 @@ If `finalize` reports a failed status (non-zero exit, empty output file, or a bw
 error), inspect `$RUN_DIR/impl-stderr.log`, report the failure, release the lock, and ask the user
 whether to retry or abort. Do not retry automatically.
 
-Extract the implementation thread ID (stage 3 may reference it):
+Extract the implementation thread ID (the review-loop handoff may reference it):
 
 ```bash
 IMPL_THREAD_ID="$(cog codex-runner extract-thread "$RUN_DIR/impl-events.jsonl" first | jq -r '.thread_id')"
 ```
 
-Read `impl-report.txt`, summarize the outcome briefly for the user, and move to stage 3.
+Read `impl-report.txt`, summarize the outcome briefly for the user, and move to the implementation-review stage.

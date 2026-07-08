@@ -1,11 +1,11 @@
 ---
 name: executor-prex
 description: >
-  Automated staged workflow: plan-vetted produces a vetted plan, Codex implements it,
-  Claude reviews the implementation, and an optional review loop can validate the result.
-  Use this when the user wants a dual-agent plan-review-execute flow, asks to have a vetted
-  plan implemented by Codex while Claude validates, or refers to a staged adversarial
-  workflow between Claude Code and Codex. Accepts CLI-style flags: `-a`/`--auto`
+  Automated staged workflow: Codex drafts an implementation plan, Claude reviews and vets it,
+  Codex implements the vetted plan, Claude reviews the implementation, and an optional review
+  loop validates the result. Use this when the user wants a dual-agent plan-review-execute flow,
+  asks to have Codex plan and implement while Claude vets and validates, or refers to a staged
+  adversarial workflow between Claude Code and Codex. Accepts CLI-style flags: `-a`/`--auto`
   for auto-approve and `-ar`/`--auto-review` for auto-approve + review-loop.
 argument-hint: "[-a|-ar] <task description>"
 disable-model-invocation: true
@@ -35,19 +35,19 @@ context-brief build` and confirm it with `cog context-brief validate` before dis
 
 Run a staged dual-agent workflow inside Claude Code:
 
-1. `plan-vetted` produces a vetted implementation plan (evaluate the input, then generate or
-   multi-review it through dual-engine planning).
-2. Codex implements the vetted plan.
-3. Claude reviews the implementation and fixes minor issues.
-4. An optional review loop validates the result via iterative Codex review and Claude fixes.
+1. Codex drafts an implementation plan (`plan-oneshot-codex`, native effort medium).
+2. Claude reviews and vets the drafted plan (`review-plan-oneshot`), then runs the approval loop.
+3. Codex implements the vetted plan (fresh durable `exec`, native effort medium).
+4. Claude reviews the implementation and fixes minor issues.
+5. An optional review loop validates the result via iterative Codex review and Claude fixes.
 
-Stage 3 implementation review and stage 4 review-loop handoff are delegated via the **Agent tool**
-(`subagent_type: general-purpose`), not the Skill tool — see
-`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
-parent workflow owns sequencing, proof checks, lock handling, and failure handling. These Agent-tool
-delegations work even when `/executor-prex` itself runs as a subagent: Claude Code supports nested
-subagents (≥ v2.1.172), so a delegated `/executor-prex` (e.g. under `claude-delegate`) spawns its
-stage 3/4 reviewers as foreground nested subagents.
+Stage 2 plan review, stage 4 implementation review, and stage 5 review-loop handoff are delegated via
+the **Agent tool** (`subagent_type: general-purpose`), not the Skill tool — see
+`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation); stage 1 plan-drafting is
+inline-chained in the current context. The parent workflow owns sequencing, proof checks, lock
+handling, and failure handling. These Agent-tool delegations work even when `/executor-prex` itself
+runs as a subagent: Claude Code supports nested subagents (≥ v2.1.172), so a delegated `/executor-prex`
+(e.g. under `claude-delegate`) spawns its reviewers as foreground nested subagents.
 
 This skill is a **thin orchestrator**: every deterministic mechanic (run-dir + lock setup, flag
 parsing, codex-session preflight gating, delegation-proof validation) is a versioned
@@ -91,11 +91,11 @@ The workflow needs:
 2. A repository context summary sufficient for Codex to plan and implement.
 3. `codex-session` installed and on `PATH`. `cog codex-runner` owns durable launch,
    finalize/cancel/status, orientation, status explanation, account-aware wrapper setup, and effort
-   selection (`medium` for stage 2 implementation; escalate to `high` only when the user asks for
-   it). Stage 1 planning runs inside `plan-vetted`, which owns its own dual-engine effort.
+   selection. Stage 1 plan-drafting and stage 3 implementation both run Codex at native effort
+   `medium`; escalate to `high` only when the user asks for it.
 
 If the task description is missing or materially ambiguous after reviewing the current conversation,
-ask one focused clarifying question before starting the vetted plan.
+ask one focused clarifying question before drafting the plan.
 
 ## Bootstrap: Run Directory and Lock
 
@@ -107,7 +107,7 @@ command -v cog >/dev/null || {
   echo "executor-prex: missing CLI binary — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
-cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args executor assess-input || {
+cog require hook-guard codex-runner rundir lock preflight executor-prex-parse-args executor || {
   echo "executor-prex: stale installation of cog (missing required subcommands) — ensure the cog CLI is installed and on PATH." >&2
   exit 1
 }
@@ -155,7 +155,8 @@ do not recreate the run directory.
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all
 stage outputs under `RUN_DIR` using these names:
 
-- `vetted-plan.md` (the vetted plan, written by `plan-vetted` via `--output`)
+- `draft-plan.md` (the Codex-drafted plan, written by `plan-oneshot-codex` via `--output`)
+- `vetted-plan.md` (the reviewed, authoritative plan, written by `review-plan-oneshot` via `--output`)
 - `impl-report.txt`
 - `impl-events.jsonl`
 - `impl.longrun.json` (durable job state)
@@ -163,7 +164,7 @@ stage outputs under `RUN_DIR` using these names:
 - `review-findings.json`
 - `review-proof.diff`
 - `review.md`
-- `review_loop_input.json` (produced only if stage 4 runs)
+- `review_loop_input.json` (produced only if the review loop runs)
 - `preflight.json` (codex gate output)
 - `context-brief.md` (the validated context brief; built once, reused across stages)
 
@@ -171,11 +172,11 @@ stage outputs under `RUN_DIR` using these names:
 
 Mode is selected via CLI-style flags on `$ARGUMENTS`. Supported modes:
 
-| Mode                       | Flag                   | Vetted-plan approval (stage 1)                                | Stage 4 trigger                                                        |
+| Mode                       | Flag                   | Vetted-plan approval (stage 2)                                | Review-loop trigger                                                    |
 | -------------------------- | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
 | `manual` (default)         | (none)                 | Wait for explicit user approval                              | User decides / auto-trigger heuristic                                 |
 | `auto-approve`             | `-a`, `--auto`         | Display the complete vetted plan, then proceed without waiting | User decides / auto-trigger heuristic                                |
-| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete vetted plan, then proceed without waiting | Always run after stage 3 once all `NEEDS_DISCUSSION` items are resolved |
+| `auto-approve-review-loop` | `-ar`, `--auto-review` | Display the complete vetted plan, then proceed without waiting | Always run after the implementation review once all `NEEDS_DISCUSSION` items are resolved |
 
 Parse the flags with one deterministic call, **after `RUN_DIR` is created** (Bootstrap above) and
 **before any other workflow step**. Substitute the literal `$RUN_DIR` path and pass the raw
@@ -224,7 +225,7 @@ stop — do not continue to stage 1.
 ## Context Brief
 
 Build the run's context brief once, then reuse it across stages (it is also passed through to the
-Stage 4 review-loop handoff). Build it per
+Stage 5 review-loop handoff). Build it per
 `$(cog skill-refs path orchestration/context-brief-contract.md)` from `$RUN_DIR/request.md`: scaffold
 the authored body, fill it from the whole session (a well-oriented **Objective**; **Output Format**;
 **Boundaries**; **Context & Decisions** carrying the full substance; **Artifacts** inline or
@@ -238,43 +239,39 @@ cog context-brief build --request "$RUN_DIR/request.md" --body "$RUN_DIR/brief-b
 
 `build` attaches the request verbatim and fails closed unless every section is filled.
 
-## Stage 1: Vetted Plan
+## Stage 1: Build Plan
 
-Produce the vetted implementation plan with `plan-vetted`, which fills the old plan and plan-review
-stages in one step: it evaluates the input, then generates a plan (`needs-plan`) or multi-reviews it
-(`good-input`) through dual-engine planning. Inline-chain it in the current context (read
-`$HOME/.claude/skills/plan-vetted/SKILL.md` and follow it), passing the task plus `--output
-"$RUN_DIR/vetted-plan.md"`. The delegation input is the validated context brief
-`$RUN_DIR/context-brief.md` built above.
+Draft the implementation plan with Codex by inline-chaining `plan-oneshot-codex` in the current context
+(read `$HOME/.claude/skills/plan-oneshot-codex/SKILL.md` and follow it), passing the validated context
+brief `$RUN_DIR/context-brief.md` and `--output "$RUN_DIR/draft-plan.md"`. Codex drafts at native effort
+`medium`. Follow `references/build-plan.md` for the inline-chain delegation shape and the artifact check.
 
-`plan-vetted` writes the vetted plan to `$RUN_DIR/vetted-plan.md` and returns the output path
-and the route. Verify the artifact before continuing:
+## Stage 2: Review Plan
 
-```bash
-[ -s "$RUN_DIR/vetted-plan.md" ] || { echo "ERROR: vetted-plan.md is empty" >&2; cog lock release "$LOCK_FILE"; exit 1; }
-```
+Vet the drafted plan with `review-plan-oneshot` via the **Agent tool**, passing the three absolute paths
+it expects: the drafted plan `$RUN_DIR/draft-plan.md`, the request `$RUN_DIR/request.md`, and the output
+`$RUN_DIR/vetted-plan.md`. The reviewed, reconciled plan written to `vetted-plan.md` is authoritative for
+implementation. The parent workflow owns lock release/reacquire and the approval loop. Follow
+`references/review-plan.md` for the delegation shape, proof, and the approval loop.
 
-The parent workflow owns lock release/reacquire and the approval loop. Follow
-`references/vetted-plan.md` for the inline-chain delegation shape and the approval loop.
-
-## Stage 2: Implement
+## Stage 3: Implement
 
 Implement the vetted plan with Codex as a fresh durable `exec`, inlining the full plan and request so
 the run is self-contained (the vetted plan carries all planning context; there is no Codex planning
-thread to resume). Stage 2 uses native Codex effort (`cog codex-runner run-exec --effort medium`, no
+thread to resume). Stage 3 uses native Codex effort (`cog codex-runner run-exec --effort medium`, no
 `--profile`). Follow `references/implement.md` for the exact command shapes, the inlined-prompt
 contract, and the prompt-file rule plus the durable-job poll protocol.
 
-## Stage 3: Review Implementation
+## Stage 4: Review Implementation
 
 Delegate implementation review to `review-oneshot` via the **Agent tool**, validate proof, triage
 review and plan-conformance findings, and write `review.md`. Follow
 `references/review-implementation.md` for command shapes, proof validation, and triage
 details.
 
-## Stage 4: Optional Review Loop
+## Stage 5: Optional Review Loop
 
-Run the optional `review-loop` handoff only after all Stage 3 `NEEDS_DISCUSSION` items are resolved
+Run the optional `review-loop` handoff only after all Stage 4 `NEEDS_DISCUSSION` items are resolved
 and the mode or task complexity calls for it. The handoff input is assembled and validated by
 `cog review-loop-input`, and the child run-dir is located via `cog rundir snapshot-children` +
 `cog rundir locate-child`; follow `references/review-loop.md` for the handoff build, child
@@ -282,20 +279,20 @@ run-dir proof, and summary handling.
 
 ## Final Output
 
-If stage 4 was not run, remove the workflow lock before presenting the summary:
+If the review loop was not run, remove the workflow lock before presenting the summary:
 
 ```bash
 cog lock release "$LOCK_FILE"
 ```
 
-(If stage 4 ran, the lock was already released before the `review-loop` handoff.)
+(If the review loop ran, the lock was already released before the `review-loop` handoff.)
 
 End with a concise summary covering:
 
-- Whether each stage completed (including whether stage 4 review loop ran).
+- Whether each stage completed (including whether the review loop ran).
 - Files changed in the repo.
 - How many findings were fixed, acknowledged, dismissed, or still need discussion.
-- If stage 4 ran: include the review-loop's round count and outcome.
+- If the review loop ran: include its round count and outcome.
 - Any remaining risks or follow-up items.
 
 ## Match-outcome telemetry
@@ -320,16 +317,16 @@ or questionable — never as a routine per-run rating.
 
 ## Guardrails
 
-- Do not skip the stage 1 vetted-plan approval unless the mode is `auto-approve` or
+- Do not skip the stage 2 plan-review approval unless the mode is `auto-approve` or
   `auto-approve-review-loop`.
-- Stage 2 implements via a fresh durable `exec` with the vetted plan and request inlined; there is no
+- Stage 3 implements via a fresh durable `exec` with the vetted plan and request inlined; there is no
   planning thread to resume.
 - Do not invent unsupported Codex flags.
 - Always use `codex-session exec`, never bare `codex exec`. The wrapper provides
   per-account isolation, config-recipe composition, and account-aware failover. Pass
-  `--effort medium` at the stage 2 implementation call site; escalate to `--effort high` only when the
-  user explicitly asks to push it harder (stuck/looping runs, novel design, security-critical
-  changes). Do not pass `-m`/`-c model_reasoning_effort`.
+  `--effort medium` at the stage 1 plan-drafting and stage 3 implementation call sites; escalate to
+  `--effort high` only when the user explicitly asks to push it harder (stuck/looping runs, novel
+  design, security-critical changes). Do not pass `-m`/`-c model_reasoning_effort`.
 - Do not duplicate the full Codex CLI conventions here; keep those centralized in the reference
   file.
 - Codex may run read-only git inspection commands needed to review the diff (`git diff`,
@@ -342,13 +339,15 @@ or questionable — never as a routine per-run rating.
 
 ## Error Handling
 
-After the vetted-plan stage, validate the plan artifact is non-empty:
+After the plan-drafting stage validate the drafted plan is non-empty; after the plan-review stage
+validate the vetted plan is non-empty:
 
 ```bash
+[ -s "$RUN_DIR/draft-plan.md" ] || echo "ERROR: draft-plan.md is empty"
 [ -s "$RUN_DIR/vetted-plan.md" ] || echo "ERROR: vetted-plan.md is empty"
 ```
 
-After the stage 2 Codex call, validate the implementation report is non-empty:
+After the stage 3 Codex call, validate the implementation report is non-empty:
 
 ```bash
 [ -s "$RUN_DIR/impl-report.txt" ] || echo "ERROR: impl-report.txt is empty"
@@ -362,7 +361,3 @@ If any stage fails:
 4. Ask the user whether to retry the failed stage, skip it, or abort the workflow.
 5. If the user approves a retry, reacquire the lock before re-running the stage:
    `cog lock acquire "$RUN_DIR" --owner-pid "$PPID"`
-
-<!-- Migrated from stock-codex to codex-session wrapper on 2026-05-23 (R5). -->
-<!-- Wave-2 thin-orchestrator rewrite on 2026-06-16 (R3): inline setup/parse/gate/proof shell -->
-<!-- moved to cog rundir/lock/executor-prex-parse-args/codex-runner gate+verify-proof. -->

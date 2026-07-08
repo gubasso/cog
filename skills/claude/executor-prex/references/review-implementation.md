@@ -1,4 +1,4 @@
-## Stage 3: Review Implementation
+## Stage 4: Review Implementation
 
 Delegate findings-gathering to the Claude `review-oneshot` skill via the **Agent tool**
 (`subagent_type: general-purpose`), then triage the structured JSON output in this orchestrator.
@@ -12,7 +12,7 @@ Do NOT use the `Skill` tool for this delegation. See
 
 Write `$RUN_DIR/review-context.md` containing, in this order:
 
-- A one-line orchestrator note: `executor-prex stage 3 — produce JSON findings for orchestrator triage.`
+- A one-line orchestrator note: `executor-prex implementation review — produce JSON findings for orchestrator triage.`
 - The original task description (verbatim contents of `$RUN_DIR/request.md`).
 - The approved reviewed plan (verbatim contents of `$RUN_DIR/vetted-plan.md`).
 
@@ -105,12 +105,12 @@ artifact name and format — do not rename it. Include:
 - Plan-conformance findings summary, if any, sourced from `review-oneshot` findings.
 - Open `NEEDS_DISCUSSION` and `QUESTION` items, if any.
 
-After stage 3, decide whether to run stage 4:
+After the implementation review, decide whether to run the review loop:
 
-- **Forced by mode**: If the mode is `auto-approve-review-loop`, run stage 4 after all stage 3
+- **Forced by mode**: If the mode is `auto-approve-review-loop`, run the review loop after all
   `NEEDS_DISCUSSION` items have been resolved. Do not ask the user whether to run it.
 - **Auto-trigger**: If the task is clearly complex (multi-phase plan, cross-cutting changes,
-  security-sensitive code) **and** all stage 3 `NEEDS_DISCUSSION` items have been resolved,
-  recommend stage 4 and proceed unless the user declines.
-- **User decides**: If the implementation looks clean or stage 3 concerns were minor, tell the user
+  security-sensitive code) **and** all `NEEDS_DISCUSSION` items have been resolved,
+  recommend the review loop and proceed unless the user declines.
+- **User decides**: If the implementation looks clean or the review concerns were minor, tell the user
   that a review loop is available on request but not required.

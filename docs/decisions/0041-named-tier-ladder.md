@@ -109,3 +109,8 @@ retained unedited; the supersession is recorded here.
 Implemented. The ladder lives in `docs/reference/model-effort-claude.toml`,
 `docs/reference/model-effort-codex.toml`, `docs/reference/power-grade-matrix.toml`, and
 `docs/reference/model-effort-policy.md`; `cog power-grade validate` gates the named pairings.
+
+Amended by [ADR-0070](0070-executor-prex-explicit-plan-review-split-and-review-oneshot-high.md) for
+`review-oneshot`: the `review-oneshot-*` family default recorded here stays XHIGH, but the
+`review-oneshot` skill itself is pinned to HIGH as a deliberate cost/latency exception via its `high`
+registry membership.

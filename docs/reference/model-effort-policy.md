@@ -60,7 +60,8 @@ The skill-prefix taxonomy maps to default rungs (override per skill only with re
 - `executor-*` → MEDIUM by default; a reasoning executor that judges, re-evaluates, directs, or fixes
   (e.g. `executor-prex`) may ride HIGH.
 - `review-plan-*` → HIGH (reviewing an already-distilled plan/spec).
-- `review-oneshot-*` → XHIGH (fresh-context full review).
+- `review-oneshot-*` → XHIGH by default (fresh-context full review); `review-oneshot` itself rides
+  HIGH as a deliberate cost/latency exception (ADR-0070), recorded via its `high` registry membership.
 - `runner-*` → LOW for verbatim prompt-opaque dispatch; higher only when it does routing policy,
   triage, or retry decisions.
 
@@ -107,9 +108,10 @@ Review effort tracks how much context the reviewer must reconstruct (ADR-0041, r
 - `review-plan-*` → **HIGH**. Reviewing an already-distilled plan/spec rides the session default.
   Generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of
   correctness judging, so HIGH is the right floor.
-- `review-oneshot-*` → **XHIGH**. A fresh-context full review must rebuild the entire codebase, plan,
-  and diff before it can judge; that reconstruction cost erodes the asymmetry discount, so the floor
-  rises to XHIGH.
+- `review-oneshot-*` → **XHIGH** by default. A fresh-context full review must rebuild the entire
+  codebase, plan, and diff before it can judge; that reconstruction cost erodes the asymmetry
+  discount, so the family floor is XHIGH. `review-oneshot` itself rides **HIGH** as a deliberate
+  exception (ADR-0070), trading some reviewer budget for lower latency and token burn.
 - `review-loop` → **round 1 HIGH, rounds 2+ MEDIUM**. Round 1 is a fresh from-scratch review with full
   input. Rounds 2+ resume the prior reviewer context (warm, not cold) and both re-check prior findings
   and re-review for new regressions; the retained context earns one rung of discount (to MEDIUM), not

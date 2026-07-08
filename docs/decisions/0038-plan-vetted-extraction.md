@@ -53,7 +53,10 @@ documented, now the only path.
 
 ## Status
 
-Implemented
+Implemented. Superseded in part by [ADR-0070](0070-executor-prex-explicit-plan-review-split-and-review-oneshot-high.md):
+`executor-prex` no longer consumes `plan-vetted` — it reverts to an explicit Codex-drafts /
+Claude-reviews plan pair. `plan-vetted` itself (and `plan-multi`/`review-plan-multi`) remains the
+reusable vetted-plan producer for `executor-vetted`, so this ADR's extraction decision stands there.
 
 Enacted by `skills/claude/plan-vetted/SKILL.md`, the `plan-vetted` flow and `export-prepared` verb in
 `lib/functions/fn_executor.sh` + `lib/commands/cmd_executor.sh`, the rewired

@@ -77,7 +77,7 @@ Launch the durable Codex job, then poll-and-classify it with one verb, `cog code
 re-run finalize while it exits 75. Duration is never judged.
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort high --prompt <RUN_DIR>/plan-prompt.md --output <RUN_DIR>/plan-codex-output.md --events <RUN_DIR>/plan-events.jsonl --stderr <RUN_DIR>/plan-stderr.log --thread last --state <RUN_DIR>/plan.longrun.json
+cog codex-runner run-exec --mode danger --access write --effort medium --prompt <RUN_DIR>/plan-prompt.md --output <RUN_DIR>/plan-codex-output.md --events <RUN_DIR>/plan-events.jsonl --stderr <RUN_DIR>/plan-stderr.log --thread last --state <RUN_DIR>/plan.longrun.json
 # Re-run while it exits 75 (still running); exit code is the signal (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
 cog codex-runner finalize --state <RUN_DIR>/plan.longrun.json --max-wall 300 > <RUN_DIR>/plan-runner.json
 ```

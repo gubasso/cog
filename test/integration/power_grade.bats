@@ -187,11 +187,11 @@ setup() {
   printf '%s\n' "$output" | jq -e '
     .schema == "cog.power-grade.executor.v1" and
     .ok == true and
-    .max_power == 52 and
+    .max_power == 45 and
     (.executors | sort_by(.power) | map(.executor)) == ["executor-oneshot","executor-vetted","executor-prex"] and
     ([.executors[] | select(.executor == "executor-oneshot")][0].power) == 20 and
     ([.executors[] | select(.executor == "executor-vetted")][0].power) == 28 and
-    ([.executors[] | select(.executor == "executor-prex")][0].power) == 52 and
+    ([.executors[] | select(.executor == "executor-prex")][0].power) == 45 and
     ([.executors[] | select(.executor == "executor-prex")][0].ceil_pct) == 100 and
     .errors == []
   ' >/dev/null
@@ -233,7 +233,7 @@ setup() {
 }
 
 @test "power-grade match routes an upper-moderate score to the vetted executor" {
-  run cog power-grade match --score 15 --json
+  run cog power-grade match --score 18 --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .reserved == false and .executor == "executor-vetted"' >/dev/null

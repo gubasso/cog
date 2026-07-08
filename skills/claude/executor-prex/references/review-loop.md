@@ -1,17 +1,17 @@
-## Stage 4: Optional Review Loop
+## Stage 5: Optional Review Loop
 
 This stage delegates to the leaned `review-loop` skill instead of calling Codex review directly. The
 `review-loop` skill validates the handoff input through `cog review-loop-input validate`, creates its
 own run directory, handles Codex invocation, multi-round triage, and fix application autonomously,
 and writes its final summary to `<child-run-dir>/summary.md`.
 
-Run this stage only after all stage 3 `NEEDS_DISCUSSION` items have been resolved, when any of the
-following is true:
+Run this stage only after all `NEEDS_DISCUSSION` items from the implementation review have been
+resolved, when any of the following is true:
 
 - The mode is `auto-approve-review-loop`.
 - The user requests it (e.g., "deep review", "review loop", "keep reviewing").
 - The task is clearly complex.
-- Stage 3 found issues substantial enough to justify an extra adversarial pass.
+- The implementation review found issues substantial enough to justify an extra adversarial pass.
 
 ### Handoff to `review-loop`
 
@@ -39,7 +39,7 @@ context from that brief instead of reassembling one. Omit the flag when no brief
 canonical 5-key envelope is unchanged and the consumer assembles its own context from `task`,
 `reviewed_plan`, and `implementation_review`.
 
-Stage 2 runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id`
+The implementation stage runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id`
 records the implementation exec when available. Both fields are kept in the handoff JSON and may be
 null. The schema and its
 required-field contract are owned and enforced by `cog review-loop-input`; do not restate or
@@ -137,8 +137,8 @@ exactly the REVIEW_LOOP_OK line that build printed.
 
 Then re-run the `verify-proof` command above. If it now passes, record the run dir and continue. If it
 still fails — or `$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran) — stop without a
-further retry: report the failure and ask the user whether to retry stage 4, skip it, or abort the
-workflow.
+further retry: report the failure and ask the user whether to retry the review loop, skip it, or abort
+the workflow.
 
 The review-loop skill parses the validated JSON for task context, the reviewed plan, and prior
 findings, then captures the live git diff independently.

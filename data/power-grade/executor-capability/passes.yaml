@@ -71,24 +71,20 @@ executor_passes:
   - executor: executor-prex
     heaviest_route: auto-review
     stages:
-      - role: gate
+      - role: plan
         combine: single
         members:
-          - cell: opus48-low
-            runs_via: claude-subagent
-            basis: declared
-            note: assess-input (inside plan-vetted)
-      - role: plan
-        combine: sum
+          - cell: gpt55-medium
+            runs_via: codex
+            basis: driven-effort
+            note: Codex drafts the plan at medium via plan-oneshot-codex
+      - role: plan-review
+        combine: single
         members:
           - cell: opus48-high
             runs_via: claude-subagent
-            basis: driven-effort
-            note: plan-multi Claude engine (inline plan-oneshot at high)
-          - cell: gpt55-high
-            runs_via: codex
-            basis: driven-effort
-            note: plan-multi Codex engine (run-exec at high effort)
+            basis: declared
+            note: review-plan-oneshot vets the plan
       - role: implement
         combine: single
         members:
@@ -99,10 +95,10 @@ executor_passes:
       - role: review
         combine: single
         members:
-          - cell: opus48-xhigh
+          - cell: opus48-high
             runs_via: claude-subagent
             basis: declared
-            note: review-oneshot implementation review
+            note: review-oneshot implementation review (retiered to high)
       - role: review-loop
         combine: sum
         members:

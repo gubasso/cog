@@ -74,6 +74,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0067: Blind greenfield reimplementation pipeline](decisions/0067-blind-greenfield-reimplementation-pipeline.md)
 - [ADR-0068: Greenfield orchestrator uses the executor prefix](decisions/0068-greenfield-orchestrator-uses-executor-prefix.md)
 - [ADR-0069: Right-sizing loop control flow is a cog-owned state machine](decisions/0069-rightsize-loop-cog-state-machine.md)
+- [ADR-0070: executor-prex explicit plan/review split; review-oneshot rides HIGH](decisions/0070-executor-prex-explicit-plan-review-split-and-review-oneshot-high.md)
 
 ## Guides
 

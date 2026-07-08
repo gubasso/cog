@@ -23,7 +23,7 @@ skill_classes:
     required_markers: []
     forbidden_markers:
       - cog-plan-mode-gate
-    tier_basis: "data/model-effort/claude/tiers.yaml (review-oneshot: xhigh; otherwise registry or exempt)"
+    tier_basis: "data/model-effort/claude/tiers.yaml (review-oneshot: high; otherwise registry or exempt)"
     io_contract: Input is a diff or scope; output is the shared structured-findings contract.
     producer_obligations: Findings are consumed producer-blind by review-findings triage.
   review-plan:

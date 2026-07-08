@@ -10,7 +10,7 @@ truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show
 | Class | Prefix | Plan-mode gate | Tier (prefix default) | Input → output |
 |-------|--------|----------------|-----------------------|----------------|
 | `plan` | `plan-*` | forbidden | high | goal/orientation → plan in the structural plan/round contract |
-| `review` | `review-*` | forbidden | review-oneshot xhigh; else registry/exempt | diff/scope → shared structured-findings contract |
+| `review` | `review-*` | forbidden | review-oneshot high; else registry/exempt | diff/scope → shared structured-findings contract |
 | `review-plan` | `review-plan-*` | forbidden | high | plan/round → annotated plan-review verdict |
 | `executor` | `executor-*` | required | medium | one prompt/plan (`-ar <path>`) → canonical execution report |
 | `runner` | `runner-*` | required | low | queue → verbatim prompt dispatch to a queue-blind subagent |
