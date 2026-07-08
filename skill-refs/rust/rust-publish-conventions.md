@@ -84,14 +84,24 @@ release-plz. A `bin`-only crate documents a SemVer policy but needs no API check
 `cargo publish --dry-run` and `cargo package --list` are the go/no-go checks, run through `cog
 cargo-publish-check`. Neither needs auth, so they run before any credential is configured.
 
-## Optional binary distribution
+## Binary distribution (cargo-dist)
 
-`dist` (cargo-dist) packages application binaries, installers, and GitHub-release artifacts. Offer it
-only when the crate is a CLI or application that ships prebuilt binaries; the judgment layer decides
-inclusion from the crate kind (`bin`) and the operator's intent. Library-crate publishing to crates.io
-never needs it. `dist` generates its own CI workflow from `dist-workspace.toml`: treat that workflow as
-an artifact — change the config and regenerate with `dist generate`, never hand-edit the YAML — and
-keep it as a separate file from the crates.io release workflow so neither disturbs the other.
+`dist` (cargo-dist) packages application binaries, installers, and GitHub-release artifacts — a
+first-class **conditional** step. Offer it only when the crate is a CLI or application that ships
+prebuilt binaries; the judgment layer decides inclusion from the crate kind (`bin`) and the operator's
+intent. Library-crate publishing to crates.io never needs it. It builds shell/PowerShell/Homebrew-tap
+installers and attaches them to each GitHub Release; `cargo-binstall` then works automatically from
+those releases. AUR, OBS/zypper, and Homebrew (beyond the generated tap) are downstream/manual
+channels that consume the tagged Release — not auto-generated pipelines.
+
+**Workflow-file naming (load-bearing).** `dist` generates its own workflow at
+`.github/workflows/release.yml` — a **distinct file** from the release-plz workflow, which must be
+`release-plz.yml`. The crates.io Trusted Publisher matches on the workflow *filename* and must name
+`release-plz.yml` (the file that actually publishes), never cargo-dist's `release.yml` (which only
+builds binaries and does not publish). `cog cargo-publish-apply --with-dist` lays down
+`dist-workspace.toml` only; the operator generates `release.yml` with `dist init` / `dist generate`.
+Treat that workflow as an artifact — regenerate from config, never hand-edit — and keep it a separate
+file from `release-plz.yml`.
 
 External references (optional enhancers): the crates.io Trusted Publishing docs, the Cargo publishing
 reference, release-plz.dev, the cargo-release and cargo-semver-checks project READMEs, and the

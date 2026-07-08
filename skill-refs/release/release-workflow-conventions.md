@@ -72,6 +72,15 @@ long-lived token secrets, and keep the first publish manual. The Rust specifics 
 shape, `id-token: write`, no `CARGO_REGISTRY_TOKEN`, semver gating) live in
 `rust/rust-publish-conventions.md`.
 
+## Workflow file naming (publish vs binary distribution)
+
+When a project runs both a **registry-publish** workflow and a separate **binary-distribution**
+generator, keep them in **separate workflow files** and register only the *publish* file with the
+registry's trusted publisher (which matches on the workflow filename). For Rust: the publish workflow
+is `release-plz.yml` (the trusted-publisher filename) and cargo-dist's binary-build workflow is
+`release.yml` — its own default, kept distinct so the two never collide. A no-registry project (Bash)
+has a single tag-triggered `release.yml` and no trusted publisher, so no collision arises.
+
 ## External references (optional enhancers)
 
 git-cliff, Conventional Commits, Keep a Changelog, SemVer, release-plz.dev, Changesets, release-please,
