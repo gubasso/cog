@@ -33,6 +33,19 @@ __cog_codex_runner_label_for_state() {
   printf '%s\n' "$base"
 }
 
+# Fail closed on a relative artifact path. A durable codex job launches from the
+# project repo (see __cog_codex_runner_resolve_cwd), so a relative --state /
+# --output / --events / --stderr resolves against the project tree and scatters
+# artifacts loose in it. Require an absolute path from a run dir instead.
+__cog_codex_runner_require_abs() {
+  local option="$1" value="$2"
+  # shellcheck disable=SC2016 # literal $RUN_DIR in the operator-facing hint, not an expansion
+  [[ $value == /* ]] || cog::fn::error_raise "InvalidInput" \
+    "codex-runner artifact path must be absolute" "option: ${option}, path: ${value}" \
+    "relative paths resolve against the job cwd (the project repo) and scatter artifacts into it" \
+    'allocate RUN_DIR="$(cog rundir <prefix>)" and pass $RUN_DIR/<file>'
+}
+
 # Resolve the durable-job working directory. Codex `exec` refuses with "not
 # inside a trusted directory" when its cwd is neither a git worktree nor a
 # configured trusted project, so the job must launch from the project repo
@@ -131,6 +144,11 @@ __cog_codex_runner_run_exec() {
 
   cwd="$(__cog_codex_runner_resolve_cwd "$cwd")"
 
+  __cog_codex_runner_require_abs --state "$state"
+  __cog_codex_runner_require_abs --output "$output"
+  __cog_codex_runner_require_abs --events "$events"
+  __cog_codex_runner_require_abs --stderr "$stderr"
+
   cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
   engine_meta="$(jq -cn \
     --arg engine_action run-exec --arg mode "$mode" --arg access "$access" \
@@ -211,6 +229,11 @@ __cog_codex_runner_run_resume() {
   [[ -n $stderr ]] || stderr="${run_dir}/${label}.stderr.log"
 
   cwd="$(__cog_codex_runner_resolve_cwd "$cwd")"
+
+  __cog_codex_runner_require_abs --state "$state"
+  __cog_codex_runner_require_abs --output "$output"
+  __cog_codex_runner_require_abs --events "$events"
+  __cog_codex_runner_require_abs --stderr "$stderr"
 
   cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv
   engine_meta="$(jq -cn \

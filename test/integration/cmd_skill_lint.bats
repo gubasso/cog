@@ -465,6 +465,69 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint flags a relative codex-runner artifact path" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+cog codex-runner run-exec \
+  --mode fallback --effort low \
+  --state codex-state.json \
+  --output codex-out.txt --events codex-events.jsonl
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"codex-runner-abs-artifact-path"* ]]
+}
+
+@test "cog skill-lint accepts an absolute run-dir codex-runner artifact path" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+cog codex-runner run-exec --mode fallback --effort low \
+  --state "$RUN_DIR/codex.longrun.json" \
+  --output "$RUN_DIR/codex-ask.txt" --events "$RUN_DIR/codex-events.jsonl"
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint accepts angle-bracket placeholder codex-runner artifact paths" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+cog codex-runner run-exec --mode danger --access write --effort high --prompt <file> --output <RUN_DIR>/codex-output.md --events <RUN_DIR>/events.jsonl --state <file> [--stderr <file>]
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint honors an allow-codex-runner-abs-artifact-path suppression" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+<!-- cog-skill-lint: allow-codex-runner-abs-artifact-path legacy fixture path -->
+```bash
+cog codex-runner run-exec --mode fallback --effort low --state codex-state.json
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
 @test "cog skill-lint flags a direct execution-report write in a native executor" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot" executor-oneshot claude
   # shellcheck disable=SC2016  # literal markdown path written to a fixture file

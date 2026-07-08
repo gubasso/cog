@@ -162,6 +162,25 @@ EOF
   [[ $stderr == *"missing --state"* ]]
 }
 
+@test "cog codex-runner run-exec rejects a relative artifact path and leaves no cwd leftovers" {
+  local leak="${BATS_TEST_TMPDIR}/leakdir"
+  mkdir -p "$leak"
+  cd "$leak"
+  run --separate-stderr cog codex-runner run-exec --mode fallback --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output codex-out.txt --events codex-events.jsonl --stderr codex-stderr.txt --state codex-state.json
+  assert_failure
+  [[ $stderr == *"artifact path must be absolute"* ]]
+  [[ ! -e "${leak}/codex-out.txt" ]]
+  [[ ! -e "${leak}/codex-events.jsonl" ]]
+  [[ ! -e "${leak}/codex-state.done" ]]
+  [[ ! -e "${leak}/codex-state.exit" ]]
+}
+
+@test "cog codex-runner run-resume rejects a relative artifact path" {
+  run --separate-stderr cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output codex-out.txt --events codex-events.jsonl --stderr codex-stderr.txt --state codex-state.json
+  assert_failure
+  [[ $stderr == *"artifact path must be absolute"* ]]
+}
+
 @test "cog codex-runner finalize reports a still-running job with exit 75 and never classifies it" {
   export CODEX_FAKE_SLEEP=5
   local st="${BATS_TEST_TMPDIR}/slow.longrun.json"

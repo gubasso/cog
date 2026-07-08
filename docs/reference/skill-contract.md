@@ -220,6 +220,13 @@ directory from `$(pwd)`, `${PWD}`, or a `./`-relative path. A skill that must wr
 the project records an explicit `<!-- cog-skill-lint: allow-scratch-in-project <reason> -->` suppression
 on the preceding line. See [ADR-0061](../decisions/0061-rundir-scratch-artifact-convention.md).
 
+The same convention binds `cog codex-runner` artifacts. A durable codex job launches from the project
+repo (Codex `exec` requires a trusted cwd), so a relative `--state`/`--output`/`--events`/`--stderr`
+resolves against the project tree and scatters artifacts into it. `cog codex-runner run-exec` and
+`run-resume` fail closed on a relative artifact path at runtime, and the `codex-runner-abs-artifact-path`
+skill-lint rule catches the same drift at authoring time — pass an absolute `$RUN_DIR/<file>` path from
+`cog rundir <prefix>`.
+
 ## Lean positive prose
 
 Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what
@@ -342,6 +349,16 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   working-tree root (`$(pwd)`, `${PWD}`, or a `./`-relative path) instead of `cog rundir <prefix>`. The
   scan skips frontmatter and honors an inline `<!-- cog-skill-lint: allow-scratch-in-project <reason> -->`
   suppression on the preceding line. See "Run directory (scratch artifact convention)" and
+  [ADR-0061](../decisions/0061-rundir-scratch-artifact-convention.md).
+- `codex-runner-abs-artifact-path`: a runtime skill body passes a relative literal artifact path
+  (`--state`/`--output`/`--events`/`--stderr`) inside a `cog codex-runner` invocation. A durable codex
+  job launches from the project repo, so a relative path scatters artifacts into the project tree;
+  absolute, `$variable`, `~`, and angle-bracket placeholder (`<file>`, `<RUN_DIR>/…`) paths pass. The
+  scan skips frontmatter, tracks backslash-continued
+  invocation lines, and honors an inline
+  `<!-- cog-skill-lint: allow-codex-runner-abs-artifact-path <reason> -->` suppression on the preceding
+  line. The `cog codex-runner` command also fails closed on a relative artifact path at runtime. See
+  "Run directory (scratch artifact convention)" and
   [ADR-0061](../decisions/0061-rundir-scratch-artifact-convention.md).
 - `artifact-write-ownership`: a curated native-execution executor skill (`executor-oneshot`,
   `executor-vetted`) instructs a direct write to the canonical execution artifact

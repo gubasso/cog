@@ -63,3 +63,18 @@ setup() {
   run cog::cmd::codex_runner explain-status nope
   assert_failure
 }
+
+@test "codex-runner require-abs rejects a relative artifact path" {
+  run --separate-stderr __cog_codex_runner_require_abs --state codex-state.json
+  assert_failure
+  [[ $stderr == *"must be absolute"* ]]
+
+  run --separate-stderr __cog_codex_runner_require_abs --output "./codex-out.txt"
+  assert_failure
+  [[ $stderr == *"must be absolute"* ]]
+}
+
+@test "codex-runner require-abs accepts an absolute artifact path" {
+  run __cog_codex_runner_require_abs --state /run/dir/codex.longrun.json
+  assert_success
+}

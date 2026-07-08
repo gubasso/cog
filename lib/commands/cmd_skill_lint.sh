@@ -464,6 +464,92 @@ __cog_skill_lint_check_scratch_in_project() {
   return "$failed"
 }
 
+__cog_skill_lint_line_codex_relpath() {
+  # Given a line inside a `cog codex-runner` invocation, return 0 when it passes
+  # a write-artifact flag (--state/--output/--events/--stderr) a relative literal
+  # path. Absolute (/…), variable ($…/${…}), home (~…), and angle-bracket
+  # placeholder (<file>, <RUN_DIR>/…) tokens pass.
+  local line="$1"
+  local re='--(state|output|events|stderr)[[:space:]]+"?([^[:space:]"]+)'
+  local rest="$line" path
+  while [[ $rest =~ $re ]]; do
+    path="${BASH_REMATCH[2]}"
+    case "$path" in
+      /* | '$'* | '~'* | '<'*) ;;
+      *) return 0 ;;
+    esac
+    rest="${rest#*"${BASH_REMATCH[0]}"}"
+  done
+  return 1
+}
+
+__cog_skill_lint_check_codex_abs_artifact() {
+  # A `cog codex-runner` durable job launches from the project repo, so a
+  # relative --state/--output/--events/--stderr resolves against the project tree
+  # and scatters artifacts into it. Flag a relative literal artifact path inside a
+  # codex-runner invocation (which continues across backslash-continued lines);
+  # absolute, $variable, and ~ paths pass. The scan covers fenced code blocks,
+  # skips frontmatter, and honors an inline
+  # <!-- cog-skill-lint: allow-codex-runner-abs-artifact-path <reason> --> on the
+  # preceding nonblank line. See
+  # docs/decisions/0061-rundir-scratch-artifact-convention.md.
+  local file="$1"
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false
+  local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-abs-artifact-path[[:space:]]+.+-->'
+  local fence_re='^[[:space:]]*```+'
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    # A fence delimiter ends any open invocation but never consumes a pending
+    # suppression, so a marker before a fence still suppresses the first line in it.
+    if [[ $line =~ $fence_re ]]; then
+      in_codex_cmd=false
+      continue
+    fi
+    [[ -z ${line//[[:space:]]/} ]] && continue
+
+    if [[ $line =~ $allow_re ]]; then
+      suppress_next=true
+      continue
+    fi
+
+    [[ $line == *"codex-runner"* ]] && in_codex_cmd=true
+
+    if [[ $in_codex_cmd == true ]] && __cog_skill_lint_line_codex_relpath "$line"; then
+      if [[ $suppress_next == true ]]; then
+        suppress_next=false
+      else
+        # shellcheck disable=SC2016 # literal Markdown backticks in the fix hint, not command substitution
+        __cog_skill_lint_finding "$file" "$line_no" "codex-runner-abs-artifact-path" \
+          "relative codex-runner artifact path resolves against the project tree" \
+          'pass an absolute path from `cog rundir <prefix>` (e.g. $RUN_DIR/<file>) to --state/--output/--events/--stderr'
+        failed=1
+      fi
+    fi
+
+    # A line without a trailing backslash terminates the invocation.
+    [[ $line != *\\ ]] && in_codex_cmd=false
+    suppress_next=false
+  done <"$file"
+
+  return "$failed"
+}
+
 __cog_skill_lint_line_has_stage_identifier() {
   local line="$1"
   [[ $line =~ stage[0-9]+[-_.] ]] && return 0
@@ -1227,6 +1313,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_scratch_in_project "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_codex_abs_artifact "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then
