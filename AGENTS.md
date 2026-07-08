@@ -39,6 +39,7 @@ resolve to its expected tier, enforced by the `model-effort-tier` rule in `cog s
 authoritative registry is the per-tier `skills` lists in `data/model-effort/claude/tiers.yaml`
 (the single escape hatch for documented exceptions); `cog power-grade skill-tier --skill <name>` and
 `cog power-grade tier --name <name>` expose the same SoT to authors. See
+`docs/decisions/0013-model-effort-policy.md` and
 `docs/decisions/0047-enforce-prefix-tier-policy.md`.
 
 Skill names must follow the prefix taxonomy in `docs/decisions/0016-skill-prefix-taxonomy.md` and
@@ -99,7 +100,8 @@ live under `skill-refs/templates/<domain>/` (e.g. `pre-commit`, `editorconfig`).
 in-repo, installs to `$XDG_DATA_HOME/cog/skill-refs`, and resolves through `cog skill-refs` /
 `cog::fn::skill_refs_root` (`cog::fn::template::root <domain>` for template roots). External docs are
 optional runtime enhancers only and must degrade gracefully. Never make an external doc a load-bearing
-internal runtime dependency. See `docs/decisions/0023-skill-refs-unified-resource-sot.md`.
+internal runtime dependency. See `docs/decisions/0017-reference-self-containment.md` and
+`docs/decisions/0023-skill-refs-unified-resource-sot.md`.
 
 Runtime skills never depend on `docs/reference/codex-conventions.md` or `DOCS_NOTES_REPO`. Codex
 behavior comes from `cog codex-runner`, and load-bearing shared references are imported to

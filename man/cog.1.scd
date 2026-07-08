@@ -141,6 +141,12 @@ The command list and short descriptions are sourced from command modules under
 *gitignore-detect*
 	Detect gitignore template type.
 
+*governance-apply*
+	Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+
+*governance-detect*
+	Detect project governance docs presence and template type.
+
 *help*
 	Show generated help for cog or a subcommand.
 

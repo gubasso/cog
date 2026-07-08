@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Aggregate bootstrap domain present/missing status.'
 
-__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==6) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requirements|type=="array") and (.requires_question|type=="boolean") and (.default_in_scope|type=="boolean") and (.default_action|type=="string") and (.requirements_satisfied|type=="boolean")))'
+__cog_bootstrap_audit_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.domains|type=="array") and (.domains|length==7) and (all(.domains[]; (.domain|type=="string") and (.present|type=="boolean") and (.artifacts|type=="array") and (.requirements|type=="array") and (.requires_question|type=="boolean") and (.default_in_scope|type=="boolean") and (.default_action|type=="string") and (.requirements_satisfied|type=="boolean")))'
 
 __cog_bootstrap_audit_usage() {
   cog::fn::ui_data "Usage: cog bootstrap-audit [--project-root <dir>] (<out.json>|--json)"
@@ -73,7 +73,7 @@ __cog_bootstrap_audit_file_has() {
 __cog_bootstrap_audit_build_json() {
   local project_root="$1"
   local ok=true reason=""
-  # Emit the full six-domain shape even on a bad root: missing project reports
+  # Emit the full seven-domain shape even on a bad root: missing project reports
   # every domain absent, matching the detectors' ok=false-with-complete-shape
   # convention rather than an empty, invariant-breaking payload.
   if [[ ! -d $project_root ]]; then
@@ -121,6 +121,19 @@ __cog_bootstrap_audit_build_json() {
   local repo_rq=false
   [[ $license_present == false ]] && repo_rq=true
   rows+=("$(__cog_bootstrap_audit_domain repo "$present" "$repo_rq" "gitignore + license + readme" "$arts")")
+
+  # governance: CLAUDE.md + AGENTS.md are the deliverable set. AGENTS.md is the
+  # single source of truth (CLAUDE.md is a thin `@AGENTS.md` pointer), so a present
+  # domain's AGENTS.md must still carry the self-containment principle (the
+  # tailor-surviving `self-contained` token); a doc that dropped it reads as unsatisfied.
+  arts="$(__cog_bootstrap_audit_artifacts "$project_root" "CLAUDE.md" "AGENTS.md")"
+  present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
+  local gov_reqs='[]'
+  if [[ $present == true ]]; then
+    gov_reqs="[$(__cog_bootstrap_audit_req self-containment-principle \
+      "$(__cog_bootstrap_audit_file_has "$project_root" "AGENTS.md" "self-contained")")]"
+  fi
+  rows+=("$(__cog_bootstrap_audit_domain governance "$present" false "governance docs" "$arts" "$gov_reqs")")
 
   # ci: reuse ci-detect for real existing_ci presence and the operator-target question.
   if ! declare -F __cog_ci_detect_build_json >/dev/null; then

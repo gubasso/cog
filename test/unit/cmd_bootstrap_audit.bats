@@ -13,13 +13,13 @@ setup() {
   source "${LIB_DIR}/commands/cmd_bootstrap_audit.sh"
 }
 
-@test "bootstrap-audit empty project reports all six domains missing" {
+@test "bootstrap-audit empty project reports all seven domains missing" {
   run cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR" --json
 
   assert_success
   [ "$(jq -r '.ok' <<<"$output")" = "true" ]
-  [ "$(jq -r '.domains | length' <<<"$output")" -eq 6 ]
-  [ "$(jq -r '[.domains[] | select(.present == false)] | length' <<<"$output")" -eq 6 ]
+  [ "$(jq -r '.domains | length' <<<"$output")" -eq 7 ]
+  [ "$(jq -r '[.domains[] | select(.present == false)] | length' <<<"$output")" -eq 7 ]
 }
 
 @test "bootstrap-audit missing LICENSE and remote raise operator questions" {
@@ -35,12 +35,14 @@ setup() {
   mkdir -p "$dir/.github/workflows"
   touch "$dir/.pre-commit-config.yaml" "$dir/.editorconfig" "$dir/flake.nix" \
     "$dir/.envrc" "$dir/.gitignore" "$dir/LICENSE" "$dir/README.md" \
+    "$dir/CLAUDE.md" \
     "$dir/justfile" "$dir/.github/workflows/ci.yml"
+  printf 'self-contained\n' >"$dir/AGENTS.md"
 
   run cog::cmd::bootstrap_audit --project-root "$dir" --json
 
   assert_success
-  [ "$(jq -r '[.domains[] | select(.present == true)] | length' <<<"$output")" -eq 6 ]
+  [ "$(jq -r '[.domains[] | select(.present == true)] | length' <<<"$output")" -eq 7 ]
 }
 
 @test "bootstrap-audit taskrunner is present for a bare Makefile" {
@@ -117,7 +119,9 @@ setup() {
   mkdir -p "$dir/.github/workflows"
   touch "$dir/.pre-commit-config.yaml" "$dir/.editorconfig" "$dir/flake.nix" \
     "$dir/.envrc" "$dir/.gitignore" "$dir/LICENSE" "$dir/README.md" \
+    "$dir/CLAUDE.md" \
     "$dir/justfile" "$dir/.github/workflows/ci.yml"
+  printf 'self-contained\n' >"$dir/AGENTS.md"
 
   run cog::cmd::bootstrap_audit --project-root "$dir" --json
 
@@ -153,8 +157,47 @@ setup() {
 
   assert_failure
   [ "$(jq -r '.ok' <<<"$output")" = "false" ]
-  [ "$(jq -r '.domains | length' <<<"$output")" -eq 6 ]
+  [ "$(jq -r '.domains | length' <<<"$output")" -eq 7 ]
   [ "$(jq -r '.reason' <<<"$output")" = "project root is not a directory" ]
+}
+
+@test "bootstrap-audit governance is absent on an empty project" {
+  run cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "governance")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "false" ]
+  [ "$(jq -r '.requires_question' <<<"$row")" = "false" ]
+  [ "$(jq -r '.default_action' <<<"$row")" = "install" ]
+}
+
+@test "bootstrap-audit governance is present when AGENTS.md carries the principle" {
+  local dir="$BATS_TEST_TMPDIR/gov"
+  mkdir -p "$dir"
+  printf '@AGENTS.md\n' >"$dir/CLAUDE.md"
+  printf '# Agent Guidelines\n\nself-contained\n' >"$dir/AGENTS.md"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "governance")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "true" ]
+  [ "$(jq -r '.requirements[] | select(.name == "self-containment-principle") | .satisfied' <<<"$row")" = "true" ]
+  [ "$(jq -r '.requirements_satisfied' <<<"$row")" = "true" ]
+}
+
+@test "bootstrap-audit governance flags an AGENTS.md that dropped the self-containment principle" {
+  local dir="$BATS_TEST_TMPDIR/govgap"
+  mkdir -p "$dir"
+  printf '@AGENTS.md\n' >"$dir/CLAUDE.md"
+  printf '# Agent Guidelines\n\nno principle here\n' >"$dir/AGENTS.md"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  [ "$(jq -r '.domains[] | select(.domain == "governance") | .requirements[] | select(.name == "self-containment-principle") | .satisfied' <<<"$output")" = "false" ]
 }
 
 @test "bootstrap-audit requires an output mode" {

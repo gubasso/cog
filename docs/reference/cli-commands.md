@@ -73,6 +73,8 @@ this reference table.
 | `gc-stage` | Reconcile and stage explicit session files. |
 | `gitignore-apply` | Apply a gitignore template to a project. |
 | `gitignore-detect` | Detect gitignore template type. |
+| `governance-apply` | Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project. |
+| `governance-detect` | Detect project governance docs presence and template type. |
 | `help` | Show generated help for cog or a subcommand. |
 | `hook-guard` | Deterministic Stop hook decisions for active workflows. |
 | `init` | Initialize cog runtime directories and prerequisites. |
@@ -261,7 +263,7 @@ tracked repo or the installed, uncommitted tree.
 `requirements_satisfied` alongside the existing `present`/`requirements[]` layers. The orchestrator
 reads `default_action` rather than re-deriving scope (ADR-0062).
 
-`cog bootstrap-template-review check|stamp` is the freshness-cached template-review surface the six
+`cog bootstrap-template-review check|stamp` is the freshness-cached template-review surface the
 `bootstrap-*` workers share. `check` selects a fresh research-shelf entry for a domain and detected type
 (the freshness key is `bootstrap-template,<domain>,<type>`) by comparing today against the stamped
 `revalidate-after`, and folds in the skill-refs origin and template roots; `stamp` records a dated

@@ -3,7 +3,7 @@ name: bootstrap
 description: >
   Scaffold or update a project's baseline configuration by interviewing the operator once
   and dispatching the bootstrap-* config skills (pre-commit, editorconfig, nix devshell,
-  repo starter, CI workflow, taskrunner) as parallel fresh-context workers. Runs on a brand
+  repo starter, governance docs, CI workflow, taskrunner) as parallel fresh-context workers. Runs on a brand
   new project or an existing one; every run refreshes the reviewed templates and reconciles each
   selected domain — installing what is absent and applying improvements to what is present. Use
   when the user says "bootstrap", "project bootstrap", "bootstrap a project", "scaffold a new
@@ -29,7 +29,7 @@ absent and applying improvements to what is present. Every worker follows the sh
 `$(cog skill-refs path bootstrap/template-refresh-routine.md)`.
 
 The dispatchable workers are `bootstrap-precommit`, `bootstrap-editorconfig`, `bootstrap-nix`,
-`bootstrap-repo`, `bootstrap-ci`, and `bootstrap-taskrunner`.
+`bootstrap-repo`, `bootstrap-governance`, `bootstrap-ci`, and `bootstrap-taskrunner`.
 
 `bootstrap-rust` is a conditional **language** worker rather than a domain: it is dispatched only when
 the project is Rust (per `cog classify-project`) or the operator's intent is a new Rust project. It owns
@@ -114,6 +114,7 @@ cog precommit-detect --json
 cog editorconfig-detect --json
 cog nix-devshell-detect --json
 cog gitignore-detect --json
+cog governance-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
 ```
@@ -163,7 +164,9 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
   a greenfield Rust project, gather the remaining workers' detector orientation after this wave so they
   observe the now-present `Cargo.toml`; on an already-scaffolded crate `bootstrap-rust` reconciles in
   place and may run alongside Wave 1.
-- **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`, and — when Rust
+- **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`,
+  `bootstrap-governance` (writes only `CLAUDE.md`/`AGENTS.md`/`docs/decisions/`, depends on no other
+  domain), and — when Rust
   plus publishing intent is in scope — `bootstrap-cargo-publish`, dispatched after `bootstrap-rust` so
   the crate exists; it surfaces publish/version task-recipe fragments to `bootstrap-taskrunner` and
   release-CI fragments to `bootstrap-ci` (each `--type rust`).

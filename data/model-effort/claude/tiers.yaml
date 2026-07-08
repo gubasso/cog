@@ -88,6 +88,7 @@ tiers:
       - bootstrap-repo
       - bootstrap-ci
       - bootstrap-taskrunner
+      - bootstrap-governance
       - bootstrap-rust
       - bootstrap-cargo-publish
       - test-review

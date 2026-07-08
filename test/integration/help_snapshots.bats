@@ -68,6 +68,8 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
+  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+  governance-detect Detect project governance docs presence and template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
@@ -193,6 +195,8 @@ Commands:
   gc-stage       Reconcile and stage explicit session files.
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
+  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+  governance-detect Detect project governance docs presence and template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.

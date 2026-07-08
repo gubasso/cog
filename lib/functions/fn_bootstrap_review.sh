@@ -3,12 +3,12 @@
 # (ADR-0062): freshness selection over the research shelf plus template-SoT
 # origin/writability surfacing. Judgment — which hooks, what to change, how to
 # merge — stays in the bootstrap worker prose; this file owns the freshness,
-# record, and resolution mechanics the six workers share so no freshness
+# record, and resolution mechanics the bootstrap workers share so no freshness
 # composition logic is duplicated across their SKILL.md bodies.
 
 cog::fn::bootstrap_review::valid_domain() {
   case "${1:-}" in
-    precommit | editorconfig | nix | repo | ci | taskrunner) return 0 ;;
+    precommit | editorconfig | nix | repo | ci | taskrunner | governance) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -25,6 +25,7 @@ cog::fn::bootstrap_review::template_domains() {
     repo) printf '%s\n' "gitignore license readme" ;;
     ci) printf '%s\n' "ci" ;;
     taskrunner) printf '%s\n' "taskrunner" ;;
+    governance) printf '%s\n' "governance" ;;
     *) return 1 ;;
   esac
 }

@@ -54,6 +54,8 @@ _cog() {
     gc-stage
     gitignore-apply
     gitignore-detect
+    governance-apply
+    governance-detect
     help
     hook-guard
     init
