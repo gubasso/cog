@@ -1281,6 +1281,28 @@ __cog_skill_lint_check_skill_class() {
   return "$failed"
 }
 
+# A bootstrap-* worker whose domain is a valid template-review domain must run the
+# shared template-refresh routine so its cog templates stay freshness-tracked. The
+# domain is the skill name minus the `bootstrap-` prefix; the allowlist SoT is
+# cog::fn::bootstrap_review::valid_domain, so adding a domain there auto-requires this
+# reference. bootstrap-rust (domain `rust`, ships no cog templates) and the `bootstrap`
+# orchestrator are exempt because their stripped name is not a valid domain.
+__cog_skill_lint_check_bootstrap_template_review() {
+  local file="$1" runtime name domain
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ $runtime == claude ]] || return 0
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+  [[ $name == bootstrap-* ]] || return 0
+  domain="${name#bootstrap-}"
+  cog::fn::bootstrap_review::valid_domain "$domain" || return 0
+
+  grep -qF "bootstrap-template-review" "$file" && return 0
+  __cog_skill_lint_finding "$file" 1 "bootstrap-template-review" \
+    "bootstrap worker '${name}' ships cog templates (domain '${domain}') but does not run the template-refresh routine" \
+    "follow \$(cog skill-refs path bootstrap/template-refresh-routine.md): cog bootstrap-template-review check|stamp --domain ${domain}"
+  return 1
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -1334,6 +1356,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_skill_class "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_bootstrap_template_review "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

@@ -51,3 +51,12 @@ skill_classes:
     tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: low)"
     io_contract: Input is a queue; dispatches each item's prompt verbatim to a queue-blind subagent.
     producer_obligations: Producer-blind and prompt-verbatim; gates plan-mode at entry.
+  bootstrap:
+    summary: Scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog.
+    plan_mode_gate: forbidden
+    required_markers: []
+    forbidden_markers:
+      - cog-plan-mode-gate
+    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: low)"
+    io_contract: Input is the target project plus operator intent; output is reconciled project files via cog *-apply, with scratch under cog rundir.
+    producer_obligations: A worker that ships cog templates runs the template-refresh routine (cog bootstrap-template-review check|stamp) each run; deterministic detection and copying delegate to cog.

@@ -211,6 +211,7 @@ cog::fn::skill::classify_prefix() {
     review-*) printf '%s\n' review ;;
     executor-*) printf '%s\n' executor ;;
     runner-*) printf '%s\n' runner ;;
+    bootstrap-*) printf '%s\n' bootstrap ;;
     *) printf '%s\n' other ;;
   esac
 }
@@ -365,6 +366,7 @@ cog::fn::skill::prefix_default_tier() {
     plan-*) printf '%s\n' high ;;
     executor-*) printf '%s\n' medium ;;
     runner-*) printf '%s\n' low ;;
+    bootstrap-*) printf '%s\n' low ;;
     *) printf '%s\n' "" ;;
   esac
 }

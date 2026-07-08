@@ -17,7 +17,7 @@ __cog_bootstrap_template_review_require_domain() {
     "run 'cog bootstrap-template-review --help'"
   cog::fn::bootstrap_review::valid_domain "$domain" || cog::fn::error_raise "InvalidInput" \
     "unknown bootstrap review domain" "domain: ${domain}" \
-    "expected precommit|editorconfig|nix|repo|ci|taskrunner|governance" \
+    "expected precommit|editorconfig|nix|repo|ci|taskrunner|governance|cargo-publish" \
     "pass a supported --domain"
 }
 

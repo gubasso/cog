@@ -98,6 +98,8 @@ what a skill does:
 - `executor-*` executes one plan/prompt at a time and may generate its own better internal plan
   before executing.
 - `runner-*` orchestrates executors over a queue whose elements carry the executor-selecting prompt.
+- `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and
+  copying to cog (the `bootstrap` orchestrator dispatches these workers).
 
 Governing rule: a skill's prefix must match what it does.
 
@@ -113,9 +115,12 @@ gate); those ADRs are referenced here, not changed.
 
 ## Skill class contracts
 
-Each governed class — `plan`, `review`, `review-plan`, `executor`, `runner` — carries one positive
-membership contract: the markers, plan-mode-gate requirement, expected tier, and input/output
-obligations a skill of that class MUST satisfy. The source of truth is
+Each governed class — `plan`, `review`, `review-plan`, `executor`, `runner`, `bootstrap` — carries one
+positive membership contract: the markers, plan-mode-gate requirement, expected tier, and input/output
+obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review
+obligation: a `bootstrap-*` worker that ships cog templates references the template-refresh routine
+(`cog bootstrap-template-review`), enforced by the `bootstrap-template-review` rule for any worker
+whose domain is a valid template-review domain. The source of truth is
 [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml); the tier expectation
 cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
 list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.

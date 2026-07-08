@@ -1,6 +1,6 @@
 # Skill-class contracts
 
-The core skill taxonomy (ADR-0016) has five governed classes. Each carries a
+The core skill taxonomy (ADR-0016) has six governed classes. Each carries a
 positive membership contract — the markers, plan-mode-gate requirement, tier, and
 input/output obligations a skill of that class MUST satisfy. The data source of
 truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show
@@ -14,6 +14,14 @@ truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show
 | `review-plan` | `review-plan-*` | forbidden | high | plan/round → annotated plan-review verdict |
 | `executor` | `executor-*` | required | medium | one prompt/plan (`-ar <path>`) → canonical execution report |
 | `runner` | `runner-*` | required | low | queue → verbatim prompt dispatch to a queue-blind subagent |
+| `bootstrap` | `bootstrap-*` | forbidden | low | project + operator intent → reconciled files via `cog *-apply` |
+
+The `bootstrap-*` class covers the domain and language workers; the `bootstrap` orchestrator (no
+suffix) is the dispatcher, governed by the `context-brief-gate` and `input-fidelity` facet rules. A
+`bootstrap-*` worker that ships cog templates MUST run the template-refresh routine each run (`cog
+bootstrap-template-review check|stamp`); the `bootstrap-template-review` facet rule enforces this for
+every worker whose domain is a valid template-review domain (`bootstrap-rust` ships no cog templates
+and is exempt).
 
 Cross-cutting prerequisites the class check composes (each stays owned by its own
 facet rule):
@@ -30,6 +38,9 @@ facet rule):
 - **input-fidelity / context-brief gate** — a brief-building delegator at a
   fresh-context boundary carries both markers and builds/validates a brief.
 - **stage-agnostic identifiers** — artifact/field/flag names encode role, not stage.
+- **bootstrap-template-review** — a `bootstrap-*` worker whose domain is a valid template-review
+  domain references the template-refresh routine (`cog bootstrap-template-review`) so its cog
+  templates stay freshness-tracked.
 - **plan-quality principles** — a `plan`/`review-plan` skill's *output content* (not just its
   wiring) follows `cog skill-refs path plan-rounds/plan-quality-principles.md`: concrete-over-abstract,
   machine-checkable acceptance criteria, requirement traceability, an end-to-end verification gate,

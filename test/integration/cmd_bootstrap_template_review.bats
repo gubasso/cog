@@ -68,3 +68,27 @@ setup() {
   assert_failure
   [[ $stderr == *"not writable"* ]]
 }
+
+@test "bootstrap-template-review round-trips the cargo-publish domain" {
+  run cog bootstrap-template-review check --domain cargo-publish --type rust --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.review.state' <<<"$output")" = "missing" ]
+
+  run cog bootstrap-template-review stamp --domain cargo-publish --type rust \
+    --summary "reviewed release-plz + cargo-dist publishing setup" \
+    --source-json "$SRC" \
+    --changed-template "templates/cargo-publish/docs/PUBLISHING.md" \
+    --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.action' <<<"$output")" = "stamp" ]
+
+  run cog bootstrap-template-review check --domain cargo-publish --type rust --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.review.fresh' <<<"$output")" = "true" ]
+}
+
+@test "bootstrap-template-review rejects rust (ships no cog templates)" {
+  run --separate-stderr cog bootstrap-template-review check --domain rust --type rust --research-root "$SHELF" --json
+  assert_failure
+  [[ $stderr == *"unknown bootstrap review domain"* ]]
+}

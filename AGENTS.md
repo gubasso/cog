@@ -45,8 +45,9 @@ authoritative registry is the per-tier `skills` lists in `data/model-effort/clau
 Skill names must follow the prefix taxonomy in `docs/decisions/0016-skill-prefix-taxonomy.md` and
 `docs/reference/skill-contract.md` ("Prefix taxonomy"). `plan-*` emits plans; `review-*` reviews code
 or plans, with `review-plan-*` as the sub-namespace for plan-before-implementation review; `executor-*`
-executes one prompt/plan; `runner-*` orchestrates executor-selected queue items. A skill's prefix must
-match its behavior.
+executes one prompt/plan; `runner-*` orchestrates executor-selected queue items; `bootstrap-*`
+scaffolds or reconciles one project domain (a template-shipping worker runs the template-refresh
+routine). A skill's prefix must match its behavior.
 
 Native twin skills share one base name across `skills/claude/` and `skills/codex/`; platform-token
 suffixes are reserved for delegation launchers that run the other platform under the hood. See

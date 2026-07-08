@@ -92,6 +92,25 @@ project (scripts land executable), adds `release-plz.toml` with `--with-release-
 There is no `cog cargo-publish-auth` command. The crates.io auth check is a deliberate script-local
 exception inside the deployed `publish` script; no `cog` verb and no skill prose reads a credential.
 
+## Template refresh
+
+This worker ships cog templates (the helper scripts, `PUBLISHING.md`, `release-plz.toml`, and the
+optional `dist-workspace.toml`), so it follows the shared refresh routine at
+`$(cog skill-refs path bootstrap/template-refresh-routine.md)` on every run: check freshness, review
+and update the shared template under `skill-refs/templates/cargo-publish/` when stale or missing, stamp
+the review, then reconcile the target. The freshness type is `rust` (cargo-publish is Rust-only, one
+template set):
+
+```bash
+cog bootstrap-template-review check --domain cargo-publish --type rust --json
+```
+
+When `review.fresh` is `true`, reuse the cached `summary` and skip the publishing-practice research —
+go straight to deploying in the Workflow below. When it is `stale` or `missing`, web-research current
+crates.io / release-plz / cargo-dist best practice, update `skill-refs/templates/cargo-publish/` when
+justified, then stamp with `cog bootstrap-template-review stamp --domain cargo-publish --type rust ...`
+— even when the conclusion is "no template change" — before reconciling.
+
 ## Workflow
 
 1. Run `cog cargo-publish-detect --json`. Read `crate_kind`, `is_publishable`, `ci_provider`,
@@ -129,8 +148,10 @@ exception inside the deployed `publish` script; no `cog` verb and no skill prose
 8. Resolve the docs destination: `--doc-dir docs` when a `docs/` directory exists, else `--doc-dir .`
    to land `PUBLISHING.md` at the repo root.
 
-9. Run `cog cargo-publish-apply` with the chosen flags and conflict policy to deploy the scripts,
-   runbook, and any selected config.
+9. Refresh the templates first (see **Template refresh**): `cog bootstrap-template-review check
+   --domain cargo-publish --type rust --json`, update + stamp when stale/missing. Then run
+   `cog cargo-publish-apply` with the chosen flags and conflict policy to deploy the scripts, runbook,
+   and any selected config.
 
 10. Run `cog cargo-publish-check --json` for go/no-go readiness and report the result. Review its
     `package_list` for non-build-input junk (`docs/`, `.github/`, `scripts/`, `release-plz.toml`,

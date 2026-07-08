@@ -8,7 +8,7 @@
 
 cog::fn::bootstrap_review::valid_domain() {
   case "${1:-}" in
-    precommit | editorconfig | nix | repo | ci | taskrunner | governance) return 0 ;;
+    precommit | editorconfig | nix | repo | ci | taskrunner | governance | cargo-publish) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -26,6 +26,7 @@ cog::fn::bootstrap_review::template_domains() {
     ci) printf '%s\n' "ci" ;;
     taskrunner) printf '%s\n' "taskrunner" ;;
     governance) printf '%s\n' "governance" ;;
+    cargo-publish) printf '%s\n' "cargo-publish" ;;
     *) return 1 ;;
   esac
 }

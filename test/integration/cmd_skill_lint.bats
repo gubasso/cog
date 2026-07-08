@@ -27,6 +27,7 @@ write_skill() {
   case "$name" in
     executor-*) tier_fm=$'model: opus\neffort: medium\n' ;;
     runner-*) tier_fm=$'model: opus\neffort: low\n' ;;
+    bootstrap-*) tier_fm=$'model: opus\neffort: low\n' ;;
   esac
   if [[ $runtime == claude ]]; then
     cat >"$dir/SKILL.md" <<EOF
@@ -1665,5 +1666,33 @@ EOF
   local repo_root
   repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
   run cog skill-lint "$repo_root/skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md"
+  assert_success
+}
+
+@test "cog skill-lint flags a template-shipping bootstrap worker missing the refresh routine" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo" bootstrap-repo
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"bootstrap-template-review"* ]]
+  [[ $stderr == *"template-refresh routine"* ]]
+}
+
+@test "cog skill-lint accepts a bootstrap worker that references the refresh routine" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo" bootstrap-repo
+  printf '\n## Template refresh\n\nRun cog bootstrap-template-review check on every run.\n' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint exempts bootstrap-rust from template-review (ships no cog templates)" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust" bootstrap-rust
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust/SKILL.md"
+
   assert_success
 }
