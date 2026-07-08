@@ -1,6 +1,6 @@
-# Companion lychee.toml template for markdown KBs / docs repos.
-# Copy to the target repo root as `lychee.toml` alongside
-# `markdown.pre-commit-config.yaml`.
+# lychee link-checker config for markdown KBs / docs repos. Lives at the repo
+# root and tunes the lychee pre-commit hook (concurrency, retries,
+# accept/exclude rules).
 #
 # Why this exists: a long-lived KB accumulates external links that lychee
 # can't fairly validate from a pre-push context:

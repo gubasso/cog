@@ -1,4 +1,4 @@
-# EditorConfig for C projects, shipped by the cog pre-commit skill.
+# EditorConfig for C projects.
 # C source formatting is owned by clang-format, so no [*.c]/[*.h] indent block
 # is set here (avoids fighting the formatter).
 root = true

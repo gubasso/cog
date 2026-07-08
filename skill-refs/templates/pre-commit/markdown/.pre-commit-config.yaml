@@ -61,9 +61,9 @@ repos:
   # --- Markdown formatter: dprint (canonical CommonMark + GFM) ---
   #
   # dprint is the single source of truth for whitespace, list style,
-  # emphasis, table padding, etc. Configure via `./dprint.json` at the
-  # repo root (sibling companion shipped with this template). The markdown
-  # plugin URL/version is pinned inside dprint.json.
+  # emphasis, table padding, etc. Configure via the sibling `./dprint.json`
+  # at the repo root. The markdown plugin URL/version is pinned inside
+  # dprint.json.
   #
   # dprint.json is strict JSON (no comments). The textWrap=maintain rationale,
   # MD029 renumbering, fix-mode isolation, and the SoT decision are documented in
@@ -102,8 +102,8 @@ repos:
   # hierarchy) AND autofixes the one thing dprint can't do — ordered-list
   # renumbering (MD029, 1.→2.→3.). Fix-mode is enabled via "fix": true in the
   # config and isolated to MD029 (all other fixable rules disabled there) so it
-  # never fights dprint. Configure rules via `./.markdownlint-cli2.jsonc` (sibling
-  # companion shipped with this template) — without it, defaults (line
+  # never fights dprint. Configure rules via the sibling
+  # `./.markdownlint-cli2.jsonc` at the repo root — without it, defaults (line
   # length, inline HTML) will be too strict for a knowledge base.
   #
   # Uses the node variant; swap to `markdownlint-cli2-docker` if your
@@ -134,9 +134,7 @@ repos:
   #
   # Runs only on `git push` so commits stay snappy. The cache file
   # `.lycheecache` should be gitignored. All tunables (concurrency, retries,
-  # accept/exclude rules) live in `lychee.toml` at the repo root. The
-  # `/pre-commit` skill auto-copies the sibling `lychee.toml` from this
-  # template dir alongside this config.
+  # accept/exclude rules) live in the sibling `lychee.toml` at the repo root.
   - repo: https://github.com/lycheeverse/lychee
     rev: lychee-v0.24.2
     hooks:

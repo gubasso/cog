@@ -1,4 +1,4 @@
-# EditorConfig for Python projects, shipped by the cog pre-commit skill.
+# EditorConfig for Python projects.
 # Code indent aligns with ruff-format (4 spaces).
 root = true
 

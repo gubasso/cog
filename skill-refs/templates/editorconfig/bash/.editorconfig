@@ -1,4 +1,4 @@
-# EditorConfig for bash projects, shipped by the cog pre-commit skill.
+# EditorConfig for bash projects.
 # Shell indent aligns with shfmt (-i 2). The editorconfig-checker hook enforces
 # these; markdown is owned by other tooling.
 root = true

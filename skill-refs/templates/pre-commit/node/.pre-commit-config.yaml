@@ -1,5 +1,5 @@
 # Node.js / TypeScript pre-commit configuration
-# Generic template — tailor per-project (paths, additional_dependencies, exclude patterns).
+# Tailor per-project (paths, additional_dependencies, exclude patterns).
 
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 

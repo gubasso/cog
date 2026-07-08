@@ -1,5 +1,5 @@
-# EditorConfig for Node.js/TypeScript projects, shipped by the cog pre-commit
-# skill. Code indent aligns with prettier (tabWidth 2); markdown is owned by
+# EditorConfig for Node.js/TypeScript projects. Code indent aligns with
+# prettier (tabWidth 2); markdown is owned by
 # prettier/markdownlint.
 root = true
 

@@ -1,4 +1,4 @@
-# EditorConfig for Zig projects, shipped by the cog pre-commit skill.
+# EditorConfig for Zig projects.
 # Code indent aligns with zig fmt (4 spaces).
 root = true
 

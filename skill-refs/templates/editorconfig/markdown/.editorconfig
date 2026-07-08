@@ -1,4 +1,4 @@
-# EditorConfig for markdown/docs projects, shipped by the cog pre-commit skill.
+# EditorConfig for markdown/docs projects.
 # Markdown formatting is owned by dprint + markdownlint, and editorconfig-checker
 # excludes *.md, so no markdown indent block is set here.
 root = true
