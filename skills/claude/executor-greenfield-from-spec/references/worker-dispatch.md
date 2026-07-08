@@ -4,12 +4,16 @@ This reference defines the coordinator-owned brief and dispatch shapes.
 
 ## Capability Extraction
 
-Objective: produce the public capability bundle and private bundle under `RUN_DIR` from read-only
-source observation.
+Objective: produce one merged public capability bundle and the private bundle under `RUN_DIR` from
+read-only observation of all sources.
 
 Brief contents:
 
-- source path and read-only access boundary;
+- source paths and read-only access boundary;
+- per-source purpose map — for a specific-feature source, which capability to extract; for a
+  general-inspiration source, which architectural qualities to abstract;
+- explicit instruction that inspiration-source architecture is abstracted into sanitized capability
+  and nonfunctional expectations, never carried as concrete source layout or naming;
 - public bundle output directory;
 - private bundle output directory;
 - capability contract path;
@@ -19,10 +23,11 @@ Brief contents:
 
 Postconditions:
 
-- public bundle files exist and are non-empty;
-- private denylist exists and is non-empty when source tokens were observed;
+- merged public bundle files exist and are non-empty;
+- the union `source-leakage-denylist.txt` exists and is non-empty when any source exposed tokens;
 - `cog round-req stamp <public-bundle-dir> --json` has assigned requirement IDs;
-- `cog spec-leakage-scan <public-files> --source-denylist <denylist> --json` reports `ok: true`.
+- `cog spec-leakage-scan <public-files> --source-denylist source-leakage-denylist.txt --json` reports
+  `ok: true`.
 
 ## Capability Review
 
@@ -32,7 +37,7 @@ leakage.
 Brief contents:
 
 - public bundle paths;
-- private denylist path;
+- union `source-leakage-denylist.txt` path;
 - capability contract path;
 - leakage policy path;
 - scanner report path;
@@ -42,6 +47,7 @@ Postconditions:
 
 - review verdict is `pass` or `revise`;
 - leakage findings are explicit and actionable;
+- inspiration-source architecture is abstracted — no concrete source layout or naming in the bundle;
 - completeness gaps name the affected requirement IDs or sections.
 
 ## Solution Planning
@@ -57,7 +63,8 @@ Brief contents:
 - user reference-doc paths;
 - solution contract path;
 - the operator's solution-phase interview decisions, carried under *Context & Decisions*;
-- explicit note that source artifacts are not part of the input.
+- explicit note that no source artifacts from any source — specific-feature or general-inspiration —
+  are part of the input.
 
 Postconditions:
 
@@ -74,7 +81,7 @@ Brief contents:
 
 - solution bundle paths;
 - public capability bundle paths;
-- private denylist path for scoped behavioral-section scan;
+- union `source-leakage-denylist.txt` path for scoped behavioral-section scan;
 - solution contract path;
 - leakage policy path;
 - the operator's solution-phase interview decisions, carried under *Context & Decisions*.

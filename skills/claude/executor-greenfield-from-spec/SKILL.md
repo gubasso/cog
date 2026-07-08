@@ -2,12 +2,15 @@
 name: executor-greenfield-from-spec
 description: >
   Run an operator-driven blind greenfield-from-spec pipeline: extract a sanitized
-  capability contract from a source, review it for leakage, hydrate a target
-  solution spec, review it, scaffold the target, and hand implementation to the
-  queue runners. Interviews the operator before each phase and stops at each
-  milestone checkpoint to report and take direction; `-a`/`--auto` records default
-  decisions and runs the whole pipeline back to back unattended.
-argument-hint: "<source-path> <target-path> <reimplementation intent and target reference paths> [-a|--auto]"
+  capability contract from one or more purpose-tagged sources, review it for leakage,
+  hydrate a target solution spec, review it, scaffold the target, and hand
+  implementation to the queue runners. Each source carries a declared purpose — a
+  specific-feature source or an abstracted general-inspiration source — and the
+  coordinator confirms each purpose from context and interviews when it is unclear.
+  Interviews the operator before each phase and stops at each milestone checkpoint to
+  report and take direction; `-a`/`--auto` records default decisions and runs the whole
+  pipeline back to back unattended.
+argument-hint: "<source-path>... <target-path> <per-source purpose + reimplementation intent + target reference paths> [-a|--auto]"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill AskUserQuestion
 ---
@@ -34,8 +37,9 @@ context-brief build` and confirm it with `cog context-brief validate` before dis
 
 Run a source-aware coordinator that gives every downstream worker only sanitized artifacts. The
 coordinator owns the per-phase interviews, artifact routing, leakage loop, milestone checkpoints,
-target setup, and final handoff. Workers own extraction, review, solution planning, and solution
-review in fresh context.
+target setup, and final handoff. It accepts one or more purpose-tagged sources — specific-feature
+sources and abstracted general-inspiration sources — and folds a single capability extractor over all
+of them. Workers own extraction, review, solution planning, and solution review in fresh context.
 
 This coordinator is operator-driven: it interviews the operator before each phase and stops at each
 milestone checkpoint to report and take direction. `-a`/`--auto` records default decisions and runs
@@ -53,7 +57,10 @@ Read these references before dispatch:
 
 The workflow needs:
 
-1. A readable source project path.
+1. One or more readable source project paths, each with a declared purpose: a specific-feature source
+   (extract a particular capability) or a general-inspiration source (architecture and patterns,
+   carried only as abstracted expectations). Resolve each source's purpose from context first, and
+   interview when it is unclear.
 2. A distinct target project path.
 3. A free-form target objective.
 4. User-supplied target reference-doc paths for stack, architecture, conventions, and project
@@ -67,8 +74,8 @@ interviews the operator before each phase and stops at each milestone checkpoint
 default decisions and runs the pipeline back to back, stopping only on the hard blockers in
 `references/checkpoints.md`.
 
-Ask one focused question when any required input is missing or ambiguous. Confirm that source and
-target paths differ before creating artifacts.
+Ask one focused question when any required input is missing or ambiguous. Confirm that every source
+path is readable and distinct from the target path before creating artifacts.
 
 ## Run Directory
 
@@ -80,8 +87,10 @@ cog rundir greenfield-from-spec
 ```
 
 Use the printed `RUN_DIR=<path>` literally in later commands. Keep the private bundle, context
-briefs, worker outputs, leakage reports, setup notes, and run report under that run directory.
-Deliverables go to the target project only when the implementation tail writes them.
+briefs, worker outputs, leakage reports, setup notes, and run report under that run directory. The
+private bundle holds the union `source-leakage-denylist.txt` and optional per-source
+`source-leakage-denylist-<slug>.txt` traceability files. Deliverables go to the target project only
+when the implementation tail writes them.
 
 ## Workflow
 
@@ -91,16 +100,18 @@ contract (report shape, dynamic menu, response handling), and `--auto` behavior.
 
 **Inputs phase.**
 
-1. Run the Inputs interview for source path, target path, target stack direction, reference-doc
-   paths, acceptance priorities, bootstrap need, and execution scope.
+1. Run the Inputs interview for the source paths and each source's purpose, target path, target stack
+   direction, reference-doc paths, acceptance priorities, bootstrap need, and execution scope.
 2. Run the Inputs checkpoint before extraction.
 
 **Capability phase.**
 
-3. Run the Extraction interview, then build and validate a context brief for the capability
-   extractor. This is the only worker brief that may name the source path.
-4. Dispatch the capability extractor as a fresh-context Agent worker.
-5. Run `cog spec-leakage-scan` on the public capability bundle with the private denylist.
+3. Run the Extraction interview for per-source purpose and scope, then build and validate a context
+   brief for the capability extractor with all sources and their per-source purpose map. This is the
+   only worker brief that may name the source paths.
+4. Dispatch the single capability extractor as a fresh-context Agent worker over all sources; it emits
+   one merged public bundle and the union `source-leakage-denylist.txt`.
+5. Run `cog spec-leakage-scan` on the merged public bundle with the union `source-leakage-denylist.txt`.
 6. Build and validate a context brief for capability review; include the public bundle and private
    denylist path. Dispatch capability review, and loop extraction and review until the public bundle
    is complete and leakage-free.
@@ -145,14 +156,18 @@ and not-evaluated list. It omits this coordinator's verdict so each review remai
 
 ## Leakage Rule
 
-Only the capability extractor may know the source exists. The solution planner receives the public
-capability bundle and target references only. It never receives the private bundle, source tests,
-source commands, source roots, or source observation notes.
+Only the capability extractor may know the sources exist. Inspiration-source architecture survives
+only as abstracted, sanitized capability, nonfunctional, and structural expectations; the solution
+planner designs its own architecture and receives no source architecture from any source, whether
+specific-feature or general-inspiration. The solution planner receives the public capability bundle
+and target references only. It never receives the private bundle, source tests, source commands,
+source roots, or source observation notes.
 
 ## Completion
 
 Finish by reporting:
 
+- every source path with its declared purpose;
 - target project path;
 - public capability bundle path;
 - approved solution bundle path;

@@ -13,11 +13,13 @@ Decisions* — it steers workers without ever routing source knowledge to a blin
 
 Interview banks by phase:
 
-- **Inputs** — source path, target path, target objective, target reference-doc paths, acceptance
-  priorities, whether the target needs a `bootstrap` scaffold, execution scope
-  (`runner-plan`/`runner-all`), and interactive-versus-`--auto` mode.
-- **Extraction** — capability-scope emphasis: which behaviors matter most, which areas are
-  out of scope, and how deeply to capture edge cases.
+- **Inputs** — the source paths and each source's purpose (specific-feature or general-inspiration,
+  confirmed from context and asked only when unclear), target path, target objective, target
+  reference-doc paths, acceptance priorities, whether the target needs a `bootstrap` scaffold,
+  execution scope (`runner-plan`/`runner-all`), and interactive-versus-`--auto` mode.
+- **Extraction** — per-source scope: for each specific-feature source, which behaviors matter most,
+  which areas are out of scope, and how deeply to capture edge cases; for each general-inspiration
+  source, which architectural qualities to abstract behind the leakage firewall.
 - **Solution** — architecture and stack options, which acceptance priorities dominate design
   tradeoffs, and target module boundaries.
 - **Setup** — confirmation that the printed setup steps are complete (see Setup Checkpoint).
@@ -57,8 +59,10 @@ Response handling:
 The run stops at five milestones:
 
 1. **Inputs** — after the opening interview, before capability extraction.
-2. **Capability** — after capability review approves and `cog spec-leakage-scan` reports clean,
-   before solution planning.
+2. **Capability** — after capability review approves and `cog spec-leakage-scan` of the merged bundle
+   against the union `source-leakage-denylist.txt` reports clean, before solution planning. The
+   `checkpoint-capability.md` report records the per-source contribution summary and the union
+   denylist path.
 3. **Solution** — after solution review approves, before bootstrap and setup.
 4. **Setup** — after target scaffold, before handoff (see Setup Checkpoint).
 5. **Handoff** — before runner dispatch: confirm execution scope and go/no-go.
@@ -103,7 +107,8 @@ Use the approved solution bundle as the implementation input for the plan-to-que
 
 The run report under `RUN_DIR` records:
 
-- source path and target path;
+- every source path with its declared purpose, and the target path;
+- the union `source-leakage-denylist.txt` path;
 - public capability bundle path;
 - approved solution bundle path;
 - leakage scan report paths;
