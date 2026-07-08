@@ -1,10 +1,13 @@
 ---
 name: executor-greenfield-from-spec
 description: >
-  Run a blind greenfield-from-spec pipeline: extract a sanitized capability
-  contract from a source, review it for leakage, hydrate a target solution spec,
-  review it, scaffold the target, and hand implementation to the queue runners.
-argument-hint: "<source-path> <target-path> <reimplementation intent and target reference paths>"
+  Run an operator-driven blind greenfield-from-spec pipeline: extract a sanitized
+  capability contract from a source, review it for leakage, hydrate a target
+  solution spec, review it, scaffold the target, and hand implementation to the
+  queue runners. Interviews the operator before each phase and stops at each
+  milestone checkpoint to report and take direction; `-a`/`--auto` records default
+  decisions and runs the whole pipeline back to back unattended.
+argument-hint: "<source-path> <target-path> <reimplementation intent and target reference paths> [-a|--auto]"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill AskUserQuestion
 ---
@@ -30,8 +33,13 @@ substance and load-bearing artifacts, and omit your own verdict. Build the brief
 context-brief build` and confirm it with `cog context-brief validate` before dispatch.
 
 Run a source-aware coordinator that gives every downstream worker only sanitized artifacts. The
-coordinator owns the interview, artifact routing, leakage loop, target setup pause, and final
-handoff. Workers own extraction, review, solution planning, and solution review in fresh context.
+coordinator owns the per-phase interviews, artifact routing, leakage loop, milestone checkpoints,
+target setup, and final handoff. Workers own extraction, review, solution planning, and solution
+review in fresh context.
+
+This coordinator is operator-driven: it interviews the operator before each phase and stops at each
+milestone checkpoint to report and take direction. `-a`/`--auto` records default decisions and runs
+the pipeline back to back, stopping only on hard blockers.
 
 Read these references before dispatch:
 
@@ -39,7 +47,7 @@ Read these references before dispatch:
 - `$(cog skill-refs path spec-pipeline/solution-spec-contract.md)`
 - `$(cog skill-refs path spec-pipeline/leakage-policy.md)`
 - `references/worker-dispatch.md`
-- `references/pause-and-handoff.md`
+- `references/checkpoints.md`
 
 ## Inputs
 
@@ -53,6 +61,11 @@ The workflow needs:
 5. Acceptance priorities that rank the target's success criteria.
 6. Whether the target environment needs a `bootstrap` scaffold.
 7. Execution scope for the queue tail: `runner-plan` for one plan or `runner-all` for the whole queue.
+
+`$ARGUMENTS` may also carry `-a` or `--auto`. By default the run is interactive: the coordinator
+interviews the operator before each phase and stops at each milestone checkpoint. `--auto` records
+default decisions and runs the pipeline back to back, stopping only on the hard blockers in
+`references/checkpoints.md`.
 
 Ask one focused question when any required input is missing or ambiguous. Confirm that source and
 target paths differ before creating artifacts.
@@ -72,28 +85,50 @@ Deliverables go to the target project only when the implementation tail writes t
 
 ## Workflow
 
-1. Interview once for source path, target path, target stack direction, reference-doc paths, and
-   acceptance priorities.
-2. Build and validate a context brief for the capability extractor. This is the only worker brief
-   that may name the source path.
-3. Dispatch the capability extractor as a fresh-context Agent worker.
-4. Run `cog spec-leakage-scan` on the public capability bundle with the private denylist.
-5. Build and validate a context brief for capability review; include the public bundle and private
-   denylist path.
-6. Dispatch capability review. Loop extraction and review until the public bundle is complete and
-   leakage-free.
-7. Build and validate a context brief for solution planning. Include only the public capability
-   bundle, target path, target stack direction, and user reference-doc paths.
-8. Dispatch solution planning.
+Each phase runs its per-phase interview, does its work, then reports and takes direction at a
+milestone checkpoint. `references/checkpoints.md` defines the interview banks, the checkpoint
+contract (report shape, dynamic menu, response handling), and `--auto` behavior.
+
+**Inputs phase.**
+
+1. Run the Inputs interview for source path, target path, target stack direction, reference-doc
+   paths, acceptance priorities, bootstrap need, and execution scope.
+2. Run the Inputs checkpoint before extraction.
+
+**Capability phase.**
+
+3. Run the Extraction interview, then build and validate a context brief for the capability
+   extractor. This is the only worker brief that may name the source path.
+4. Dispatch the capability extractor as a fresh-context Agent worker.
+5. Run `cog spec-leakage-scan` on the public capability bundle with the private denylist.
+6. Build and validate a context brief for capability review; include the public bundle and private
+   denylist path. Dispatch capability review, and loop extraction and review until the public bundle
+   is complete and leakage-free.
+7. Run the Capability checkpoint before solution planning.
+
+**Solution phase.**
+
+8. Run the Solution interview, then build and validate a context brief for solution planning. Include
+   only the public capability bundle, target path, target stack direction, and user reference-doc
+   paths. Dispatch solution planning.
 9. Build and validate a context brief for solution review. Include the solution bundle, the public
-   capability bundle, and the denylist path only for behavioral-section leakage checks.
-10. Dispatch solution review. Loop solution planning and review until the bundle is approved.
+   capability bundle, and the denylist path only for behavioral-section leakage checks. Dispatch
+   solution review, and loop solution planning and review until the bundle is approved.
+10. Run the Solution checkpoint before bootstrap and setup.
+
+**Setup phase.**
+
 11. Dispatch `bootstrap` for target environment scaffold when the target needs setup.
-12. Run the human setup pause in `references/pause-and-handoff.md`.
-13. Hand the approved solution bundle to `plan-builder-to-queue-vetted-multi` as the plan-to-queue
-    tail, then run the selected runner (`runner-plan` or `runner-all`) per the chosen execution scope.
+12. Run the Setup checkpoint in `references/checkpoints.md`.
+
+**Handoff phase.**
+
+13. Run the Handoff checkpoint, then hand the approved solution bundle to
+    `plan-builder-to-queue-vetted-multi` as the plan-to-queue tail and run the selected runner
+    (`runner-plan` or `runner-all`) per the chosen execution scope.
 14. Write a run report under `RUN_DIR` with artifact paths, review verdicts, leakage scan results,
-   setup postcondition, runner result, and remaining risks.
+    checkpoint report paths, the auto-decision log for `--auto` runs, setup postcondition, runner
+    result, and remaining risks.
 
 ## Context Brief Mechanics
 
@@ -122,6 +157,7 @@ Finish by reporting:
 - public capability bundle path;
 - approved solution bundle path;
 - leakage scan report paths;
+- checkpoint report paths under `RUN_DIR`, and the auto-decision log for `--auto` runs;
 - runner result;
 - manual setup postcondition;
 - remaining risks and follow-ups.

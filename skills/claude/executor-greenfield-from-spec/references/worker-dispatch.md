@@ -14,7 +14,8 @@ Brief contents:
 - private bundle output directory;
 - capability contract path;
 - leakage policy path;
-- target-independent behavior priorities from the interview.
+- target-independent behavior priorities from the interview;
+- the operator's extraction-phase interview decisions, carried under *Context & Decisions*.
 
 Postconditions:
 
@@ -34,7 +35,8 @@ Brief contents:
 - private denylist path;
 - capability contract path;
 - leakage policy path;
-- scanner report path.
+- scanner report path;
+- the operator's capability-phase interview decisions, carried under *Context & Decisions*.
 
 Postconditions:
 
@@ -54,6 +56,7 @@ Brief contents:
 - target stack direction;
 - user reference-doc paths;
 - solution contract path;
+- the operator's solution-phase interview decisions, carried under *Context & Decisions*;
 - explicit note that source artifacts are not part of the input.
 
 Postconditions:
@@ -73,7 +76,8 @@ Brief contents:
 - public capability bundle paths;
 - private denylist path for scoped behavioral-section scan;
 - solution contract path;
-- leakage policy path.
+- leakage policy path;
+- the operator's solution-phase interview decisions, carried under *Context & Decisions*.
 
 Postconditions:
 
