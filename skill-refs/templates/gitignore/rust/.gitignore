@@ -3,6 +3,8 @@
 /target/
 **/*.rs.bk
 *.pdb
+rustc-ice-*.txt
+**/mutants.out*/
 
 # OS / editor cruft
 .DS_Store
