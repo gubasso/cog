@@ -20,6 +20,7 @@
 #   - typos            : conservative spell check (autofix).
 #   - ripsecrets       : secret scanner (fast).
 #   - lychee           : link checker (pre-push only; network).
+#   - no-bare-relative-links : forbid bare-filename relative links (explicit ./ or path).
 #   - committed        : Conventional Commits shape on commit-msg (SoT: committed.toml).
 #
 # First-run note:
@@ -113,6 +114,30 @@ repos:
     hooks:
       - id: markdownlint-cli2
         additional_dependencies: ['markdownlint-rule-relative-links']
+
+  # --- Explicit relative links (ambiguity guard; pre-commit, local) ---
+  #
+  # A bare-filename relative link like [x](runbook.md) is ambiguous: the same
+  # basename can exist in many directories, so neither humans nor tools (e.g. the
+  # Marksman LSP) can tell which file is meant, and the link silently rots when a
+  # file moves. Require an explicit prefix: ./name, ../dir/name, or a multi-segment
+  # path dir/name. Fragment-only (#...), root-absolute (/...), and URL links pass.
+  # Both forms are covered: inline links [x](target) and reference-style link
+  # definitions [label]: target (footnote/collapsed refs included).
+  #
+  # pygrep is built into pre-commit — no external dependency, no companion file.
+  - repo: local
+    hooks:
+      - id: no-bare-relative-links
+        name: inline markdown links must be explicit (./, ../, or a path)
+        language: pygrep
+        types: [markdown]
+        entry: '\]\((?!https?://|ftp://|mailto:|tel:|/|#|\.\.?/)[^)/\s:]+\.[A-Za-z0-9]+(?:#[^)]*)?\)'
+      - id: no-bare-relative-link-defs
+        name: markdown link definitions must be explicit (./, ../, or a path)
+        language: pygrep
+        types: [markdown]
+        entry: '^\s*\[[^\]]+\]:\s+(?!https?://|ftp://|mailto:|tel:|/|#|\.\.?/|<)[^\s/:#]+\.[A-Za-z0-9]+'
 
   # --- Spelling (report-only) ---
   - repo: https://github.com/crate-ci/typos
