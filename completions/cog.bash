@@ -52,6 +52,7 @@ _cog() {
     gc-plan
     gc-push
     gc-stage
+    git-identity
     gitignore-apply
     gitignore-detect
     governance-apply

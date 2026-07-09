@@ -216,6 +216,11 @@ Run git push without force support.\&
 Reconcile and stage explicit session files.\&
 .PP
 .RE
+\fBgit-identity\fR
+.RS 4
+Resolve and check the repo git identity (user.\&name/user.\&email).\&
+.PP
+.RE
 \fBgitignore-apply\fR
 .RS 4
 Apply a gitignore template to a project.\&
@@ -224,6 +229,16 @@ Apply a gitignore template to a project.\&
 \fBgitignore-detect\fR
 .RS 4
 Detect gitignore template type.\&
+.PP
+.RE
+\fBgovernance-apply\fR
+.RS 4
+Apply project governance docs (CLAUDE.\&md, AGENTS.\&md, ADR scaffold) to a project.\&
+.PP
+.RE
+\fBgovernance-detect\fR
+.RS 4
+Detect project governance docs presence and template type.\&
 .PP
 .RE
 \fBhelp\fR
@@ -476,6 +491,11 @@ Validate, sort, and severity-filter review findings JSON.\&
 Parse review-plan-multi arguments and create run state.\&
 .PP
 .RE
+\fBreview-queue-rounds-check-idempotency\fR
+.RS 4
+Flag a round whose declared artifacts an earlier round already deployed.\&
+.PP
+.RE
 \fBreview-queue-rounds-scan\fR
 .RS 4
 Inventory all plan-vault queues and repo/plan fingerprints.\&
@@ -509,6 +529,11 @@ Assemble and validate executor-stamped round prompts.\&
 \fBround-req\fR
 .RS 4
 Stamp and list round acceptance requirement IDs.\&
+.PP
+.RE
+\fBround-rightsize\fR
+.RS 4
+Drive the recursive round right-sizing queue.\&
 .PP
 .RE
 \fBround-split\fR

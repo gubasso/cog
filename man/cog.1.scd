@@ -135,6 +135,9 @@ The command list and short descriptions are sourced from command modules under
 *gc-stage*
 	Reconcile and stage explicit session files.
 
+*git-identity*
+	Resolve and check the repo git identity (user.name/user.email).
+
 *gitignore-apply*
 	Apply a gitignore template to a project.
 

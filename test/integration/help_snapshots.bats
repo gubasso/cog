@@ -66,6 +66,7 @@ Commands:
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
+  git-identity   Resolve and check the repo git identity (user.name/user.email).
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
   governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
@@ -194,6 +195,7 @@ Commands:
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
   gc-stage       Reconcile and stage explicit session files.
+  git-identity   Resolve and check the repo git identity (user.name/user.email).
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
   governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.

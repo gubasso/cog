@@ -36,8 +36,8 @@ scripts (`scripts/publish`, `scripts/publish-dry`, `scripts/release`), `PUBLISHI
 and the optional `dist-workspace.toml`. Everything else is delivered by its owner and surfaced as a
 fragment rather than written here:
 
-- crates.io metadata in `Cargo.toml` (`description`, `license`, `repository`, `keywords`, `readme`,
-  `publish`) — `bootstrap-rust`.
+- crates.io metadata in `Cargo.toml` (`authors`, `description`, `license`, `repository`, `keywords`,
+  `readme`, `publish`) — `bootstrap-rust` (it sources `authors` from the repo's git identity).
 - publish/version task recipes, when a task runner is present — taskrunner domain (`--type rust`).
 - the release CI workflow (release-plz job, OIDC permissions, optional `dist` job) — CI domain
   (`--type rust`).

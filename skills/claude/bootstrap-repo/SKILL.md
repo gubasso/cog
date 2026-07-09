@@ -28,7 +28,8 @@ detail belongs in the deployed files, decided with the operator.
 - Template trees: cog's `skill-refs/templates/gitignore/`, `skill-refs/templates/license/`, and
   `skill-refs/templates/readme/`, or a caller-supplied `--template-root`.
 - Current working directory: the target project.
-- License facts: the SPDX id, copyright holder, and year — always confirmed with the operator.
+- License facts: the SPDX id, copyright holder, and year — always confirmed with the operator; the
+  holder default comes from the repository's git identity.
 
 ## Cog Contract
 
@@ -103,9 +104,12 @@ license. `stamp` fails fast when the template SoT is not writable; surface that.
    policy. For an existing `.gitignore`, use append mode to add missing fragments without clobbering,
    and confirm `.direnv/` and `/result` are present.
 
-3. Confirm the license with the operator: ask for the SPDX id, the copyright holder, and the year.
-   Present the shipped ids from `license-apply --list`. Ask for each value directly — never assume a
-   default.
+3. Confirm the license with the operator: present the shipped ids from `license-apply --list` and ask
+   for the SPDX id and year directly — never default the SPDX id. Seed the copyright holder from the
+   repository's git identity via the git-identity preflight
+   (`$(cog skill-refs path bootstrap/git-identity-preflight.md)`): read `cog git-identity check --json`
+   and offer its `name` as the default holder for the operator to confirm; when identity is unset, pause
+   with the step-by-step it describes before asking for the holder.
 
 4. Deploy the `LICENSE` with `cog license-apply`, passing `--holder` and `--year` for MIT and
    BSD-3-Clause. Reconcile a pre-existing `LICENSE` with the operator before overwriting.

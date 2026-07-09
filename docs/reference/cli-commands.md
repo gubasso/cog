@@ -71,6 +71,8 @@ this reference table.
 | `gc-plan` | Partition session files by owning repo and run safety scan. |
 | `gc-push` | Run git push without force support. |
 | `gc-stage` | Reconcile and stage explicit session files. |
+| `git-identity` | Resolve and check the repo git identity (user.name/user.email). |
+| `git-identity check [--project-root <dir>] (<out.json>\|--json)` | Emit the repo's git-resolved identity (name/email/author_string); exits non-zero when `user.name`/`user.email` are unset. |
 | `gitignore-apply` | Apply a gitignore template to a project. |
 | `gitignore-detect` | Detect gitignore template type. |
 | `governance-apply` | Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project. |

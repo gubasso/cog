@@ -56,6 +56,75 @@ cog::fn::git_current_branch() {
   git branch --show-current
 }
 
+# Classify where a resolved git config key comes from: local (this repo's
+# config), global (the user's ~/.gitconfig), else system (any other resolved
+# scope). Only meaningful for a key that already resolves to a value.
+__cog_git_identity_source() {
+  local project_root="$1" key="$2"
+  if git -C "$project_root" config --local --get "$key" >/dev/null 2>&1; then
+    printf 'local\n'
+  elif git -C "$project_root" config --global --get "$key" >/dev/null 2>&1; then
+    printf 'global\n'
+  else
+    printf 'system\n'
+  fi
+}
+
+# Resolve the repo's git identity for a project root, as git itself resolves it
+# (a repo-local user.name/user.email overrides the global one — the same identity
+# commits carry). Emits:
+#   {ok, name, email, author_string, name_source, email_source, missing, reason}
+# author_string is "<name> <email>" when both resolve, else null. ok is false —
+# with name/email null and the unset fields listed in `missing` — when the root
+# is not a git repo or either field is unset/empty. The human-facing step-by-step
+# remediation lives in the shared git-identity preflight routine, not here: this
+# helper reports the facts, the routine owns the wording.
+cog::fn::git_identity_json() {
+  __cog_git_require_git
+  __cog_git_require_jq
+
+  local project_root="${1:-$PWD}"
+  local ok=true reason="" name="" email="" name_source="" email_source=""
+  local -a missing=()
+
+  if [[ ! -d $project_root ]]; then
+    ok=false
+    reason="project root is not a directory"
+  elif ! git -C "$project_root" rev-parse --git-dir >/dev/null 2>&1; then
+    ok=false
+    reason="not a git repository"
+  else
+    name="$(git -C "$project_root" config --get user.name 2>/dev/null)" || name=""
+    email="$(git -C "$project_root" config --get user.email 2>/dev/null)" || email=""
+    [[ -n $name ]] && name_source="$(__cog_git_identity_source "$project_root" user.name)"
+    [[ -n $email ]] && email_source="$(__cog_git_identity_source "$project_root" user.email)"
+    [[ -n $name ]] || missing+=("user.name")
+    [[ -n $email ]] || missing+=("user.email")
+    if ((${#missing[@]} > 0)); then
+      ok=false
+      reason="git identity not configured: ${missing[*]} unset"
+    fi
+  fi
+
+  jq -n \
+    --argjson ok "$(__cog_git_bool "$ok")" \
+    --arg project_root "$project_root" \
+    --arg name "$name" \
+    --arg email "$email" \
+    --arg name_source "$name_source" \
+    --arg email_source "$email_source" \
+    --arg reason "$reason" \
+    --argjson missing "$(__cog_git_json_array_from_lines "${missing[@]}")" \
+    '{ok: $ok, project_root: $project_root,
+      name: (if $name == "" then null else $name end),
+      email: (if $email == "" then null else $email end),
+      author_string: (if $name == "" or $email == "" then null else ($name + " <" + $email + ">") end),
+      name_source: (if $name_source == "" then null else $name_source end),
+      email_source: (if $email_source == "" then null else $email_source end),
+      missing: $missing,
+      reason: (if $ok then null else $reason end)}'
+}
+
 cog::fn::git_status_porcelain() {
   __cog_git_require_git
   git status --porcelain=v1 -uall

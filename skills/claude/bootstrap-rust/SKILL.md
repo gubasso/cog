@@ -75,19 +75,26 @@ cargo_runner, ran[], skipped[], reason}`, is a no-op on an already-scaffolded pr
 Reconciling an existing crate is judgment: inspect `Cargo.toml` and `src/`, decide any change in prose,
 and never re-initialize or blind-overwrite a crate that is already scaffolded.
 
+The `Cargo.toml` `authors` entry comes from the repository's own git identity, never a name or email
+guessed from context. Follow the git-identity preflight at
+`$(cog skill-refs path bootstrap/git-identity-preflight.md)`: read `cog git-identity check --json`, set
+`authors = ["<author_string>"]` from its `author_string` when `ok` is `true`, and pause with the
+step-by-step it describes when identity is unset.
+
 ## Workflow
 
 1. Run `cog cargo-detect --json`. Read `scaffolded`, `kind`, `edition`, `configs`, and `cargo_runner`.
 
 2. If `scaffolded=true`, reconcile in prose — confirm the crate kind and edition match the intent, note
    any drift, and do **not** re-scaffold. When the brief carries crates.io publishing metadata gaps
-   (`description`, `license`, `repository`, `keywords`, `readme`), reconcile them into `Cargo.toml`,
-   which this skill owns. Skip to step 4.
+   (`authors`, `description`, `license`, `repository`, `keywords`, `readme`), reconcile them into
+   `Cargo.toml`, which this skill owns; source `authors` from the git-identity preflight. Skip to step 4.
 
 3. If `scaffolded=false`, resolve the crate kind (`bin` unless the intent is a library or workspace) and
-   run `cog cargo-scaffold-apply --kind "$KIND" [--name <crate>] --json`. When `cargo_runner=absent`,
-   surface that the toolchain is not reachable (enter the nix devShell — `direnv allow` or
-   `nix develop` — then retry) rather than inventing a `Cargo.toml`.
+   run `cog cargo-scaffold-apply --kind "$KIND" [--name <crate>] --json`. Modern cargo omits `authors`,
+   so set it from the git-identity preflight (`author_string`) once the crate exists. When
+   `cargo_runner=absent`, surface that the toolchain is not reachable (enter the nix devShell —
+   `direnv allow` or `nix develop` — then retry) rather than inventing a `Cargo.toml`.
 
 4. Decide optional config from `$(cog skill-refs path rust/rust-project-conventions.md)`: `rustfmt` and
    `clippy` stay on their defaults unless there is an explicit, obvious, widely-adopted reason to add a

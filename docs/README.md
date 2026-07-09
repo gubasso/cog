@@ -82,6 +82,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0075: Queue round metadata for scope-guard and cross-round idempotency](decisions/0075-queue-round-metadata-scope-and-idempotency.md)
 - [ADR-0076: Empty-commit as a first-class runner/gc outcome](decisions/0076-empty-commit-first-class-outcome.md)
 - [ADR-0077: Outcome-telemetry v2 and scope-aware calibration heuristics](decisions/0077-outcome-telemetry-v2-and-scope-aware-heuristics.md)
+- [ADR-0078: Deterministic git-identity preflight for identity-bearing bootstrap fields](decisions/0078-git-identity-preflight.md)
 
 ## Guides
 
