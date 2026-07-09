@@ -80,7 +80,7 @@ cog::fn::match_telemetry::record_outcome() {
   local project_key="${1:-}" plan_slug="${2:-}" round_id="${3:-}" actual_executor="${4:-}"
   # shellcheck disable=SC2034  # loc, files, rlf, ced used via indirect expansion in the loop below
   local result="${5:-}" reverted="${6:-false}" retries="${7:-}" loc="${8:-}" files="${9:-}" \
-    rlf="${10:-}" ced="${11:-}" note="${12:-}"
+    rlf="${10:-}" ced="${11:-}" note="${12:-}" dmf="${13:-}" dml="${14:-}" oag="${15:-}"
   local stream recorded_at record
   cog::fn::match_telemetry::require_jq
   [[ -n $project_key && -n $plan_slug && -n $round_id ]] || cog::fn::error_raise "MissingArgument" \
@@ -92,9 +92,15 @@ cog::fn::match_telemetry::record_outcome() {
   [[ $reverted == true || $reverted == false ]] || reverted=false
   [[ -z $retries || $retries =~ ^[0-9]+$ ]] || cog::fn::error_raise "InvalidInput" \
     "retries must be a non-negative integer" "option: --retries" "value: ${retries}" "pass --retries <n>"
+  [[ -z $dmf || $dmf =~ ^[0-9]+$ ]] || cog::fn::error_raise "InvalidInput" \
+    "round-scope max-files must be a non-negative integer" "option: --round-scope-max-files" "value: ${dmf}" "pass an integer"
+  [[ -z $dml || $dml =~ ^[0-9]+$ ]] || cog::fn::error_raise "InvalidInput" \
+    "round-scope max-lines must be a non-negative integer" "option: --round-scope-max-lines" "value: ${dml}" "pass an integer"
+  [[ -z $oag || $oag == true || $oag == false ]] || cog::fn::error_raise "InvalidInput" \
+    "override-approval-gate must be true or false" "option: --override-approval-gate" "value: ${oag}" "pass a boolean"
   recorded_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   record="$(jq -cn \
-    --arg schema "cog.match-telemetry.outcome.v1" \
+    --arg schema "cog.match-telemetry.outcome.v2" \
     --arg recorded_at "$recorded_at" \
     --arg pk "$project_key" --arg ps "$plan_slug" --arg rid "$round_id" \
     --arg ae "$actual_executor" --arg result "$result" \
@@ -113,6 +119,20 @@ cog::fn::match_telemetry::record_outcome() {
       "metric must be an integer" "field: ${key}" "value: ${val}" "pass an integer"
     record="$(jq -c --arg k "$key" --argjson v "$val" '. + {($k): $v}' <<<"$record")"
   done
+  # round_scope (v2): declared vs actual scope + a computed exceeded flag. actual
+  # reuses the files/loc metrics; declared comes from the round's scope-guard limits.
+  if [[ -n $dmf || -n $dml || -n $files || -n $loc ]]; then
+    local exceeded=false
+    [[ -n $dmf && -n $files ]] && ((files > dmf)) && exceeded=true
+    [[ -n $dml && -n $loc ]] && ((loc > dml)) && exceeded=true
+    record="$(jq -c \
+      --argjson dmf "${dmf:-null}" --argjson dml "${dml:-null}" \
+      --argjson af "${files:-null}" --argjson al "${loc:-null}" \
+      --argjson exceeded "$exceeded" \
+      '. + {round_scope: {declared: {max_files: $dmf, max_lines: $dml},
+        actual: {files: $af, lines: $al}, exceeded: $exceeded}}' <<<"$record")"
+  fi
+  [[ -z $oag ]] || record="$(jq -c --argjson v "$oag" '. + {override_approval_gate: $v}' <<<"$record")"
   [[ -z $note ]] || record="$(jq -c --arg v "$note" '. + {note: $v}' <<<"$record")"
   stream="$(cog::fn::match_telemetry::stream_path)"
   cog::fn::match_telemetry::append_line "$stream" "$record"
@@ -170,7 +190,8 @@ cog::fn::match_telemetry::__validate_filter() {
   and (.round_id | type == "string") and (.predicted_executor | type == "string")
   and (.score | type == "number"))
 or
-(.kind == "outcome" and (.schema == "cog.match-telemetry.outcome.v1")
+(.kind == "outcome"
+  and ((.schema == "cog.match-telemetry.outcome.v1") or (.schema == "cog.match-telemetry.outcome.v2"))
   and (.project_key | type == "string") and (.plan_slug | type == "string")
   and (.round_id | type == "string") and (.actual_executor | type == "string")
   and (.result | type == "string") and ((.result == "pass") or (.result == "fail")))
@@ -237,17 +258,31 @@ cog::fn::match_telemetry::report_json() {
     | ($rows | map(select(.kind == "prediction"))) as $preds
     | ($rows | map(select(.kind == "outcome"))) as $outs
     | ($preds | map({(keyof): .}) | add // {}) as $predmap
-    | ($outs | map(
+    | ($outs
+        | group_by(keyof)
+        | map(
+            (sort_by(.recorded_at // "")) as $g
+            | ($g[-1]) as $canon
+            | ($g[0:-1] | map(select((.result // "") == "fail")) | length) as $extra_fails
+            | $canon + {retries: (($canon.retries // 0) + $extra_fails)}
+          )
+      ) as $collapsed
+    | ($collapsed | map(
         . as $o
         | (.project_key + "" + .plan_slug + "" + .round_id) as $k
         | ($predmap[$k]) as $p
         | (if $o.actual_executor == "executor-prex" then $o.review_loop_findings
            elif $o.actual_executor == "executor-vetted" then $o.cross_engine_deltas
            else null end) as $mv
+        | ($o.round_scope.actual.files) as $af
+        | ($p.score // null) as $score
         | ((($o.result // "") == "fail") or (($o.reverted // false) == true)) as $has_fail
         | (((($o.retries // 0)) >= 2)) as $high_retries
         | (if $has_fail or $high_retries then "under-powered"
            elif ($mv != null and $mv == 0) then "over-powered"
+           elif ($score != null and $score >= 25
+                 and $af != null and $af <= 3
+                 and $mv != null and $mv <= 1) then "over-powered"
            else "well-matched" end) as $q
         | (($p == null)
            or (($p.predicted_executor // null) != null
@@ -258,14 +293,15 @@ cog::fn::match_telemetry::report_json() {
            score: ($p.score // null), grade: ($p.grade // null),
            result: ($o.result // null), reverted: ($o.reverted // false),
            retries: ($o.retries // 0), marginal_value: $mv,
+           round_scope: ($o.round_scope // null),
            matched_prediction: ($p != null), match_quality: $q, needs_review: $needs}
       )) as $joined
-    | ($outs | map(keyof) | unique) as $outkeys
-    | ($preds | map(select((keyof) as $k | ($outs | map(.project_key + "" + .plan_slug + "" + .round_id) | index($k)) == null))) as $pending
+    | ($preds | map(select((keyof) as $k | ($collapsed | map(keyof) | index($k)) == null))) as $pending
     | {
         schema: "cog.match-telemetry.report.v1", ok: true,
         filters: {project_key: $pk, since: $since},
         predictions: ($preds | length), outcomes: ($outs | length),
+        logical_rounds: ($collapsed | length),
         matched: ($joined | map(select(.matched_prediction)) | length),
         unmatched_outcomes: ($joined | map(select(.matched_prediction | not)) | length),
         pending_predictions: ($pending | length),
@@ -279,4 +315,42 @@ cog::fn::match_telemetry::report_json() {
         }
       }')"
   printf '%s\n' "$report"
+}
+
+# Executor roster for saturation reporting. Kept in lockstep with the routable
+# executors in data/power-grade/executor-capability/passes.yaml.
+cog::fn::match_telemetry::executor_roster() {
+  printf '%s\n' "executor-oneshot" "executor-vetted" "executor-prex"
+}
+
+# Per-executor rollup plus saturation flags over collapsed logical rounds. Holds
+# the score→executor bands steady (ADR-0077): it surfaces where the calibration
+# corpus is thin or lopsided, it never reweights.
+cog::fn::match_telemetry::recalibrate_json() {
+  local file="${1:-}" project_key="${2:-}" since="${3:-}" report roster_json
+  cog::fn::match_telemetry::require_jq
+  report="$(cog::fn::match_telemetry::report_json "$file" "$project_key" "$since")"
+  roster_json="$(cog::fn::match_telemetry::executor_roster | jq -R . | jq -sc '.')"
+  jq -cn --argjson report "$report" --argjson roster "$roster_json" \
+    --arg project_key "$project_key" --arg since "$since" '
+    ($report.rows // []) as $rows
+    | ($rows | length) as $total
+    | ([ $roster[] as $e
+        | ($rows | map(select(.actual_executor == $e))) as $r
+        | {executor: $e, outcomes: ($r | length),
+           share: (if $total == 0 then 0 else (($r | length) / $total) end),
+           "well-matched": ($r | map(select(.match_quality == "well-matched")) | length),
+           "over-powered": ($r | map(select(.match_quality == "over-powered")) | length),
+           "under-powered": ($r | map(select(.match_quality == "under-powered")) | length)} ]) as $by
+    | ([ $by[]
+        | if .outcomes == 0 then {executor: .executor, kind: "zero-data",
+             detail: (.executor + ": 0 outcomes — no calibration data")}
+          elif (.share > 0.8) then {executor: .executor, kind: "saturated",
+             detail: (.executor + ": " + (((.share * 100) | floor) | tostring) + "% of all outcomes")}
+          else empty end ]) as $flags
+    | {schema: "cog.match-telemetry.recalibrate.v1", ok: true,
+       filters: {project_key: $project_key, since: $since},
+       logical_rounds: $total, by_executor: $by, saturation_flags: $flags,
+       note: "bands held; enrich and gather spread before any reweight (ADR-0077)"}
+  '
 }

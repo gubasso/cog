@@ -82,3 +82,24 @@ setup() {
   assert_success
   [[ $output == *"Parse runner commit"* ]]
 }
+
+@test "cog runner-commit-parse recognizes the COMMIT_OK empty marker" {
+  local out="${BATS_TEST_TMPDIR}/gc.out"
+  printf '%s\n' "COMMIT_OK empty" >"$out"
+
+  run cog runner-commit-parse "$out" --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .empty == true and (.commits == [])' >/dev/null
+
+  run cog runner-commit-parse "$out"
+  assert_success
+}
+
+@test "cog runner-commit-parse reports empty:false for a real commit" {
+  local out="${BATS_TEST_TMPDIR}/gc.out"
+  printf '%s\n' "COMMIT_OK abc1234" >"$out"
+
+  run cog runner-commit-parse "$out" --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .empty == false and (.commits[0].sha == "abc1234")' >/dev/null
+}

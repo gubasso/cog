@@ -205,3 +205,76 @@ EOF
   assert_failure 69
   [[ $stderr == *"err.kind: MissingRequirement"* ]]
 }
+
+@test "queue_validate_file accepts rounds with optional scope, artifacts, idempotency_check" {
+  local q="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
+  cat >"$q" <<'YAML'
+rounds:
+  - item: r1
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar r1.md
+    notes: ""
+    scope:
+      max_files: 3
+      max_lines: 120
+    artifacts:
+      - type: stow
+        path: /home/u/.local/overlay
+    idempotency_check:
+      - type: file
+        path: /etc/thing
+YAML
+
+  run cog::fn::queue_validate_file "$q" rounds
+  assert_success
+}
+
+@test "queue_validate_file still accepts rounds without the optional fields" {
+  local q="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
+  cat >"$q" <<'YAML'
+rounds:
+  - item: r1
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar r1.md
+    notes: ""
+YAML
+
+  run cog::fn::queue_validate_file "$q" rounds
+  assert_success
+}
+
+@test "queue_validate_file rejects a malformed scope" {
+  local q="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
+  cat >"$q" <<'YAML'
+rounds:
+  - item: r1
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar r1.md
+    notes: ""
+    scope:
+      max_files: "lots"
+YAML
+
+  run --separate-stderr cog::fn::queue_validate_file "$q" rounds
+  assert_failure
+}
+
+@test "queue_validate_file rejects an artifact missing its path" {
+  local q="${BATS_TEST_TMPDIR}/queue-rounds.yaml"
+  cat >"$q" <<'YAML'
+rounds:
+  - item: r1
+    status: todo
+    depends_on: []
+    prompt: /executor-prex -ar r1.md
+    notes: ""
+    artifacts:
+      - type: stow
+YAML
+
+  run --separate-stderr cog::fn::queue_validate_file "$q" rounds
+  assert_failure
+}

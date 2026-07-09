@@ -82,3 +82,61 @@ EOF
   [[ "$(jq -r '.round_id' <<<"$output")" == "setup-foo" ]]
   [[ "$(jq -r '.requirement_ids[0]' <<<"$output")" == "R1" ]]
 }
+
+@test "cog match-telemetry records a v2 outcome with round_scope" {
+  run cog match-telemetry record --kind outcome --project-key pk --plan-slug p --round-id rs \
+    --actual-executor executor-prex --result pass --review-loop-findings 2 \
+    --files 3 --loc-changed 40 --round-scope-max-files 3 --round-scope-max-lines 120 \
+    --override-approval-gate --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .record.schema == "cog.match-telemetry.outcome.v2"
+    and .record.round_scope.declared.max_files == 3
+    and .record.round_scope.actual.files == 3
+    and .record.round_scope.exceeded == false
+    and .record.override_approval_gate == true
+  ' >/dev/null
+}
+
+@test "cog match-telemetry report flags a small-scope high-grade round over-powered" {
+  cog match-telemetry record --kind prediction --project-key pk --plan-slug p --round-id tiny \
+    --predicted-executor executor-prex --score 28 --grade "Very High" --json >/dev/null
+  cog match-telemetry record --kind outcome --project-key pk --plan-slug p --round-id tiny \
+    --actual-executor executor-prex --result pass --review-loop-findings 1 \
+    --files 3 --loc-changed 20 --json >/dev/null
+
+  run cog match-telemetry report --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    (.rows[] | select(.round_id == "tiny") | .match_quality) == "over-powered"
+  ' >/dev/null
+}
+
+@test "cog match-telemetry report folds a fail-then-pass round into one logical round" {
+  cog match-telemetry record --kind prediction --project-key pk --plan-slug p --round-id retry \
+    --predicted-executor executor-prex --score 22 --json >/dev/null
+  cog match-telemetry record --kind outcome --project-key pk --plan-slug p --round-id retry \
+    --actual-executor executor-prex --result fail --review-loop-findings 0 --json >/dev/null
+  sleep 1
+  cog match-telemetry record --kind outcome --project-key pk --plan-slug p --round-id retry \
+    --actual-executor executor-prex --result pass --review-loop-findings 3 --json >/dev/null
+
+  run cog match-telemetry report --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .outcomes == 2 and .logical_rounds == 1
+    and (.rows[] | select(.round_id == "retry") | .result == "pass" and .retries == 1 and .match_quality == "well-matched")
+  ' >/dev/null
+}
+
+@test "cog match-telemetry recalibrate emits saturation flags" {
+  cog match-telemetry record --kind outcome --project-key pk --plan-slug p --round-id a \
+    --actual-executor executor-prex --result pass --review-loop-findings 3 --json >/dev/null
+
+  run cog match-telemetry recalibrate --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    (.saturation_flags[] | select(.executor == "executor-vetted") | .kind) == "zero-data"
+    and (.by_executor[] | select(.executor == "executor-prex") | .outcomes) == 1
+  ' >/dev/null
+}

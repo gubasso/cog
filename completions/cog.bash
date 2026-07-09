@@ -105,6 +105,7 @@ _cog() {
     review-loop-summary
     review-normalize-findings
     review-plan-multi-setup
+    review-queue-rounds-check-idempotency
     review-queue-rounds-scan
     review-queue-rounds-verify
     review-scope

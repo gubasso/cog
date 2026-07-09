@@ -299,6 +299,9 @@ The command list and short descriptions are sourced from command modules under
 *review-plan-multi-setup*
 	Parse review-plan-multi arguments and create run state.
 
+*review-queue-rounds-check-idempotency*
+	Flag a round whose declared artifacts an earlier round already deployed.
+
 *review-queue-rounds-scan*
 	Inventory all plan-vault queues and repo/plan fingerprints.
 

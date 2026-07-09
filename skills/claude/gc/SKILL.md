@@ -60,6 +60,7 @@ cog runner-commit-parse "$RESULTS_FILE" --json
 ```json
 {
   "ok": true,
+  "empty": false,
   "repos": [{"root": "/abs/repo", "paths": ["a"], "extra_dirty": ["b"]}],
   "undeclared_dirty": [{"root": "/abs/other", "paths": ["x"]}],
   "declared_no_change": ["/abs/declared-clean"],
@@ -68,6 +69,10 @@ cog runner-commit-parse "$RESULTS_FILE" --json
   "surprises": ["undeclared-repo:/abs/other"]
 }
 ```
+
+`empty` is `true` when no accepted repo has a declared session path that is actually dirty — the
+changeset is empty and there is nothing to commit (a round that only touched queue metadata, for
+example). Handle it before fanning out.
 
 `ok` is `false` only when there are `escapes` (paths in no git repo). A non-empty `surprises` list
 means the safety scan wants you to ask the user before committing. Each surprise is a tagged string:
@@ -98,7 +103,8 @@ COMMIT_PUSH_FAILED <reason> repo=<root>
 In single-repo mode the worker omits the `repo=` suffix, so the line is the canonical single-repo form
 `COMMIT_OK <sha>`. The coordinator concatenates every worker's line and runs `cog runner-commit-parse`,
 which fails closed on any `*_FAILED`. Emit the aggregated `COMMIT_*` block as the trailing block of the
-reply, with nothing after it.
+reply, with nothing after it. When `gc-plan` reports `empty: true`, the canonical trailing block is the
+single line `COMMIT_OK empty`; `cog runner-commit-parse` accepts it and reports `empty: true`.
 
 ## Working directory
 
@@ -149,6 +155,8 @@ being live shell variables in a later call.
 4. Safety branch (all resolved here, before any worker spawns):
    - If `.ok` is `false` (escapes): STOP. Report the paths that resolve to no git repo; do not commit
      anything.
+   - If `.empty` is `true`: there is nothing to commit. Emit the canonical `COMMIT_OK empty` line as
+     the trailing block and return without spawning any worker.
    - If `.surprises` is non-empty: STOP and ask the user, naming the undeclared repos, any invalid
      declared dirs, and — for each `foreign-dirty:<root>` — the specific foreign paths from that repo's
      `extra_dirty`. These are dirty or untracked files the session never declared; do not commit until

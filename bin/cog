@@ -61,6 +61,8 @@ source "${LIB_DIR}/functions/fn_review_loop_input.sh"
 source "${LIB_DIR}/functions/fn_context_brief.sh"
 # shellcheck source=../lib/functions/fn_gate.sh
 source "${LIB_DIR}/functions/fn_gate.sh"
+# shellcheck source=../lib/functions/fn_gate_approval.sh
+source "${LIB_DIR}/functions/fn_gate_approval.sh"
 # shellcheck source=../lib/functions/fn_git.sh
 source "${LIB_DIR}/functions/fn_git.sh"
 # shellcheck source=../lib/functions/fn_queue.sh

@@ -76,6 +76,12 @@ This directory is organized using Diataxis zones.
 - [ADR-0069: Right-sizing loop control flow is a cog-owned state machine](decisions/0069-rightsize-loop-cog-state-machine.md)
 - [ADR-0070: executor-prex explicit plan/review split; review-oneshot rides HIGH](decisions/0070-executor-prex-explicit-plan-review-split-and-review-oneshot-high.md)
 - [ADR-0071: Repository self-containment](decisions/0071-repository-self-containment.md)
+- [ADR-0072: cargo-dist first-class distribution and publishing doc trim](decisions/0072-cargo-dist-first-class-distribution-and-publishing-doc-trim.md)
+- [ADR-0073: `bootstrap` governed skill class and template-review participation](decisions/0073-bootstrap-skill-class.md)
+- [ADR-0074: Forge-resistant operator-approval gate](decisions/0074-forge-resistant-approval-gate.md)
+- [ADR-0075: Queue round metadata for scope-guard and cross-round idempotency](decisions/0075-queue-round-metadata-scope-and-idempotency.md)
+- [ADR-0076: Empty-commit as a first-class runner/gc outcome](decisions/0076-empty-commit-first-class-outcome.md)
+- [ADR-0077: Outcome-telemetry v2 and scope-aware calibration heuristics](decisions/0077-outcome-telemetry-v2-and-scope-aware-heuristics.md)
 
 ## Guides
 

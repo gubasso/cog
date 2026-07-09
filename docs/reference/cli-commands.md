@@ -136,6 +136,7 @@ this reference table.
 | `research-shelf get <id>` | Print one stored research finding. |
 | `research-shelf validate` | Validate the research shelf index and entries. |
 | `review-comment` | Plan or post PR comments for review findings. |
+| `review-queue-rounds-check-idempotency` | Flag a round whose declared artifacts an earlier round already deployed. |
 | `review-queue-rounds-scan` | Inventory all plan-vault queues and repo/plan fingerprints. |
 | `review-queue-rounds-verify` | Verify a review-queue-rounds run against a before/after scan. |
 | `review-init` | Create a review run directory and resolve output paths. |

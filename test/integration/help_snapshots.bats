@@ -119,6 +119,7 @@ Commands:
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
+  review-queue-rounds-check-idempotency Flag a round whose declared artifacts an earlier round already deployed.
   review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
   review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.
@@ -246,6 +247,7 @@ Commands:
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
+  review-queue-rounds-check-idempotency Flag a round whose declared artifacts an earlier round already deployed.
   review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
   review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.

@@ -22,7 +22,14 @@ type == "object" and
 (.depends_on | type == "array") and
 ([.depends_on[]? | select((type != "string") or (. == "") or (test("^[A-Za-z0-9_.-]+$") | not))] | length == 0) and
 (.prompt | type == "string" and . != "") and
-(.notes | type == "string")
+(.notes | type == "string") and
+((has("scope") | not) or (.scope | (type == "object")
+  and ((.max_files == null) or ((.max_files | type == "number") and (.max_files >= 0)))
+  and ((.max_lines == null) or ((.max_lines | type == "number") and (.max_lines >= 0))))) and
+((has("artifacts") | not) or (.artifacts | (type == "array")
+  and all(.[]; (type == "object") and (.type | type == "string") and (.path | type == "string" and . != "")))) and
+((has("idempotency_check") | not) or (.idempotency_check | (type == "array")
+  and all(.[]; (type == "object") and (.type | type == "string") and (.path | type == "string" and . != ""))))
 EOF
 }
 
@@ -74,6 +81,8 @@ cog::fn::queue_bootstrap_file() {
     rounds)
       {
         printf '%s\n' '# Rounds for this plan, in execution order. status: backlog | todo | doing | done'
+        printf '%s\n' '# Optional per-round metadata: scope: {max_files, max_lines} (scope-guard),'
+        printf '%s\n' '# artifacts: [{type, path}] (declared deploys), idempotency_check: [{type, path}].'
         printf '%s\n' 'rounds: []'
       } >"$queue_path" || cog::helpers::die "$EX_IOERR" "QueueWriteFailed" \
         "could not write queue file" "path: ${queue_path}" "" "check permissions"
@@ -124,7 +133,14 @@ cog::fn::queue_validate_file() {
       (.depends_on | tag != "!!seq") or
       ([.depends_on[]? | select((tag != "!!str") or (. == "") or ((. | test("^[A-Za-z0-9_.-]+$")) | not))] | length > 0) or
       (.prompt | tag != "!!str") or (.prompt == "") or
-      (.notes | tag != "!!str")
+      (.notes | tag != "!!str") or
+      (has("scope") and ((.scope | tag != "!!map")
+        or ((.scope | has("max_files")) and (.scope.max_files | tag != "!!int"))
+        or ((.scope | has("max_lines")) and (.scope.max_lines | tag != "!!int")))) or
+      (has("artifacts") and ((.artifacts | tag != "!!seq")
+        or ([.artifacts[]? | select((tag != "!!map") or (has("type") | not) or (has("path") | not) or (.type | tag != "!!str") or (.path | tag != "!!str") or (.path == ""))] | length > 0))) or
+      (has("idempotency_check") and ((.idempotency_check | tag != "!!seq")
+        or ([.idempotency_check[]? | select((tag != "!!map") or (has("type") | not) or (has("path") | not) or (.type | tag != "!!str") or (.path | tag != "!!str") or (.path == ""))] | length > 0)))
     ) | .item // "<missing item>"
   ' "$queue_path")"
   [[ -z $invalid ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \

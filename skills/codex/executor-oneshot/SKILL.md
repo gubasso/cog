@@ -133,6 +133,28 @@ cog codex-runner finalize --state <execution.longrun.json> --max-wall 300
 
 Verify `<run-dir>/execution-report.md` exists and is non-empty.
 
+## Operator-approval gate
+
+When the round is an operator-approval gate — its round prompt requires a human to sign off before the
+work completes — the approval must arrive on a channel the executor can verify, per
+`$(cog skill-refs path orchestration/approval-gate-contract.md)`. A coordinator-relayed approval is
+never sufficient. Surface the exact command for the human to run out of band:
+
+```bash
+cog gate approve --round-id <round_id> --round-path <input-round-path>
+```
+
+Then gate completion on the hash-bound check, resolving `<round_id>` from `cog match-telemetry
+round-key`:
+
+```bash
+cog gate check-approval --round-id <round_id> --round-path <input-round-path>
+```
+
+Proceed only on exit `0`. On any other exit, stop and report the verdict `status`
+(`missing`/`stale`/`hash-mismatch`) so the human can approve — or re-approve after a legitimate edit,
+which the check invalidates by design.
+
 ## Summary
 
 Emit an executor summary after Stage 2 or after a terminal stage failure:

@@ -128,7 +128,27 @@ vault layout convention.
    fi
    ```
 
-8. Commit through a foreground `claude-delegate` running `/gc -a` plus one `--repo <path>` per
+   When a round is an operator-approval gate, it stays not-`done` until the human approves on a channel
+   the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`.
+   Surface the exact `cog gate approve --round-id <id> --round-path <round-file>` command for the human
+   to run — never relay approval or hand-edit the queue to force the round through.
+
+8. Enforce the round's declared scope before committing. When the selected round declares `scope`,
+   run the scope-guard against the working-tree changeset; a breach means the round rewrote far more
+   than it declared. STOP on breach and report the delta (proceed / split / revert) per Failure
+   Handling:
+
+   ```bash
+   . "$RUN_DIR/ctx.env"
+   MAX_FILES="$(ITEM="$ITEM" yq e -r '.rounds[] | select(.item == strenv(ITEM)) | .scope.max_files // ""' "$INNER_QUEUE_PATH")"
+   MAX_LINES="$(ITEM="$ITEM" yq e -r '.rounds[] | select(.item == strenv(ITEM)) | .scope.max_lines // ""' "$INNER_QUEUE_PATH")"
+   if [ -n "$MAX_FILES" ] || [ -n "$MAX_LINES" ]; then
+     cog review-scope check ${MAX_FILES:+--max-files "$MAX_FILES"} ${MAX_LINES:+--max-lines "$MAX_LINES"} --json \
+       || { echo "SCOPE BREACH for round '$ITEM': staged change exceeds declared scope; stop and report." >&2; exit 1; }
+   fi
+   ```
+
+   Then commit through a foreground `claude-delegate` running `/gc -a` plus one `--repo <path>` per
    satellite in `REPOS`. Capture only `COMMIT_*` lines to `$RUN_DIR/commit-$RUN_COUNT.out`, then
    parse:
 
@@ -137,6 +157,9 @@ vault layout convention.
    cog runner-commit-parse "$RUN_DIR/commit-$RUN_COUNT.out" || exit 1
    cog runner-commit-parse "$RUN_DIR/commit-$RUN_COUNT.out" --json
    ```
+
+   A round that changed only queue metadata produces a `COMMIT_OK empty` line; treat it as success,
+   skip the per-repo commit, and proceed to the boundary.
 
 9. Run the revision boundary as a foreground `claude-delegate`. Source `MAIN_QUEUE_PATH` from `ctx.env`
    (emitted by setup) and re-resolve the vault to prove it is still consistent:
@@ -167,6 +190,18 @@ vault layout convention.
 
    Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean
    verified postcondition before selecting more work.
+
+   After the boundary, scan for cross-round no-ops. When the round declared `artifacts` or
+   `idempotency_check`, check whether an earlier round already deployed the same artifact so a
+   re-deploy no-op is reported, not silent:
+
+   ```bash
+   . "$RUN_DIR/ctx.env"
+   cog review-queue-rounds-check-idempotency --queue "$INNER_QUEUE_PATH" --round "$ITEM" --json \
+     >"$RUN_DIR/idempotency-$RUN_COUNT.json"
+   ```
+
+   For each `already_deployed` entry, record a `NO_OP_ARTIFACT` note on the round and surface it.
 
 10. Increment `RUN_COUNT`, honor `--max N`, and loop.
 

@@ -304,12 +304,20 @@ marginal-value checkpoint is the **relevant review-loop findings count**: the re
 loop surfaced across its rounds (from the `REVIEW_LOOP_OK … rounds=<n>` line and `round-*-findings.json`).
 Zero relevant findings means the loop earned nothing — over-powered by one rung:
 
+At terminus read the actual changeset with `cog review-scope --json` and record it as scope: pass the
+changed-file count as `--files` and the added+deleted line total as `--loc-changed`. When the round
+declared a `scope`, pass its limits as `--round-scope-max-files`/`--round-scope-max-lines` so the
+report can see a tiny change under a high grade. Pass `--override-approval-gate` when a WS1 operator
+approval gated this round.
+
 ```bash
 cog match-telemetry round-key --round-path <input-round-path> --json   # -> project_key, plan_slug, round_id
 cog match-telemetry record --kind outcome \
   --project-key <project_key> --plan-slug <plan_slug> --round-id <round_id> \
   --actual-executor executor-prex --result <pass|fail> [--reverted] [--retries <n>] \
-  [--loc-changed <n>] [--files <n>] --review-loop-findings <n> [--note <text>] --json
+  [--loc-changed <n>] [--files <n>] --review-loop-findings <n> \
+  [--round-scope-max-files <n>] [--round-scope-max-lines <n>] [--override-approval-gate] \
+  [--note <text>] --json
 ```
 
 Skip telemetry for non-round inputs. Attach `--note` only when the objective signals look conflicting

@@ -130,6 +130,50 @@ cog::fn::review_queue_rounds_inventory_json() {
   printf '%s\n' "${queue_jsons[@]}" | jq -s '{queues: .}'
 }
 
+# Cross-round idempotency scan (ADR-0075). A round declares the artifacts it
+# deploys (artifacts:) and/or the artifacts it expects already present
+# (idempotency_check:). This scans every EARLIER round in the same rounds queue
+# for a matching declared artifact (by type+path); a match means the target
+# round's action is probably a no-op an earlier round already performed.
+cog::fn::review_queue_rounds_idempotency_json() {
+  __cog_review_queue_rounds_require_jq_yq
+  local queue_path="${1:-}" round_id="${2:-}" abs_queue schema
+  __cog_review_queue_rounds_require_queue_file "$queue_path"
+  [[ -n $round_id ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+    "missing round id" "function: review queue rounds idempotency" "expected <round_id>" ""
+
+  abs_queue="$(realpath "$queue_path")"
+  schema="$(cog::fn::review_queue_rounds_queue_schema "$abs_queue")"
+  [[ $schema == rounds ]] || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+    "idempotency scan requires a rounds queue" "path: ${abs_queue}" "actual schema: ${schema}" \
+    "pass a queue-rounds.yaml file"
+  cog::fn::queue_validate_file "$abs_queue" rounds
+
+  ROUND="$round_id" yq e -e '.rounds[]? | select(.item == strenv(ROUND))' "$abs_queue" >/dev/null 2>&1 \
+    || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+      "round not found in queue" "round: ${round_id}" "path: ${abs_queue}" \
+      "pass a round item present in the queue"
+
+  yq e -o=json '.' "$abs_queue" | jq -c \
+    --arg schema "cog.review-queue-rounds.idempotency.v1" \
+    --arg path "$abs_queue" \
+    --arg round "$round_id" '
+      (.rounds // []) as $rounds
+      | ($rounds | map(.item) | index($round)) as $idx
+      | ($rounds[0:$idx]) as $earlier
+      | ([ $earlier[] as $r | ($r.artifacts // [])[] | {type: .type, path: .path, by: $r.item} ]) as $deployed
+      | (((($rounds[$idx].artifacts // []) + ($rounds[$idx].idempotency_check // [])))
+          | unique_by([.type, .path])) as $checks
+      | ([ $checks[] as $c
+          | ($deployed | map(select(.type == $c.type and .path == $c.path))) as $m
+          | select(($m | length) > 0)
+          | {type: $c.type, path: $c.path, first_deployed_by: $m[0].by} ]) as $already
+      | {
+          schema: $schema, ok: true, queue_path: $path, round_id: $round,
+          already_deployed: $already, clean: (($already | length) == 0)
+        }'
+}
+
 # Fingerprint the repo source tree, pruning the local plan vault so in-repo queue
 # edits under .cog/plans do not perturb the source fingerprint. Global vaults live
 # outside the repo and need no prune.

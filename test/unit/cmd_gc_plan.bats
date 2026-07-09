@@ -117,3 +117,31 @@ write_session() {
     any(.surprises[]; startswith("escape:"))
   ' >/dev/null
 }
+
+@test "gc-plan reports empty:false when a declared path is actually dirty" {
+  write_session "$REPO_A/src/a.txt"
+
+  run cog::cmd::gc_plan --session-files "${BATS_TEST_TMPDIR}/session.txt" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.empty == false' >/dev/null
+}
+
+@test "gc-plan reports empty:true for a clean declared repo" {
+  write_session "$CLEAN_REPO/foo.txt"
+
+  run cog::cmd::gc_plan --session-files "${BATS_TEST_TMPDIR}/session.txt" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.empty == true' >/dev/null
+}
+
+@test "gc-plan reports empty:true when only undeclared metadata is dirty" {
+  # lib/c.txt is declared but clean; the repo's only dirty path (lib/b.txt) was not declared.
+  write_session "$REPO_B/lib/c.txt"
+
+  run cog::cmd::gc_plan --session-files "${BATS_TEST_TMPDIR}/session.txt" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.empty == true' >/dev/null
+}

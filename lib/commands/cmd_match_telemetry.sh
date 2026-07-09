@@ -6,19 +6,22 @@ __cog_match_telemetry_round_key_self_check='(.schema=="cog.match-telemetry.round
 __cog_match_telemetry_path_self_check='(.schema=="cog.match-telemetry.path.v1") and (.ok==true) and (.telemetry_root|type=="string") and (.stream|type=="string")'
 __cog_match_telemetry_validate_self_check='(.schema=="cog.match-telemetry.validate.v1") and (.ok|type=="boolean") and (.stream|type=="string") and (.entries|type=="number") and (.errors|type=="array")'
 __cog_match_telemetry_report_self_check='(.schema=="cog.match-telemetry.report.v1") and (.ok==true) and (.rows|type=="array") and (.rollup|type=="object")'
+__cog_match_telemetry_recalibrate_self_check='(.schema=="cog.match-telemetry.recalibrate.v1") and (.ok==true) and (.by_executor|type=="array") and (.saturation_flags|type=="array")'
 
 __cog_match_telemetry_usage() {
   cog::fn::ui_data "Usage: cog match-telemetry record --kind prediction --project-key <k> --plan-slug <s> --round-id <r> [--requirement-ids <csv>] --predicted-executor <e> --score <n> [--grade <g>] [--json]"
-  cog::fn::ui_data "Usage: cog match-telemetry record --kind outcome --project-key <k> --plan-slug <s> --round-id <r> --actual-executor <e> --result <pass|fail> [--reverted] [--retries <n>] [--loc-changed <n>] [--files <n>] [--review-loop-findings <n>] [--cross-engine-deltas <n>] [--note <text>] [--json]"
+  cog::fn::ui_data "Usage: cog match-telemetry record --kind outcome --project-key <k> --plan-slug <s> --round-id <r> --actual-executor <e> --result <pass|fail> [--reverted] [--retries <n>] [--loc-changed <n>] [--files <n>] [--review-loop-findings <n>] [--cross-engine-deltas <n>] [--round-scope-max-files <n>] [--round-scope-max-lines <n>] [--override-approval-gate] [--note <text>] [--json]"
   cog::fn::ui_data "Usage: cog match-telemetry round-key --round-path <abs> [--project-root <dir>] [--json]"
   cog::fn::ui_data "Usage: cog match-telemetry path [--json]"
   cog::fn::ui_data "Usage: cog match-telemetry validate [--file <path>] [--json]"
   cog::fn::ui_data "Usage: cog match-telemetry report [--project-key <k>] [--since <YYYY-MM-DD>] [--file <path>] [--json]"
+  cog::fn::ui_data "Usage: cog match-telemetry recalibrate [--project-key <k>] [--since <YYYY-MM-DD>] [--file <path>] [--json]"
 }
 
 __cog_match_telemetry_record() {
   local kind="" project_key="" plan_slug="" round_id="" requirement_ids="" predicted_executor="" score="" grade=""
   local actual_executor="" result="" reverted=false retries="" loc="" files="" rlf="" ced="" note="" json
+  local rs_max_files="" rs_max_lines="" override_gate=""
   while (($# > 0)); do
     case "$1" in
       --kind)
@@ -89,6 +92,18 @@ __cog_match_telemetry_record() {
         note="${2:-}"
         shift 2
         ;;
+      --round-scope-max-files)
+        rs_max_files="${2:-}"
+        shift 2
+        ;;
+      --round-scope-max-lines)
+        rs_max_lines="${2:-}"
+        shift 2
+        ;;
+      --override-approval-gate)
+        override_gate=true
+        shift
+        ;;
       --json) shift ;;
       -*) cog::fn::error_raise "InvalidInput" "unknown match-telemetry record option" "option: $1" "" "run 'cog match-telemetry --help'" ;;
       *) cog::fn::error_raise "InvalidInput" "unexpected match-telemetry record argument" "argument: $1" "" "run 'cog match-telemetry --help'" ;;
@@ -99,7 +114,7 @@ __cog_match_telemetry_record() {
       json="$(cog::fn::match_telemetry::record_prediction "$project_key" "$plan_slug" "$round_id" "$requirement_ids" "$predicted_executor" "$score" "$grade")"
       ;;
     outcome)
-      json="$(cog::fn::match_telemetry::record_outcome "$project_key" "$plan_slug" "$round_id" "$actual_executor" "$result" "$reverted" "$retries" "$loc" "$files" "$rlf" "$ced" "$note")"
+      json="$(cog::fn::match_telemetry::record_outcome "$project_key" "$plan_slug" "$round_id" "$actual_executor" "$result" "$reverted" "$retries" "$loc" "$files" "$rlf" "$ced" "$note" "$rs_max_files" "$rs_max_lines" "$override_gate")"
       ;;
     "") cog::fn::error_raise "MissingArgument" "missing telemetry kind" "option: --kind" "" "use --kind prediction|outcome" ;;
     *) cog::fn::error_raise "InvalidInput" "unknown telemetry kind" "kind: ${kind}" "" "use --kind prediction|outcome" ;;
@@ -182,6 +197,31 @@ __cog_match_telemetry_report() {
   cog::fn::json_emit "$__cog_match_telemetry_report_self_check" "$json"
 }
 
+__cog_match_telemetry_recalibrate() {
+  local project_key="" since="" file="" json
+  while (($# > 0)); do
+    case "$1" in
+      --project-key)
+        project_key="${2:-}"
+        shift 2
+        ;;
+      --since)
+        since="${2:-}"
+        shift 2
+        ;;
+      --file)
+        file="${2:-}"
+        shift 2
+        ;;
+      --json) shift ;;
+      -*) cog::fn::error_raise "InvalidInput" "unknown match-telemetry recalibrate option" "option: $1" "" "run 'cog match-telemetry --help'" ;;
+      *) cog::fn::error_raise "InvalidInput" "unexpected match-telemetry recalibrate argument" "argument: $1" "" "run 'cog match-telemetry --help'" ;;
+    esac
+  done
+  json="$(cog::fn::match_telemetry::recalibrate_json "$file" "$project_key" "$since")"
+  cog::fn::json_emit "$__cog_match_telemetry_recalibrate_self_check" "$json"
+}
+
 cog::cmd::match_telemetry() {
   local mode="${1:-}"
   case "$mode" in
@@ -206,7 +246,11 @@ cog::cmd::match_telemetry() {
       shift
       __cog_match_telemetry_report "$@"
       ;;
-    "") cog::fn::error_raise "MissingArgument" "missing match-telemetry mode" "usage: cog match-telemetry record|round-key|path|validate|report" "" "run 'cog match-telemetry --help'" ;;
+    recalibrate)
+      shift
+      __cog_match_telemetry_recalibrate "$@"
+      ;;
+    "") cog::fn::error_raise "MissingArgument" "missing match-telemetry mode" "usage: cog match-telemetry record|round-key|path|validate|report|recalibrate" "" "run 'cog match-telemetry --help'" ;;
     *) cog::fn::error_raise "InvalidInput" "unknown match-telemetry mode" "mode: $mode" "" "run 'cog match-telemetry --help'" ;;
   esac
 }

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse runner commit result lines.'
 
-__cog_runner_commit_parse_self_check='(.ok == true) and (.commits|type=="array")'
+__cog_runner_commit_parse_self_check='(.ok == true) and (.empty|type=="boolean") and (.commits|type=="array")'
 
 __cog_runner_commit_parse_usage() {
   cog::fn::ui_data "Usage: cog runner-commit-parse <gc-out-file> [--json]"
@@ -21,14 +21,16 @@ __cog_runner_commit_parse_build_json() {
   [[ -f $file ]] || cog::fn::error_raise "InputNotFound" \
     "commit output file not found" "path: ${file}" "" "check the output path"
   local -a ok_lines=() failed_lines=() objs=()
+  local empty=false
   while IFS= read -r line || [[ -n $line ]]; do
     case "$line" in
+      "COMMIT_OK empty") empty=true ;;
       "COMMIT_OK "* | "COMMIT_PUSH_OK "*) ok_lines+=("$line") ;;
       "COMMIT_FAILED "* | "COMMIT_PUSH_FAILED "*) failed_lines+=("$line") ;;
     esac
   done <"$file"
 
-  ((${#ok_lines[@]} + ${#failed_lines[@]} > 0)) || cog::fn::error_raise "InvalidInput" \
+  ((${#ok_lines[@]} + ${#failed_lines[@]} > 0)) || [[ $empty == true ]] || cog::fn::error_raise "InvalidInput" \
     "missing COMMIT_* line" "path: ${file}" "" "check the gc output"
   if ((${#failed_lines[@]} > 0)); then
     cog::fn::error_raise "InvalidInput" \
@@ -38,7 +40,8 @@ __cog_runner_commit_parse_build_json() {
   for line in "${ok_lines[@]}"; do
     objs+=("$(__cog_runner_commit_parse_line_json "$line")")
   done
-  jq -n --argjson commits "$(printf '%s\n' "${objs[@]}" | jq -s .)" '{ok: true, commits: $commits}'
+  jq -n --argjson empty "$empty" --argjson commits "$(printf '%s\n' "${objs[@]}" | jq -s .)" \
+    '{ok: true, empty: $empty, commits: $commits}'
 }
 
 cog::cmd::runner_commit_parse() {

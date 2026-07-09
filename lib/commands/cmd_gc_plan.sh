@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Partition session files by owning repo and run safety scan.'
 
-__cog_gc_plan_self_check='(.ok|type=="boolean") and (.repos|type=="array") and (.undeclared_dirty|type=="array") and (.declared_no_change|type=="array") and (.escapes|type=="array") and (.invalid_repos|type=="array") and (.surprises|type=="array")'
+__cog_gc_plan_self_check='(.ok|type=="boolean") and (.empty|type=="boolean") and (.repos|type=="array") and (.undeclared_dirty|type=="array") and (.declared_no_change|type=="array") and (.escapes|type=="array") and (.invalid_repos|type=="array") and (.surprises|type=="array")'
 
 __cog_gc_plan_usage() {
   cog::fn::ui_data "Usage: cog gc-plan --session-files <file> [--repo <dir>]... [--repo-set <file>] (<out.json>|--json)"
@@ -171,15 +171,22 @@ __cog_gc_plan_build_json() {
   done
 
   local -a repo_objs=() rels=() changed=() extra=() foreign_roots=()
-  local c
+  local c changed_str committable_total=0 rel
   for root in "${accepted[@]}"; do
     mapfile -t rels <<<"${root_paths[$root]}"
     changed=()
     extra=()
     mapfile -t changed < <(__cog_gc_plan_repo_changed_paths "$root")
+    changed_str="$(printf '%s\n' "${changed[@]}")"
     for c in "${changed[@]}"; do
       [[ -n $c ]] || continue
       __cog_gc_plan_in_list "$c" "${root_paths[$root]}" || extra+=("$c")
+    done
+    # Committable = a declared session path that is actually dirty in git. When no
+    # accepted repo has any, the changeset is empty and gc has nothing to commit.
+    for rel in "${rels[@]}"; do
+      [[ -n $rel ]] || continue
+      __cog_gc_plan_in_list "$rel" "$changed_str" && committable_total=$((committable_total + 1))
     done
     [[ ${#extra[@]} -gt 0 ]] && foreign_roots+=("$root")
     repo_objs+=("$(jq -cn --arg root "$root" \
@@ -209,11 +216,13 @@ __cog_gc_plan_build_json() {
   for x in "${invalid_repos[@]}"; do surprises+=("invalid-repo:$x"); done
   for x in "${foreign_roots[@]}"; do surprises+=("foreign-dirty:$x"); done
 
-  local ok=true
+  local ok=true empty=false
   [[ ${#escapes[@]} -eq 0 ]] || ok=false
+  [[ $committable_total -eq 0 ]] && empty=true
 
   jq -n \
     --argjson ok "$ok" \
+    --argjson empty "$empty" \
     --argjson repos "$(__cog_gc_plan_json_objects "${repo_objs[@]}")" \
     --argjson undeclared_dirty "$(__cog_gc_plan_json_objects "${undeclared_objs[@]}")" \
     --argjson declared_no_change "$(__cog_gc_plan_json_array "${no_change[@]}")" \
@@ -222,6 +231,7 @@ __cog_gc_plan_build_json() {
     --argjson surprises "$(__cog_gc_plan_json_array "${surprises[@]}")" \
     '{
       ok: $ok,
+      empty: $empty,
       repos: $repos,
       undeclared_dirty: $undeclared_dirty,
       declared_no_change: $declared_no_change,
