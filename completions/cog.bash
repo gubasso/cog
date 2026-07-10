@@ -88,6 +88,7 @@ _cog() {
     precommit-apply-template
     precommit-detect
     precommit-run
+    precommit-spell-select
     preflight
     print-config
     queue-append

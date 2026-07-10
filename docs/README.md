@@ -87,6 +87,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0080: Cog-owned, boundary-finalized review-loop terminal step](decisions/0080-cog-owned-review-loop-terminal.md)
 - [ADR-0081: Knowledge-base as a bootstrap domain with a docs-as-specs scaffold](decisions/0081-knowledge-base-bootstrap-domain.md)
 - [ADR-0082: Reliable, prose-immune project classification](decisions/0082-reliable-project-classification.md)
+- [ADR-0083: Language-conditional knowledge-base spell checker (English→typos, non-English→cspell)](decisions/0083-language-conditional-kb-spell-checker.md)
 
 ## Guides
 

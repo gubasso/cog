@@ -243,6 +243,9 @@ The command list and short descriptions are sourced from command modules under
 *precommit-run*
 	Run pre-commit hooks across stages and collect failures.
 
+*precommit-spell-select*
+	Select the markdown spell checker for a set of KB content languages.
+
 *preflight*
 	Run centralized orchestrator preflight checks.
 

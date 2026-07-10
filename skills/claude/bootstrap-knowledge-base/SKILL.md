@@ -36,7 +36,10 @@ It defers to peer domains as structural contracts, never authoring their files:
 - The root `CLAUDE.md`, the root author-instructions `AGENTS.md`, and the `docs/decisions/` ADR
   scaffold (template plus seed ADR) belong to the governance domain.
 - Pre-commit hooks — markdown lint, formatting, link and spell checking — belong to the pre-commit
-  domain, auto-targeted at the markdown template.
+  domain, auto-targeted at the markdown template. The spell checker is language-dependent: this skill
+  determines the knowledge base's content languages (a judgment it owns) and declares them so the
+  pre-commit domain selects the matching variant — `typos` for English-only, `cspell` for content
+  that includes a non-English language.
 - `.editorconfig` content belongs to the editorconfig domain.
 - `.gitignore` (including the `.draft/` ignore), `LICENSE`, and `README` belong to the repo domain.
 
@@ -133,9 +136,21 @@ then stamp the review with `cog bootstrap-template-review stamp --domain knowled
      root author-instructions and `docs/decisions/`, pre-commit for markdown tooling, repo for the
      `.draft/` gitignore), without authoring their files here.
 
-7. Present a final summary: the scaffold deployed or reconciled, the content-library conventions
-   mapped to the project's real areas, the `AGENTS.md` digests seeded, and the peer domains a
-   follow-up run should invoke (governance, pre-commit, editorconfig, repo).
+7. Determine the knowledge base's content languages from its material and the user, then resolve the
+   spell-checker variant to carry into the pre-commit follow-up:
+
+   ```bash
+   cog precommit-spell-select --languages "$LANGUAGES" --json
+   ```
+
+   English-only content resolves to `typos`; content with any non-English language resolves to
+   `cspell`. Record the resolved `spell` value in the summary so the pre-commit domain applies the
+   matching variant.
+
+8. Present a final summary: the scaffold deployed or reconciled, the content-library conventions
+   mapped to the project's real areas, the `AGENTS.md` digests seeded, the declared content languages
+   and resolved spell variant, and the peer domains a follow-up run should invoke (governance,
+   pre-commit, editorconfig, repo).
 
 ## Guardrails
 

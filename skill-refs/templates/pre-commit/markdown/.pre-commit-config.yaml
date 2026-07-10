@@ -18,7 +18,9 @@
 #   - markdownlint-cli2: style gate beyond what dprint enforces, plus the one
 #                        autofix dprint can't do — ordered-list renumbering
 #                        (MD029). dprint owns all other formatting.
-#   - typos            : conservative spell check (autofix).
+#   - spell check      : variant-selected, appended by the template tooling.
+#                        English-only KBs get `typos` (default); multilingual
+#                        KBs get `cspell` (EN + pt-BR, per-file language switch).
 #   - ripsecrets       : secret scanner (fast).
 #   - lychee           : link checker (pre-push only; network).
 #   - no-bare-relative-links : forbid bare-filename relative links (explicit ./ or path).
@@ -146,14 +148,12 @@ repos:
         entry: '^\s*\[[^\]]+\]:\s+(?!https?://|ftp://|mailto:|tel:|/|#|\.\.?/|<)[^\s/:#]+\.[A-Za-z0-9]+'
 
   # --- Spelling (report-only) ---
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.47.2
-    hooks:
-      # Report-only (no --write-changes): typos auto-fix silently rewrites
-      # deliberate identifiers / error-kind strings and can break code when
-      # these hooks are layered into a code repo. Fix real typos by hand;
-      # allowlist false positives in _typos.toml.
-      - id: typos
+  #
+  # The spell-check hook is NOT declared here: it is a variant selected by the
+  # KB's content language and appended by `cog precommit-apply-template`.
+  # English-only KBs get `typos`; multilingual KBs get `cspell` (EN + pt-BR).
+  # The chosen hook stanza and its companion config are copied from the
+  # `_spell/<typos|cspell>/` overlay.
 
   # --- Secrets (fast, local) ---
   - repo: https://github.com/sirwart/ripsecrets

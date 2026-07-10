@@ -1,0 +1,9 @@
+  # --- Spelling (report-only) ---
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.47.2
+    hooks:
+      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # deliberate identifiers / error-kind strings and can break code when
+      # these hooks are layered into a code repo. Fix real typos by hand;
+      # allowlist false positives in _typos.toml.
+      - id: typos

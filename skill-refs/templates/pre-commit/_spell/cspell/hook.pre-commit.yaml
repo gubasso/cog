@@ -1,0 +1,19 @@
+  # --- Spelling: cspell (report-only; multilingual EN + pt-BR) ---
+  #
+  # cspell replaces typos for this KB variant because it mixes English and
+  # Brazilian Portuguese prose, and typos is English-only. cspell is a
+  # dictionary spell checker (not a corrections engine): it reports unknown
+  # words, it never rewrites them — same report-only philosophy as typos.
+  # Fix real misspellings by hand; allowlist project jargon in project-words.txt,
+  # and switch Portuguese on per file with `<!-- cspell:dictionaries pt-br -->`.
+  #
+  # Delivery: the official hosted hook runs under pre-commit's OWN managed Node
+  # env (language: node) — no system Node, no flake.nix change. The pt-BR
+  # dictionary is installed into that managed env via additional_dependencies,
+  # and wired in by the sibling cspell.config.yaml `import:`. Scoped to markdown.
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v10.0.1
+    hooks:
+      - id: cspell
+        types: [markdown]
+        additional_dependencies: ['@cspell/dict-pt-br']

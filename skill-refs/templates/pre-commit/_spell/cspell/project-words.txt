@@ -1,0 +1,49 @@
+# project-words.txt — custom dictionary for THIS project.
+#
+# SCOPE: project jargon and PROPER NOUNS only — tool names, product names,
+# technical initialisms, and identifiers that are correct in this repo but
+# unknown to general dictionaries. One word per line, natural casing.
+#
+# DO NOT put Brazilian-Portuguese LANGUAGE words here (configuração, documento,
+# palavra, ...). Those come from the pt-br dictionary, switched on per Portuguese
+# file with `<!-- cspell:dictionaries pt-br -->`. Listing them here would be
+# futile (a full dictionary is ~300k words) AND would let Portuguese words slip
+# past the checker in English-only files, hiding real typos.
+#
+# WHEN to add here vs. elsewhere (three-tier model — see SPELLING.md):
+#   - Add HERE             : jargon/proper noun that recurs ACROSS files.
+#   - `cspell:words` (file): a correct word that appears in ONE file only.
+#   - `cspell:dictionaries`: you're writing Portuguese — switch on `pt-br`.
+# Keep this list sorted and deduplicated so diffs stay small.
+
+# --- Spell / format / lint / link toolchain ---
+cspell
+dprint
+Hunspell
+LibreOffice
+lychee
+markdownlint
+ripsecrets
+typos
+
+# --- Editors / version control / commit tooling ---
+Neovim
+committed
+precommit
+
+# --- Nix / dev-environment ---
+devShell
+direnv
+envrc
+flake
+
+# --- Formats / standards / concepts ---
+CommonMark
+Diataxis
+JSONC
+JSONL
+Obsidian
+XDG
+exobrain
+frontmatter
+gitignore

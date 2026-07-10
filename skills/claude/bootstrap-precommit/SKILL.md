@@ -38,6 +38,14 @@ this skill neither writes nor tunes it.
 The `markdown` template exists in the cog-owned template tree but is not auto-detected by this skill
 because the detection table does not include it. It remains reachable by explicit `--type markdown`.
 
+The `markdown` template's spell checker is variant-selected via `--spell <typos|cspell>` (default
+`typos`). English-only knowledge bases use `typos`; knowledge bases with non-English content use
+`cspell` (English default plus per-file `<!-- cspell:dictionaries pt-br -->`). The apply helper copies
+the chosen variant's companion files (`_typos.toml`, or `cspell.config.yaml` + `project-words.txt` +
+`SPELLING.md`) and appends its hook stanza to the config. The language declaration that drives the
+choice is supplied by the caller; resolve it with `cog precommit-spell-select --languages <csv>` when
+a set of content languages is known. `--spell` has no effect on non-markdown types.
+
 ## Cog Contract
 
 `cog` must be installed and on `PATH`; a bare call fails legibly if it is
@@ -74,18 +82,22 @@ The detection helper emits:
 }
 ```
 
-Apply an existing template only after conflict policy is explicit:
+Apply an existing template only after conflict policy is explicit. For `--type markdown`, pass
+`--spell "$SPELL"` (the resolved `typos` or `cspell` variant); omit it for other types:
 
 ```bash
 cog precommit-apply-template \
   --type "$TYPE" \
+  --spell "$SPELL" \
   --config-conflict "$CONFIG_POLICY" \
   --companion-conflict "$COMPANION_POLICY" \
   --json
 ```
 
 Alongside the selected type's files, the helper always copies the shared `committed.toml`
-(commit-message linting) companion from the template root, governed by `--companion-conflict`.
+(commit-message linting) companion from the template root, governed by `--companion-conflict`. For
+`markdown`, it also copies the selected spell variant's companions and reports the choice in the
+`spell` and `spell_hook_appended` fields.
 
 The apply helper emits:
 
@@ -106,6 +118,8 @@ The apply helper emits:
   "conflicts": [],
   "config_conflict": "abort",
   "companion_conflict": "abort",
+  "spell": "typos",
+  "spell_hook_appended": false,
   "reason": null
 }
 ```
@@ -174,6 +188,7 @@ surface that. The `editorconfig-checker` hook stays a verified reconcile postcon
    ```bash
    cog precommit-apply-template \
      --type "$TYPE" \
+     --spell "$SPELL" \
      --config-conflict "$CONFIG_POLICY" \
      --companion-conflict "$COMPANION_POLICY" \
      --json

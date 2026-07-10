@@ -119,6 +119,7 @@ this reference table.
 | `precommit-apply-template` | Apply a pre-commit template to a project. |
 | `precommit-detect` | Detect pre-commit template type. |
 | `precommit-run` | Run pre-commit hooks across stages and collect failures. |
+| `precommit-spell-select` | Select the markdown spell checker for a set of KB content languages. |
 | `preflight` | Run centralized orchestrator preflight checks. |
 | `print-config` | Print resolved configuration values and their sources. |
 | `queue-append` | Append one implementation plan queue entry. |

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
+#
+# cspell config for a multilingual (English + Brazilian Portuguese) markdown
+# knowledge base. Auto-discovered by the `cspell` pre-commit hook — no --config
+# flag needed. Report-only: cspell flags unknown words; it never rewrites them.
+#
+# Three-tier vocabulary model (see SPELLING.md):
+#   1. Portuguese LANGUAGE words     -> pt-br dictionary, switched on per-file.
+#   2. Project jargon / proper nouns -> project-words.txt.
+#   3. One-off, file-local oddities  -> in-file `cspell:words` / `cspell:ignore`.
+#
+# YAML (not JSON) is deliberate: it hosts these comments, and dprint's json
+# plugin won't reformat a .yaml file, so nothing fights this config.
+
+version: '0.2'
+
+# Default language for every file: English. Portuguese is NOT global — it is
+# switched on per Portuguese file with `<!-- cspell:dictionaries pt-br -->`
+# (cspell has no in-document locale directive; `dictionaries` is the switch).
+# Keeping pt off by default means an English typo in an English file is still
+# caught rather than silently matching a Portuguese word.
+language: en
+
+# Register the Brazilian-Portuguese dictionary DEFINITION. The package is
+# installed into pre-commit's managed node env via additional_dependencies in
+# .pre-commit-config.yaml; this import makes the dictionary named `pt-br`
+# (locale pt,pt_BR) available to switch on per file.
+import:
+  - '@cspell/dict-pt-br/cspell-ext.json'
+
+# Custom project dictionary: jargon and proper nouns (tool names, etc.). Path is
+# relative to this config file. addWords lets tooling append here; the file is
+# the curated allowlist committed to the repo.
+dictionaryDefinitions:
+  - name: project-words
+    path: ./project-words.txt
+    addWords: true
+
+# Dictionaries active by default (for every file). project-words is always on;
+# pt-br is registered (via import) but intentionally NOT listed here, so it is
+# OFF by default and only enabled per file with `cspell:dictionaries pt-br`.
+# cspell's built-in en/software-terms/etc. stay on by default.
+dictionaries:
+  - project-words
+
+# --- What NOT to spell-check in prose ---
+#
+# In a KB, prose is the target and code is noise. Skip fenced and inline code so
+# shell/identifiers/paths inside them don't false-positive. Also skip URLs,
+# emails, and markdown link/image TARGETS (only human-readable text is checked).
+ignoreRegExpList:
+  - Urls                    # built-in: http(s)/ftp/mailto URLs
+  - Email                   # built-in: email addresses
+  - HexValues               # built-in: #deadbeef, 0xFF...
+  - RFC3339Date             # built-in: ISO timestamps
+  # Fenced code blocks (``` and ~~~): skip entirely.
+  - '/^\s*```[\s\S]*?```/gm'
+  - '/^\s*~~~[\s\S]*?~~~/gm'
+  # Inline code spans: `like this`.
+  - '/`{1,3}[^`\n]+`{1,3}/g'
+  # Markdown inline-link / image TARGETS and reference-definition targets.
+  - '/\]\([^)]*\)/g'
+  - '/^\s*\[[^\]]+\]:\s+\S+/gm'
+
+# --- Paths cspell must never read ---
+#
+# The hook honors .gitignore, but ignorePaths keeps the config self-sufficient
+# for editor and non-git CI runs. Covers VCS, node deps, direnv/Nix and Obsidian
+# state, lockfiles, caches, and the sibling tool configs that are not prose.
+ignorePaths:
+  - '.git/**'
+  - 'node_modules/**'
+  - '.direnv/**'
+  - '.obsidian/**'
+  - '.trash/**'
+  - '**/*-lock.json'
+  - '**/package-lock.json'
+  - '**/*.lock'
+  - '.lycheecache'
+  - 'dprint.json'
+  - 'lychee.toml'
+  - '.markdownlint-cli2.jsonc'
+  - 'committed.toml'
+  - 'cspell.config.yaml'
+  - 'project-words.txt'
