@@ -23,7 +23,7 @@ __cog_review_loop_summary_validate_self_check='
 
 __cog_review_loop_summary_usage() {
   cog::fn::ui_data "Usage: cog review-loop-summary build --run-dir <dir> --termination-reason <reason> --body <file> [--out <path>|--json]"
-  cog::fn::ui_data "Usage: cog review-loop-summary finalize --run-dir <dir> [--out <path>|--json]"
+  cog::fn::ui_data "Usage: cog review-loop-summary finalize --run-dir <dir> [--body-file <path>] [--out <path>|--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary set-reason --run-dir <dir> --reason <reason> [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary validate --run-dir <dir> [--summary <path>] [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary --help"
@@ -308,7 +308,7 @@ __cog_review_loop_summary_emit() {
 # idempotent: an already-valid summary.md re-emits its own line, so the worker fast-path and the
 # caller-owned boundary fallback never double-write. See ADR-0080.
 __cog_review_loop_summary_finalize_cmd() {
-  local run_dir="" out="" json="${COG_UI_JSON:-false}"
+  local run_dir="" out="" body_file="" json="${COG_UI_JSON:-false}"
 
   while (($# > 0)); do
     case "$1" in
@@ -320,6 +320,12 @@ __cog_review_loop_summary_finalize_cmd() {
         [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
           "missing run directory" "option: --run-dir" "" "run 'cog review-loop-summary --help'"
         run_dir="$2"
+        shift 2
+        ;;
+      --body-file)
+        [[ $# -ge 2 && -n ${2:-} && -z $body_file ]] || cog::fn::error_raise "MissingArgument" \
+          "missing summary body file" "option: --body-file" "" "run 'cog review-loop-summary --help'"
+        body_file="$2"
         shift 2
         ;;
       --out)
@@ -363,9 +369,21 @@ __cog_review_loop_summary_finalize_cmd() {
     return 0
   fi
 
-  local reason body
+  # Body source: the durable worker-maintained summary-body.md is authoritative when present.
+  # A boundary owner recovering a body-less child run supplies a verified narrative via
+  # --body-file; it is used only as a fallback, so a healthy run ignores it. When neither exists,
+  # `body` stays the fixed default path (which is absent), so __cog_review_loop_summary_write
+  # raises the same InputUnreadable fail-closed error -- cog fabricates no narrative.
+  local reason body default_body
   reason="$(__cog_review_loop_summary_read_reason "$run_dir")"
-  body="$(cog::fn::rundir_path "$run_dir" summary-body.md)"
+  default_body="$(cog::fn::rundir_path "$run_dir" summary-body.md)"
+  if [[ -f $default_body && -r $default_body ]]; then
+    body="$default_body"
+  elif [[ -n $body_file ]]; then
+    body="$body_file"
+  else
+    body="$default_body"
+  fi
   __cog_review_loop_summary_write "$run_dir" "$reason" "$body" "$out" "$json"
 }
 

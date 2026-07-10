@@ -128,8 +128,11 @@ cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
 
 `finalize` reads the child's maintained `summary-body.md` and recorded `termination-reason.txt`,
 assembles and asserts `summary.md`, and is idempotent. Then re-run the `verify-proof` command above and,
-on success, record the run dir and continue. If `finalize` fails closed — the child left no
-`summary-body.md`, so `cog` has no narrative to assemble and must not invent one — or
+on success, record the run dir and continue. If `finalize` fails closed because the child left no
+`summary-body.md` but the loop ran and you have independently verified the changeset, recover by
+supplying the narrative you verified — `cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
+--body-file <verified-body.md>` (sections `Files changed`, `Remaining findings`, `Followups`); `cog`
+still asserts the body and invents nothing. If you cannot verify the changeset, or
 `$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran), stop: report the failure and ask
 the user whether to retry the review loop, skip it, or abort the workflow. There is no agent re-dispatch.
 

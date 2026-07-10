@@ -145,10 +145,11 @@ Invoke `/review-findings` inline with the round findings JSON, task context, rev
 triage, and accumulated followups. Save its structured report to `$RUN_DIR/round-N-triage.md`.
 Append the report's `Followups` decisions, deferrals, and open questions to `$RUN_DIR/followups.md`.
 
-After each round, maintain `$RUN_DIR/summary-body.md` — the terminal narrative body — with the
-current state under its required section headings (see Terminate): what was implemented across rounds,
-a `Files changed` section, a `Remaining findings` section, and a `Followups` section. Maintaining it
-per round keeps the narrative accurate and leaves termination as a single mechanical command.
+After each round, update `$RUN_DIR/summary-body.md` — the terminal narrative body — to the current
+state under its required section headings: what was implemented across rounds, a `Files changed`
+section, a `Remaining findings` section, and a `Followups` section. This per-round update is a hard
+boundary postcondition, enforced in Terminate; keeping it current leaves termination as a single
+mechanical command.
 
 Apply minimal code edits for findings marked `FIXED`. Pause only for `NEEDS_DISCUSSION`, errors, user
 abort, or an explicit user limit.
@@ -185,6 +186,12 @@ findings → `findings-empty`, approve → `decision-approve`, stall → `stall`
 `user-limit`, `NEEDS_DISCUSSION` → `needs-discussion`, user abort → `user-abort`, runner or validation
 error → `error`.
 
+Per-round postcondition (hard boundary check): every round boundary completes only once
+`$RUN_DIR/summary-body.md` is current — it carries `Files changed`, `Remaining findings`, and
+`Followups` sections plus what was implemented across rounds. `finalize` reads this file; a round that
+applied fixes but left the body stale or unwritten is incomplete. Confirm the body is current before
+advancing to the next round or terminating.
+
 On whichever condition fires, terminate with two commands. First record the reason (`<reason>` is the
 mapped value above); then run the single terminal command, whose printed `REVIEW_LOOP_OK` line is the
 reply's trailing block with nothing after it:
@@ -200,6 +207,20 @@ closed if the body is absent, empty, or missing a required section — `cog` nev
 narrative. On success it prints the canonical `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>`
 line. It is idempotent: a re-run against an already-valid `summary.md` re-emits that same line.
 
+Recovery (body-less run): when a boundary owner or parent orchestrator inherits a run whose
+`summary-body.md` was never written — a child that stopped after applying fixes without maintaining the
+body — it recovers by supplying the narrative it independently verified:
+
+```bash
+cog review-loop-summary set-reason --run-dir "$RUN_DIR" --reason <reason>
+cog review-loop-summary finalize --run-dir "$RUN_DIR" --body-file <verified-body.md>
+```
+
+`--body-file` is used only when `summary-body.md` is absent; the supplied file must carry the same
+required sections (`Files changed`, `Remaining findings`, `Followups`) and passes the identical
+fail-closed checks, so `cog` still fabricates no narrative. The recovery `finalize` prints the same
+canonical `REVIEW_LOOP_OK` line and stays idempotent.
+
 When the loop cannot reach a summary at all — a runner or validation error before any round produced
 findings — end instead with `cog msg failed review-loop "<reason>"` so the caller receives a definite
 `REVIEW_LOOP_FAILED` signal rather than silence.
@@ -213,6 +234,8 @@ nothing after it:
 
 - `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` — surfaced verbatim from
   `cog review-loop-summary finalize`, which prints it only after `summary.md` is written and asserted;
+  a boundary-owner recovery finalize (`finalize --body-file`) emits this identical line, so the
+  handshake is unchanged whether the run terminated normally or was recovered;
 - `REVIEW_LOOP_FAILED <reason>` — from `cog msg failed review-loop "<reason>"` when no summary could
   be produced.
 

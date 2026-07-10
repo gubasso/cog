@@ -387,3 +387,97 @@ REVIEW_LOOP_OK ${run_dir}/summary.md rounds=1 reason=error"
     '.ok == true and .round_count == 2 and .termination_reason == "decision-approve" and
      (.summary_file | endswith("/summary.md"))' >/dev/null
 }
+
+@test "cog review-loop-summary finalize --body-file recovers a body-less run" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 2
+  # No summary-body.md is written; the boundary owner supplies a verified body.
+  local recovery="${BATS_TEST_TMPDIR}/recovery-body.md"
+  printf '%s\n' \
+    '## What changed' '- verified two fixes' \
+    '## Files changed' '- lib/foo.sh' \
+    '## Remaining findings' '- none' \
+    '## Followups' '- none' >"$recovery"
+  cog review-loop-summary set-reason --run-dir "$run_dir" --reason stall >/dev/null
+
+  run cog review-loop-summary finalize --run-dir "$run_dir" --body-file "$recovery"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=2 reason=stall"
+  grep -q 'verified two fixes' "${run_dir}/summary.md"
+}
+
+@test "cog review-loop-summary finalize prefers the maintained summary-body.md over --body-file" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+  write_body "$run_dir" # durable body contains 'fixed two findings'
+  local recovery="${BATS_TEST_TMPDIR}/recovery-body.md"
+  printf '%s\n' \
+    '## What changed' '- OVERRIDE body' \
+    '## Files changed' '- lib/foo.sh' \
+    '## Remaining findings' '- none' \
+    '## Followups' '- none' >"$recovery"
+
+  run cog review-loop-summary finalize --run-dir "$run_dir" --body-file "$recovery"
+
+  assert_success
+  grep -q 'fixed two findings' "${run_dir}/summary.md"
+  run ! grep -q 'OVERRIDE body' "${run_dir}/summary.md"
+}
+
+@test "cog review-loop-summary finalize --body-file fails closed on an empty recovery body" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+  local recovery="${BATS_TEST_TMPDIR}/recovery-body.md"
+  : >"$recovery"
+
+  run --separate-stderr cog review-loop-summary finalize --run-dir "$run_dir" --body-file "$recovery"
+
+  assert_failure
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
+  [[ ! -f "${run_dir}/summary.md" ]]
+  refute_output --partial 'REVIEW_LOOP_OK'
+}
+
+@test "cog review-loop-summary finalize --body-file fails closed when the recovery file is missing" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+
+  run --separate-stderr cog review-loop-summary finalize --run-dir "$run_dir" \
+    --body-file "${BATS_TEST_TMPDIR}/does-not-exist.md"
+
+  assert_failure
+  [[ $stderr == *"err.kind: InputUnreadable"* ]]
+  [[ ! -f "${run_dir}/summary.md" ]]
+}
+
+@test "cog review-loop-summary finalize is idempotent after a --body-file recovery" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 2
+  local recovery="${BATS_TEST_TMPDIR}/recovery-body.md"
+  printf '%s\n' \
+    '## What changed' '- verified fixes' \
+    '## Files changed' '- lib/foo.sh' \
+    '## Remaining findings' '- none' \
+    '## Followups' '- none' >"$recovery"
+  cog review-loop-summary set-reason --run-dir "$run_dir" --reason stall >/dev/null
+  cog review-loop-summary finalize --run-dir "$run_dir" --body-file "$recovery" >/dev/null
+  rm -f "$recovery" # a re-finalize must not need the recovery file again
+
+  run cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=2 reason=stall"
+}
+
+@test "cog review-loop-summary finalize --body-file requires a value" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+
+  run --separate-stderr cog review-loop-summary finalize --run-dir "$run_dir" --body-file
+
+  assert_failure
+  [[ $stderr == *"err.kind: MissingArgument"* ]]
+}
