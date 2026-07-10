@@ -22,6 +22,9 @@
 #   - ripsecrets       : secret scanner (fast).
 #   - lychee           : link checker (pre-push only; network).
 #   - no-bare-relative-links : forbid bare-filename relative links (explicit ./ or path).
+#   - relative-links (markdownlint custom rule): the pygrep hook gates link FORM
+#                        (must be explicit); this rule gates link EXISTENCE (target
+#                        + #fragment must resolve on disk). Orthogonal layers.
 #   - committed        : Conventional Commits shape on commit-msg (SoT: committed.toml).
 #
 # First-run note:

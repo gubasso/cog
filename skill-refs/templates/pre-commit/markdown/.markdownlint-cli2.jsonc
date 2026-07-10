@@ -29,6 +29,16 @@
     // The ONLY rule left fixable, so this is the only autofix that ever fires.
     "MD029": { "style": "ordered" },
 
+    // Relative-link integrity (custom rule `relative-links`; report-only gate).
+    // Complements the pygrep explicit-form guard in .pre-commit-config.yaml:
+    // the pygrep hooks forbid the ambiguous BARE form ([x](file.md)); this rule
+    // verifies the explicit target actually resolves to a real file on disk, and
+    // its #fragment to a real heading (MD051-style, but for relative file links).
+    // The two are orthogonal — form vs. existence. The rule is registered in
+    // `customRules` below but is OFF unless explicitly enabled here, so this line
+    // is what actually makes it fire.
+    "relative-links": true,
+
     // --- fixable rules OFF: isolate fix-mode to MD029 only (dprint owns formatting) ---
     // Each is owned by dprint, by another hook, or low-value for a free-form KB.
     // Disabling drops them as gates too; that's fine — dprint/lychee/typos cover them.
