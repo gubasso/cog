@@ -529,6 +529,63 @@ EOF
   assert_success
 }
 
+@test "cog skill-lint flags a codex-runner --output that collides with a prompt artifact write" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+$plan-oneshot --output $RUN_DIR/prepared-plan.md
+cog codex-runner run-exec --mode danger --access write --effort high --prompt $RUN_DIR/p.md --output $RUN_DIR/prepared-plan.md --events $RUN_DIR/e.jsonl --state $RUN_DIR/s.longrun.json
+```
+EOF
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"codex-runner-output-collision"* ]]
+}
+
+@test "cog skill-lint accepts distinct codex-runner and prompt artifact --output paths" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+$plan-oneshot --output $RUN_DIR/prepared-plan.md
+cog codex-runner run-exec --mode danger --access write --effort high --prompt $RUN_DIR/p.md --output $RUN_DIR/prepare-codex-output.md --events $RUN_DIR/e.jsonl --state $RUN_DIR/s.longrun.json
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint honors an allow-codex-runner-output-collision suppression" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md" <<'EOF'
+
+```bash
+$plan-oneshot --output $RUN_DIR/prepared-plan.md
+```
+
+<!-- cog-skill-lint: allow-codex-runner-output-collision fixture proves suppression -->
+```bash
+cog codex-runner run-exec --mode danger --access write --effort high --prompt $RUN_DIR/p.md --output $RUN_DIR/prepared-plan.md --events $RUN_DIR/e.jsonl --state $RUN_DIR/s.longrun.json
+```
+EOF
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint passes the shipped executor-oneshot-codex skill (distinct capture path)" {
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
+  run cog skill-lint "$repo_root/skills/claude/executor-oneshot-codex/SKILL.md"
+  assert_success
+}
+
 @test "cog skill-lint flags a direct execution-report write in a native executor" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-oneshot" executor-oneshot claude
   # shellcheck disable=SC2016  # literal markdown path written to a fixture file

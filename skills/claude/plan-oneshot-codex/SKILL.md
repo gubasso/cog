@@ -83,8 +83,9 @@ cog codex-runner finalize --state <RUN_DIR>/plan.longrun.json --max-wall 300 > <
 ```
 
 `finalize` writes the runner JSON to `<RUN_DIR>/plan-runner.json`. Treat the plan path, not the
-runner output, as the authoritative artifact. Verify the plan path exists and is non-empty before
-reporting success.
+runner output, as the authoritative artifact. Confirm the saved plan with `cog plan-doc validate
+<plan-path>` before reporting success — a plan clobbered by a last-message pointer fails validation
+deterministically.
 
 ## Final Response
 

@@ -13,8 +13,11 @@ path `$RUN_DIR/draft-plan.md`.
 the plan-review stage:
 
 ```bash
-[ -s "$RUN_DIR/draft-plan.md" ] || { echo "ERROR: draft-plan.md is empty" >&2; cog lock release "$LOCK_FILE"; exit 1; }
+cog plan-doc validate "$RUN_DIR/draft-plan.md" || { echo "ERROR: draft-plan.md failed plan-doc validation" >&2; cog lock release "$LOCK_FILE"; exit 1; }
 ```
+
+`plan-doc validate` fails on an empty or clobbered artifact (a last-message pointer is not a valid plan
+doc), so it is a stronger read-back than a bare non-empty check.
 
 The drafted plan is a candidate, not yet authoritative: the plan-review stage vets and reconciles it
 into `vetted-plan.md`, which the implementation stage consumes.

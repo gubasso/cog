@@ -483,6 +483,108 @@ __cog_skill_lint_line_codex_relpath() {
   return 1
 }
 
+__cog_skill_lint_line_output_tokens() {
+  # Print each --output literal token on the line (quote-stripped). Angle-bracket
+  # <placeholder> tokens are dropped, matching __cog_skill_lint_line_codex_relpath.
+  local line="$1"
+  local re='--output[[:space:]]+"?([^[:space:]"]+)'
+  local rest="$line" path
+  while [[ $rest =~ $re ]]; do
+    path="${BASH_REMATCH[1]}"
+    rest="${rest#*"${BASH_REMATCH[0]}"}"
+    case "$path" in
+      '<'*) continue ;;
+    esac
+    printf '%s\n' "$path"
+  done
+}
+
+__cog_skill_lint_check_codex_output_collision() {
+  # Codex overwrites the runner's --output (its --output-last-message) with its
+  # closing message. When a prompt the same invocation launches also writes a
+  # durable artifact to that exact path — an embedded `--output <path>` elsewhere
+  # in the skill, e.g. `$plan-oneshot --output $RUN_DIR/prepared-plan.md` — the
+  # closing message clobbers the artifact. Flag a literal --output token that
+  # appears both on a `cog codex-runner` invocation and off it. Comparison is on
+  # literal spelling (authored static text keeps $RUN_DIR unexpanded), fence-aware,
+  # frontmatter-skipping, and honors an inline
+  # <!-- cog-skill-lint: allow-codex-runner-output-collision <reason> --> on the
+  # preceding nonblank line. The runtime guard in cog codex-runner catches the
+  # resolved-path case; this rule catches the authored/unexpanded-variable case.
+  # See docs/decisions/0079-codex-runner-output-collision-guard.md.
+  local file="$1"
+  local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false cmd_suppressed=false tok
+  local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-output-collision[[:space:]]+.+-->'
+  local fence_re='^[[:space:]]*```+'
+  local -a runner_tok=() runner_line=() runner_supp=() embedded_tok=()
+
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line_no -eq 1 && $line == "---" ]]; then
+      in_frontmatter=true
+      continue
+    fi
+    if [[ $in_frontmatter == true ]]; then
+      if [[ $line == "---" ]]; then
+        in_frontmatter=false
+        frontmatter_done=true
+      fi
+      continue
+    fi
+    [[ $frontmatter_done == false ]] && continue
+
+    if [[ $line =~ $fence_re ]]; then
+      in_codex_cmd=false
+      continue
+    fi
+    [[ -z ${line//[[:space:]]/} ]] && continue
+
+    if [[ $line =~ $allow_re ]]; then
+      suppress_next=true
+      continue
+    fi
+
+    if [[ $line == *"codex-runner"* && $in_codex_cmd == false ]]; then
+      in_codex_cmd=true
+      cmd_suppressed=$suppress_next
+    fi
+
+    while IFS= read -r tok; do
+      [[ -n $tok ]] || continue
+      if [[ $in_codex_cmd == true ]]; then
+        runner_tok+=("$tok")
+        runner_line+=("$line_no")
+        runner_supp+=("$cmd_suppressed")
+      else
+        embedded_tok+=("$tok")
+      fi
+    done < <(__cog_skill_lint_line_output_tokens "$line")
+
+    # A line without a trailing backslash terminates the invocation.
+    [[ $line != *\\ ]] && in_codex_cmd=false
+    suppress_next=false
+  done <"$file"
+
+  local i j
+  for i in "${!runner_tok[@]}"; do
+    [[ ${runner_supp[$i]} == true ]] && continue
+    for j in "${!embedded_tok[@]}"; do
+      if [[ ${runner_tok[$i]} == "${embedded_tok[$j]}" ]]; then
+        # shellcheck disable=SC2016 # literal $RUN_DIR in the fix hint, not command substitution
+        __cog_skill_lint_finding "$file" "${runner_line[$i]}" "codex-runner-output-collision" \
+          "codex-runner --output reuses a path a prompt artifact-write also targets (${runner_tok[$i]})" \
+          'route the last-message capture to a distinct $RUN_DIR/<label>-codex-output.md'
+        failed=1
+        break
+      fi
+    done
+  done
+
+  return "$failed"
+}
+
 __cog_skill_lint_check_codex_abs_artifact() {
   # A `cog codex-runner` durable job launches from the project repo, so a
   # relative --state/--output/--events/--stderr resolves against the project tree
@@ -1338,6 +1440,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_codex_abs_artifact "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_codex_output_collision "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_producer_blind "$file"; then

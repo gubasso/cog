@@ -78,3 +78,61 @@ setup() {
   run __cog_codex_runner_require_abs --state /run/dir/codex.longrun.json
   assert_success
 }
+
+@test "codex-runner output-collision guard fails when a prompt --output equals the runner --output" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  local out="${BATS_TEST_TMPDIR}/prepared-plan.md"
+  # shellcheck disable=SC2016 # literal $plan-oneshot in the prompt body, not an expansion
+  printf 'Run $plan-oneshot --output %s to save the plan.\n' "$out" >"$prompt"
+
+  run --separate-stderr __cog_codex_runner_guard_output_collision "$out" "$prompt"
+
+  assert_failure
+  [[ $stderr == *"collides"* ]]
+  [[ $stderr == *"codex-output"* ]]
+}
+
+@test "codex-runner output-collision guard passes when the runner --output is distinct" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  # shellcheck disable=SC2016 # literal $plan-oneshot in the prompt body, not an expansion
+  printf 'Run $plan-oneshot --output %s/prepared-plan.md to save the plan.\n' "$BATS_TEST_TMPDIR" >"$prompt"
+
+  run __cog_codex_runner_guard_output_collision "${BATS_TEST_TMPDIR}/prepare-codex-output.md" "$prompt"
+
+  assert_success
+}
+
+@test "codex-runner output-collision guard ignores angle-bracket placeholder prompt targets" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  printf 'Save via --output <RUN_DIR>/prepared-plan.md as the plan.\n' >"$prompt"
+
+  run __cog_codex_runner_guard_output_collision "/run/dir/prepared-plan.md" "$prompt"
+
+  assert_success
+}
+
+@test "codex-runner output-collision guard catches a backslash-continued prompt --output" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  local out="${BATS_TEST_TMPDIR}/prepared-plan.md"
+  printf 'cog plan-doc save \\\n  --output %s\n' "$out" >"$prompt"
+
+  run --separate-stderr __cog_codex_runner_guard_output_collision "$out" "$prompt"
+
+  assert_failure
+  [[ $stderr == *"collides"* ]]
+}
+
+@test "codex-runner output-collision guard ignores an unrelated prompt --output" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  printf 'See the prior run at --output /some/other/path.md for reference.\n' >"$prompt"
+
+  run __cog_codex_runner_guard_output_collision "${BATS_TEST_TMPDIR}/prepared-plan.md" "$prompt"
+
+  assert_success
+}
+
+@test "codex-runner output-collision guard defers on an unreadable prompt" {
+  run __cog_codex_runner_guard_output_collision "/run/dir/out.md" "${BATS_TEST_TMPDIR}/missing.md"
+
+  assert_success
+}

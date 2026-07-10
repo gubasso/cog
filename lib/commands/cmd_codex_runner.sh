@@ -46,6 +46,55 @@ __cog_codex_runner_require_abs() {
     'allocate RUN_DIR="$(cog rundir <prefix>)" and pass $RUN_DIR/<file>'
 }
 
+# Extract every artifact-write target a prompt references via a --output flag.
+# A prompt may embed an instruction like `$plan-oneshot --output <RUN_DIR>/prepared-plan.md`
+# (the inner agent then runs `cog plan-doc save --output <RUN_DIR>/prepared-plan.md`); the
+# collision key is always the --output value, so one regex covers both spellings.
+# Backslash-continued lines are folded first so a flag split across lines still resolves.
+# Angle-bracket <placeholder> tokens are dropped; nothing is eval'd, so a literal $VAR
+# stays literal — no expansion, no injection, no false positive from a `$VAR` mention.
+__cog_codex_runner_extract_prompt_targets() {
+  local prompt_file="$1" folded line rest path re
+  re='--output[[:space:]]+"?([^[:space:]"'"'"']+)'
+  folded="$(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba}' "$prompt_file")"
+  while IFS= read -r line; do
+    rest="$line"
+    while [[ $rest =~ $re ]]; do
+      path="${BASH_REMATCH[1]}"
+      rest="${rest#*"${BASH_REMATCH[0]}"}"
+      case "$path" in
+        '<'*) continue ;;
+      esac
+      printf '%s\n' "$path"
+    done
+  done <<<"$folded"
+}
+
+# Fail closed before launch when the runner's own --output (Codex's closing
+# --output-last-message) equals an artifact the prompt tells the inner agent to
+# write. Codex overwrites --output-last-message with its final message; if that
+# path is also where an embedded plan/artifact write lands, the closing message
+# clobbers the durable artifact. Compare on exact absolute-path equality
+# (realpath -m normalizes .././dup-slashes without requiring existence) so an
+# unrelated --output mentioned in the brief never trips it. An unreadable prompt
+# defers to the downstream prompt-readable check in fn_codex.sh.
+__cog_codex_runner_guard_output_collision() {
+  local output="$1" prompt="$2" target output_abs target_abs
+  [[ -r $prompt ]] || return 0
+  output_abs="$(realpath -m -- "$output")"
+  while IFS= read -r target; do
+    [[ -n $target ]] || continue
+    target_abs="$(realpath -m -- "$target")"
+    [[ $output_abs == "$target_abs" ]] || continue
+    # shellcheck disable=SC2016 # literal $RUN_DIR in the operator-facing hint, not an expansion
+    cog::fn::error_raise "InvalidInput" \
+      "codex-runner --output collides with a prompt artifact-write target" \
+      "path: ${output}" \
+      "the runner --output captures Codex's closing message and would clobber the artifact the prompt writes there" \
+      'route the last-message capture to a distinct $RUN_DIR/<label>-codex-output.md'
+  done < <(__cog_codex_runner_extract_prompt_targets "$prompt")
+}
+
 # Resolve the durable-job working directory. Codex `exec` refuses with "not
 # inside a trusted directory" when its cwd is neither a git worktree nor a
 # configured trusted project, so the job must launch from the project repo
@@ -149,6 +198,8 @@ __cog_codex_runner_run_exec() {
   __cog_codex_runner_require_abs --events "$events"
   __cog_codex_runner_require_abs --stderr "$stderr"
 
+  __cog_codex_runner_guard_output_collision "$output" "$prompt"
+
   cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
   engine_meta="$(jq -cn \
     --arg engine_action run-exec --arg mode "$mode" --arg access "$access" \
@@ -234,6 +285,8 @@ __cog_codex_runner_run_resume() {
   __cog_codex_runner_require_abs --output "$output"
   __cog_codex_runner_require_abs --events "$events"
   __cog_codex_runner_require_abs --stderr "$stderr"
+
+  __cog_codex_runner_guard_output_collision "$output" "$prompt"
 
   cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv
   engine_meta="$(jq -cn \

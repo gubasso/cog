@@ -347,11 +347,12 @@ or questionable — never as a routine per-run rating.
 
 ## Error Handling
 
-After the plan-drafting stage validate the drafted plan is non-empty; after the plan-review stage
-validate the vetted plan is non-empty:
+After the plan-drafting stage validate the drafted plan as a plan doc (this fails on an empty or
+clobbered artifact, not just an empty one); after the plan-review stage validate the vetted plan is
+non-empty:
 
 ```bash
-[ -s "$RUN_DIR/draft-plan.md" ] || echo "ERROR: draft-plan.md is empty"
+cog plan-doc validate "$RUN_DIR/draft-plan.md" || echo "ERROR: draft-plan.md failed plan-doc validation"
 [ -s "$RUN_DIR/vetted-plan.md" ] || echo "ERROR: vetted-plan.md is empty"
 ```
 

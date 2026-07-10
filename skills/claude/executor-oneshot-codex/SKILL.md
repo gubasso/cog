@@ -102,7 +102,10 @@ cog context-brief build --request "<RUN_DIR>/request.md" --body "<RUN_DIR>/brief
   inline-plan prompt input), request-path `<RUN_DIR>/brief.md` (the validated context brief), output-path
   `<RUN_DIR>/prepared-plan.md`.
 
-Verify `<RUN_DIR>/prepared-plan.md` exists and is non-empty before Stage 2.
+Verify `<RUN_DIR>/prepared-plan.md` before Stage 2. On the `needs-plan` route it is a saved plan doc,
+so confirm it with `cog plan-doc validate <RUN_DIR>/prepared-plan.md` — a plan clobbered by a
+last-message pointer fails validation deterministically. On the `good-input` route confirm it exists and
+is non-empty.
 
 ## Stage 2: Implement With Codex
 
