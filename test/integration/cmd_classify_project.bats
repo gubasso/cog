@@ -145,6 +145,34 @@ EOF
   printf '%s\n' "$output" | jq -e '(.ambiguous == true) and (.primary_type == null)' >/dev/null
 }
 
+@test "cog classify-project reports nix when nix sources dominate" {
+  local proj="${BATS_TEST_TMPDIR}/nixrepo"
+  mkdir -p "$proj/modules"
+  printf '{ }\n' >"$proj/flake.nix"
+  printf '{ }\n' >"$proj/modules/a.nix"
+  printf '{ }\n' >"$proj/modules/b.nix"
+
+  run bash -c 'cd "$1" && cog classify-project --json' _ "$proj"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.languages[] | select(.lang == "nix"))' >/dev/null
+}
+
+@test "cog classify-project does not tag a lone devShell flake as nix" {
+  local proj="${BATS_TEST_TMPDIR}/rustflake"
+  mkdir -p "$proj/src"
+  printf '[package]\nname = "demo"\n' >"$proj/Cargo.toml"
+  printf 'fn main() {}\n' >"$proj/src/main.rs"
+  printf 'pub fn a() {}\n' >"$proj/src/a.rs"
+  printf 'pub fn b() {}\n' >"$proj/src/b.rs"
+  printf '{ }\n' >"$proj/flake.nix"
+
+  run bash -c 'cd "$1" && cog classify-project --json' _ "$proj"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.languages[] | select(.lang == "rust")) and ([.languages[].lang] | index("nix") | not)' >/dev/null
+}
+
 @test "cog classify-project --help dispatches" {
   run cog classify-project --help
 

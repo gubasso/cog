@@ -26,12 +26,20 @@
       # `python` to match) instead of silently drifting the venv.
       assert python.version == pkgs.poetry.python.version;
       {
+        # `nix fmt` uses the RFC 166 formatter (also on PATH for the pre-commit hook).
+        formatter = pkgs.nixfmt-rfc-style;
+
         devShells.default = pkgs.mkShell {
           packages = [
             python
             pkgs.poetry
             pkgs.pre-commit
             pkgs.just
+            # Nix quality tools for the pre-commit `_nix` overlay hooks
+            # (nixfmt/statix/deadnix run as language:system off PATH).
+            pkgs.nixfmt-rfc-style
+            pkgs.statix
+            pkgs.deadnix
             # native build deps for C-extensions, uncomment as needed:
             # pkgs.swig pkgs.openssl pkgs.pkg-config
           ];

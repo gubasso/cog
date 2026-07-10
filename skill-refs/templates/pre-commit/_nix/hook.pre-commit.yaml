@@ -1,0 +1,37 @@
+  # --- Nix: format (auto-fix) + lint (gate) ---
+  #
+  # Every project carries a per-project flake devShell, so these run against its
+  # Nix sources. Tools come from that devShell (nix develop / direnv) and run as
+  # system hooks off PATH, like dprint/cargo-fmt. nixfmt (RFC 166, the
+  # nixpkgs-standard formatter) rewrites in place; statix and deadnix are
+  # report-only gates — fix by hand or allowlist. statix walks the tree itself,
+  # so its scope/ignore lives in the sibling `./statix.toml`. `nix flake check`
+  # evaluates the flake and is scoped to Nix changes, at the pre-push stage.
+  - repo: local
+    hooks:
+      - id: nixfmt
+        name: nixfmt (format)
+        entry: nixfmt
+        language: system
+        types: [nix]
+        stages: [pre-commit]
+      - id: statix
+        name: statix (nix anti-patterns)
+        entry: statix check
+        language: system
+        types: [nix]
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: deadnix
+        name: deadnix (dead code)
+        entry: deadnix --fail
+        language: system
+        types: [nix]
+        stages: [pre-commit]
+      - id: nix-flake-check
+        name: nix flake check (eval)
+        entry: nix flake check
+        language: system
+        files: '\.nix$'
+        pass_filenames: false
+        stages: [pre-push]

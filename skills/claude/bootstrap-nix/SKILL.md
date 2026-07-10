@@ -122,6 +122,8 @@ stay owned by their own domains.
      wheels;
    - Rust: leave the version declaration in `rust-toolchain.toml` — the flake reads it via
      `fromRustupToolchainFile`; add `-sys` native deps to `buildInputs`/`nativeBuildInputs` as needed;
+   - keep the `nixfmt-rfc-style`/`statix`/`deadnix` packages and the `formatter` output: the shared
+     pre-commit Nix overlay runs them `language: system` off PATH, so the devShell must provide them;
    - keep the flake lean: remove template packages the project does not use.
 
 5. Establish auto-load. The `.envrc` is `use flake` (Python also layers the Poetry venv onto `PATH`).

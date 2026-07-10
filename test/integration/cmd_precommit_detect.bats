@@ -27,6 +27,30 @@ setup() {
   printf '%s\n' "$output" | jq -e '.ok == false and (.conflicts | index("rust")) and (.conflicts | index("node"))' >/dev/null
 }
 
+@test "cog precommit-detect resolves a nix-primary repo to the nix type" {
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/modules"
+  printf '{ }\n' >"${BATS_TEST_TMPDIR}/repo/flake.nix"
+  printf '{ }\n' >"${BATS_TEST_TMPDIR}/repo/modules/a.nix"
+  printf '{ }\n' >"${BATS_TEST_TMPDIR}/repo/modules/b.nix"
+
+  run cog precommit-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .detected_type == "nix"' >/dev/null
+}
+
+@test "cog precommit-detect keeps a code repo with a devShell flake on its language" {
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/src"
+  printf '[package]\nname = "demo"\n' >"${BATS_TEST_TMPDIR}/repo/Cargo.toml"
+  printf 'fn main() {}\n' >"${BATS_TEST_TMPDIR}/repo/src/main.rs"
+  printf '{ }\n' >"${BATS_TEST_TMPDIR}/repo/flake.nix"
+
+  run cog precommit-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .detected_type == "rust"' >/dev/null
+}
+
 @test "cog precommit-detect --help dispatches" {
   run cog precommit-detect --help
 

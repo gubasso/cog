@@ -1,0 +1,112 @@
+# Nix-centric pre-commit configuration
+#
+# For a Nix-primary repo (a flake defining hosts/modules/packages, typically
+# with supporting shell scripts). The Nix format/lint hooks (nixfmt, statix,
+# deadnix, nix flake check) are applied from the shared `_nix/` overlay on top
+# of this config — they are not inlined here.
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+repos:
+  # Generic housekeeping hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: destroyed-symlinks
+
+  - repo: https://github.com/maresb/check-json5
+    rev: v1.0.1
+    hooks:
+      - id: check-json5
+        exclude: '[-.]lock\.json$'
+
+  # --- JSON / JSONC formatter: dprint (comment-safe autofix) ---
+  #
+  # dprint's json plugin formats JSON and JSONC (comments + trailing commas),
+  # which the stdlib-based pretty-format-json cannot. check-json5 above stays the
+  # syntax gate; dprint owns formatting. Config in the sibling `./dprint.json`
+  # (plugin version pinned there). External dependency: dprint must be on PATH.
+  # pre-commit only — git push may strip PATH, and formatting is already applied
+  # by commit time.
+  - repo: local
+    hooks:
+      - id: dprint
+        name: dprint fmt (json/jsonc)
+        entry: dprint fmt
+        language: system
+        files: '\.(json|jsonc|json5)$'
+        pass_filenames: true
+        stages: [pre-commit]
+
+  # --- EditorConfig ---
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker
+    rev: v3.7.0
+    hooks:
+      - id: editorconfig-checker
+        alias: ec
+        args: [-disable-insert-final-newline, '-exclude', 'LICENSE']
+        # Markdown is excluded: editorconfig-checker can't parse it — it flags
+        # fenced-code-block interiors and defaults to indent_size=4 even when
+        # unset. Align indent rules with shfmt (-i 2) in .editorconfig.
+        exclude: '\.md$'
+
+  # ShellCheck – static analysis (Nix repos carry supporting shell scripts)
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  # shfmt – shell formatter
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: ["-i", "2", "-ci"]   # 2‑space indent, keep control‑indented
+
+  # Pre-commit hook to check for spelling mistakes
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.1
+    hooks:
+      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # deliberate identifiers and can break code. Fix real typos by hand;
+      # allowlist false positives in _typos.toml.
+      - id: typos
+
+  # --- Secret scanning (fast, pre-commit) ---
+  - repo: https://github.com/sirwart/ripsecrets
+    rev: v0.1.11
+    hooks:
+      - id: ripsecrets
+
+  # gitleaks – deeper secret scan (pre-push)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        entry: gitleaks git --redact --verbose
+        pass_filenames: false
+        stages: [pre-push]
+
+  # --- Commit message: Conventional Commits (single SoT -> committed.toml) ---
+  - repo: https://github.com/crate-ci/committed
+    rev: v1.1.11
+    hooks:
+      - id: committed
+        stages: [commit-msg]
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes

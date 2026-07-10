@@ -99,6 +99,12 @@ Alongside the selected type's files, the helper always copies the shared `commit
 `markdown`, it also copies the selected spell variant's companions and reports the choice in the
 `spell` and `spell_hook_appended` fields.
 
+For every type, the helper also applies the shared Nix overlay: it copies `statix.toml` as a
+companion and appends a Nix hook block (`nixfmt` format, `statix`/`deadnix` gates, and a pre-push
+`nix flake check`) to the freshly-copied config, reporting it in `nix_hook_appended`. This governs
+each project's per-project flake devShell; the hooks run `language: system` off PATH, so the flake
+devShell must provide `nixfmt`/`statix`/`deadnix` (the bootstrap-nix templates do).
+
 The apply helper emits:
 
 ```json
@@ -120,6 +126,7 @@ The apply helper emits:
   "companion_conflict": "abort",
   "spell": "typos",
   "spell_hook_appended": false,
+  "nix_hook_appended": true,
   "reason": null
 }
 ```

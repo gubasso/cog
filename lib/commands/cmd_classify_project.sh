@@ -68,7 +68,7 @@ __cog_classify_project_count_content_files() {
 # Source files in a recognized programming language.
 __cog_classify_project_count_code_files() {
   __cog_classify_project_count_ext \
-    rs py js jsx ts tsx mjs cjs go c h cc cpp hpp zig sh bash bats lua R svelte rb java kt
+    rs py js jsx ts tsx mjs cjs go c h cc cpp hpp zig sh bash bats lua R svelte rb java kt nix
 }
 
 # Scoped keyword scan: grep a pattern only across the named file globs (a
@@ -174,6 +174,14 @@ __cog_classify_project_detect_languages() {
   fi
   [[ $(__cog_classify_project_count_named_files '*.R') -gt 0 ]] && __cog_classify_project_add_language r "*.R"
   [[ $(__cog_classify_project_count_named_files '*.lua') -gt 0 ]] && __cog_classify_project_add_language lua "*.lua"
+
+  # Nix is reported only when its sources are the plurality of code files. A lone
+  # flake.nix in a non-Nix repo (the per-project devShell standard) must not tag
+  # the repo as Nix; a flake-defining repo (mostly *.nix) is a Nix project.
+  local nix_files
+  nix_files="$(__cog_classify_project_count_named_files '*.nix')"
+  [[ $nix_files -gt 0 && $((nix_files * 2)) -gt $code_files ]] \
+    && __cog_classify_project_add_language nix "*.nix dominate code"
 
   # Markdown is a content signal (drives the knowledge-base gate), not a code
   # language: it is reported only when markdown dominates the whole tree.

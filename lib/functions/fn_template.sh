@@ -93,11 +93,17 @@ cog::fn::template::detect_matches() {
   elif [[ $(cog::fn::template::count_named_files '*.bash') -gt 0 || $(cog::fn::template::count_named_files '*.bats') -gt 0 ]]; then
     cog::fn::template::add_match bash "*.bash or *.bats"
   fi
-  # Markdown is a fallback: it resolves only when no code-language template matched,
-  # so a code repo that happens to carry many docs still resolves to its language and
-  # a pure markdown/knowledge-base repo resolves to the markdown template variant.
-  if [[ ${#MATCHES[@]} -eq 0 ]] && cog::fn::template::language_present "$classification" markdown; then
-    cog::fn::template::add_match markdown "markdown content dominant"
+  # Nix and markdown are fallbacks: they resolve only when no code-language
+  # template matched. Every project carries a lone flake.nix for its devShell, so
+  # nix is never a competing top-level match (that would collide with the real
+  # language) — it resolves only when Nix sources dominate (a flake-defining repo).
+  # Nix wins over markdown so a Nix repo with docs still resolves to nix.
+  if [[ ${#MATCHES[@]} -eq 0 ]]; then
+    if cog::fn::template::language_present "$classification" nix; then
+      cog::fn::template::add_match nix "nix sources dominate"
+    elif cog::fn::template::language_present "$classification" markdown; then
+      cog::fn::template::add_match markdown "markdown content dominant"
+    fi
   fi
 }
 

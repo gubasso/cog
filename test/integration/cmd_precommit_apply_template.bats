@@ -65,6 +65,35 @@ setup() {
   [ ! -f "${BATS_TEST_TMPDIR}/repo/project-words.txt" ]
 }
 
+@test "cog precommit-apply-template overlays the nix layer onto every type" {
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type rust --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .nix_hook_appended == true' >/dev/null
+  [ -f "${BATS_TEST_TMPDIR}/repo/statix.toml" ]
+  grep -q 'id: nixfmt' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+  grep -q 'nix flake check' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+}
+
+@test "cog precommit-apply-template resolves the nix type via the overlay" {
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type nix --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .type == "nix" and .nix_hook_appended == true' >/dev/null
+  [ -f "${BATS_TEST_TMPDIR}/repo/statix.toml" ]
+  grep -q 'id: nixfmt' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+}
+
+@test "cog precommit-apply-template does not re-append the nix hook onto a skipped config" {
+  printf 'repos: []\n' >"${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type rust --config-conflict skip --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .nix_hook_appended == false' >/dev/null
+  run ! grep -q 'id: nixfmt' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+}
+
 @test "cog precommit-apply-template --help dispatches" {
   run cog precommit-apply-template --help
 
