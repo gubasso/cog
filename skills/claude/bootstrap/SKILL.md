@@ -137,6 +137,13 @@ cog installer-detect --json     # when install/uninstall-script intent is in sco
 cog kb-detect --json            # when the project is a knowledge base or KB intent is in scope (drives bootstrap-knowledge-base)
 ```
 
+`classify-project` reports a deterministic `primary_type` with a `confidence` (`high`/`medium`/`low`)
+and an `ambiguous` flag. When `ambiguous` is `true` (or `confidence` is `low`), the deterministic rules
+could not settle the project shape — judge it yourself from the whole session and the detector output,
+and confirm the project type with the operator before dispatching the type-conditional workers
+(`bootstrap-rust`, `bootstrap-knowledge-base`). When `ambiguous` is `false`, trust `primary_type` and
+the `project_types`/`languages`/`is_cli` signals and dispatch deterministically.
+
 When `classify-project` reports Rust — or the intent is a new Rust project — include `bootstrap-rust`
 in the dispatch and build its brief from `cog cargo-detect` (scaffold state, crate kind, and how cargo
 is reachable). When the project is Rust **and** the intent involves publishing or release setup, also

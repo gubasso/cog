@@ -48,4 +48,6 @@ Implemented — `lib/commands/cmd_classify_project.sh`, `lib/functions/fn_templa
 `lib/commands/cmd_kb_apply.sh`, `skill-refs/templates/knowledge-base/`,
 `skill-refs/knowledge-base/docs-design.md`, and `skills/claude/bootstrap-knowledge-base/SKILL.md`.
 Relates to ADR-0016 (prefix taxonomy), ADR-0062 (template-refresh review), and ADR-0071
-(self-containment).
+(self-containment). The knowledge-base detection described here is refined by ADR-0082
+(reliable, prose-immune classification): KB is now gated on content dominance plus the absence of a
+build manifest and negligible code, and is mutually exclusive with `cli`.

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Classify repository shape.'
 
-__cog_classify_project_self_check='.git_root != null and (.languages|type=="array") and (.project_types|type=="array") and (.frameworks|type=="array") and (.cli_signals|type=="array") and (.is_cli|type=="boolean") and (.is_monorepo|type=="boolean")'
+__cog_classify_project_self_check='.git_root != null and (.languages|type=="array") and (.project_types|type=="array") and (.frameworks|type=="array") and (.cli_signals|type=="array") and (.is_cli|type=="boolean") and (.is_monorepo|type=="boolean") and ((.primary_type|type=="string") or (.primary_type==null)) and (.confidence|type=="string") and (.ambiguous|type=="boolean")'
 
 __cog_classify_project_usage() {
   cog::fn::ui_data "Usage: cog classify-project (<out.json>|--json)"
@@ -49,18 +49,74 @@ __cog_classify_project_file_contains() {
   [[ -f $PROJECT_ROOT/$file ]] && grep -Eq "$pattern" "$PROJECT_ROOT/$file"
 }
 
-__cog_classify_project_tree_contains() {
+# Count files whose extension is in the given set (args are bare extensions).
+__cog_classify_project_count_ext() {
+  local -a preds=()
+  local e
+  for e in "$@"; do
+    preds+=(-o -name "*.$e")
+  done
+  preds=("${preds[@]:1}")
+  __cog_classify_project_find_files \( "${preds[@]}" \) -print | wc -l | tr -d ' '
+}
+
+# Content/prose files: they describe a project but never classify its code.
+__cog_classify_project_count_content_files() {
+  __cog_classify_project_count_ext md mdx markdown rst txt org adoc
+}
+
+# Source files in a recognized programming language.
+__cog_classify_project_count_code_files() {
+  __cog_classify_project_count_ext \
+    rs py js jsx ts tsx mjs cjs go c h cc cpp hpp zig sh bash bats lua R svelte rb java kt
+}
+
+# Scoped keyword scan: grep a pattern only across the named file globs (a
+# language's own sources and manifests), never across the whole tree or prose.
+# Usage: __cog_classify_project_scan '<ere pattern>' '<glob>' ['<glob>' ...]
+__cog_classify_project_scan() {
   local pattern="$1"
-  __cog_classify_project_find_files -print0 \
+  shift
+  local -a preds=()
+  local g
+  for g in "$@"; do
+    preds+=(-o -name "$g")
+  done
+  preds=("${preds[@]:1}")
+  __cog_classify_project_find_files \( "${preds[@]}" \) -print0 \
     | xargs -0 grep -EIl "$pattern" 2>/dev/null \
     | head -n 1 \
     | grep -q .
 }
 
-__cog_classify_project_count_shell_shebangs() {
-  __cog_classify_project_find_files -print0 \
-    | xargs -0 awk 'FNR == 1 && /^#!.*(ba|z|fi)?sh/ {count++} END {print count + 0}' 2>/dev/null \
-    | awk '{sum += $1} END {print sum + 0}'
+# A root build manifest is an authoritative, high-confidence project verdict.
+__cog_classify_project_has_build_manifest() {
+  __cog_classify_project_has_file Cargo.toml \
+    || __cog_classify_project_has_file pyproject.toml \
+    || __cog_classify_project_has_file setup.py \
+    || __cog_classify_project_has_file package.json \
+    || __cog_classify_project_has_file go.mod \
+    || __cog_classify_project_has_file build.zig
+}
+
+# True when bin/ holds an executable shell entrypoint (a shell-CLI signal that
+# survives even in a doc-heavy repo where scripts are not the file majority).
+__cog_classify_project_has_shell_entrypoint() {
+  __cog_classify_project_has_dir bin || return 1
+  find "$PROJECT_ROOT/bin" -maxdepth 1 -type f -perm /111 -print0 2>/dev/null \
+    | xargs -0 awk 'FNR == 1 && /^#!.*(ba|z|fi)?sh/ {found = 1} END {exit found ? 0 : 1}' 2>/dev/null
+}
+
+# Whether a language (or any non-content language) is in the detected set.
+__cog_classify_project_has_language() {
+  local lang="$1"
+  [[ ${#LANGUAGES[@]} -gt 0 ]] || return 1
+  printf '%s\n' "${LANGUAGES[@]}" | jq -se --arg l "$lang" 'any(.[]; .lang == $l)' >/dev/null 2>&1
+}
+
+__cog_classify_project_has_code_language() {
+  [[ ${#LANGUAGES[@]} -gt 0 ]] || return 1
+  printf '%s\n' "${LANGUAGES[@]}" | jq -se 'any(.[]; .lang != "markdown")' >/dev/null 2>&1
 }
 
 __cog_classify_project_add_language() {
@@ -85,6 +141,7 @@ __cog_classify_project_root() {
 }
 
 __cog_classify_project_detect_languages() {
+  # Manifest-anchored probes are authoritative.
   __cog_classify_project_has_file Cargo.toml && __cog_classify_project_add_language rust "Cargo.toml"
   if __cog_classify_project_has_file pyproject.toml; then
     __cog_classify_project_add_language python "pyproject.toml"
@@ -97,20 +154,31 @@ __cog_classify_project_detect_languages() {
     __cog_classify_project_add_language c "Makefile plus *.c"
   fi
   __cog_classify_project_has_file build.zig && __cog_classify_project_add_language zig "build.zig"
-
-  local total sh_files shebangs
-  total="$(__cog_classify_project_count_files)"
-  sh_files="$(__cog_classify_project_count_named_files '*.sh')"
-  shebangs="$(__cog_classify_project_count_shell_shebangs)"
-  if [[ $total -gt 0 ]] && { [[ $((sh_files * 2)) -gt $total ]] || [[ $((shebangs * 2)) -gt $total ]]; }; then
-    __cog_classify_project_add_language bash "majority *.sh scripts or shell shebang prevalence"
-  fi
   if __cog_classify_project_has_file package.json && [[ $(__cog_classify_project_count_named_files '*.svelte') -gt 0 ]]; then
     __cog_classify_project_add_language svelte "package.json plus *.svelte"
   fi
+
+  # Prevalence-based languages are measured against code files, not all files,
+  # so a doc-heavy code repo is not diluted by its markdown into `languages: []`.
+  # Bash is reported when a bin/ shell entrypoint exists, or shell scripts are the
+  # plurality of code *and* a meaningful share of the tree — so a handful of
+  # incidental scripts in a content vault never makes it "a bash project".
+  local code_files content_files shell_files
+  code_files="$(__cog_classify_project_count_code_files)"
+  content_files="$(__cog_classify_project_count_content_files)"
+  shell_files="$(__cog_classify_project_count_ext sh bash bats)"
+  if [[ $shell_files -gt 0 ]] \
+    && { __cog_classify_project_has_shell_entrypoint \
+      || { [[ $((shell_files * 2)) -gt $code_files ]] && [[ $((shell_files * 5)) -ge $content_files ]]; }; }; then
+    __cog_classify_project_add_language bash "bin/ shell entrypoint or shell scripts dominate code"
+  fi
   [[ $(__cog_classify_project_count_named_files '*.R') -gt 0 ]] && __cog_classify_project_add_language r "*.R"
   [[ $(__cog_classify_project_count_named_files '*.lua') -gt 0 ]] && __cog_classify_project_add_language lua "*.lua"
-  local md_files
+
+  # Markdown is a content signal (drives the knowledge-base gate), not a code
+  # language: it is reported only when markdown dominates the whole tree.
+  local total md_files
+  total="$(__cog_classify_project_count_files)"
   md_files="$(__cog_classify_project_count_named_files '*.md')"
   if [[ $md_files -gt 0 && $total -gt 0 && $((md_files * 2)) -gt $total ]]; then
     __cog_classify_project_add_language markdown "majority *.md content"
@@ -121,6 +189,7 @@ __cog_classify_project_detect_languages() {
 }
 
 __cog_classify_project_detect_cli() {
+  # Manifest-anchored CLI signals are authoritative regardless of file mix.
   if __cog_classify_project_file_contains Cargo.toml '^\[\[bin\]\]'; then
     CLI_SIGNALS+=("Cargo.toml with [[bin]] section")
   fi
@@ -129,35 +198,53 @@ __cog_classify_project_detect_cli() {
     CLI_SIGNALS+=("clap dependency")
     __cog_classify_project_add_framework clap rust "clap in Cargo.toml deps"
   fi
-  if __cog_classify_project_file_contains pyproject.toml '^\[project\.scripts\]' || __cog_classify_project_tree_contains 'console_scripts'; then
-    CLI_SIGNALS+=("Python project scripts or console_scripts")
+
+  # Framework/import scans run only across a language's own sources and manifests
+  # — never across prose — and only when that language is actually detected, so a
+  # doc that merely mentions "click"/"cobra" can never invent a framework.
+  if __cog_classify_project_has_language python; then
+    if __cog_classify_project_file_contains pyproject.toml '^\[project\.scripts\]' \
+      || __cog_classify_project_scan 'console_scripts' '*.py' 'setup.py' 'setup.cfg' 'pyproject.toml'; then
+      CLI_SIGNALS+=("Python project scripts or console_scripts")
+    fi
+    if __cog_classify_project_scan '(^|[^[:alnum:]_])typer([^[:alnum:]_]|$)' '*.py' 'pyproject.toml' 'setup.py' 'setup.cfg' 'requirements*.txt'; then
+      CLI_SIGNALS+=("typer dependency/import")
+      __cog_classify_project_add_framework typer python "typer dependency/import signal"
+    fi
+    if __cog_classify_project_scan '(^|[^[:alnum:]_])click([^[:alnum:]_]|$)' '*.py' 'pyproject.toml' 'setup.py' 'setup.cfg' 'requirements*.txt'; then
+      CLI_SIGNALS+=("click dependency/import")
+      __cog_classify_project_add_framework click python "click dependency/import signal"
+    fi
   fi
-  if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])typer([^[:alnum:]_]|$)'; then
-    CLI_SIGNALS+=("typer dependency/import")
-    __cog_classify_project_add_framework typer python "typer dependency/import signal"
+  if __cog_classify_project_has_language go; then
+    if __cog_classify_project_scan '(^|[^[:alnum:]_])cobra([^[:alnum:]_]|$)' '*.go' 'go.mod' 'go.sum'; then
+      CLI_SIGNALS+=("cobra dependency/import")
+      __cog_classify_project_add_framework cobra go "cobra dependency/import signal"
+    fi
   fi
-  if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])click([^[:alnum:]_]|$)'; then
-    CLI_SIGNALS+=("click dependency/import")
-    __cog_classify_project_add_framework click python "click dependency/import signal"
+  if __cog_classify_project_has_language javascript; then
+    if __cog_classify_project_scan '(^|[^[:alnum:]_])commander([^[:alnum:]_]|$)' '*.js' '*.ts' '*.jsx' '*.tsx' '*.mjs' '*.cjs' 'package.json'; then
+      CLI_SIGNALS+=("commander dependency/import")
+      __cog_classify_project_add_framework commander javascript "commander dependency/import signal"
+    fi
+    if __cog_classify_project_scan '(^|[^[:alnum:]_])yargs([^[:alnum:]_]|$)' '*.js' '*.ts' '*.jsx' '*.tsx' '*.mjs' '*.cjs' 'package.json'; then
+      CLI_SIGNALS+=("yargs dependency/import")
+      __cog_classify_project_add_framework yargs javascript "yargs dependency/import signal"
+    fi
   fi
-  __cog_classify_project_has_dir bin && CLI_SIGNALS+=("bin/ directory")
-  __cog_classify_project_has_dir cli && CLI_SIGNALS+=("cli/ directory")
-  if __cog_classify_project_find_files -perm /111 -print0 \
-    | xargs -0 awk 'FNR == 1 && /^#!/ {found=1} END {exit found ? 0 : 1}' 2>/dev/null; then
-    CLI_SIGNALS+=("executable shebang scripts")
+
+  # Soft signals — a bin/ or cli/ directory, or executable shebang scripts — only
+  # count toward CLI when a real code language is present, so incidental tooling
+  # scripts in a content repo do not masquerade as a CLI project.
+  if __cog_classify_project_has_code_language; then
+    __cog_classify_project_has_dir bin && CLI_SIGNALS+=("bin/ directory")
+    __cog_classify_project_has_dir cli && CLI_SIGNALS+=("cli/ directory")
+    if __cog_classify_project_find_files -perm /111 -print0 \
+      | xargs -0 awk 'FNR == 1 && /^#!/ {found=1} END {exit found ? 0 : 1}' 2>/dev/null; then
+      CLI_SIGNALS+=("executable shebang scripts")
+    fi
   fi
-  if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])cobra([^[:alnum:]_]|$)'; then
-    CLI_SIGNALS+=("cobra dependency/import")
-    __cog_classify_project_add_framework cobra go "cobra dependency/import signal"
-  fi
-  if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])commander([^[:alnum:]_]|$)'; then
-    CLI_SIGNALS+=("commander dependency/import")
-    __cog_classify_project_add_framework commander javascript "commander dependency/import signal"
-  fi
-  if __cog_classify_project_tree_contains '(^|[^[:alnum:]_])yargs([^[:alnum:]_]|$)'; then
-    CLI_SIGNALS+=("yargs dependency/import")
-    __cog_classify_project_add_framework yargs javascript "yargs dependency/import signal"
-  fi
+  return 0
 }
 
 __cog_classify_project_monorepo() {
@@ -179,18 +266,56 @@ __cog_classify_project_build_json() {
   __cog_classify_project_detect_languages
   __cog_classify_project_detect_cli
 
-  local is_cli=false is_kb=false project_types_json langs_json
-  [[ ${#CLI_SIGNALS[@]} -gt 0 ]] && is_cli=true
+  local langs_json project_types_json
   langs_json="$(__cog_classify_project_json_object_array "${LANGUAGES[@]}")"
-  # A knowledge-base project is a markdown content library: markdown dominates and
-  # is the only detected language (a stray code language demotes it to a mixed repo).
-  if jq -e '([.[].lang] | length > 0) and (([.[].lang] | unique) == ["markdown"])' <<<"$langs_json" >/dev/null 2>&1; then
+
+  # File-mix and manifest facts drive a deterministic, prose-immune verdict.
+  local content_files code_files has_manifest=false has_markdown=false has_code=false
+  content_files="$(__cog_classify_project_count_content_files)"
+  code_files="$(__cog_classify_project_count_code_files)"
+  __cog_classify_project_has_build_manifest && has_manifest=true
+  __cog_classify_project_has_language markdown && has_markdown=true
+  __cog_classify_project_has_code_language && has_code=true
+
+  # Knowledge-base: markdown content dominates, no build manifest, and code is a
+  # small minority (< ~20% of classified files). Incidental scripts do not demote.
+  local is_kb=false
+  if [[ $has_markdown == true && $has_manifest == false ]] \
+    && { [[ $code_files -eq 0 ]] || [[ $((code_files * 5)) -lt $((content_files + code_files)) ]]; }; then
     is_kb=true
   fi
+
+  # knowledge-base and cli are mutually exclusive: a content library is never a CLI.
+  local is_cli=false
+  [[ ${#CLI_SIGNALS[@]} -gt 0 ]] && is_cli=true
+  [[ $is_kb == true ]] && is_cli=false
+
   local -a project_types=()
   [[ $is_cli == true ]] && project_types+=(cli)
   [[ $is_kb == true ]] && project_types+=(knowledge-base)
   project_types_json="$(__cog_classify_project_json_string_array "${project_types[@]}")"
+
+  # Confidence + ambiguity: deterministic when a manifest anchors the shape or one
+  # content/code class clearly dominates; otherwise defer to the caller's judgment.
+  local primary_type=null confidence=low ambiguous=true
+  if [[ $has_manifest == true ]]; then
+    confidence=high
+    ambiguous=false
+    if [[ $is_cli == true ]]; then primary_type='"cli"'; else primary_type='"library"'; fi
+  elif [[ $is_kb == true ]]; then
+    confidence=high
+    ambiguous=false
+    primary_type='"knowledge-base"'
+  elif [[ $is_cli == true ]]; then
+    confidence=medium
+    ambiguous=false
+    primary_type='"cli"'
+  elif [[ $has_code == true ]]; then
+    confidence=medium
+    ambiguous=false
+    primary_type='"library"'
+  fi
+
   jq -n \
     --arg git_root "$PROJECT_ROOT" \
     --argjson languages "$langs_json" \
@@ -199,8 +324,12 @@ __cog_classify_project_build_json() {
     --argjson cli_signals "$(__cog_classify_project_json_string_array "${CLI_SIGNALS[@]}")" \
     --argjson is_cli "$is_cli" \
     --argjson is_monorepo "$(__cog_classify_project_monorepo)" \
+    --argjson primary_type "$primary_type" \
+    --arg confidence "$confidence" \
+    --argjson ambiguous "$ambiguous" \
     '{git_root: $git_root, languages: $languages, project_types: $project_types, frameworks: $frameworks,
-      cli_signals: $cli_signals, is_cli: $is_cli, is_monorepo: $is_monorepo}'
+      cli_signals: $cli_signals, is_cli: $is_cli, is_monorepo: $is_monorepo,
+      primary_type: $primary_type, confidence: $confidence, ambiguous: $ambiguous}'
 }
 
 cog::cmd::classify_project() {
