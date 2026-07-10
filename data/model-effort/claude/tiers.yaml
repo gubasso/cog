@@ -93,6 +93,7 @@ tiers:
       - bootstrap-rust
       - bootstrap-cargo-publish
       - bootstrap-installer
+      - bootstrap-knowledge-base
       - test-review
       - review-findings
       - review-queue-rounds

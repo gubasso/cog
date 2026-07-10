@@ -110,6 +110,11 @@ __cog_classify_project_detect_languages() {
   fi
   [[ $(__cog_classify_project_count_named_files '*.R') -gt 0 ]] && __cog_classify_project_add_language r "*.R"
   [[ $(__cog_classify_project_count_named_files '*.lua') -gt 0 ]] && __cog_classify_project_add_language lua "*.lua"
+  local md_files
+  md_files="$(__cog_classify_project_count_named_files '*.md')"
+  if [[ $md_files -gt 0 && $total -gt 0 && $((md_files * 2)) -gt $total ]]; then
+    __cog_classify_project_add_language markdown "majority *.md content"
+  fi
   # Always succeed: this populates LANGUAGES via optional probes, and the trailing
   # `[[ … ]] && …` would otherwise leak exit 1 and abort build_json under `set -e`.
   return 0
@@ -174,16 +179,21 @@ __cog_classify_project_build_json() {
   __cog_classify_project_detect_languages
   __cog_classify_project_detect_cli
 
-  local is_cli=false project_types_json
+  local is_cli=false is_kb=false project_types_json langs_json
   [[ ${#CLI_SIGNALS[@]} -gt 0 ]] && is_cli=true
-  if [[ $is_cli == true ]]; then
-    project_types_json="$(__cog_classify_project_json_string_array cli)"
-  else
-    project_types_json='[]'
+  langs_json="$(__cog_classify_project_json_object_array "${LANGUAGES[@]}")"
+  # A knowledge-base project is a markdown content library: markdown dominates and
+  # is the only detected language (a stray code language demotes it to a mixed repo).
+  if jq -e '([.[].lang] | length > 0) and (([.[].lang] | unique) == ["markdown"])' <<<"$langs_json" >/dev/null 2>&1; then
+    is_kb=true
   fi
+  local -a project_types=()
+  [[ $is_cli == true ]] && project_types+=(cli)
+  [[ $is_kb == true ]] && project_types+=(knowledge-base)
+  project_types_json="$(__cog_classify_project_json_string_array "${project_types[@]}")"
   jq -n \
     --arg git_root "$PROJECT_ROOT" \
-    --argjson languages "$(__cog_classify_project_json_object_array "${LANGUAGES[@]}")" \
+    --argjson languages "$langs_json" \
     --argjson project_types "$project_types_json" \
     --argjson frameworks "$(__cog_classify_project_json_object_array "${FRAMEWORKS[@]}")" \
     --argjson cli_signals "$(__cog_classify_project_json_string_array "${CLI_SIGNALS[@]}")" \

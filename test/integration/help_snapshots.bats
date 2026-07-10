@@ -77,6 +77,8 @@ Commands:
   installer-apply Apply an installer script template to a project.
   installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
+  kb-apply       Apply a knowledge-base scaffold to a project.
+  kb-detect      Detect knowledge-base scaffold type.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
@@ -208,6 +210,8 @@ Commands:
   installer-apply Apply an installer script template to a project.
   installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
+  kb-apply       Apply a knowledge-base scaffold to a project.
+  kb-detect      Detect knowledge-base scaffold type.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.

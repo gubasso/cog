@@ -63,6 +63,8 @@ _cog() {
     installer-apply
     installer-detect
     jira-ticket-creator
+    kb-apply
+    kb-detect
     license-apply
     lint-codex-wrapper
     lock

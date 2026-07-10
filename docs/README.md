@@ -85,6 +85,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0078: Deterministic git-identity preflight for identity-bearing bootstrap fields](decisions/0078-git-identity-preflight.md)
 - [ADR-0079: Guard codex-runner --output against clobbering durable prompt artifacts](decisions/0079-codex-runner-output-collision-guard.md)
 - [ADR-0080: Cog-owned, boundary-finalized review-loop terminal step](decisions/0080-cog-owned-review-loop-terminal.md)
+- [ADR-0081: Knowledge-base as a bootstrap domain with a docs-as-specs scaffold](decisions/0081-knowledge-base-bootstrap-domain.md)
 
 ## Guides
 

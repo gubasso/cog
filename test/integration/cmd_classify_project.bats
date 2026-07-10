@@ -38,6 +38,29 @@ EOF
   jq -e '.git_root and (.languages[] | select(.lang == "javascript"))' "$out" >/dev/null
 }
 
+@test "cog classify-project detects a knowledge-base markdown project" {
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/tech"
+  printf '# a\n' >"${BATS_TEST_TMPDIR}/repo/README.md"
+  printf '# b\n' >"${BATS_TEST_TMPDIR}/repo/tech/b.md"
+  printf '# c\n' >"${BATS_TEST_TMPDIR}/repo/tech/c.md"
+
+  run bash -c 'cd "$1" && cog classify-project --json' _ "${BATS_TEST_TMPDIR}/repo"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.languages[] | select(.lang == "markdown")) and (.project_types | index("knowledge-base"))' >/dev/null
+}
+
+@test "cog classify-project does not mark a code project with docs as knowledge-base" {
+  printf '[package]\nname = "demo"\n' >"${BATS_TEST_TMPDIR}/repo/Cargo.toml"
+  printf '# docs\n' >"${BATS_TEST_TMPDIR}/repo/README.md"
+  printf '# more\n' >"${BATS_TEST_TMPDIR}/repo/GUIDE.md"
+
+  run bash -c 'cd "$1" && cog classify-project --json' _ "${BATS_TEST_TMPDIR}/repo"
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.project_types | index("knowledge-base") | not)' >/dev/null
+}
+
 @test "cog classify-project --help dispatches" {
   run cog classify-project --help
 

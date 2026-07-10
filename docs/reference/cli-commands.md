@@ -80,6 +80,8 @@ this reference table.
 | `help` | Show generated help for cog or a subcommand. |
 | `hook-guard` | Deterministic Stop hook decisions for active workflows. |
 | `init` | Initialize cog runtime directories and prerequisites. |
+| `kb-apply` | Apply a knowledge-base scaffold to a project. |
+| `kb-detect` | Detect knowledge-base scaffold type. |
 | `license-apply` | Apply an SPDX LICENSE to a project. |
 | `lint-codex-wrapper` | Enforce Codex single-entrypoint markdown snippets. |
 | `lock` | Acquire or release a workflow run lock. |

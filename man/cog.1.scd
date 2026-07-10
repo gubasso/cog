@@ -168,6 +168,12 @@ The command list and short descriptions are sourced from command modules under
 *jira-ticket-creator*
 	Scaffold, write, and finalize retroactive JIRA ticket drafts.
 
+*kb-apply*
+	Apply a knowledge-base scaffold to a project.
+
+*kb-detect*
+	Detect knowledge-base scaffold type.
+
 *license-apply*
 	Apply an SPDX LICENSE to a project.
 

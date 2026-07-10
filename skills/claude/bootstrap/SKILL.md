@@ -50,6 +50,15 @@ owns the project's `install.sh`/`uninstall.sh`/`install-common.sh` — a manifes
 verbose UX — and injects installer recipes into the task runner. Like the workers above it is not a
 `bootstrap-audit` domain, so a project that never wants an installer never reads as "missing".
 
+`bootstrap-knowledge-base` is a conditional **knowledge-base** worker, dispatched only when the project
+is a knowledge base (per `cog classify-project` reporting `knowledge-base` in `project_types`) or the
+operator's intent is a notes/knowledge/docs library. It owns the content-library conventions, the lean
+`docs/` specs scaffold (the product-versus-specs relationship, Diataxis zones, review checklist), and the
+per-area `AGENTS.md` digest standard; the root `CLAUDE.md`/`AGENTS.md`, `docs/decisions/`, markdown hooks,
+`.editorconfig`, and `.gitignore`/`LICENSE`/`README` stay with the governance, pre-commit, editorconfig,
+and repo domains, auto-targeted at markdown. Like the workers above it is not a `bootstrap-audit` domain,
+so a code project never reads a missing knowledge base.
+
 <!-- cog-context-brief-gate -->
 
 **Context-brief gate.** Before `/bootstrap` dispatches to any fresh-context worker — an Agent subagent
@@ -125,6 +134,7 @@ cog governance-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
 cog installer-detect --json     # when install/uninstall-script intent is in scope (drives bootstrap-installer)
+cog kb-detect --json            # when the project is a knowledge base or KB intent is in scope (drives bootstrap-knowledge-base)
 ```
 
 When `classify-project` reports Rust — or the intent is a new Rust project — include `bootstrap-rust`
@@ -177,7 +187,8 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
   place and may run alongside Wave 1.
 - **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`,
   `bootstrap-governance` (writes only `CLAUDE.md`/`AGENTS.md`/`docs/decisions/`, depends on no other
-  domain), and — when Rust
+  domain), — when the project is a knowledge base — `bootstrap-knowledge-base` (scaffolds the `docs/`
+  specs and the per-area `AGENTS.md` digest standard, depends on no other domain), and — when Rust
   plus publishing intent is in scope — `bootstrap-cargo-publish`, dispatched after `bootstrap-rust` so
   the crate exists; it surfaces publish/version task-recipe fragments to `bootstrap-taskrunner` and
   release-CI fragments to `bootstrap-ci` (each `--type rust`).

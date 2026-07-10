@@ -93,6 +93,12 @@ cog::fn::template::detect_matches() {
   elif [[ $(cog::fn::template::count_named_files '*.bash') -gt 0 || $(cog::fn::template::count_named_files '*.bats') -gt 0 ]]; then
     cog::fn::template::add_match bash "*.bash or *.bats"
   fi
+  # Markdown is a fallback: it resolves only when no code-language template matched,
+  # so a code repo that happens to carry many docs still resolves to its language and
+  # a pure markdown/knowledge-base repo resolves to the markdown template variant.
+  if [[ ${#MATCHES[@]} -eq 0 ]] && cog::fn::template::language_present "$classification" markdown; then
+    cog::fn::template::add_match markdown "markdown content dominant"
+  fi
 }
 
 # Build the detect JSON shared by precommit-detect and editorconfig-detect.

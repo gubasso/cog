@@ -25,4 +25,9 @@ Accepted ADRs are not deleted; a changed decision gets a new superseding ADR.
 
 - Keep changes scoped and reversible; prefer editing existing files over adding new ones.
 - Documentation and rationale live beside the code they describe.
+- Directory structure is owned by the filesystem, not by prose. A `README.md` (or `AGENTS.md`)
+  explains a directory's purpose — its domains, concepts, and rules — and never maintains a
+  hand-copied file tree, which drifts the moment a file is added or renamed. When a listing aids
+  discovery, give each entry a purpose, not a bare path the filesystem already shows. An
+  auto-generated table of contents is the exception, since the generator keeps it in sync.
 - Run the project's own lint and test tasks before proposing changes.
