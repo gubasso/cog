@@ -13,6 +13,7 @@ allowed-tools: Bash Read Edit Write Skill
 ---
 
 <!-- trigger-tests: "review-queue-rounds", "run the revision boundary", "reconcile plan drift" -->
+<!-- cog-terminal-contract: STATUS -->
 
 # Review Queue Rounds
 

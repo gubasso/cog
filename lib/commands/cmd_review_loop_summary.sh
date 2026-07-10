@@ -23,6 +23,8 @@ __cog_review_loop_summary_validate_self_check='
 
 __cog_review_loop_summary_usage() {
   cog::fn::ui_data "Usage: cog review-loop-summary build --run-dir <dir> --termination-reason <reason> --body <file> [--out <path>|--json]"
+  cog::fn::ui_data "Usage: cog review-loop-summary finalize --run-dir <dir> [--out <path>|--json]"
+  cog::fn::ui_data "Usage: cog review-loop-summary set-reason --run-dir <dir> --reason <reason> [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary validate --run-dir <dir> [--summary <path>] [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary --help"
 }
@@ -36,6 +38,41 @@ __cog_review_loop_summary_reason_ok() {
       return 1
       ;;
   esac
+}
+
+# Path holding the durable termination reason a worker records with `set-reason` during the
+# loop, so `finalize` never carries a model-supplied reason literal on the critical path.
+__cog_review_loop_summary_reason_path() {
+  cog::fn::rundir_path "$1" termination-reason.txt
+}
+
+# Read the durable termination reason for `finalize`. `error` is the deliberate default when
+# no reason was recorded: the enum already carries `error` for anomalous termination, so an
+# unfinished loop finalizes as an error rather than fabricating a benign reason.
+__cog_review_loop_summary_read_reason() {
+  local run_dir="$1" file reason=""
+  file="$(__cog_review_loop_summary_reason_path "$run_dir")"
+  if [[ -f $file && -r $file ]]; then
+    IFS= read -r reason <"$file" || true
+  fi
+  __cog_review_loop_summary_reason_ok "$reason" && {
+    printf '%s' "$reason"
+    return 0
+  }
+  printf 'error'
+}
+
+# Recover the termination reason already recorded inside a written summary.md, so an
+# idempotent `finalize` re-emits the line that matches the artifact on disk.
+__cog_review_loop_summary_extract_reason() {
+  local summary="$1" reason
+  # shellcheck disable=SC2016  # literal backticks match the markdown-formatted reason in summary.md.
+  reason="$(sed -n 's/^- Termination reason: `\(.*\)`$/\1/p' "$summary" | head -1)"
+  __cog_review_loop_summary_reason_ok "$reason" && {
+    printf '%s' "$reason"
+    return 0
+  }
+  printf 'error'
 }
 
 # Deterministic round count: the number of round-<N>-findings.json artifacts the loop wrote.
@@ -203,6 +240,17 @@ __cog_review_loop_summary_build_cmd() {
   [[ -n $body ]] || cog::fn::error_raise "MissingArgument" \
     "missing summary body file" "option: --body" "" "run 'cog review-loop-summary --help'"
 
+  __cog_review_loop_summary_write "$run_dir" "$reason" "$body" "$out" "$json"
+}
+
+# Shared terminal write path: validate the reason and narrative body, derive and assert the
+# round artifacts, assemble summary.md, assert its structure, and emit the canonical
+# REVIEW_LOOP_OK line (or JSON). Both `build` (model passes reason+body literals) and
+# `finalize` (only --run-dir; reason+body read from durable run-dir artifacts) route through
+# here so a written summary.md always co-occurs with the asserted result line.
+__cog_review_loop_summary_write() {
+  local run_dir="$1" reason="$2" body="$3" out="$4" json="$5"
+
   __cog_review_loop_summary_reason_ok "$reason" || cog::fn::error_raise "InvalidInput" \
     "unknown termination reason" "reason: ${reason}" \
     "expected one of: ${__cog_review_loop_summary_reasons}" "pass a valid termination reason"
@@ -234,7 +282,14 @@ __cog_review_loop_summary_build_cmd() {
     "could not write review-loop summary" "path: ${out}" "" "check the output path and retry"
 
   __cog_review_loop_summary_assert_summary "$out"
+  __cog_review_loop_summary_emit "$out" "$round_count" "$reason" "$json"
+}
 
+# Emit the terminal handshake for a summary.md already written and asserted. Mirrors
+# `cog msg ok review-loop "<summary_file> rounds=<n> reason=<reason>"` so the line provably
+# co-occurs with a validated artifact and can be surfaced verbatim as the run's reply.
+__cog_review_loop_summary_emit() {
+  local out="$1" round_count="$2" reason="$3" json="$4"
   if [[ $json == true ]]; then
     local result
     result="$(jq -cn --arg summary_file "$out" --argjson round_count "$round_count" --arg reason "$reason" \
@@ -242,10 +297,136 @@ __cog_review_loop_summary_build_cmd() {
     cog::fn::json_emit "$__cog_review_loop_summary_build_self_check" "$result"
   else
     cog::fn::ui_data "RESOLVED ${out}"
-    # Canonical terminal result line, emitted only after summary.md is written and asserted above.
-    # Mirrors `cog msg ok review-loop "<summary_file> rounds=<n> reason=<reason>"` so the line
-    # provably co-occurs with a validated artifact and can be surfaced verbatim as the run's reply.
     cog::fn::ui_data "REVIEW_LOOP_OK ${out} rounds=${round_count} reason=${reason}"
+  fi
+}
+
+# finalize --run-dir <dir> [--out <path>|--json]: the single mechanical terminal step. The
+# worker records the narrative body (summary-body.md) and reason (termination-reason.txt) as
+# durable artifacts during the loop, so finalize takes no reason/body literals -- keeping model
+# text off the critical path (ADR-0046) and shrinking the "skip window" to one command. It is
+# idempotent: an already-valid summary.md re-emits its own line, so the worker fast-path and the
+# caller-owned boundary fallback never double-write. See ADR-0080.
+__cog_review_loop_summary_finalize_cmd() {
+  local run_dir="" out="" json="${COG_UI_JSON:-false}"
+
+  while (($# > 0)); do
+    case "$1" in
+      -h | --help)
+        __cog_review_loop_summary_usage
+        return 0
+        ;;
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog review-loop-summary --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --out)
+        [[ $# -ge 2 && -n ${2:-} && -z $out && $json != true ]] || cog::fn::error_raise "InvalidInput" \
+          "invalid review-loop-summary output mode" "option: --out" "" "choose either --out or --json"
+        out="$2"
+        shift 2
+        ;;
+      --json)
+        [[ -z $out ]] || cog::fn::error_raise "InvalidInput" \
+          "invalid review-loop-summary output mode" "option: --json" "" "choose either --out or --json"
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown review-loop-summary finalize option" "option: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" \
+          "too many review-loop-summary finalize arguments" "argument: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+    "missing run directory" "usage: cog review-loop-summary finalize --run-dir <dir>" "" \
+    "run 'cog review-loop-summary --help'"
+
+  [[ -n $out ]] || out="$(__cog_review_loop_summary_default_path "$run_dir")"
+
+  # Idempotent no-op: a valid summary already exists, so re-emit its own recorded line rather
+  # than rebuilding it. This makes a second finalize (worker then boundary) a safe re-handshake.
+  # The assertion runs in a subshell so its fail-closed `exit` cannot escape: a malformed leftover
+  # summary.md (e.g. from an interrupted build) falls through to a clean rebuild instead of aborting.
+  if [[ -f $out ]] && (__cog_review_loop_summary_assert_summary "$out") >/dev/null 2>&1; then
+    local round_count reason
+    round_count="$(__cog_review_loop_summary_round_count "$run_dir")"
+    reason="$(__cog_review_loop_summary_extract_reason "$out")"
+    __cog_review_loop_summary_emit "$out" "$round_count" "$reason" "$json"
+    return 0
+  fi
+
+  local reason body
+  reason="$(__cog_review_loop_summary_read_reason "$run_dir")"
+  body="$(cog::fn::rundir_path "$run_dir" summary-body.md)"
+  __cog_review_loop_summary_write "$run_dir" "$reason" "$body" "$out" "$json"
+}
+
+# set-reason --run-dir <dir> --reason <reason>: record the durable termination reason during
+# the loop so finalize needs no reason literal. Validates against the same enum build enforces.
+__cog_review_loop_summary_set_reason_cmd() {
+  local run_dir="" reason="" json="${COG_UI_JSON:-false}"
+
+  while (($# > 0)); do
+    case "$1" in
+      -h | --help)
+        __cog_review_loop_summary_usage
+        return 0
+        ;;
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog review-loop-summary --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --reason)
+        [[ $# -ge 2 && -n ${2:-} && -z $reason ]] || cog::fn::error_raise "MissingArgument" \
+          "missing termination reason" "option: --reason" "" "run 'cog review-loop-summary --help'"
+        reason="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown review-loop-summary set-reason option" "option: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" \
+          "too many review-loop-summary set-reason arguments" "argument: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+    "missing run directory" "usage: cog review-loop-summary set-reason --run-dir <dir> --reason <reason>" "" \
+    "run 'cog review-loop-summary --help'"
+  [[ -n $reason ]] || cog::fn::error_raise "MissingArgument" \
+    "missing termination reason" "option: --reason" "" "run 'cog review-loop-summary --help'"
+
+  __cog_review_loop_summary_reason_ok "$reason" || cog::fn::error_raise "InvalidInput" \
+    "unknown termination reason" "reason: ${reason}" \
+    "expected one of: ${__cog_review_loop_summary_reasons}" "pass a valid termination reason"
+
+  local reason_file
+  reason_file="$(__cog_review_loop_summary_reason_path "$run_dir")"
+  printf '%s\n' "$reason" >"$reason_file" || cog::fn::error_raise "JsonWriteFailed" \
+    "could not record termination reason" "path: ${reason_file}" "" "check the run directory and retry"
+
+  if [[ $json == true ]]; then
+    cog::fn::json_emit '(.ok == true)' \
+      "$(jq -cn --arg reason "$reason" --arg file "$reason_file" '{ok: true, reason: $reason, reason_file: $file}')"
+  else
+    cog::fn::ui_data "RESOLVED ${reason_file}"
   fi
 }
 
@@ -312,6 +493,14 @@ cog::cmd::review_loop_summary() {
       shift
       __cog_review_loop_summary_build_cmd "$@"
       ;;
+    finalize)
+      shift
+      __cog_review_loop_summary_finalize_cmd "$@"
+      ;;
+    set-reason)
+      shift
+      __cog_review_loop_summary_set_reason_cmd "$@"
+      ;;
     validate)
       shift
       __cog_review_loop_summary_validate_cmd "$@"
@@ -322,7 +511,7 @@ cog::cmd::review_loop_summary() {
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
-        "unknown review-loop-summary mode" "mode: $verb" "" "expected build or validate"
+        "unknown review-loop-summary mode" "mode: $verb" "" "expected build, finalize, set-reason, or validate"
       ;;
   esac
 }

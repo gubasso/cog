@@ -318,6 +318,27 @@ request from a rawfile so it is always attached, and `validate` fails closed unl
 present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capability.md) and
 [ADR-0043](../decisions/0043-best-constructed-input-standard.md).
 
+## Terminal contract
+
+A skill whose run ends with a canonical result line comes in two structural shapes. In a **type-1**
+terminal contract the result line is owned by `cog`: it is emitted atomically by a command that is
+load-bearing to the work itself (`gc-repo`'s `cog msg ok commit`, a runner's `queue-status-set` flip)
+or by deterministic scans (`review-queue-rounds`'s `STATUS:`). In a **type-2** terminal contract the
+result line is a separable final step the worker must remember to run — a skippable ceremony an LLM can
+stop short of. The repository's determinism principle (ADR-0009/ADR-0046) is that postconditions are
+cog-owned mechanics, so no type-2 ceremony may exist: `review-loop`'s terminal step is a cog-owned,
+boundary-finalized postcondition (`cog review-loop-summary finalize`), and the `executor-prex`
+boundary runs `finalize` itself when a worker returns without `summary.md` rather than re-dispatching
+an agent.
+
+Every curated terminal-contract worker declares its result line with a
+`<!-- cog-terminal-contract: <TOKEN> -->` marker (`REVIEW_LOOP_OK` for `review-loop`, `COMMIT_OK` for
+`gc-repo`, `STATUS` for `review-queue-rounds`) and documents that token in prose. The `terminal-contract`
+lint rule enforces the marker, the documentation, and — for the sole type-2 boundary
+(`executor-prex` → `review-loop`) — that the boundary reference finalizes deterministically and carries
+no `SendMessage` agent re-dispatch for the terminal step. See
+[ADR-0080](../decisions/0080-cog-owned-review-loop-terminal.md).
+
 ## Structural Lint Checks
 
 `cog skill-lint` hard-fails these structural issues:
@@ -403,6 +424,12 @@ present and filled. See [ADR-0042](../decisions/0042-context-builder-shared-capa
   `skill-refs/**` reference (the docs skills load via `cog skill-refs path`) names the maintenance-only
   Codex conventions document or an external/local docs repository. The same golden rules bind the refs
   a skill loads, not just the `SKILL.md` body. The `skill-refs/templates/**` deploy payload is exempt.
+- `terminal-contract`: a curated terminal-contract worker (`review-loop`, `gc-repo`,
+  `review-queue-rounds`) is missing its `<!-- cog-terminal-contract: <TOKEN> -->` marker or never
+  documents the token in prose; or the `executor-prex` → `review-loop` boundary reference does not
+  finalize the terminal summary deterministically (`cog review-loop-summary finalize`) or carries a
+  `SendMessage` agent re-dispatch for the terminal step. See "Terminal contract" and
+  [ADR-0080](../decisions/0080-cog-owned-review-loop-terminal.md).
 
 Codex skills do not require `trigger-tests`.
 

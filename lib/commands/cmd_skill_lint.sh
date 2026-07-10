@@ -1405,6 +1405,72 @@ __cog_skill_lint_check_bootstrap_template_review() {
   return 1
 }
 
+# terminal-contract: a curated worker whose run ends with a canonical cog-emitted result line
+# must declare that line with a `<!-- cog-terminal-contract: <TOKEN> -->` marker and name the
+# token in its prose. The declaration keeps the class visible and blocks reintroducing a
+# type-2 "model must remember to emit" ceremony (ADR-0080). The token per worker:
+__cog_skill_lint_terminal_contract_token() {
+  case "$1" in
+    review-loop) printf 'REVIEW_LOOP_OK' ;;
+    gc-repo) printf 'COMMIT_OK' ;;
+    review-queue-rounds) printf 'STATUS' ;;
+    *) return 1 ;;
+  esac
+}
+
+# The executor-prex -> review-loop boundary is the sole type-2 boundary: its worker's terminal
+# step is cog-owned and boundary-finalized. The sibling boundary reference must finalize the
+# summary deterministically (`cog review-loop-summary finalize`) and must never fall back to
+# re-dispatching an agent (`SendMessage`) to run the terminal step. See ADR-0080.
+__cog_skill_lint_check_terminal_contract_boundary() {
+  local skill_file="$1" ref failed=0
+  ref="$(dirname "$skill_file")/references/review-loop.md"
+  [[ -f $ref && -r $ref ]] || return 0
+
+  if ! grep -qF 'cog review-loop-summary finalize' "$ref"; then
+    __cog_skill_lint_finding "$ref" 1 "terminal-contract" \
+      "review-loop boundary does not finalize the terminal summary deterministically" \
+      "run 'cog review-loop-summary finalize --run-dir <child>' from the caller when summary.md is absent"
+    failed=1
+  fi
+  if grep -qF 'SendMessage' "$ref"; then
+    __cog_skill_lint_finding "$ref" 1 "terminal-contract" \
+      "review-loop boundary re-dispatches an agent to run the terminal step" \
+      "run the terminal step deterministically via 'cog review-loop-summary finalize'; do not re-dispatch a worker"
+    failed=1
+  fi
+  return "$failed"
+}
+
+__cog_skill_lint_check_terminal_contract() {
+  local file="$1" runtime name token failed=0
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ $runtime == claude ]] || return 0
+  name="$(cog::fn::skill::frontmatter_name "$file")"
+
+  if token="$(__cog_skill_lint_terminal_contract_token "$name")"; then
+    if ! grep -qF "<!-- cog-terminal-contract: ${token} -->" "$file"; then
+      __cog_skill_lint_finding "$file" 1 "terminal-contract" \
+        "terminal-contract worker '${name}' missing its declaration marker" \
+        "declare the canonical result line: <!-- cog-terminal-contract: ${token} -->"
+      failed=1
+    fi
+    # The token must be documented in prose, not only inside the marker comment.
+    if ! grep -F "$token" "$file" | grep -qvF 'cog-terminal-contract:'; then
+      __cog_skill_lint_finding "$file" 1 "terminal-contract" \
+        "terminal-contract worker '${name}' never documents its result token '${token}'" \
+        "describe the '${token}' result line the worker emits"
+      failed=1
+    fi
+  fi
+
+  if [[ $name == executor-prex ]]; then
+    __cog_skill_lint_check_terminal_contract_boundary "$file" || failed=1
+  fi
+
+  return "$failed"
+}
+
 __cog_skill_lint_scan_file() {
   local file="$1" failed=0
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "skill-lint input is not readable" "path: ${file}" "" "pass readable SKILL.md files"
@@ -1464,6 +1530,9 @@ __cog_skill_lint_scan_file() {
     failed=1
   fi
   if ! __cog_skill_lint_check_bootstrap_template_review "$file"; then
+    failed=1
+  fi
+  if ! __cog_skill_lint_check_terminal_contract "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_scan_premise_file "$file"; then

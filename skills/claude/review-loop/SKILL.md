@@ -23,12 +23,15 @@ regressions in the applied fixes. Claude delegates finding triage to `/review-fi
 marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly
 limited, or aborted by the user.
 
-**Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists — written via
-`cog review-loop-summary build`, confirmed via `cog review-loop-summary validate`, and surfaced as the
-run's trailing `REVIEW_LOOP_OK` result line (see Final Output and Result Line Contract). This is the
+**Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists — assembled and
+asserted by `cog review-loop-summary finalize --run-dir "$RUN_DIR"`, whose printed `REVIEW_LOOP_OK`
+line is the run's trailing result line (see Terminate and Result Line Contract). `summary.md` is the
 single exit artifact for every termination reason, including when the work looks finished after a
-round's fixes. Reaching a clean or fixed state is not the end of the run; writing `summary.md` and
-emitting the result line is. Triage narrative belongs in `summary.md`, never as a freeform reply.
+round's fixes. Reaching a clean or fixed state is not the end of the run; running `finalize` is. Its
+two inputs — the narrative body (`summary-body.md`) and the termination reason
+(`termination-reason.txt`) — are maintained as durable run-dir artifacts during the loop, so
+termination is a single mechanical command with no narrative authored in the moment of stopping.
+Triage narrative belongs in `summary.md`, never as a freeform reply.
 
 Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`,
 `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only`
@@ -87,6 +90,8 @@ Artifacts:
 - `round-N-runner.json`
 - `round-N-triage.md`
 - `followups.md`
+- `summary-body.md` (the narrative body, maintained after each round)
+- `termination-reason.txt` (recorded when a termination condition fires)
 - `summary.md`
 
 ## Round Context
@@ -140,13 +145,18 @@ Invoke `/review-findings` inline with the round findings JSON, task context, rev
 triage, and accumulated followups. Save its structured report to `$RUN_DIR/round-N-triage.md`.
 Append the report's `Followups` decisions, deferrals, and open questions to `$RUN_DIR/followups.md`.
 
+After each round, maintain `$RUN_DIR/summary-body.md` — the terminal narrative body — with the
+current state under its required section headings (see Terminate): what was implemented across rounds,
+a `Files changed` section, a `Remaining findings` section, and a `Followups` section. Maintaining it
+per round keeps the narrative accurate and leaves termination as a single mechanical command.
+
 Apply minimal code edits for findings marked `FIXED`. Pause only for `NEEDS_DISCUSSION`, errors, user
 abort, or an explicit user limit.
 
 Applying a round's fixes is a continuation point, not a stopping point. After applying the `FIXED`
 edits for a round that has no `NEEDS_DISCUSSION`, run the next (resumed) round to confirm the fixes
-hold and surface regressions. The loop ends only when a termination condition below is met, and it
-ends by writing `summary.md`.
+hold and surface regressions. The loop ends only when a termination condition in Terminate is met, and
+it ends by running `finalize` to write `summary.md`.
 
 After round 2 and later, compute deterministic progress:
 
@@ -157,7 +167,7 @@ cog review-loop-progress --current "$RUN_DIR/round-N-findings.json" --previous "
 Use `new[]`, `recurring[]`, `resolved[]`, and `churn_ratio` to judge whether the loop is genuinely
 stalling on repeated unresolvable findings. The stall decision remains prose judgment.
 
-## Termination
+## Terminate
 
 Stop on:
 
@@ -170,66 +180,45 @@ Stop on:
 - runner or validation error.
 
 Do not ask whether to continue between successful rounds. "Fixes applied" is not in this list and is
-never terminal — only the conditions above are. On whichever condition fires, proceed directly to
-Final Output, write `summary.md`, and emit the result line; every termination path ends there. Each
-condition maps to one `--termination-reason`: empty findings → `findings-empty`, approve →
-`decision-approve`, stall → `stall`, user round limit → `user-limit`, `NEEDS_DISCUSSION` →
-`needs-discussion`, user abort → `user-abort`, runner or validation error → `error`.
+never terminal — only the conditions above are. Each condition maps to one termination reason: empty
+findings → `findings-empty`, approve → `decision-approve`, stall → `stall`, user round limit →
+`user-limit`, `NEEDS_DISCUSSION` → `needs-discussion`, user abort → `user-abort`, runner or validation
+error → `error`.
 
-## Final Output
+On whichever condition fires, terminate with two commands. First record the reason (`<reason>` is the
+mapped value above); then run the single terminal command, whose printed `REVIEW_LOOP_OK` line is the
+reply's trailing block with nothing after it:
 
-Final Output is mandatory and terminal: every termination path — clean, approved, stalled, limited,
-needs-discussion, aborted, or errored — runs this fixed three-step sequence and ends here.
+```bash
+cog review-loop-summary set-reason --run-dir "$RUN_DIR" --reason <reason>
+cog review-loop-summary finalize --run-dir "$RUN_DIR"
+```
 
-1. Write the narrative body to `$RUN_DIR/summary-body.md` with these required section headings, each
-   followed by its content (`cog` fails closed when a required narrative section is absent):
+`finalize` reads the maintained `summary-body.md` and recorded reason, derives the round count and
+`Per-round counts` section from `round-N-findings.json`, assembles `$RUN_DIR/summary.md`, and fails
+closed if the body is absent, empty, or missing a required section — `cog` never fabricates a
+narrative. On success it prints the canonical `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>`
+line. It is idempotent: a re-run against an already-valid `summary.md` re-emits that same line.
 
-   - what was implemented across rounds;
-   - a `Files changed` section: files changed across the loop;
-   - a `Remaining findings` section: findings still open at termination;
-   - a `Followups` section: accumulated followups and important decisions.
-
-2. Assemble the terminal summary. `cog` derives the round count and `Per-round counts` section from
-   `round-N-findings.json`, prepends the title and termination reason, writes `$RUN_DIR/summary.md`,
-   and fails closed if the result is empty, missing its title or termination reason, or missing a
-   required narrative section. On success it prints the canonical `REVIEW_LOOP_OK` result line:
-
-   ```bash
-   cog review-loop-summary build --run-dir "$RUN_DIR" \
-     --termination-reason <reason> --body "$RUN_DIR/summary-body.md"
-   ```
-
-   `<reason>` is exactly one of `findings-empty`, `decision-approve`, `stall`, `user-limit`,
-   `needs-discussion`, `user-abort`, or `error`, matching the condition that fired (see Termination).
-
-3. Confirm the artifact as the mandatory final self-check, then end the reply with the result line:
-
-   ```bash
-   cog review-loop-summary validate --run-dir "$RUN_DIR"
-   ```
-
-   `validate` fails closed when `summary.md` is missing or malformed; only after it passes is the run
-   complete. The reply's trailing block is the `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>`
-   line printed in step 2, and nothing follows it.
-
-   When the loop cannot reach a summary at all — a runner or validation error before any round
-   produced findings — end instead with `cog msg failed review-loop "<reason>"` so the caller receives
-   a definite `REVIEW_LOOP_FAILED` signal rather than silence.
+When the loop cannot reach a summary at all — a runner or validation error before any round produced
+findings — end instead with `cog msg failed review-loop "<reason>"` so the caller receives a definite
+`REVIEW_LOOP_FAILED` signal rather than silence.
 
 ## Result Line Contract
+
+<!-- cog-terminal-contract: REVIEW_LOOP_OK -->
 
 Every run ends with exactly one canonical status line, emitted as the trailing block of the reply with
 nothing after it:
 
-- `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` — surfaced verbatim from a successful
-  `cog review-loop-summary build`, which prints it only after `summary.md` is written and asserted;
+- `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` — surfaced verbatim from
+  `cog review-loop-summary finalize`, which prints it only after `summary.md` is written and asserted;
 - `REVIEW_LOOP_FAILED <reason>` — from `cog msg failed review-loop "<reason>"` when no summary could
   be produced.
 
 This line is the run's machine-readable handshake: a caller reads it to confirm completion. Per-round
 detail, triage narrative, and followups live in `summary.md`. The run is complete — and this line is
-emitted — only once `cog review-loop-summary build` and `cog review-loop-summary validate` have both
-succeeded.
+emitted — only once `cog review-loop-summary finalize` has written and asserted `summary.md`.
 
 ## Guardrails
 

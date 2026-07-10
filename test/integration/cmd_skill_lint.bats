@@ -1467,9 +1467,11 @@ EOF
 
 @test "cog skill-lint pins gc-repo to the LOW tier" {
   # The gc-repo per-repo commit worker is registry-pinned low (opus, effort=low).
+  # (Minimal fixture trips the terminal-contract marker rule, so assert the tier
+  # rule specifically does not fire.)
   write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo opus low
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
-  assert_success
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
+  [[ $stderr != *"model-effort-tier"* ]]
 }
 
 @test "cog skill-lint flags gc-repo when pinned to haiku" {
@@ -1752,4 +1754,85 @@ EOF
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust/SKILL.md"
 
   assert_success
+}
+
+@test "cog skill-lint accepts a terminal-contract worker with marker and documented token" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/review-loop" review-loop claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/review-loop/SKILL.md"
+  {
+    printf '\n<!-- cog-terminal-contract: REVIEW_LOOP_OK -->\n\n'
+    printf 'The run ends with the REVIEW_LOOP_OK result line.\n'
+  } >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  # Other rules may still flag the minimal fixture; this rule must not.
+  [[ $stderr != *"terminal-contract"* ]]
+}
+
+@test "cog skill-lint rejects a terminal-contract worker missing its marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/review-loop" review-loop claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/review-loop/SKILL.md"
+  printf '\nThe run ends with the REVIEW_LOOP_OK result line.\n' >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"terminal-contract"* ]]
+  [[ $stderr == *"missing its declaration marker"* ]]
+}
+
+@test "cog skill-lint rejects a terminal-contract worker that never documents its token" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
+  # Marker present, but COMMIT_OK appears only inside the marker comment.
+  printf '\n<!-- cog-terminal-contract: COMMIT_OK -->\n' >>"$file"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"terminal-contract"* ]]
+  [[ $stderr == *"never documents its result token"* ]]
+}
+
+# Build an executor-prex fixture with a review-loop boundary reference of given content.
+write_prex_boundary() {
+  local ref_body="$1"
+  local dir="${BATS_TEST_TMPDIR}/skills/claude/executor-prex"
+  write_skill "$dir" executor-prex claude
+  mkdir -p "$dir/references"
+  printf '%s\n' "$ref_body" >"$dir/references/review-loop.md"
+  printf '%s\n' "$dir/SKILL.md"
+}
+
+@test "cog skill-lint accepts the review-loop boundary that finalizes deterministically" {
+  local file
+  # shellcheck disable=SC2016  # literal $RL_RUN_DIR is fixture prose, not an expansion.
+  file="$(write_prex_boundary 'The caller runs cog review-loop-summary finalize --run-dir "$RL_RUN_DIR".')"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  [[ $stderr != *"terminal-contract"* ]]
+}
+
+@test "cog skill-lint rejects a review-loop boundary that re-dispatches an agent" {
+  local file
+  file="$(write_prex_boundary 'Run cog review-loop-summary finalize, else Prefer SendMessage to the agentId.')"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"terminal-contract"* ]]
+  [[ $stderr == *"re-dispatches an agent"* ]]
+}
+
+@test "cog skill-lint rejects a review-loop boundary that never finalizes deterministically" {
+  local file
+  file="$(write_prex_boundary 'The caller reports the missing summary and asks the user.')"
+
+  run --separate-stderr cog skill-lint "$file"
+
+  assert_failure
+  [[ $stderr == *"terminal-contract"* ]]
+  [[ $stderr == *"does not finalize"* ]]
 }

@@ -279,3 +279,111 @@ JSON
   assert_failure
   [[ $stderr == *"err.kind: InvalidInput"* ]]
 }
+
+@test "cog review-loop-summary set-reason records the durable reason" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  mkdir -p "$run_dir"
+
+  run cog review-loop-summary set-reason --run-dir "$run_dir" --reason stall
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/termination-reason.txt"
+  [[ "$(cat "${run_dir}/termination-reason.txt")" == stall ]]
+}
+
+@test "cog review-loop-summary set-reason rejects an out-of-enum reason" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  mkdir -p "$run_dir"
+
+  run --separate-stderr cog review-loop-summary set-reason --run-dir "$run_dir" --reason converged
+
+  assert_failure
+  [[ $stderr == *"unknown termination reason"* ]]
+  [[ ! -f "${run_dir}/termination-reason.txt" ]]
+}
+
+@test "cog review-loop-summary finalize builds summary.md and honors the recorded reason" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 2
+  write_body "$run_dir"
+  cog review-loop-summary set-reason --run-dir "$run_dir" --reason stall >/dev/null
+
+  run cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=2 reason=stall"
+  grep -q '^# Review Loop Summary' "${run_dir}/summary.md"
+  # shellcheck disable=SC2016  # literal backticks are the markdown formatting under test.
+  grep -q 'Termination reason: `stall`' "${run_dir}/summary.md"
+}
+
+@test "cog review-loop-summary finalize defaults reason to error when none was recorded" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+  write_body "$run_dir"
+
+  run cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=1 reason=error"
+}
+
+@test "cog review-loop-summary finalize is an idempotent no-op on an already-valid summary" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 3
+  write_body "$run_dir"
+  cog review-loop-summary build --run-dir "$run_dir" \
+    --termination-reason findings-empty --body "${run_dir}/summary-body.md" >/dev/null
+  # Remove the body so a rebuild would fail closed; a valid summary must re-emit without it.
+  rm -f "${run_dir}/summary-body.md"
+
+  run cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=3 reason=findings-empty"
+}
+
+@test "cog review-loop-summary finalize rebuilds over a malformed leftover summary.md" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+  write_body "$run_dir"
+  # A malformed summary.md (e.g. from an interrupted build) must not abort finalize; it rebuilds.
+  printf '%s\n' 'garbage without the required headings' >"${run_dir}/summary.md"
+
+  run cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+REVIEW_LOOP_OK ${run_dir}/summary.md rounds=1 reason=error"
+  grep -q '^# Review Loop Summary' "${run_dir}/summary.md"
+}
+
+@test "cog review-loop-summary finalize fails closed when no narrative body exists" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+
+  run --separate-stderr cog review-loop-summary finalize --run-dir "$run_dir"
+
+  assert_failure
+  [[ $stderr == *"err.kind: InputUnreadable"* ]]
+  [[ ! -f "${run_dir}/summary.md" ]]
+  refute_output --partial 'REVIEW_LOOP_OK'
+}
+
+@test "cog review-loop-summary finalize --json reports round count and reason" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 2
+  write_body "$run_dir"
+  cog review-loop-summary set-reason --run-dir "$run_dir" --reason decision-approve >/dev/null
+
+  run cog review-loop-summary finalize --run-dir "$run_dir" --json
+
+  assert_success
+  refute_output --partial 'REVIEW_LOOP_OK'
+  printf '%s\n' "$output" | jq -e \
+    '.ok == true and .round_count == 2 and .termination_reason == "decision-approve" and
+     (.summary_file | endswith("/summary.md"))' >/dev/null
+}

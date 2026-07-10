@@ -75,6 +75,8 @@ prevails, so follow the project's rules.
 
 ## Result Line Contract
 
+<!-- cog-terminal-contract: COMMIT_OK -->
+
 Emit exactly one canonical status line via `cog msg`, written to `$RESULT_FILE` **and** as the
 trailing block of the reply with nothing after it. With `--multi-repo` the line carries a free-form
 `repo=<root>` suffix; without it, emit the bare single-repo form:

@@ -68,15 +68,12 @@ cog rundir snapshot-children \
 
     <RUN_DIR>/review_loop_input.json
 
-  Run the full review loop the skill describes. It is not complete until you
-  have written summary.md via `cog review-loop-summary build`, confirmed it with
-  `cog review-loop-summary validate`, and your reply's final line is exactly the
-  `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` line that build printed,
-  with no text after it. Do not reply with an inline triage summary — that
+  Run the full review loop the skill describes. Terminate through
+  `cog review-loop-summary finalize` and make its printed
+  `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` line your reply's final
+  line, with no text after it. Do not reply with an inline triage summary — that
   belongs in summary.md.
   ```
-
-Capture the `agentId` the Agent tool returns; the recovery branch below reuses it.
 
 Do NOT use the `Skill` tool for this call — see
 `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
@@ -120,25 +117,21 @@ non-empty **and** the child wrote `summary.md`. On success, record the child run
 printf '%s\n' "$RL_RUN_DIR" > "$RUN_DIR/review-loop-run-dir.txt"
 ```
 
-**Bounded recovery (at most once).** When `verify-proof` fails but the located `$RL_RUN_DIR` shows the
-loop actually ran — `$RL_RUN_DIR/round-1-findings.json` exists — the child completed its review but
-skipped Final Output (the drift this contract guards against). Do not hard-fail yet: re-dispatch the
-**same** child once to finish only the terminal step. Prefer `SendMessage` to the captured `agentId`
-(it retains round context to author an accurate body); if that agent is no longer addressable, use a
-fresh `Agent` (`subagent_type: general-purpose`) pointed at the existing `$RL_RUN_DIR`. Instruct it:
+**Boundary-owned finalize.** When `verify-proof` fails but the located `$RL_RUN_DIR` shows the loop
+actually ran — `$RL_RUN_DIR/round-1-findings.json` exists — the child completed its review but did not
+run its terminal step. The terminal step is a cog-owned postcondition, so the caller finalizes it
+directly rather than re-dispatching an agent:
 
-```text
-Complete Final Output only for the review-loop run at <RL_RUN_DIR>. Write
-summary-body.md per the skill's required sections, run `cog review-loop-summary
-build --run-dir <RL_RUN_DIR> --termination-reason <reason> --body <RL_RUN_DIR>/summary-body.md`,
-then `cog review-loop-summary validate --run-dir <RL_RUN_DIR>`, and reply with
-exactly the REVIEW_LOOP_OK line that build printed.
+```bash
+cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
 ```
 
-Then re-run the `verify-proof` command above. If it now passes, record the run dir and continue. If it
-still fails — or `$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran) — stop without a
-further retry: report the failure and ask the user whether to retry the review loop, skip it, or abort
-the workflow.
+`finalize` reads the child's maintained `summary-body.md` and recorded `termination-reason.txt`,
+assembles and asserts `summary.md`, and is idempotent. Then re-run the `verify-proof` command above and,
+on success, record the run dir and continue. If `finalize` fails closed — the child left no
+`summary-body.md`, so `cog` has no narrative to assemble and must not invent one — or
+`$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran), stop: report the failure and ask
+the user whether to retry the review loop, skip it, or abort the workflow. There is no agent re-dispatch.
 
 The review-loop skill parses the validated JSON for task context, the reviewed plan, and prior
 findings, then captures the live git diff independently.
