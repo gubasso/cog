@@ -43,6 +43,13 @@ release setup (crates.io, `cargo publish`, `release-plz`, `cargo-release`, `carg
 `release`). Like `bootstrap-rust` it is not a `bootstrap-audit` domain, keeping the audit matrix
 language-orthogonal.
 
+`bootstrap-installer` is a conditional **install-script** worker, dispatched only when the operator's
+intent involves shippable install/uninstall scripts (`install.sh`, `uninstall.sh`, `just install`). It
+owns the project's `install.sh`/`uninstall.sh`/`install-common.sh` — a manifest-copy installer for
+`bash`/`generic` or a native-toolchain wrapper for `rust`/`python`/`node`, both carrying the same
+verbose UX — and injects installer recipes into the task runner. Like the workers above it is not a
+`bootstrap-audit` domain, so a project that never wants an installer never reads as "missing".
+
 <!-- cog-context-brief-gate -->
 
 **Context-brief gate.** Before `/bootstrap` dispatches to any fresh-context worker — an Agent subagent
@@ -117,6 +124,7 @@ cog gitignore-detect --json
 cog governance-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
+cog installer-detect --json     # when install/uninstall-script intent is in scope (drives bootstrap-installer)
 ```
 
 When `classify-project` reports Rust — or the intent is a new Rust project — include `bootstrap-rust`
@@ -124,7 +132,10 @@ in the dispatch and build its brief from `cog cargo-detect` (scaffold state, cra
 is reachable). When the project is Rust **and** the intent involves publishing or release setup, also
 include `bootstrap-cargo-publish` and build its brief from `cog cargo-publish-detect` (crate kind,
 publishability, CI provider, release tool, semver tooling, and binary-distribution hints) plus the
-operator's publishing intent and any known CI target and taskrunner type.
+operator's publishing intent and any known CI target and taskrunner type. When the operator's intent
+involves shippable install/uninstall scripts, include `bootstrap-installer` and build its brief from
+`cog installer-detect` (the resolved installer type, or the `generic` fallback) plus the taskrunner
+type so it can wire the install recipes.
 
 Once a domain's detector resolves its template type, capture the template-review freshness so the
 worker can skip re-research when a recent review already covers this domain and type, and fold that JSON
@@ -172,7 +183,9 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
   release-CI fragments to `bootstrap-ci` (each `--type rust`).
 - **Wave 2 (consume Wave 1):** `bootstrap-precommit` (reads the established `.editorconfig` baseline),
   `bootstrap-ci` and `bootstrap-taskrunner` (reuse the flake devshell and task names, and reconcile any
-  publishing fragments surfaced by `bootstrap-cargo-publish`).
+  publishing fragments surfaced by `bootstrap-cargo-publish`), and — when install-script intent is in
+  scope — `bootstrap-installer`, dispatched after `bootstrap-taskrunner` so the runner file exists for
+  it to wire `install`/`uninstall`/`reinstall` recipes into.
 
 Give each subagent its validated brief as the complete orientation, including the freshness `check` JSON
 so a worker with a fresh review reuses the cached summary instead of re-searching. Dispatch every

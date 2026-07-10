@@ -92,6 +92,7 @@ tiers:
       - bootstrap-governance
       - bootstrap-rust
       - bootstrap-cargo-publish
+      - bootstrap-installer
       - test-review
       - review-findings
       - review-queue-rounds

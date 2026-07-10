@@ -60,6 +60,8 @@ _cog() {
     help
     hook-guard
     init
+    installer-apply
+    installer-detect
     jira-ticket-creator
     license-apply
     lint-codex-wrapper

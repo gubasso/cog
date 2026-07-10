@@ -74,6 +74,8 @@ Commands:
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
+  installer-apply Apply an installer script template to a project.
+  installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
@@ -203,6 +205,8 @@ Commands:
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
   init           Initialize cog runtime directories and prerequisites.
+  installer-apply Apply an installer script template to a project.
+  installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.

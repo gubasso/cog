@@ -87,6 +87,25 @@ setup() {
   [ "$(jq -r '.review.fresh' <<<"$output")" = "true" ]
 }
 
+@test "bootstrap-template-review round-trips the installer domain" {
+  run cog bootstrap-template-review check --domain installer --type bash --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.review.state' <<<"$output")" = "missing" ]
+  [ "$(jq -r '.template_roots[0].domain' <<<"$output")" = "installer" ]
+
+  run cog bootstrap-template-review stamp --domain installer --type bash \
+    --summary "reviewed manifest-copy install/uninstall UX standard" \
+    --source-json "$SRC" \
+    --changed-template "templates/installer/bash/install.sh" \
+    --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.action' <<<"$output")" = "stamp" ]
+
+  run cog bootstrap-template-review check --domain installer --type bash --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.review.fresh' <<<"$output")" = "true" ]
+}
+
 @test "bootstrap-template-review rejects rust (ships no cog templates)" {
   run --separate-stderr cog bootstrap-template-review check --domain rust --type rust --research-root "$SHELF" --json
   assert_failure

@@ -159,6 +159,12 @@ The command list and short descriptions are sourced from command modules under
 *init*
 	Initialize cog runtime directories and prerequisites.
 
+*installer-apply*
+	Apply an installer script template to a project.
+
+*installer-detect*
+	Detect installer template type.
+
 *jira-ticket-creator*
 	Scaffold, write, and finalize retroactive JIRA ticket drafts.
 
