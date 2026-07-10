@@ -49,6 +49,52 @@ teardown() {
   assert_success
 }
 
+@test "install stdout is stable and stderr shows progress phases" {
+  run --separate-stderr "$REPO_ROOT/install.sh"
+  assert_success
+  assert_output "installed cog to $PREFIX/lib/cog (PATH: $PREFIX/bin/cog)"
+  [[ $stderr == *"Preflight"* ]]
+  [[ $stderr == *"Copy application payload"* ]]
+  [[ $stderr == *"Link executable"* ]]
+  [[ $stderr == *"Sync Claude and Codex skills"* ]]
+  [[ $stderr == *"Finalize manifest"* ]]
+}
+
+@test "install honors NO_COLOR on stderr" {
+  run --separate-stderr env NO_COLOR=1 "$REPO_ROOT/install.sh"
+  assert_success
+  assert_output "installed cog to $PREFIX/lib/cog (PATH: $PREFIX/bin/cog)"
+  [[ $stderr != *$'\033['* ]]
+}
+
+@test "install quiet mode keeps stdout stable and suppresses normal steps" {
+  run --separate-stderr env COG_INSTALL_QUIET=1 "$REPO_ROOT/install.sh"
+  assert_success
+  assert_output "installed cog to $PREFIX/lib/cog (PATH: $PREFIX/bin/cog)"
+  [[ $stderr != *"Preflight"* ]]
+  [[ $stderr != *"Copy application payload"* ]]
+}
+
+@test "install preflight names missing required tools" {
+  local bash_path="${BASH:-}"
+  local empty_path="$BATS_TEST_TMPDIR/empty-path"
+
+  if [[ -z $bash_path || ! -x $bash_path ]]; then
+    if [[ -x /usr/bin/bash ]]; then
+      bash_path="/usr/bin/bash"
+    elif [[ -x /bin/bash ]]; then
+      bash_path="/bin/bash"
+    else
+      skip "absolute bash path is unavailable"
+    fi
+  fi
+
+  mkdir -p "$empty_path"
+  run --separate-stderr env PATH="$empty_path" "$bash_path" "$REPO_ROOT/install.sh"
+  assert_failure
+  [[ $stderr == *"missing required command 'install'"* ]]
+}
+
 @test "install preserves installed research shelf on upgrade" {
   local shelf="$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl"
 
@@ -95,6 +141,16 @@ teardown() {
   assert_file_exists "$HOME/.claude/agents/user-agent.md"
 }
 
+@test "no-manifest uninstall is successful and informative" {
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+
+  run --separate-stderr "$REPO_ROOT/uninstall.sh"
+  assert_success
+  assert_output ""
+  [[ $stderr == *"nothing to uninstall"* ]]
+  [[ $stderr == *"$manifest"* ]]
+}
+
 @test "manifest authority" {
   local manifest="$XDG_STATE_HOME/cog/install-manifest"
   local manifest_copy="$BATS_TEST_TMPDIR/install-manifest.copy"
@@ -129,4 +185,17 @@ teardown() {
   assert_file_exists "$HOME/.claude/skills/user-skill/SKILL.md"
   assert_file_exists "$HOME/.agents/skills/user-skill/SKILL.md"
   assert_file_exists "$HOME/.claude/agents/user-agent.md"
+}
+
+@test "uninstall fails closed when manifest contains outside path" {
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+  printf '%s\n' "/tmp/cog-outside-root-test" >>"$manifest"
+
+  run --separate-stderr "$REPO_ROOT/uninstall.sh"
+  assert_failure
+  [[ $stderr == *"outside the current PREFIX/XDG roots"* ]]
+  assert_file_exists "$manifest"
 }
