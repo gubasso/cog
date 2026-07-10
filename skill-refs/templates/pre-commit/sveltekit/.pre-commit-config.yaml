@@ -16,10 +16,8 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: check-xml
-      - id: pretty-format-json
-        args: ["--autofix", "--no-ensure-ascii", "--no-sort-keys", "--indent=2"]
-        exclude: >-
-          (?x)((^|/)devcontainer\.json$|[-.]lock\.json$|/package-lock\.json$)
+      # JSON/JSONC formatting is owned by Prettier below, which parses comments
+      # and trailing commas — no stdlib pretty-format-json here.
       - id: detect-private-key
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]

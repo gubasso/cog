@@ -11,7 +11,8 @@
 # Tooling stack (and what each owns):
 #   - pre-commit-hooks : whitespace, line endings, basic safety.
 #   - editorconfig-ec  : honor .editorconfig.
-#   - dprint           : canonical CommonMark/GFM formatter (autofix).
+#   - dprint           : canonical CommonMark/GFM formatter + JSON/JSONC
+#                        formatter (autofix; comments & trailing commas).
 #                        System binary; config in `./dprint.json`.
 #   - md-toc           : keep `<!--TOC-->` blocks in sync (autofix).
 #   - markdownlint-cli2: style gate beyond what dprint enforces, plus the one
@@ -59,12 +60,14 @@ repos:
       - id: editorconfig-checker
         alias: ec
 
-  # --- Markdown formatter: dprint (canonical CommonMark + GFM) ---
+  # --- Markdown + JSON/JSONC formatter: dprint ---
   #
-  # dprint is the single source of truth for whitespace, list style,
-  # emphasis, table padding, etc. Configure via the sibling `./dprint.json`
-  # at the repo root. The markdown plugin URL/version is pinned inside
-  # dprint.json.
+  # dprint is the single source of truth for markdown whitespace, list style,
+  # emphasis, table padding, etc., AND for JSON/JSONC formatting — its json
+  # plugin handles comments and trailing commas (so the shipped
+  # `.markdownlint-cli2.jsonc` is formatted too, unlike stdlib pretty-format-json).
+  # Configure via the sibling `./dprint.json` at the repo root. The plugin
+  # URLs/versions are pinned inside dprint.json.
   #
   # dprint.json is strict JSON (no comments). The textWrap=maintain rationale,
   # MD029 renumbering, fix-mode isolation, and the SoT decision are documented in
@@ -77,10 +80,10 @@ repos:
   - repo: local
     hooks:
       - id: dprint
-        name: dprint fmt
+        name: dprint fmt (markdown + json/jsonc)
         entry: dprint fmt
         language: system
-        types: [markdown]
+        files: '\.(md|markdown|json|jsonc)$'
         pass_filenames: true
         stages: [pre-commit]
 

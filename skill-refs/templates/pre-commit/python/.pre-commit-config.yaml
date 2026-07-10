@@ -26,11 +26,6 @@ repos:
       - id: detect-private-key
       # Ensure files end with a newline
       - id: end-of-file-fixer
-      # Pretty format JSON files
-      - id: pretty-format-json
-        args: ["--autofix", "--no-ensure-ascii", "--no-sort-keys", "--indent=2"]
-        exclude: >-
-          (?x)((^|/)devcontainer\.json$|[-.]lock\.json$)
       # Remove trailing whitespace
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -47,6 +42,24 @@ repos:
       # Check if JSON5/JSON files are syntactically valid
       - id: check-json5
         exclude: '[-.]lock\.json$'
+
+  # --- JSON / JSONC formatter: dprint (comment-safe autofix) ---
+  #
+  # dprint's json plugin formats JSON and JSONC (comments + trailing commas),
+  # which the stdlib-based pretty-format-json cannot. check-json5 above stays the
+  # syntax gate; dprint owns formatting. Config in the sibling `./dprint.json`
+  # (plugin version pinned there). External dependency: dprint must be on PATH
+  # (`cargo install dprint` or your package manager). pre-commit only — git push
+  # may strip PATH, and formatting is already applied by commit time.
+  - repo: local
+    hooks:
+      - id: dprint
+        name: dprint fmt (json/jsonc)
+        entry: dprint fmt
+        language: system
+        files: '\.(json|jsonc|json5)$'
+        pass_filenames: true
+        stages: [pre-commit]
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker

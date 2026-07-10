@@ -14,10 +14,8 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-xml
-      - id: pretty-format-json
-        args: ["--autofix", "--no-ensure-ascii", "--no-sort-keys", "--indent=2"]
-        exclude: >-
-          (?x)((^|/)devcontainer\.json$|[-.]lock\.json$|/package-lock\.json$)
+      # JSON/JSONC formatting is owned by Biome (and Prettier) below, which parse
+      # comments and trailing commas — no stdlib pretty-format-json here.
       - id: check-added-large-files
         args: ["--maxkb=2048"]
       - id: detect-private-key

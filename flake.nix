@@ -41,6 +41,7 @@
             pkgs.man-db # `man` for local page inspection
             pkgs.mdformat # markdown formatter for docs/ (Diataxis)
             pkgs.markdownlint-cli # markdown linter for docs/
+            pkgs.dprint # JSON/JSONC formatter (pre-commit dprint hook)
 
             # Deterministic GNU coreutils/text tools across macOS + Linux
             pkgs.coreutils
