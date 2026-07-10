@@ -87,6 +87,7 @@ _cog() {
     power-grade
     precommit-apply-template
     precommit-detect
+    precommit-run
     preflight
     print-config
     queue-append

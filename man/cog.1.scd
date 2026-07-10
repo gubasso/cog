@@ -240,6 +240,9 @@ The command list and short descriptions are sourced from command modules under
 *precommit-detect*
 	Detect pre-commit template type.
 
+*precommit-run*
+	Run pre-commit hooks across stages and collect failures.
+
 *preflight*
 	Run centralized orchestrator preflight checks.
 
