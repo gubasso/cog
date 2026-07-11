@@ -36,7 +36,8 @@ __cog_gc_push_build_json() {
   sha="$(git "${git_c[@]}" rev-parse --short HEAD 2>/dev/null || true)"
   log_file="$(__cog_gc_push_new_log_file "$(__cog_gc_push_log_dir)")"
 
-  if git "${git_c[@]}" push >"$log_file" 2>&1; then
+  if cog::fn::env::exec "$root" "$(cog::fn::env::runner "$root")" -- \
+    git "${git_c[@]}" push >"$log_file" 2>&1; then
     ok=true
     exit_code=0
   else

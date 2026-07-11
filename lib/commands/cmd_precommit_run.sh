@@ -62,7 +62,8 @@ __cog_precommit_run_ensure_installed() {
     __cog_precommit_run_is_hook_type "$stage" && install_args+=(-t "$stage")
   done
   [[ ${#install_args[@]} -gt 0 ]] || install_args=(-t pre-commit)
-  if (cd "$project_root" && pre-commit install "${install_args[@]}") >/dev/null 2>&1; then
+  if (cd "$project_root" && cog::fn::env::exec "$project_root" "$(cog::fn::env::runner "$project_root")" -- \
+    pre-commit install "${install_args[@]}") >/dev/null 2>&1; then
     printf 'true\n'
   else
     printf 'false\n'
@@ -103,10 +104,12 @@ __cog_precommit_run_build_json() {
     mapfile -t stages < <(__cog_precommit_run_resolve_stages "$config" "${requested[@]}")
     installed="$(__cog_precommit_run_ensure_installed "$project_root" "${stages[@]}")"
 
-    local stage status=0
+    local stage status=0 runner
+    runner="$(cog::fn::env::runner "$project_root")"
     for stage in "${stages[@]}"; do
       printf '=== pre-commit --hook-stage %s ===\n' "$stage" >>"$log"
-      (cd "$project_root" && pre-commit run --all-files --hook-stage "$stage") >>"$log" 2>&1 || status=1
+      (cd "$project_root" && cog::fn::env::exec "$project_root" "$runner" -- \
+        pre-commit run --all-files --hook-stage "$stage") >>"$log" 2>&1 || status=1
     done
     if [[ $status -ne 0 ]]; then
       ok=false

@@ -97,7 +97,10 @@ __cog_suckless_apply_build_json() {
   if [[ $method != "none" && ${apply_exit:-} == "0" ]]; then
     needs_conflict_resolution=false
     build_exit=0
-    if make clean >"$build_log" 2>&1 && make >>"$build_log" 2>&1; then
+    local env_runner
+    env_runner="$(cog::fn::env::runner "$repo_root")"
+    if cog::fn::env::exec "$repo_root" "$env_runner" -- make clean >"$build_log" 2>&1 \
+      && cog::fn::env::exec "$repo_root" "$env_runner" -- make >>"$build_log" 2>&1; then
       ok=true
       reason=""
     else

@@ -103,7 +103,8 @@ __cog_gc_commit_build_json() {
     } >"$log_file"
     ok=false
     exit_code=1
-  elif git "${git_c[@]}" commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
+  elif cog::fn::env::exec "$root" "$(cog::fn::env::runner "$root")" -- \
+    git "${git_c[@]}" commit -F - -- "${paths[@]}" <"$message_file" >"$log_file" 2>&1; then
     ok=true
     exit_code=0
     sha="$(git "${git_c[@]}" rev-parse --short HEAD)"

@@ -89,6 +89,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0082: Reliable, prose-immune project classification](decisions/0082-reliable-project-classification.md)
 - [ADR-0083: Language-conditional knowledge-base spell checker (English→typos, non-English→cspell)](decisions/0083-language-conditional-kb-spell-checker.md)
 - [ADR-0084: Nix pre-commit layer (universal overlay + nix fallback type)](decisions/0084-nix-precommit-layer.md)
+- [ADR-0085: devShell-aware command execution for hook-triggering cog commands](decisions/0085-devshell-aware-command-execution.md)
 
 ## Guides
 

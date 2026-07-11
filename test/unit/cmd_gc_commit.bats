@@ -12,6 +12,7 @@ setup() {
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   source "${LIB_DIR}/functions/fn_json_write.sh"
   source "${LIB_DIR}/functions/fn_git.sh"
+  source "${LIB_DIR}/functions/fn_env.sh"
   source "${LIB_DIR}/commands/cmd_gc_commit.sh"
 }
 
@@ -37,4 +38,23 @@ setup() {
 
   assert_failure 64
   [[ $stderr == *"err.kind: MissingArgument"* ]]
+}
+
+@test "gc-commit with COG_ENV_RUNNER=bare commits a tracked path (non-nix regression)" {
+  local repo="${BATS_TEST_TMPDIR}/repo"
+  git init -q "$repo"
+  git -C "$repo" config user.email t@t.co
+  git -C "$repo" config user.name t
+  printf 'hello\n' >"$repo/file.txt"
+  git -C "$repo" add file.txt
+  printf 'test: add file\n' >"${BATS_TEST_TMPDIR}/msg.txt"
+  printf 'file.txt\n' >"${BATS_TEST_TMPDIR}/paths.txt"
+
+  COG_ENV_RUNNER=bare run cog::cmd::gc_commit \
+    --message-file "${BATS_TEST_TMPDIR}/msg.txt" \
+    --paths-file "${BATS_TEST_TMPDIR}/paths.txt" \
+    --repo-root "$repo" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and (.sha | length > 0)' >/dev/null
 }
