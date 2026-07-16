@@ -7,6 +7,9 @@ setup() {
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
   # Isolate from any system/global identity so "unset" cases are deterministic.
   export GIT_CONFIG_NOSYSTEM=1
+  # Pin the global config to an isolated file so `git config --global` neither
+  # reads nor writes the invoking user's real XDG/home git config.
+  export GIT_CONFIG_GLOBAL="${BATS_TEST_TMPDIR}/gitconfig-global"
   unset RUN_DIR REFACTOR_GUIDELINE
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
   REPO="${BATS_TEST_TMPDIR}/repo"

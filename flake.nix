@@ -50,10 +50,6 @@
             pkgs.gawk
             pkgs.gnused
           ];
-
-          shellHook = ''
-            echo "cog dev shell ready — run 'just lint' / 'just test'"
-          '';
         };
       }
     );
