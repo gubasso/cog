@@ -20,6 +20,19 @@ setup() {
   printf '%s\n' "$output" | jq -e '.ok == true and (.copied | length) == 4' >/dev/null
 }
 
+@test "cog governance-apply can land ADR scaffold under _docs for knowledge bases" {
+  run cog governance-apply --project-root "${BATS_TEST_TMPDIR}/repo" --docs-dir _docs --json
+
+  assert_success
+  [ -f "${BATS_TEST_TMPDIR}/repo/CLAUDE.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/AGENTS.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/decisions/template.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/decisions/0001-self-containment.md" ]
+  [ ! -e "${BATS_TEST_TMPDIR}/repo/docs/decisions/template.md" ]
+  [ ! -e "${BATS_TEST_TMPDIR}/repo/docs/decisions/0001-self-containment.md" ]
+  printf '%s\n' "$output" | jq -e '.ok == true and .docs_dir == "_docs" and (.copied | length) == 4' >/dev/null
+}
+
 @test "cog governance-apply seeds the self-containment principle into AGENTS.md" {
   run cog governance-apply --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -31,7 +44,9 @@ setup() {
   run cog governance-apply --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
   assert_success
-  grep -qF "@AGENTS.md" "${BATS_TEST_TMPDIR}/repo/CLAUDE.md"
+  printf '@AGENTS.md\n' >"${BATS_TEST_TMPDIR}/expected-claude.md"
+  cmp -s "${BATS_TEST_TMPDIR}/repo/CLAUDE.md" "${BATS_TEST_TMPDIR}/expected-claude.md"
+  [ "$(wc -c <"${BATS_TEST_TMPDIR}/repo/CLAUDE.md")" -eq 11 ]
 }
 
 @test "cog governance-apply aborts on conflict" {

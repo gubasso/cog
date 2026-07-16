@@ -1,8 +1,8 @@
 ---
 name: bootstrap-governance
 description: >
-  Seeds a project's governance docs - a CLAUDE.md, an AGENTS.md, and a docs/decisions/ ADR
-  scaffold (MADR-minimal template plus a seed self-containment ADR) - encoding the
+  Seeds a project's governance docs - a CLAUDE.md, an AGENTS.md, and an ADR scaffold
+  (MADR-minimal template plus a seed self-containment ADR) - encoding the
   self-containment principle, while delegating deterministic detection, template copying, and
   freshness review to the cog CLI and keeping tailoring in prose. Use when the user says
   "governance docs", "seed CLAUDE.md", "seed AGENTS.md", "self-containment docs", or "ADR scaffold".
@@ -15,9 +15,10 @@ effort: low
 # Bootstrap Governance Skill
 
 Establish a project's baseline governance docs: an `AGENTS.md`, a thin `CLAUDE.md` that imports it
-with `@AGENTS.md`, and a `docs/decisions/` ADR scaffold (a MADR-minimal `template.md` plus a seed
-`0001-self-containment.md`). `AGENTS.md` is the single source of truth — read by both Claude Code
-(through the `CLAUDE.md` pointer) and the `AGENTS.md`-native tools — and it encodes the
+with `@AGENTS.md`, and an ADR scaffold (a MADR-minimal `template.md` plus a seed
+`0001-self-containment.md`). The ADR scaffold lands under `docs/decisions/` by default and under
+`_docs/decisions/` for a knowledge base. `AGENTS.md` is the single source of truth — read by both
+Claude Code (through the `CLAUDE.md` pointer) and the `AGENTS.md`-native tools — and it encodes the
 **self-containment principle**: the project holds the knowledge it depends on in-repo, and an external
 reference is allowed only as a public link or citation, never as a load-bearing internal dependency.
 Deterministic detection, copying, and freshness review run through cog; per-project tailoring stays
@@ -26,7 +27,8 @@ judgment.
 Principle: templates are broad and general; the project files are precise and tailored — the seeded
 docs are adapted to the actual project, and the self-containment principle is preserved through the
 tailoring. Governance content has one home: `AGENTS.md`. `CLAUDE.md` stays a thin `@AGENTS.md`
-pointer so nothing is duplicated across the two files.
+pointer so nothing is duplicated across the two files. The exact pointer is verified deterministically
+by `cog bootstrap-audit`.
 
 ## Inputs
 
@@ -34,6 +36,7 @@ pointer so nothing is duplicated across the two files.
 - Template tree: cog's `skill-refs/templates/governance/` (`CLAUDE.md`, `AGENTS.md`,
   `docs/decisions/template.md`, `docs/decisions/0001-self-containment.md`), or a caller-supplied
   `--template-root`.
+- Docs directory: `docs` by default; `_docs` when the project is a knowledge base.
 - The project name and stack, used to tailor the seeded docs.
 
 ## Cog Contract
@@ -44,6 +47,12 @@ Detect the present governance docs and the template type:
 
 ```bash
 cog governance-detect --json
+```
+
+For a knowledge base, use the KB metadata namespace:
+
+```bash
+cog governance-detect --docs-dir _docs --json
 ```
 
 It reports `detected_type` (`generic`), a `present` boolean (both `CLAUDE.md` and `AGENTS.md` exist),
@@ -57,9 +66,16 @@ conflict policy:
 cog governance-apply --conflict "$POLICY" --json
 ```
 
-It copies the thin `CLAUDE.md` pointer, `AGENTS.md`, and the `docs/decisions/` ADR scaffold,
-preserving layout, and emits `{ok, copied, skipped, conflicts, conflict, reason}`; treat that output
-as mechanics only.
+For a knowledge base, route the ADR scaffold to `_docs/decisions/`:
+
+```bash
+cog governance-apply --docs-dir _docs --conflict "$POLICY" --json
+```
+
+It copies the thin `CLAUDE.md` pointer, `AGENTS.md`, and the ADR scaffold under the selected docs
+directory, preserving layout, and emits `{ok, docs_dir, copied, skipped, conflicts, conflict, reason}`;
+treat that output as mechanics only. Root `CLAUDE.md` and `AGENTS.md` stay at the repository root for
+every project type.
 
 ## Template refresh
 
@@ -91,9 +107,10 @@ not writable; surface that.
 
 3. Tailor the deployed docs to the project: fill `{{PROJECT_NAME}}` in `AGENTS.md`, adapt its working
    conventions to the actual stack and task runner, and adjust the seed ADR when the project already
-   uses `docs/decisions/` numbering. Keep the self-containment principle intact — `AGENTS.md` retains
-   the `self-contained` non-negotiable so the audit's content requirement passes — and leave
-   `CLAUDE.md` as the thin `@AGENTS.md` pointer so governance stays single-sourced.
+   uses a decisions directory with existing numbering. Keep the self-containment principle intact —
+   `AGENTS.md` retains the `self-contained` non-negotiable so the audit's content requirement passes —
+   and leave `CLAUDE.md` as the byte-exact thin `@AGENTS.md` pointer so governance stays
+   single-sourced.
 
 4. Web-research current governance-doc and ADR conventions as enhancers, and fold worthwhile
    additions into the deployed files.
@@ -103,10 +120,11 @@ not writable; surface that.
 
 ## Guardrails
 
-- Own `CLAUDE.md`, `AGENTS.md`, and the `docs/decisions/` seed as the single writer of that tree.
+- Own `CLAUDE.md`, `AGENTS.md`, and the selected decisions-directory seed as the single writer of that
+  tree.
 - Reconcile a pre-existing governance doc with the operator's content rather than overwriting it
   silently; renumber a colliding seed ADR instead of clobbering an existing one.
 - Preserve the self-containment principle through tailoring: `AGENTS.md` keeps the `self-contained`
-  non-negotiable line, and `CLAUDE.md` stays the thin `@AGENTS.md` pointer.
+  non-negotiable line, and `CLAUDE.md` stays the byte-exact thin `@AGENTS.md` pointer.
 - Treat helper output as mechanics only. Tailoring and reconciliation remain judgment.
 - Deterministic mechanics stay behind `cog`; do not run git commands.

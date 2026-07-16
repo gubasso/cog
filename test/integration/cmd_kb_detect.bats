@@ -15,7 +15,7 @@ setup() {
   printf '# b\n' >"${BATS_TEST_TMPDIR}/repo/tech/b.md"
   printf '# c\n' >"${BATS_TEST_TMPDIR}/repo/tech/c.md"
 
-  run cog kb-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+  run cog kb-detect --project-root "${BATS_TEST_TMPDIR}/repo" --template-root "${BATS_TEST_DIRNAME}/../../skill-refs/templates/knowledge-base" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .detected_type == "markdown" and (.template_root | endswith("/templates/knowledge-base"))' >/dev/null
@@ -24,7 +24,7 @@ setup() {
 @test "cog kb-detect fails on a non-knowledge-base project" {
   touch "${BATS_TEST_TMPDIR}/repo/Cargo.toml"
 
-  run --separate-stderr cog kb-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
+  run --separate-stderr cog kb-detect --project-root "${BATS_TEST_TMPDIR}/repo" --template-root "${BATS_TEST_DIRNAME}/../../skill-refs/templates/knowledge-base" --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false' >/dev/null

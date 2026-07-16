@@ -35,8 +35,8 @@ setup() {
   mkdir -p "$dir/.github/workflows"
   touch "$dir/.pre-commit-config.yaml" "$dir/.editorconfig" "$dir/flake.nix" \
     "$dir/.envrc" "$dir/.gitignore" "$dir/LICENSE" "$dir/README.md" \
-    "$dir/CLAUDE.md" \
     "$dir/justfile" "$dir/.github/workflows/ci.yml"
+  printf '@AGENTS.md\n' >"$dir/CLAUDE.md"
   printf 'self-contained\n' >"$dir/AGENTS.md"
 
   run cog::cmd::bootstrap_audit --project-root "$dir" --json
@@ -119,8 +119,8 @@ setup() {
   mkdir -p "$dir/.github/workflows"
   touch "$dir/.pre-commit-config.yaml" "$dir/.editorconfig" "$dir/flake.nix" \
     "$dir/.envrc" "$dir/.gitignore" "$dir/LICENSE" "$dir/README.md" \
-    "$dir/CLAUDE.md" \
     "$dir/justfile" "$dir/.github/workflows/ci.yml"
+  printf '@AGENTS.md\n' >"$dir/CLAUDE.md"
   printf 'self-contained\n' >"$dir/AGENTS.md"
 
   run cog::cmd::bootstrap_audit --project-root "$dir" --json
@@ -185,7 +185,38 @@ setup() {
   row="$(jq -c '.domains[] | select(.domain == "governance")' <<<"$output")"
   [ "$(jq -r '.present' <<<"$row")" = "true" ]
   [ "$(jq -r '.requirements[] | select(.name == "self-containment-principle") | .satisfied' <<<"$row")" = "true" ]
+  [ "$(jq -r '.requirements[] | select(.name == "claude-agents-pointer") | .satisfied' <<<"$row")" = "true" ]
   [ "$(jq -r '.requirements_satisfied' <<<"$row")" = "true" ]
+}
+
+@test "bootstrap-audit governance flags a CLAUDE.md pointer with extra content" {
+  local dir="$BATS_TEST_TMPDIR/govextra"
+  mkdir -p "$dir"
+  printf '@AGENTS.md\nextra\n' >"$dir/CLAUDE.md"
+  printf '# Agent Guidelines\n\nself-contained\n' >"$dir/AGENTS.md"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "governance")' <<<"$output")"
+  [ "$(jq -r '.requirements[] | select(.name == "claude-agents-pointer") | .satisfied' <<<"$row")" = "false" ]
+  [ "$(jq -r '.requirements_satisfied' <<<"$row")" = "false" ]
+}
+
+@test "bootstrap-audit governance flags a CLAUDE.md pointer missing final newline" {
+  local dir="$BATS_TEST_TMPDIR/govnonewline"
+  mkdir -p "$dir"
+  printf '@AGENTS.md' >"$dir/CLAUDE.md"
+  printf '# Agent Guidelines\n\nself-contained\n' >"$dir/AGENTS.md"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "governance")' <<<"$output")"
+  [ "$(jq -r '.requirements[] | select(.name == "claude-agents-pointer") | .satisfied' <<<"$row")" = "false" ]
+  [ "$(jq -r '.requirements_satisfied' <<<"$row")" = "false" ]
 }
 
 @test "bootstrap-audit governance flags an AGENTS.md that dropped the self-containment principle" {

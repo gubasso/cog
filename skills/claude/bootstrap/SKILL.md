@@ -53,11 +53,11 @@ verbose UX — and injects installer recipes into the task runner. Like the work
 `bootstrap-knowledge-base` is a conditional **knowledge-base** worker, dispatched only when the project
 is a knowledge base (per `cog classify-project` reporting `knowledge-base` in `project_types`) or the
 operator's intent is a notes/knowledge/docs library. It owns the content-library conventions, the lean
-`docs/` specs scaffold (the product-versus-specs relationship, Diataxis zones, review checklist), and the
-per-area `AGENTS.md` digest standard; the root `CLAUDE.md`/`AGENTS.md`, `docs/decisions/`, markdown hooks,
-`.editorconfig`, and `.gitignore`/`LICENSE`/`README` stay with the governance, pre-commit, editorconfig,
-and repo domains, auto-targeted at markdown. Like the workers above it is not a `bootstrap-audit` domain,
-so a code project never reads a missing knowledge base.
+`_docs/` metadata/specs scaffold (the product-versus-metadata relationship, Diataxis zones, review
+checklist), and the per-area `AGENTS.md` digest standard; the root `CLAUDE.md`/`AGENTS.md`,
+`_docs/decisions/`, markdown hooks, `.editorconfig`, and `.gitignore`/`LICENSE`/`README` stay with the
+governance, pre-commit, editorconfig, and repo domains, auto-targeted at markdown. Like the workers
+above it is not a `bootstrap-audit` domain, so a code project never reads a missing knowledge base.
 
 <!-- cog-context-brief-gate -->
 
@@ -131,6 +131,7 @@ cog editorconfig-detect --json
 cog nix-devshell-detect --json
 cog gitignore-detect --json
 cog governance-detect --json
+cog governance-detect --docs-dir _docs --json # when classify-project reports a knowledge base
 cog ci-detect --json
 cog taskrunner-detect --json
 cog installer-detect --json     # when install/uninstall-script intent is in scope (drives bootstrap-installer)
@@ -193,9 +194,10 @@ when the `repo` domain was already present and `bootstrap-repo` never ran.
   observe the now-present `Cargo.toml`; on an already-scaffolded crate `bootstrap-rust` reconciles in
   place and may run alongside Wave 1.
 - **Wave 1 (independent):** `bootstrap-editorconfig`, `bootstrap-nix`, `bootstrap-repo`,
-  `bootstrap-governance` (writes only `CLAUDE.md`/`AGENTS.md`/`docs/decisions/`, depends on no other
-  domain), — when the project is a knowledge base — `bootstrap-knowledge-base` (scaffolds the `docs/`
-  specs and the per-area `AGENTS.md` digest standard, depends on no other domain), and — when Rust
+  `bootstrap-governance` (writes only `CLAUDE.md`/`AGENTS.md`/`docs/decisions/`, or
+  `_docs/decisions/` when `classify-project` reports a knowledge base, depends on no other domain), —
+  when the project is a knowledge base — `bootstrap-knowledge-base` (scaffolds the `_docs/`
+  metadata/specs and the per-area `AGENTS.md` digest standard, depends on no other domain), and — when Rust
   plus publishing intent is in scope — `bootstrap-cargo-publish`, dispatched after `bootstrap-rust` so
   the crate exists; it surfaces publish/version task-recipe fragments to `bootstrap-taskrunner` and
   release-CI fragments to `bootstrap-ci` (each `--type rust`).

@@ -32,8 +32,11 @@ setup() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and .spell == "typos" and .spell_hook_appended == true' >/dev/null
+  jq -e '.markdown.textWrap == "never"' "${BATS_TEST_TMPDIR}/repo/dprint.json" >/dev/null
   [ -f "${BATS_TEST_TMPDIR}/repo/_typos.toml" ]
   [ ! -f "${BATS_TEST_TMPDIR}/repo/cspell.config.yaml" ]
+  grep -q 'id: dprint' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+  grep -qF "files: '\\.(md|markdown|json|jsonc)$'" "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
   grep -q 'crate-ci/typos' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
 }
 

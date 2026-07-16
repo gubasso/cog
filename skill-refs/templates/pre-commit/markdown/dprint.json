@@ -1,7 +1,7 @@
 {
   "markdown": {
     "lineWidth": 100,
-    "textWrap": "maintain"
+    "textWrap": "never"
   },
   "json": {
     "trailingCommas": "never"

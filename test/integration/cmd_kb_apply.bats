@@ -10,33 +10,34 @@ setup() {
 }
 
 @test "cog kb-apply scaffolds the docs specs tree" {
-  run cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type markdown --json
+  run cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --template-root "${BATS_TEST_DIRNAME}/../../skill-refs/templates/knowledge-base" --type markdown --json
 
   assert_success
-  [ -f "${BATS_TEST_TMPDIR}/repo/docs/README.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/docs/explanation/knowledge-base-architecture.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/docs/reference/agents-digest-template.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/README.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/explanation/knowledge-base-architecture.md" ]
+  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/reference/agents-digest-template.md" ]
+  [ ! -e "${BATS_TEST_TMPDIR}/repo/docs/README.md" ]
   printf '%s\n' "$output" | jq -e '.ok == true and (.copied | length >= 5)' >/dev/null
 }
 
 @test "cog kb-apply aborts on conflict" {
-  mkdir -p "${BATS_TEST_TMPDIR}/repo/docs"
-  touch "${BATS_TEST_TMPDIR}/repo/docs/README.md"
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/_docs"
+  touch "${BATS_TEST_TMPDIR}/repo/_docs/README.md"
 
-  run --separate-stderr cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type markdown --json
+  run --separate-stderr cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --template-root "${BATS_TEST_DIRNAME}/../../skill-refs/templates/knowledge-base" --type markdown --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .reason == "destination conflict"' >/dev/null
 }
 
 @test "cog kb-apply skips existing files under skip policy" {
-  mkdir -p "${BATS_TEST_TMPDIR}/repo/docs"
-  printf 'keep\n' >"${BATS_TEST_TMPDIR}/repo/docs/README.md"
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/_docs"
+  printf 'keep\n' >"${BATS_TEST_TMPDIR}/repo/_docs/README.md"
 
-  run cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type markdown --conflict skip --json
+  run cog kb-apply --project-root "${BATS_TEST_TMPDIR}/repo" --template-root "${BATS_TEST_DIRNAME}/../../skill-refs/templates/knowledge-base" --type markdown --conflict skip --json
 
   assert_success
-  assert_equal "keep" "$(cat "${BATS_TEST_TMPDIR}/repo/docs/README.md")"
+  assert_equal "keep" "$(cat "${BATS_TEST_TMPDIR}/repo/_docs/README.md")"
   printf '%s\n' "$output" | jq -e '.ok == true and (.skipped | length >= 1)' >/dev/null
 }
 

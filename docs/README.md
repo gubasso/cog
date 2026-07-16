@@ -90,6 +90,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0083: Language-conditional knowledge-base spell checker (English→typos, non-English→cspell)](decisions/0083-language-conditional-kb-spell-checker.md)
 - [ADR-0084: Nix pre-commit layer (universal overlay + nix fallback type)](decisions/0084-nix-precommit-layer.md)
 - [ADR-0085: devShell-aware command execution for hook-triggering cog commands](decisions/0085-devshell-aware-command-execution.md)
+- [ADR-0086: Knowledge-base metadata lives under `_docs/`](decisions/0086-kb-metadata-underscore-docs.md)
 
 ## Guides
 

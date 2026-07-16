@@ -74,7 +74,15 @@ repos:
   # Configure via the sibling `./dprint.json` at the repo root. The plugin
   # URLs/versions are pinned inside dprint.json.
   #
-  # dprint.json is strict JSON (no comments). The textWrap=maintain rationale,
+  # dprint.json is strict JSON (no comments), so this block documents the
+  # markdown wrapping policy. The shipped default is `markdown.textWrap: "never"`:
+  # it unwraps every soft-wrapped paragraph to one continuous physical line,
+  # including soft-wrapped list-item and blockquote lines. Explicit hard breaks
+  # are preserved (two trailing spaces / trailing `\`), fenced code blocks are
+  # left unreflowed, and tables stay intact. To switch behavior, edit
+  # dprint.json: `"maintain"` keeps existing line breaks exactly as authored
+  # (passive wrapping; the previous default), while `"always"` rewraps each
+  # paragraph to fit `markdown.lineWidth`.
   # MD029 renumbering, fix-mode isolation, and the SoT decision are documented in
   # this project's markdown formatting toolchain notes.
   #

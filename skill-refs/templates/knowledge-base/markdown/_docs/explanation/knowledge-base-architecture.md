@@ -2,20 +2,25 @@
 
 ## The product is the knowledge
 
-`<project>` is a knowledge base: a library of knowledge organized as directories and markdown files.
-The **product** is that knowledge — the content tree itself. This is the same relationship a code
-project has:
+`<project>` is a knowledge base: a library of knowledge organized as root directories and markdown
+files. The **product** is that knowledge — the free-form content tree itself. This is the same
+relationship a code project has:
 
-| Code project        | Knowledge base                          |
-| ------------------- | --------------------------------------- |
-| Code is the product | The markdown content is the product     |
-| `docs/` = specs about the code | `docs/` = specs about the content |
+| Code project                 | Knowledge base                                   |
+| ---------------------------- | ------------------------------------------------ |
+| Code is the product          | The markdown content library is the product      |
+| `docs/` = specs about code   | `_docs/` = metadata and specs about the library  |
 
-So `docs/` here is not where the knowledge lives. The knowledge lives in the content directories at
-the top of the repository. `docs/` holds the **specs about that product**: the definitions,
-decisions, architecture, conventions, and patterns that govern how the knowledge base is structured
-and maintained. When you want to record *how the knowledge base works*, write in `docs/`. When you
-want to record *knowledge*, write in the content tree.
+So `_docs/` here is not where the knowledge lives. The knowledge lives in the content directories and
+files at the top of the repository. `_docs/` is the one specially-marked project-metadata namespace:
+it holds the **specs about the product** — the definitions, decisions, architecture, conventions, and
+patterns that govern how the knowledge base is structured and maintained. When you want to record
+*how the knowledge base works*, write in `_docs/`. When you want to record *knowledge*, write in the
+content tree.
+
+A root `docs/` directory in a knowledge base is ordinary library content unless the project explicitly
+defines it otherwise. `_docs/` is visually detached so project metadata is not confused with the
+library's own subjects.
 
 ## Content structure
 

@@ -48,7 +48,7 @@ cog::cmd::kb_detect() {
   done
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing kb-detect output mode" "usage: cog kb-detect [flags] (<out.json>|--json)" "" "run 'cog kb-detect --help'"
   [[ -n $mode ]] || mode=json
-  json="$(cog::fn::template::detect_json "$project_root" "$template_root" "$requested_type" "docs/README.md")"
+  json="$(cog::fn::template::detect_json "$project_root" "$template_root" "$requested_type" "_docs/README.md")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_kb_detect_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_kb_detect_self_check" "$json"; fi
   jq -e '.ok == true' <<<"$json" >/dev/null
 }

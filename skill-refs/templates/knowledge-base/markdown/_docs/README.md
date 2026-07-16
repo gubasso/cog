@@ -1,10 +1,14 @@
-# `<project>` docs
+# `<project>` metadata
 
-This directory holds the **specs about the product**. In `<project>` the product is the
-knowledge base itself — the directories and markdown files that hold the actual knowledge. This
-`docs/` tree does not hold that knowledge; it holds the definitions, decisions, architecture,
-conventions, and patterns that govern how the knowledge base is built and maintained, exactly as a
-code project's `docs/` describes its code.
+This directory holds the **metadata and specs about the product**. In `<project>` the product is the
+knowledge base itself — the free-form root content tree, or library: the directories and markdown
+files that hold the actual knowledge. This `_docs/` tree is the one specially-marked directory that is
+not library content; it holds the definitions, decisions, architecture, conventions, and patterns that
+govern how the knowledge base is built and maintained, exactly as a code project's `docs/` describes
+its code.
+
+A bare `docs/` directory at the root of a knowledge base looks like library content unless the project
+has explicitly chosen otherwise. Treat `_docs/` as the project-metadata namespace.
 
 This file is an index only. Each durable fact lives once in its owning zone; everything else links
 to it.
@@ -23,7 +27,7 @@ Documentation is organized by reader need (Diataxis):
 ## Start here
 
 - [Knowledge-base architecture](./explanation/knowledge-base-architecture.md) — the product↔docs
-  relationship and the AGENTS.md digest standard.
+  metadata relationship and the AGENTS.md digest standard.
 - [Documentation conventions](./reference/docs-conventions.md) — placement, lean ADRs,
   single-source-of-truth, drafts, and the digest standard.
 - [Documentation review checklist](./reference/docs-review-checklist.md) — the pre-merge guard for

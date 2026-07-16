@@ -17,9 +17,9 @@ its own.
 
 ## Decisions
 
-Non-negotiable: record every significant, hard-to-reverse decision as an ADR under `docs/decisions/`,
-one decision per file, using the MADR-minimal `template.md`, so the rationale lives with the code.
-Accepted ADRs are not deleted; a changed decision gets a new superseding ADR.
+Non-negotiable: record every significant, hard-to-reverse decision as an ADR under the project's
+decisions directory, one decision per file, using the MADR-minimal `template.md`, so the rationale
+lives with the project. Accepted ADRs are not deleted; a changed decision gets a new superseding ADR.
 
 ## Working Conventions
 

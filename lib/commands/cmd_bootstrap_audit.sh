@@ -70,6 +70,18 @@ __cog_bootstrap_audit_file_has() {
   printf 'true'
 }
 
+# Print true when the file under root exists and its bytes exactly match the
+# expected content; false otherwise.
+__cog_bootstrap_audit_file_exact() {
+  local root="$1" rel="$2" expected="$3" f
+  f="$root/$rel"
+  if [[ -f $f ]] && cmp -s "$f" <(printf '%s' "$expected"); then
+    printf 'true'
+  else
+    printf 'false'
+  fi
+}
+
 __cog_bootstrap_audit_build_json() {
   local project_root="$1"
   local ok=true reason=""
@@ -123,15 +135,17 @@ __cog_bootstrap_audit_build_json() {
   rows+=("$(__cog_bootstrap_audit_domain repo "$present" "$repo_rq" "gitignore + license + readme" "$arts")")
 
   # governance: CLAUDE.md + AGENTS.md are the deliverable set. AGENTS.md is the
-  # single source of truth (CLAUDE.md is a thin `@AGENTS.md` pointer), so a present
-  # domain's AGENTS.md must still carry the self-containment principle (the
-  # tailor-surviving `self-contained` token); a doc that dropped it reads as unsatisfied.
+  # single source of truth, while CLAUDE.md must remain the exact thin
+  # `@AGENTS.md` pointer. A present domain's AGENTS.md must still carry the
+  # self-containment principle (the tailor-surviving `self-contained` token).
   arts="$(__cog_bootstrap_audit_artifacts "$project_root" "CLAUDE.md" "AGENTS.md")"
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
   local gov_reqs='[]'
   if [[ $present == true ]]; then
     gov_reqs="[$(__cog_bootstrap_audit_req self-containment-principle \
-      "$(__cog_bootstrap_audit_file_has "$project_root" "AGENTS.md" "self-contained")")]"
+      "$(__cog_bootstrap_audit_file_has "$project_root" "AGENTS.md" "self-contained")"),
+      $(__cog_bootstrap_audit_req claude-agents-pointer \
+        "$(__cog_bootstrap_audit_file_exact "$project_root" "CLAUDE.md" $'@AGENTS.md\n')")]"
   fi
   rows+=("$(__cog_bootstrap_audit_domain governance "$present" false "governance docs" "$arts" "$gov_reqs")")
 

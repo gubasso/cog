@@ -1,8 +1,10 @@
 # Documentation conventions
 
-How `<project>` organizes and maintains the specs about its knowledge-base product. The goal is a
-small set of homes with clear ownership: each fact has one durable source of truth, each document
-serves one reader need, each decision stays short enough to review and supersede.
+How `<project>` organizes and maintains the metadata and specs about its knowledge-base product. The
+product is the free-form root content tree — the library. `_docs/` is the one specially-marked
+metadata namespace about that library. The goal is a small set of homes with clear ownership: each
+fact has one durable source of truth, each document serves one reader need, each decision stays short
+enough to review and supersede.
 
 Sources: <https://diataxis.fr/> and
 <https://www.writethedocs.org/guide/writing/docs-principles/>.
@@ -11,24 +13,25 @@ Sources: <https://diataxis.fr/> and
 
 Place a document by the reader need it serves:
 
-- **`decisions/`** — why a choice was made. Lean ADRs.
+- **`decisions/`** — why a choice was made. Lean ADRs about the knowledge-base architecture.
 - **`guides/`** — how to complete a task. Runbooks and procedures.
 - **`reference/`** — exact facts for lookup. Conventions, schemas, diagnostics, case studies.
 - **`explanation/`** — how a subsystem fits together. Architecture and background.
 
-Zone comes first, topic second: `docs/reference/<topic>/`, not `docs/<topic>/reference.md`. A
+Zone comes first, topic second: `_docs/reference/<topic>/`, not `_docs/<topic>/reference.md`. A
 top-level topic folder mixes reader needs and forces readers to infer intent from prose. If a
 document needs two homes, choose the owner and link from the other.
 
 ## Lean ADRs
 
-Architecture decisions live in `decisions/` as lean ADRs. A useful ADR names the problem, lists the
-serious options, records the chosen option, states consequences, and declares status. Keep a filled
-ADR body at or below 350 words; if it cannot fit, it is probably multiple decisions — split them.
+Architecture decisions live in `_docs/decisions/` as lean ADRs. A useful ADR names the problem, lists
+the serious options, records the chosen option, states consequences, and declares status. Keep a
+filled ADR body at or below 350 words; if it cannot fit, it is probably multiple decisions — split
+them.
 
-Lifecycle: `Proposed → Accepted → Implemented → Superseded | Rejected`. **Never delete an accepted
-decision.** If it becomes wrong, mark it `Superseded` and link forward; keep a `Rejected` option
-when the rejection prevents repeated debate. Copy `decisions/template.md` to start a new ADR.
+Lifecycle: `Proposed -> Accepted -> Implemented -> Superseded | Rejected`. **Never delete an accepted
+decision.** If it becomes wrong, mark it `Superseded` and link forward; keep a `Rejected` option when
+the rejection prevents repeated debate. Copy `_docs/decisions/template.md` to start a new ADR.
 
 ## Single source of truth
 
