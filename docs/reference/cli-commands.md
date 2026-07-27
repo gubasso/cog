@@ -33,6 +33,9 @@ this reference table.
 
 | Command | Summary |
 | ------- | ------- |
+| `ask-flag` | Render canonical ask-skill research-flag instruction paragraphs. |
+| `ask-flag render --flag <web-search\|real-world>` | Print one research flag's canonical instruction paragraph for the `ask` skill to inject at runtime. |
+| `ask-flag list [--format text\|json]` | List the known ask research flags with a one-line summary each. |
 | `bootstrap-template-review` | Check or stamp bootstrap template review freshness. |
 | `bootstrap-template-review check --domain <d> --type <t> [--research-root <dir>] --json` | Report a domain/type template review's freshness (`fresh`/`stale`/`missing`/`invalid`) with skill-refs origin and template roots. |
 | `bootstrap-template-review stamp --domain <d> --type <t> --summary <text> --source-json <json> [--changed-template <path> ...] [--freshness-days <n>] --json` | Record a dated template review through the shelf; fails fast when the skill-refs template SoT is unwritable. |

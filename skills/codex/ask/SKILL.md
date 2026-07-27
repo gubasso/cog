@@ -29,31 +29,34 @@ answer at low effort and relays its captured `--output-last-message` output.
 
 | Flag           | Short | Effect                                                                                                                                                                                                                                 |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` is preserved into the nested call. |
-| `--web-search` | `-w`  | Perform a complete and deep web search/research before answering, grounding the response in current upstream docs and specs.                                                                                                           |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call. |
+| `--web-search` | `-w`  | Inject the canonical `web-search` research instruction — rendered at runtime via `cog ask-flag render --flag web-search` — grounding the answer in the latest official docs/specs from reliable sources.                                |
+| `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
 
-Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wf`), and must
-appear before the question text.
+Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`),
+and must appear before the question text.
 
 ## Execution
 
 1. **Parse flags.** Walk the leading whitespace-separated tokens of `$ARGUMENTS`. For each token:
    - Long form `--fast` → set `FAST = true`.
    - Long form `--web-search` → set `WEB_SEARCH = true`.
+   - Long form `--real-world` → set `REAL_WORLD = true`.
    - Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character,
-     apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`. Accepts `-f`, `-w`, `-fw`, `-wf`. If any
-     character in the cluster is not a known flag letter, **do not** partially apply — stop parsing
-     and treat the whole token as the start of the question.
+     apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`, `r` → `REAL_WORLD = true`. Accepts `-f`,
+     `-w`, `-r`, `-fw`, `-wr`, `-fwr`. If any character in the cluster is not a known flag letter,
+     **do not** partially apply — stop parsing and treat the whole token as the start of the question.
    - Any other token → stop parsing; this token and the rest are the question.
 
-   Defaults: `FAST = false`, `WEB_SEARCH = false`.
+   Defaults: `FAST = false`, `WEB_SEARCH = false`, `REAL_WORLD = false`.
 
 2. **Honor flags.**
-   - If `WEB_SEARCH = true`, perform a complete and deep web search/research looking for the latest
-     official docs, specs, and well-founded references for the technologies and subjects relevant to
-     this question. Ground the answer in concrete examples and well-sustained evidence from those
-     sources, and cite the URLs you relied on. (When `FAST = true`, this instruction is forwarded to
-     the nested call via the `-w` flag in its prompt rather than executed here.)
+   - If `WEB_SEARCH = true`, run `cog ask-flag render --flag web-search` and follow the rendered
+     instruction when researching and answering. (When `FAST = true`, this is forwarded to the nested
+     call via the `-w` flag in its prompt rather than executed here.)
+   - If `REAL_WORLD = true`, run `cog ask-flag render --flag real-world` and follow the rendered
+     instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is
+     forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
    - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering
      inline.
 
@@ -82,9 +85,9 @@ cog codex-runner gate sandbox "$RUN_DIR/preflight.json" >/dev/null 2>&1 \
 
 if [ "$FAST_DEGRADED" -eq 0 ]; then
   # Build the nested prompt. CRITICAL: never echo `-f` back into the
-  # inner invocation — that would recurse. Preserve `-w` only.
+  # inner invocation — that would recurse. Preserve `-w` and `-r` only.
   cat > "$RUN_DIR/prompt.txt" <<EOF
-\$ask <-w if WEB_SEARCH else nothing> <verbatim question text>
+\$ask <-w if WEB_SEARCH else nothing> <-r if REAL_WORLD else nothing> <verbatim question text>
 
 You are running at `low` Codex effort to answer this
 question read-only. Cite file paths and line numbers. Give a concise,
@@ -110,7 +113,7 @@ artifacts: the exit code is the signal (0 ok · 1 failed · 75 still running). R
 exits 75; duration is never judged.
 
 **Recursion guard.** The inner prompt must never contain `-f` / `--fast`; the orchestration strips
-it unconditionally. `-w` is forwarded as-is when set.
+it unconditionally. `-w` and `-r` are forwarded as-is when set.
 
 **Failure handling.** If `$RUN_DIR/runner.json` has a non-`ok` status or `$RUN_DIR/answer.txt` is
 empty, **degrade gracefully**: answer inline with the active model/effort and prepend a single line:

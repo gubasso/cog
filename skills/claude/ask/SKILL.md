@@ -4,7 +4,7 @@ description: >
   Ask a question about the project without changing any code.
   Use when the user says "ask", "question", "explain", "what is",
   "how does", "why does", or wants to understand something in the codebase.
-argument-hint: "[-f|--fast] [-w|--web-search] [-c|--codex] <question about the project>"
+argument-hint: "[-f|--fast] [-w|--web-search] [-c|--codex] [-r|--real-world] <question about the project>"
 ---
 
 <!-- trigger-tests: "ask", "explain", "what is", "how does", "why does" -->
@@ -34,11 +34,12 @@ Answer a question about the project. **Do not modify any files in the repo.**
 | Flag           | Short | Effect                                                                                                                                                                                                                                       |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--fast`       | `-f`  | Run the dispatched Explore agent at reduced reasoning effort (`effort: "medium"`). **Claude-side only** — never forwarded to Codex; the `-c` Codex call always runs at `--effort low`.                                                 |
-| `--web-search` | `-w`  | Instruct the Explore agent to ground the answer in current upstream docs/specs via deep web research. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill performs the same instruction-driven web research. |
-| `--codex`      | `-c`  | Also run the Codex `ask` skill in parallel via `cog codex-runner run-exec` and synthesize a single final answer using Codex's output as cross-validation. Compatible with `-f` and `-w`.                                            |
+| `--web-search` | `-w`  | Inject the canonical `web-search` research instruction — rendered at runtime via `cog ask-flag render --flag web-search` — into the Explore agent prompt, grounding the answer in the latest official docs/specs from reliable sources. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill injects the same instruction. |
+| `--codex`      | `-c`  | Also run the Codex `ask` skill in parallel via `cog codex-runner run-exec` and synthesize a single final answer using Codex's output as cross-validation. Compatible with `-f`, `-w`, and `-r`.                                            |
+| `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — into the Explore agent prompt, so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. When combined with `-c`, also echoed into the Codex prompt. |
 
-Flags are order-independent and combinable either as separate tokens (`-f -w -c`, `-c -w`) or fused
-into a single short-flag cluster (`-fwc`, `-wc`, `-fc`, `-fw`, etc.). Flags must appear before the
+Flags are order-independent and combinable either as separate tokens (`-f -w -c -r`, `-c -w`) or fused
+into a single short-flag cluster (`-fwc`, `-wc`, `-wr`, `-fwcr`, etc.). Flags must appear before the
 question text.
 
 ## Execution
@@ -54,16 +55,17 @@ Walk the leading whitespace-separated tokens of `$ARGUMENTS`. For each token:
 - Long form `--fast` → set `EFFORT = "medium"`.
 - Long form `--web-search` → set `WEB_SEARCH = true`.
 - Long form `--codex` → set `CODEX = true`.
+- Long form `--real-world` → set `REAL_WORLD = true`.
 - Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character, apply
-  `f` → `EFFORT = "medium"`, `w` → `WEB_SEARCH = true`, `c` → `CODEX = true`. Accepts any
-  combination/order: `-f`, `-w`, `-c`, `-fw`, `-fc`, `-wc`, `-fwc`, `-cwf`, etc. If any character in
-  the cluster is not a known flag letter, **do not** partially apply — stop parsing and treat the
-  whole token as the start of the question.
+  `f` → `EFFORT = "medium"`, `w` → `WEB_SEARCH = true`, `c` → `CODEX = true`,
+  `r` → `REAL_WORLD = true`. Accepts any combination/order: `-f`, `-w`, `-c`, `-r`, `-fw`, `-wr`,
+  `-wc`, `-fwcr`, `-cwf`, etc. If any character in the cluster is not a known flag letter,
+  **do not** partially apply — stop parsing and treat the whole token as the start of the question.
 - Any other token → stop parsing; this token and the rest are the question.
 
 Defaults if a flag is absent: `EFFORT = null` (omit — inherit the active session effort),
-`WEB_SEARCH = false`, `CODEX = false`. If `$ARGUMENTS` contains no flags, the full string is the
-question.
+`WEB_SEARCH = false`, `CODEX = false`, `REAL_WORLD = false`. If `$ARGUMENTS` contains no flags, the
+full string is the question.
 
 ### Step 2 — Branch on `CODEX`
 
@@ -79,11 +81,11 @@ Make one Agent call:
 - `subagent_type`: `"Explore"`.
 - `prompt` must always include: the question, instruction to be read-only, instruction to cite file
   paths and line numbers, and instruction to give a concise direct answer.
-- **If `WEB_SEARCH = true`**, the prompt must additionally instruct the agent: _"Perform a complete
-  and deep web search/research, looking for the latest official docs, specs, and well-founded
-  references for the technologies and subjects relevant to this question. Ground the answer in
-  concrete examples and well-sustained evidence from those sources, and cite the URLs you relied
-  on."_
+- **If `WEB_SEARCH = true`**, run `cog ask-flag render --flag web-search` and append its stdout to
+  the prompt verbatim as an additional instruction.
+- **If `REAL_WORLD = true`**, run `cog ask-flag render --flag real-world` and append its stdout to
+  the prompt verbatim as an additional instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; append
+  both rendered paragraphs.
 
 **Relay** the agent's answer to the user verbatim (do not summarize or re-research).
 
@@ -97,9 +99,9 @@ Three steps: create RUN_DIR with `cog rundir`, run the Codex gate, then write th
 prompt file. The prompt file must land on disk before Phase B starts.
 
 The prompt body opens with the explicit `$ask` skill mention so the Codex `ask` skill is loaded
-deterministically. Echo **only `-w`** if `WEB_SEARCH = true`. **Never** echo `-f` (Claude-side only
-— the `-c` Codex call always runs at `--effort low`). **Never** echo `-c`
-(Claude-side only).
+deterministically. Echo `-w` if `WEB_SEARCH = true` and `-r` if `REAL_WORLD = true` (the nested Codex
+`ask` renders its own paragraphs from those flags). **Never** echo `-f` (Claude-side only — the `-c`
+Codex call always runs at `--effort low`). **Never** echo `-c` (Claude-side only).
 
 ##### Step A.1 — Create RUN_DIR (Bash)
 
@@ -129,7 +131,7 @@ attach the question text as-is, plus any relevant enriching context, and carry t
 
 ```bash
 cat > "$RUN_DIR/codex-prompt.txt" <<'EOF'
-$ask <-w if WEB_SEARCH else nothing> <verbatim question text>
+$ask <-w if WEB_SEARCH else nothing> <-r if REAL_WORLD else nothing> <verbatim question text>
 
 You are running as a parallel second-opinion agent for Claude's /ask
 skill. Be read-only. Cite file paths and line numbers. Give a concise,
@@ -139,9 +141,9 @@ EOF
 echo "RUN_DIR=$RUN_DIR SANDBOX_MODE=$SANDBOX_MODE"
 ```
 
-When substituting the heredoc body, replace `<-w if WEB_SEARCH else nothing>` and
-`<verbatim question text>` with the actual values resolved in Step 1; do **not** leave the
-placeholder syntax in the file.
+When substituting the heredoc body, replace `<-w if WEB_SEARCH else nothing>`,
+`<-r if REAL_WORLD else nothing>`, and `<verbatim question text>` with the actual values resolved in
+Step 1; do **not** leave the placeholder syntax in the file.
 
 **Shell state does not persist between Bash tool invocations.** In Phase B, substitute the literal
 `RUN_DIR` path and the literal `SANDBOX_MODE` value echoed by step A.2 into the command before
@@ -158,7 +160,8 @@ sending — do not rely on `$RUN_DIR` / `$SANDBOX_MODE` being set in the next Ba
 In a single assistant message, issue **both** tool calls so they run concurrently:
 
 1. **Agent** call — same shape as Step 2a (Explore subagent, effort from `EFFORT` if set; otherwise
-   omit the parameter, web-search instruction appended if `WEB_SEARCH = true`).
+   omit the parameter, with the `web-search` and/or `real-world` rendered instructions appended when
+   `WEB_SEARCH`/`REAL_WORLD` are set).
 2. **Bash** call — `cog codex-runner run-exec`, native or fallback per `SANDBOX_MODE`,
    with the literal `RUN_DIR` path substituted in place of `$RUN_DIR`. The runner owns the exact
    `codex-session exec` construction, `< /dev/null`, JSONL redirection, direct stderr capture, and

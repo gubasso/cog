@@ -42,6 +42,9 @@ The command list and short descriptions are sourced from command modules under
 
 # COMMANDS
 
+*ask-flag*
+	Render canonical ask-skill research-flag instruction paragraphs.
+
 *assess-input*
 	Extract input-quality signals and persist the executor gate verdict.
 

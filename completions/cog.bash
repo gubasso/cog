@@ -21,6 +21,7 @@ _cog() {
     -vvv
   )
   local -a commands=(
+    ask-flag
     assess-input
     bootstrap-audit
     bootstrap-template-review

@@ -35,6 +35,7 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  ask-flag       Render canonical ask-skill research-flag instruction paragraphs.
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
   bootstrap-template-review Check or stamp bootstrap template review freshness.
@@ -170,6 +171,7 @@ Global flags:
   -v, -vv, -vvv       Increase verbosity
 
 Commands:
+  ask-flag       Render canonical ask-skill research-flag instruction paragraphs.
   assess-input   Extract input-quality signals and persist the executor gate verdict.
   bootstrap-audit Aggregate bootstrap domain present/missing status.
   bootstrap-template-review Check or stamp bootstrap template review freshness.

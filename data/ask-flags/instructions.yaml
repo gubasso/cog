@@ -1,0 +1,21 @@
+# Canonical instruction paragraphs injected by the `ask` skill's research flags.
+# Rendered at runtime by `cog ask-flag render --flag <key>`; both the Claude and
+# Codex `ask` twins stamp the emitted text into the delegated prompt so the
+# always-loaded skill body stays lean and the wording never drifts between twins.
+# This file is the single registry: valid flag keys are its `ask_flags` keys.
+ask_flags:
+  web-search: >
+    Perform deep, thorough web research grounded in the LATEST OFFICIAL
+    documentation and specifications for every technology and subject relevant to
+    this question. Prefer primary, authoritative sources; cross-check claims
+    across sources for consistency and reliability; ground the answer in concrete,
+    well-founded evidence; cite the URLs relied on; and explicitly state when
+    evidence is unavailable rather than asserting it. Do not present unverified
+    claims as fact.
+  real-world: >
+    Perform deep web research into real-world reference implementations and the
+    projects widely regarded as best-in-class at solving similar problems. Surface
+    the best-established patterns, practices, architectures, and coding designs for
+    this kind of problem, name the exemplar projects you find, and explain why each
+    is exemplary (proven at scale, idiomatic for the stack, well-documented, widely
+    adopted). Cite the projects and sources relied on.
