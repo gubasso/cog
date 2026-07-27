@@ -66,27 +66,6 @@ append_plan_emitter() {
   printf '\n<!-- cog-skill: plan-emitter -->\n' >>"$file"
 }
 
-append_orchestrator_gate() {
-  # Canonical plan-mode gate that executor-*/runner-* orchestrators must carry,
-  # stamped from the same SoT cog-skill-creator uses.
-  local file="$1" name="$2"
-  {
-    printf '\n'
-    cog gate render --id plan-mode --skill "$name"
-    printf '\n'
-  } >>"$file"
-}
-
-append_context_brief_gate() {
-  local file="$1" name="$2"
-  {
-    printf '\n'
-    cog gate render --id context-brief --skill "$name"
-    # shellcheck disable=SC2016  # literal Markdown fence text in a fixture.
-    printf '\n\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
-  } >>"$file"
-}
-
 @test "cog skill-lint accepts a valid Claude skill" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
 
@@ -207,8 +186,6 @@ append_context_brief_gate() {
 
 @test "cog skill-lint maps executor-greenfield-from-spec into the input-fidelity set" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec claude
-  append_orchestrator_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
-  append_context_brief_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
 
@@ -230,116 +207,6 @@ append_context_brief_gate() {
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/ask/SKILL.md"
 
   assert_success
-}
-
-# Build a fresh-context-boundary skill (plan-vetted) carrying the input-fidelity
-# marker so only the context-brief-gate rule is exercised.
-write_boundary_skill() {
-  local dir="${BATS_TEST_TMPDIR}/skills/claude/plan-vetted"
-  write_skill "$dir" plan-vetted claude
-  sed -i '/trigger-tests/a <!-- cog-skill: input-fidelity -->' "$dir/SKILL.md"
-  printf '%s\n' "$dir/SKILL.md"
-}
-
-@test "cog skill-lint requires the context-brief gate on a boundary orchestrator" {
-  local file
-  file="$(write_boundary_skill)"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"context-brief-gate"* ]]
-  [[ $stderr == *"missing context-brief gate"* ]]
-}
-
-@test "cog skill-lint accepts a boundary orchestrator with the gate and a build call" {
-  local file
-  file="$(write_boundary_skill)"
-  {
-    printf '\n'
-    cog gate render --id context-brief --skill plan-vetted
-    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
-    printf '\n\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
-  } >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  [[ $stderr != *"context-brief-gate"* ]]
-}
-
-@test "cog skill-lint accepts a boundary orchestrator that validates a handoff brief" {
-  local file
-  file="$(write_boundary_skill)"
-  {
-    printf '\n'
-    cog gate render --id context-brief --skill plan-vetted
-    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
-    printf '\n\n```bash\ncog context-brief validate "$RUN_DIR/brief.md"\n```\n'
-  } >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  [[ $stderr != *"context-brief-gate"* ]]
-}
-
-@test "cog skill-lint rejects a drifted context-brief gate stanza" {
-  local file
-  file="$(write_boundary_skill)"
-  {
-    printf '\n<!-- cog-context-brief-gate -->\n\n'
-    printf '**Context-brief gate.** Drifted wording that is not the canonical stanza.\n'
-    # shellcheck disable=SC2016  # literal markdown fence + command written to a fixture file
-    printf '\n```bash\ncog context-brief build --request r --body b --out o\n```\n'
-  } >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"context-brief-gate"* ]]
-  [[ $stderr == *"drifted"* ]]
-}
-
-@test "cog skill-lint rejects a context-brief gate with no build or validate call" {
-  local file
-  file="$(write_boundary_skill)"
-  {
-    printf '\n'
-    cog gate render --id context-brief --skill plan-vetted
-    printf '\n'
-  } >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"context-brief-gate"* ]]
-  [[ $stderr == *"never builds or validates"* ]]
-}
-
-@test "cog skill-lint requires the context-brief gate on executor-greenfield-from-spec" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec claude
-  sed -i '/trigger-tests/a <!-- cog-skill: input-fidelity -->' "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
-  append_orchestrator_gate "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md" executor-greenfield-from-spec
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"context-brief-gate"* ]]
-}
-
-@test "cog skill-lint rejects the context-brief gate on a non-boundary skill" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
-  {
-    printf '\n'
-    cog gate render --id context-brief --skill demo-skill
-    printf '\n'
-  } >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"context-brief-gate"* ]]
-  [[ $stderr == *"belongs on a fresh-context-boundary orchestrator"* ]]
 }
 
 @test "cog skill-lint rejects deterministic for loops" {
@@ -994,81 +861,6 @@ EOF
   done < <(cog::fn::skill::allowed_frontmatter_keys_json claude | jq -r '.[]')
 }
 
-@test "cog skill-lint accepts an executor orchestrator that carries the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
-  append_orchestrator_gate "$file" executor-demo
-
-  run cog skill-lint "$file"
-
-  assert_success
-}
-
-@test "cog skill-lint accepts a runner orchestrator that carries the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
-  append_orchestrator_gate "$file" runner-demo
-
-  run cog skill-lint "$file"
-
-  assert_success
-}
-
-@test "cog skill-lint rejects an executor orchestrator missing the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"plan-mode-gate"* ]]
-}
-
-@test "cog skill-lint rejects an executor orchestrator whose plan-mode gate wording drifted" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
-  printf '\n<!-- cog-plan-mode-gate -->\n\n**Phase 0 — Plan-mode gate.** Halt if plan mode is active and re-invoke later.\n' >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"plan-mode-gate"* ]]
-  [[ $stderr == *"drifted"* ]]
-}
-
-@test "cog skill-lint rejects an executor orchestrator whose gate marker has no stanza" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
-  printf '\n<!-- cog-plan-mode-gate -->\n' >>"$file"
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"plan-mode-gate"* ]]
-}
-
-@test "cog skill-lint rejects a plan worker that carries a plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo claude
-  local file="${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  append_plan_emitter "$file"
-  append_orchestrator_gate "$file" plan-demo
-
-  run --separate-stderr cog skill-lint "$file"
-
-  assert_failure
-  [[ $stderr == *"plan-mode-gate"* ]]
-  [[ $stderr == *"belongs on the calling"* ]]
-}
-
-@test "cog skill-lint exempts a Codex executor from the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/codex/executor-demo" executor-demo codex
-  local file="${BATS_TEST_TMPDIR}/skills/codex/executor-demo/SKILL.md"
-
-  run cog skill-lint "$file"
-
-  assert_success
-}
-
 @test "cog skill-lint accepts a Claude plan-emitter named plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
@@ -1144,12 +936,11 @@ EOF
   [[ $stderr == *"skill-prefix-taxonomy"* ]]
 }
 
-@test "cog skill-lint accepts executor intent with plan-mode gate under executor prefix" {
+@test "cog skill-lint accepts executor intent under executor prefix" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
   {
     printf '\n<!-- cog-skill: plan-emitter -->\n<!-- cog-skill: input-fidelity -->\n'
-    cog gate render --id plan-mode --skill executor-demo
     printf '\n# Plan Review Execute\n'
   } >>"$file"
 
@@ -1258,10 +1049,6 @@ ${tier_fm}
 
 It drives the structural input to completion.
 EOF
-  # executor-*/runner-* consumers are orchestrators and must carry the gate.
-  case "$name" in
-    executor-* | runner-*) append_orchestrator_gate "$dir/SKILL.md" "$name" ;;
-  esac
   case "$name" in
     plan-* | review-plan-*) append_plan_emitter "$dir/SKILL.md" ;;
   esac
@@ -1601,17 +1388,6 @@ EOF
 
   assert_failure
   [[ $stderr == *"skill-prefix-taxonomy"* ]]
-}
-
-@test "cog skill-lint skill-class-contract rule fails a plan-* carrying a plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-gated" plan-gated claude
-  append_plan_emitter "${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
-  printf '\n<!-- cog-plan-mode-gate -->\n' >>"${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-gated/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"skill-class-contract"* ]]
 }
 
 @test "producer-blindness map and curated lint sets no longer name plan-writer-multi as a live skill" {

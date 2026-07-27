@@ -32,11 +32,12 @@ drafting, and `$(cog skill-refs path skill-authoring/skill-class-contracts.md)` 
 contract. The `cog` surface is the authoritative, machine-checkable contract — query it rather than
 relying on any external doc:
 
-- `cog skill-class list|show --class <c>` — the per-class required/forbidden markers, plan-mode-gate
-  requirement, tier basis, and input/output obligations.
+- `cog skill-class list|show --class <c>` — the per-class required/forbidden markers, tier basis, and
+  input/output obligations.
 - `cog power-grade skill-tier --skill <name>` / `cog power-grade tier --name <tier>` — the expected
   model/effort tier and the registry escape hatch.
-- `cog gate render --id plan-mode|context-brief --skill <name>` — the canonical gate stanzas.
+- `cog skill-refs path orchestration/plan-mode-gate.md` / `orchestration/context-brief-gate.md` — the
+  canonical gate directives that orchestrators point to.
 - `cog skill-class check --skill <path>` and `cog skill-lint <path>` — the draft gates.
 
 ## Inputs
@@ -73,8 +74,8 @@ its exact prerequisites:
 cog skill-class show --class <plan|review|review-plan|executor|runner|bootstrap> --json
 ```
 
-The contract states the required markers, the forbidden markers, the plan-mode-gate requirement, the
-expected tier, and the producer/consumer obligations for that class. `cog skill-lint`'s
+The contract states the required markers, the forbidden markers, the expected tier, and the
+producer/consumer obligations for that class. `cog skill-lint`'s
 `skill-class-contract` rule fails a draft that misses any prerequisite or carries any prohibition.
 
 ## Twin naming
@@ -147,10 +148,9 @@ Fix every reported issue before presenting the draft.
    - include env-preflight requirements when foreground execution matters.
 
 8. Apply the class contract's markers and gates:
-   - `executor-*`/`runner-*` carry the Phase 0 plan-mode gate (see Plan-mode gate); every other class
-     must not.
-   - A brief-building delegator at a fresh-context boundary carries the input-fidelity marker and the
-     context-brief gate (`cog gate render --id context-brief --skill <name>`).
+   - `executor-*`/`runner-*` carry a Phase 0 plan-mode gate pointer (see Plan-mode gate).
+   - A brief-building delegator at a fresh-context boundary carries the input-fidelity marker and a
+     context-brief gate pointer to `$(cog skill-refs path orchestration/context-brief-gate.md)`.
    - A `plan-*` emitter carries the plan-emitter marker.
    - A consumer is producer-blind: it names only its structural input contract, never the producer.
    - Artifact/field/flag names are stage-agnostic (role, not stage number).
@@ -193,28 +193,25 @@ Fix every reported issue before presenting the draft.
 ## Plan-mode gate
 
 The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers. If
-the new skill is a Claude `executor-*` or `runner-*` skill, it must carry a canonical Phase 0 gate
-stanza that runs before any other work, marked `cog-plan-mode-gate`: the caller gates once at entry
-(plan mode is read-only and blocks writes), then delegates to gate-free workers. The gate must not call
-`ExitPlanMode` and must not silently continue. Any other skill must not carry the gate.
+the new skill is a Claude `executor-*` or `runner-*` skill, give it a short Phase 0 pointer that keeps
+the STOP imperative in the body and defers the full protocol to the shared source of truth:
 
-The gate wording is a single source of truth — stamp it, do not hand-write it:
-
-```bash
-cog gate render --id plan-mode --skill "$NAME"
+```text
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
+follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 ```
 
-Paste the rendered block verbatim as the skill's Phase 0. `cog skill-lint` fails a Claude
-executor-*/runner- skill that lacks the gate or whose inlined stanza drifts, and fails any other Claude
-skill that carries it. Codex skills are exempt.
+The caller gates once at entry (plan mode is read-only and blocks writes), then delegates to gate-free
+workers. The canonical directive — do not call `ExitPlanMode`, do not silently continue — lives in
+`skill-refs/orchestration/plan-mode-gate.md`; the skill body carries only the pointer. Codex skills are
+exempt.
 
 ## Rules
 
 - Never overwrite an existing skill. Name collision means abort.
 - Never invent frontmatter fields absent from the runtime contract.
 - Never give a governed-intent skill a name whose prefix does not match its behavior.
-- Never ship a Claude executor-*/runner- skill without its Phase 0 plan-mode gate, and never put the
-  gate on any other skill.
+- Never ship a Claude executor-*/runner- skill without its Phase 0 plan-mode gate pointer.
 - Never select Sonnet; use `model: opus` + `effort: low`, or no override.
 - Never skip the approval gate.
 - Never treat `cog-skill-creator-scaffold` output as permission to write. It is path computation only.

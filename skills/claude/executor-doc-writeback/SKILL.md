@@ -14,12 +14,8 @@ allowed-tools: Bash Read Edit Skill Agent
 
 # Doc Writeback Executor
 
-<!-- cog-plan-mode-gate -->
-
-**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
-mode is on / that you must not make edits), **STOP** before any other work — parsing args,
-researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
-(`Shift+Tab`) and re-invoke `/executor-doc-writeback`. Do not call `ExitPlanMode`, and do not silently continue.
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
+follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 
 Apply one structured-findings artifact to explicit canonical documentation paths, then use `gc` for
 the commit workflow. This skill is a write-capable entrypoint and gates plan mode before reading,

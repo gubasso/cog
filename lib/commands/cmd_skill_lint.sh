@@ -106,45 +106,6 @@ __cog_skill_lint_check_structure() {
   return "$failed"
 }
 
-__cog_skill_lint_check_plan_gate() {
-  # The plan-mode gate lives on the executor-*/runner-* orchestrator layer: those
-  # callers gate once at entry, then delegate to gate-free plan/review workers
-  # (ADR-0037). Detection is probabilistic and lives in skill prose (ADR-0015);
-  # the canonical wording is owned by cog gate render --id plan-mode and enforced here
-  # (whitespace-normalized). Claude runtime only -- Codex has no Claude plan mode.
-  local file="$1" runtime name expected actual
-  runtime="$(cog::fn::skill::runtime_for_path "$file")"
-  [[ $runtime == claude ]] || return 0
-  name="$(cog::fn::skill::parent_dir_name "$file")"
-
-  if ! cog::fn::skill::requires_plan_mode_gate "$name"; then
-    # A plan/review worker (or any non-orchestrator) must not carry the gate.
-    if cog::fn::skill::has_plan_mode_gate "$file"; then
-      __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate belongs on the calling executor/runner orchestrator, not on this skill" "remove the gate stanza; the caller gates before delegating"
-      return 1
-    fi
-    return 0
-  fi
-
-  if ! cog::fn::skill::has_plan_mode_gate "$file"; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "orchestrator skill missing plan-mode gate" "add a Phase 0 plan-mode gate: cog gate render --id plan-mode --skill ${name}"
-    return 1
-  fi
-
-  actual="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::plan_mode_gate_extract "$file")")"
-  if [[ -z $actual ]]; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate marker has no stanza" "place the canonical stanza after the marker: cog gate render --id plan-mode --skill ${name}"
-    return 1
-  fi
-
-  expected="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::plan_mode_gate_paragraph "$name")")"
-  if [[ $actual != "$expected" ]]; then
-    __cog_skill_lint_finding "$file" 1 "plan-mode-gate" "plan-mode gate wording drifted from the canonical source of truth" "regenerate the stanza: cog gate render --id plan-mode --skill ${name}"
-    return 1
-  fi
-  return 0
-}
-
 __cog_skill_lint_input_fidelity_required() {
   local name="$1" runtime="$2"
   case "${runtime}:${name}" in
@@ -184,85 +145,6 @@ __cog_skill_lint_check_input_fidelity() {
     failed=1
   fi
   return "$failed"
-}
-
-# The context-brief gate lives on every orchestrator that hands substantive work
-# (planning, review, implementation) to a fresh context -- an Agent subagent or a
-# cog codex-runner job. Unlike the Claude-only plan-mode gate, this set is
-# runtime-agnostic: a Codex orchestrator that crosses a fresh-context boundary
-# carries it too. Read-only Q&A relays (ask), inline same-context chainers
-# (executor-vetted, context-builder), and verbatim transport runners (runner-*,
-# gc) are out of scope. See ADR-0044.
-__cog_skill_lint_context_brief_gate_required() {
-  local name="$1" runtime="$2"
-  case "${runtime}:${name}" in
-    claude:executor-oneshot | \
-      claude:executor-oneshot-codex | \
-      claude:executor-prex | \
-      claude:plan-oneshot-codex | \
-      claude:plan-multi | \
-      claude:plan-builder-to-queue | \
-      claude:review-plan-multi | \
-      claude:review-loop | \
-      claude:plan-vetted | \
-      claude:bootstrap | \
-      claude:executor-greenfield-from-spec | \
-      codex:executor-oneshot)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-# Dual enforcement (ADR-0044): a boundary orchestrator must carry the un-drifted
-# canonical stanza AND honor it with a real cog context-brief call -- build (it
-# constructs the brief itself) or validate (it confirms a brief obtained from the
-# handoff input or assembled via /context-builder). The stanza is the source of
-# truth for the rule; cog context-brief is the source of truth for the mechanics.
-# Requiring both closes the two cheats: a stanza that name-drops the contract but
-# never touches a brief, and a brief built without the canonical rule.
-__cog_skill_lint_check_context_brief_gate() {
-  local file="$1" runtime name expected actual
-  runtime="$(cog::fn::skill::runtime_for_path "$file")"
-  [[ -n $runtime ]] || return 0
-  name="$(cog::fn::skill::frontmatter_name "$file")"
-
-  if ! __cog_skill_lint_context_brief_gate_required "$name" "$runtime"; then
-    # A non-boundary skill must not carry the gate.
-    if cog::fn::skill::has_context_brief_gate "$file"; then
-      __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate belongs on a fresh-context-boundary orchestrator, not on this skill" "remove the gate stanza; only boundary orchestrators carry it"
-      return 1
-    fi
-    return 0
-  fi
-
-  if ! cog::fn::skill::has_context_brief_gate "$file"; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "boundary orchestrator missing context-brief gate" "add the gate stanza: cog gate render --id context-brief --skill ${name}"
-    return 1
-  fi
-
-  actual="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::context_brief_gate_extract "$file")")"
-  if [[ -z $actual ]]; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate marker has no stanza" "place the canonical stanza after the marker: cog gate render --id context-brief --skill ${name}"
-    return 1
-  fi
-
-  expected="$(cog::fn::skill::plan_mode_gate_normalize "$(cog::fn::skill::context_brief_gate_paragraph "$name")")"
-  if [[ $actual != "$expected" ]]; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "context-brief gate wording drifted from the canonical source of truth" "regenerate the stanza: cog gate render --id context-brief --skill ${name}"
-    return 1
-  fi
-
-  # Match the real call signature, not the flagless `cog context-brief build` /
-  # `cog context-brief validate` inline-code mentions inside the stanza itself: a
-  # build always carries --request; a validate is followed by a path argument.
-  if ! grep -qE 'cog context-brief build --request|cog context-brief validate [^`]' "$file"; then
-    __cog_skill_lint_finding "$file" 1 "context-brief-gate" "boundary orchestrator carries the gate but never builds or validates a context brief" "construct the brief with cog context-brief build --request, or validate a delegated/handoff brief with cog context-brief validate <path>, at the fresh-context dispatch point"
-    return 1
-  fi
-  return 0
 }
 
 __cog_skill_lint_check_prefix_taxonomy() {
@@ -1354,8 +1236,8 @@ __cog_skill_lint_check_model_effort_prose_label() {
 }
 
 # skill-class-contract: one positive class-membership assertion that composes the
-# scattered facet checks (plan-mode-gate, skill-prefix-taxonomy, model-effort-tier,
-# producer-blindness, input-fidelity, context-brief, stage-agnostic) per the data
+# scattered facet checks (skill-prefix-taxonomy, model-effort-tier,
+# producer-blindness, input-fidelity, stage-agnostic) per the data
 # SoT in data/skill-class/contracts.yaml. The facet rules stay authoritative for
 # their facet; this rule asserts the per-class union is satisfied for the declared
 # class. An ungoverned (other-class) skill passes. See ADR-0016 / DP11.
@@ -1481,13 +1363,7 @@ __cog_skill_lint_scan_file() {
   if ! __cog_skill_lint_check_structure "$file"; then
     failed=1
   fi
-  if ! __cog_skill_lint_check_plan_gate "$file"; then
-    failed=1
-  fi
   if ! __cog_skill_lint_check_input_fidelity "$file"; then
-    failed=1
-  fi
-  if ! __cog_skill_lint_check_context_brief_gate "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_prefix_taxonomy "$file"; then

@@ -36,13 +36,15 @@ write_skill() {
 @test "cog skill-class show returns one class contract" {
   run cog skill-class show --class executor --json
   assert_success
-  [[ "$(jq -r '.contract.plan_mode_gate' <<<"$output")" == "required" ]]
+  [[ "$(jq -r '.class' <<<"$output")" == "executor" ]]
+  [[ "$(jq -r '.contract.tier_basis' <<<"$output")" == *"medium"* ]]
 }
 
 @test "cog skill-class show returns the bootstrap class contract" {
   run cog skill-class show --class bootstrap --json
   assert_success
-  [[ "$(jq -r '.contract.plan_mode_gate' <<<"$output")" == "forbidden" ]]
+  [[ "$(jq -r '.class' <<<"$output")" == "bootstrap" ]]
+  [[ "$(jq -r '.contract.tier_basis' <<<"$output")" == *"low"* ]]
 }
 
 @test "cog skill-class show fails closed on an unknown class" {
@@ -56,20 +58,6 @@ write_skill() {
   assert_success
   [[ "$(jq -r '.class' <<<"$output")" == "plan" ]]
   [[ "$(jq -r '.ok' <<<"$output")" == "true" ]]
-}
-
-@test "cog skill-class check fails a plan skill carrying a plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-bad" plan-bad '<!-- cog-plan-mode-gate -->'
-  run cog skill-class check --skill "${BATS_TEST_TMPDIR}/skills/claude/plan-bad/SKILL.md" --json
-  assert_failure
-  [[ "$(jq -r '.forbidden_present | join(",")' <<<"$output")" == *"plan-mode-gate"* ]]
-}
-
-@test "cog skill-class check fails an executor skill missing the plan-mode gate" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-bad" executor-bad 'no gate here'
-  run cog skill-class check --skill "${BATS_TEST_TMPDIR}/skills/claude/executor-bad/SKILL.md" --json
-  assert_failure
-  [[ "$(jq -r '.missing | join(",")' <<<"$output")" == *"plan-mode-gate"* ]]
 }
 
 @test "cog skill-class check exempts an ungoverned other-class skill" {

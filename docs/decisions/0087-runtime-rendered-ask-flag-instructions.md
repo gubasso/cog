@@ -1,5 +1,10 @@
 # ADR-0087: Runtime-Rendered `ask` Flag Instructions
 
+> **Amended by [ADR-0088](0088-primary-source-verification-shared-reference.md).** The `web-search`
+> directive graduated out of `data/ask-flags` into the shared
+> `skill-refs/research/primary-source-verification.md`; `cog ask-flag` now serves only `real-world`.
+> The runtime-render mechanism for `-r/real-world` is unchanged.
+
 ## Context and Problem Statement
 
 The `ask` skill's research flags (`-w/--web-search`, and the new `-r/--real-world`) each carry a

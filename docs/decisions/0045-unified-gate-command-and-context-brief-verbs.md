@@ -1,5 +1,9 @@
 # ADR-0045: Unified `cog gate` Command and Context-Brief Verb Cleanup
 
+> **Superseded by [ADR-0089](0089-gates-as-skill-refs-references.md).** The `cog gate` stanza verbs
+> (`render`/`check`/`stamp`/`list`) are retired; `cog gate` now hosts only the operator-approval gate
+> (ADR-0074). Gate wording lives in `skill-refs/orchestration/`.
+
 ## Context and Problem Statement
 
 The "prompt injection" surface — `cog` subcommands that emit canonical, marker-delimited stanzas

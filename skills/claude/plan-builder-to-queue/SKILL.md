@@ -23,13 +23,9 @@ and generation run in the live session; only the opposite-engine Codex review cr
 boundary. It writes vault artifacts, so run it in a **write-capable session** — native plan mode is
 read-only and would block its writes; if plan mode is active, exit it before invoking.
 
-<!-- cog-context-brief-gate -->
-
-**Context-brief gate.** Before `/plan-builder-to-queue` dispatches to any fresh-context worker — an Agent subagent
-or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
-accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
-substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
-context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
+brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
+`cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ## Inputs
 

@@ -47,8 +47,7 @@ When a reviewed plan is supplied, load it from the task/context input and check 
 phases are materially present in the diff; record gaps as `important` or `question` findings.
 
 For every `research_targets[]` entry, verify current behavior against primary sources before
-reviewing: official docs, language specs, RFCs, man pages, changelogs, or project repositories.
-Prefer version-specific sources when the project pins or implies a version.
+reviewing, per `$(cog skill-refs path research/primary-source-verification.md)`.
 
 ## Phase 1: Review
 

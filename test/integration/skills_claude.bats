@@ -182,7 +182,7 @@ forbidden_scan_codex() {
   assert_file_contains "$file" "cog runner-commit-parse"
   assert_file_contains "$file" "cog rundir review-queue-rounds"
   # No plan-mode gate on a non-orchestrator boundary skill.
-  assert_file_not_contains "$file" "cog-plan-mode-gate"
+  assert_file_not_contains "$file" "orchestration/plan-mode-gate.md"
 }
 
 @test "runner-all documents main reconcile and runner-plan documents round verify" {
@@ -213,7 +213,7 @@ forbidden_scan_codex() {
   local file="$repo_root/skills/claude/plan-builder-to-queue/SKILL.md"
   assert_file_exists "$file"
   assert_file_contains "$file" "cog-skill: plan-emitter"
-  assert_file_contains "$file" "cog-context-brief-gate"
-  run grep -q "cog-plan-mode-gate" "$file"
+  assert_file_contains "$file" "orchestration/context-brief-gate.md"
+  run grep -q "orchestration/plan-mode-gate.md" "$file"
   assert_failure
 }

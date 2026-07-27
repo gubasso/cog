@@ -38,8 +38,9 @@ reports, and enforces user gates.
 Phase 0 resolves the principles file, creates `.test-review/`, records scope and discovery metadata,
 and summarizes the target before deeper audit.
 
-Phase 0.5 performs tooling inventory and optional web research. Never install dependencies; report
-setup snippets only.
+Phase 0.5 performs tooling inventory and optional web research — when it verifies an external tooling
+or framework claim, it follows `$(cog skill-refs path research/primary-source-verification.md)`. Never
+install dependencies; report setup snippets only.
 
 Phase 1 interprets helper lint signals against the canonical anti-pattern guidance. Each finding
 must include file, line, severity, principle citation, and suggested fix.

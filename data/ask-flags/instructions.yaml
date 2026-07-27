@@ -1,17 +1,11 @@
-# Canonical instruction paragraphs injected by the `ask` skill's research flags.
-# Rendered at runtime by `cog ask-flag render --flag <key>`; both the Claude and
-# Codex `ask` twins stamp the emitted text into the delegated prompt so the
-# always-loaded skill body stays lean and the wording never drifts between twins.
-# This file is the single registry: valid flag keys are its `ask_flags` keys.
+# Canonical instruction paragraph injected by the `ask` skill's `-r/--real-world`
+# research flag. Rendered at runtime by `cog ask-flag render --flag <key>`; both the
+# Claude and Codex `ask` twins inject the emitted text into the delegated prompt so
+# the always-loaded skill body stays lean and the wording never drifts between twins.
+# This file is the single registry: valid flag keys are its `ask_flags` keys. The
+# `-w/--web-search` directive is shared with the reviewer skills and lives in
+# skill-refs/research/primary-source-verification.md, not here.
 ask_flags:
-  web-search: >
-    Perform deep, thorough web research grounded in the LATEST OFFICIAL
-    documentation and specifications for every technology and subject relevant to
-    this question. Prefer primary, authoritative sources; cross-check claims
-    across sources for consistency and reliability; ground the answer in concrete,
-    well-founded evidence; cite the URLs relied on; and explicitly state when
-    evidence is unavailable rather than asserting it. Do not present unverified
-    claims as fact.
   real-world: >
     Perform deep web research into real-world reference implementations and the
     projects widely regarded as best-in-class at solving similar problems. Surface

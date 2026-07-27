@@ -28,13 +28,9 @@ This skill runs **inline** (no fork): only the main thread can read the live con
 request brief, and act as the neutral judge. It **delegates** each review to a non-interactive worker
 and keeps all interaction and the final write to itself.
 
-<!-- cog-context-brief-gate -->
-
-**Context-brief gate.** Before `/review-plan-multi` dispatches to any fresh-context worker — an Agent subagent
-or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
-accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
-substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
-context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
+brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
+`cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ```text
 inline: read the plan input (file | dir | inline text) → build PLAN-UNDER-REVIEW + raw REQUEST brief → preflight
@@ -261,8 +257,9 @@ You are the **neutral judge** with the live conversation context neither worker 
 **both** reviews against the rubric in `$(cog skill-refs path orchestration/verdict-model.md)`:
 correctness, completeness vs the request, feasibility, security, idiomatic fit, currency, and
 testability. On any disagreement — especially a flagged blocking issue — verify against the actual
-plan and code (read-only) before deciding; prefer evidence observed now over either reviewer's
-assertion.
+plan and code (read-only) and against primary sources per
+`$(cog skill-refs path research/primary-source-verification.md)` before deciding; prefer evidence
+observed now over either reviewer's assertion.
 
 **Verdict reconciliation.** Using the `cog plan-review` artifact vocabulary (`APPROVED | MODIFIED`),
 the final top-level verdict is the **more severe** of the two: `APPROVED` only when both reviewers

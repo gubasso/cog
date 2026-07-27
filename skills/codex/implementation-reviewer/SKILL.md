@@ -74,12 +74,7 @@ Examples of verifiable claims:
 
 This is the most critical step. For each inventory item, verify it.
 
-- Use web search to find official documentation. Prefer primary sources: official docs, GitHub
-  repos, RFCs, man pages, language specs.
-- Do NOT use blog posts or Stack Overflow as primary evidence. They can corroborate, not establish.
-- Check for version-specific accuracy. APIs change between versions.
-- Look for deprecation notices, breaking changes, migration guides.
-- If a library or tool is used, check its latest stable release and changelog.
+- Verify each item against primary sources per `$(cog skill-refs path research/primary-source-verification.md)`.
 - Cross-reference multiple sources when something seems off.
 - When you find a discrepancy between the implementation and official docs, record the exact source
   URL and the specific contradiction.

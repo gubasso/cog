@@ -21,12 +21,12 @@ setup() {
   source "${LIB_DIR}/commands/cmd_ask_flag.sh"
 }
 
-@test "render web-search emits the canonical paragraph" {
+@test "render web-search is now an unknown flag (graduated to skill-refs)" {
   run --separate-stderr cog::cmd::ask_flag render --flag web-search
 
-  assert_success
-  assert_line --partial "LATEST OFFICIAL"
-  [ -z "$stderr" ]
+  assert_failure "$EX_DATAERR"
+  [ -z "$output" ]
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
 }
 
 @test "render real-world emits the canonical paragraph" {
@@ -53,12 +53,12 @@ setup() {
   [[ $stderr == *"err.kind: MissingArgument"* ]]
 }
 
-@test "list shows both flag ids" {
+@test "list shows the real-world flag id" {
   run --separate-stderr cog::cmd::ask_flag list
 
   assert_success
-  assert_line --partial "web-search"
   assert_line --partial "real-world"
+  refute_line --partial "web-search"
   [ -z "$stderr" ]
 }
 
@@ -66,8 +66,8 @@ setup() {
   run --separate-stderr cog::cmd::ask_flag list --json
 
   assert_success
-  [ "$(jq -r 'length' <<<"$output")" -eq 2 ]
-  [ "$(jq -r 'map(.flag) | sort | join(",")' <<<"$output")" = "real-world,web-search" ]
+  [ "$(jq -r 'length' <<<"$output")" -eq 1 ]
+  [ "$(jq -r 'map(.flag) | sort | join(",")' <<<"$output")" = "real-world" ]
   [ -z "$stderr" ]
 }
 

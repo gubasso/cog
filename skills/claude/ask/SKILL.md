@@ -34,7 +34,7 @@ Answer a question about the project. **Do not modify any files in the repo.**
 | Flag           | Short | Effect                                                                                                                                                                                                                                       |
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--fast`       | `-f`  | Run the dispatched Explore agent at reduced reasoning effort (`effort: "medium"`). **Claude-side only** — never forwarded to Codex; the `-c` Codex call always runs at `--effort low`.                                                 |
-| `--web-search` | `-w`  | Inject the canonical `web-search` research instruction — rendered at runtime via `cog ask-flag render --flag web-search` — into the Explore agent prompt, grounding the answer in the latest official docs/specs from reliable sources. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill injects the same instruction. |
+| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — into the Explore agent prompt, grounding the answer in the latest official docs/specs from reliable sources. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill injects the same directive. |
 | `--codex`      | `-c`  | Also run the Codex `ask` skill in parallel via `cog codex-runner run-exec` and synthesize a single final answer using Codex's output as cross-validation. Compatible with `-f`, `-w`, and `-r`.                                            |
 | `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — into the Explore agent prompt, so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. When combined with `-c`, also echoed into the Codex prompt. |
 
@@ -81,8 +81,8 @@ Make one Agent call:
 - `subagent_type`: `"Explore"`.
 - `prompt` must always include: the question, instruction to be read-only, instruction to cite file
   paths and line numbers, and instruction to give a concise direct answer.
-- **If `WEB_SEARCH = true`**, run `cog ask-flag render --flag web-search` and append its stdout to
-  the prompt verbatim as an additional instruction.
+- **If `WEB_SEARCH = true`**, read `$(cog skill-refs path research/primary-source-verification.md)`
+  and append its content to the prompt verbatim as an additional instruction.
 - **If `REAL_WORLD = true`**, run `cog ask-flag render --flag real-world` and append its stdout to
   the prompt verbatim as an additional instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; append
   both rendered paragraphs.

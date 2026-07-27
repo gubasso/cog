@@ -74,15 +74,16 @@ skill-lint rule catches it at authoring time. See
 
 The plan-mode gate lives on the executor-*/runner-* orchestrator layer, not on plan/review workers: the
 caller a user launches gates once at entry (plan mode is read-only and blocks writes), then delegates to
-gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a Phase 0 plan-mode gate marked
-`<!-- cog-plan-mode-gate -->`; every other Claude skill must not. The gate wording is a single source of
-truth: render it with `cog gate render --id plan-mode --skill <name>` and stamp it verbatim, never
-hand-write it. `cog skill-lint`'s `plan-mode-gate` rule fails an executor/runner that lacks the gate or
-whose stanza drifts from the render, and fails any other skill that carries it. See
-`docs/reference/skill-contract.md` ("Plan-mode gate"),
-`docs/decisions/0015-plan-skills-not-in-plan-mode.md`,
-`docs/decisions/0037-plan-mode-gate-canonical-render.md`, and
-`docs/decisions/0045-unified-gate-command-and-context-brief-verbs.md`.
+gate-free workers. Every Claude `executor-*`/`runner-*` skill carries a short Phase 0 plan-mode gate
+pointer — the STOP imperative in the body, deferring the full protocol to the shared source of truth
+`skill-refs/orchestration/plan-mode-gate.md` (resolved with
+`cog skill-refs path orchestration/plan-mode-gate.md`). The context-brief gate on fresh-context-boundary
+orchestrators works the same way, pointing to `skill-refs/orchestration/context-brief-gate.md`. Both
+gates are prose pointers to a single skill-refs source of truth, not stamped, lint-drifted stanzas —
+skill-refs is the one mechanism for shared cross-skill text. See
+`docs/reference/skill-contract.md` ("Plan-mode gate", "Context-brief gate"),
+`docs/decisions/0015-plan-skills-not-in-plan-mode.md`, and
+`docs/decisions/0089-gates-as-skill-refs-references.md` (supersedes ADR-0037, ADR-0044, ADR-0045).
 
 Skill prose is lean, objective, and positively framed: describe what the skill IS and MUST DO. Drop
 preemptive negative guardrails that never had an empirical reason; keep negative or exclusion

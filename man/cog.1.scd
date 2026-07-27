@@ -115,7 +115,7 @@ The command list and short descriptions are sourced from command modules under
 	Parse executor-prex arguments into run state.
 
 *gate*
-	Render, check, stamp, and list canonical skill gate stanzas.
+	Manage operator-approval gate records (approve, check-approval, prune).
 
 *gc-classify-failure*
 	Classify commit or push failure logs.

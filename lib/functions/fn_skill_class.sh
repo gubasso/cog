@@ -2,9 +2,9 @@
 
 # Skill-class contract surface (ADR-0016 / DP11). The data SoT lives at
 # data/skill-class/contracts.yaml and declares, per governed class, the required
-# and forbidden markers, the plan-mode-gate requirement, and the tier basis. This
-# helper composes the existing cog::fn::skill::* facet predicates into one positive
-# class-membership assertion; it never duplicates their logic.
+# and forbidden markers and the tier basis. This helper composes the existing
+# cog::fn::skill::* facet predicates into one positive class-membership assertion;
+# it never duplicates their logic.
 
 cog::fn::skill_class::data_path() {
   local override="${COG_SKILL_CLASS_DATA:-}"
@@ -40,7 +40,7 @@ cog::fn::skill_class::list_json() {
   jq -n --argjson classes "$(jq -c '.skill_classes' <<<"$data")" \
     '{schema: "cog.skill-class.list.v1", ok: true,
       classes: ($classes | to_entries | map({class: .key, summary: .value.summary,
-        plan_mode_gate: .value.plan_mode_gate, required_markers: .value.required_markers,
+        required_markers: .value.required_markers,
         forbidden_markers: .value.forbidden_markers}))}'
 }
 
@@ -67,11 +67,10 @@ cog::fn::skill_class::has_marker() {
 
 # Assert a skill's prefix class carries every required prerequisite and no
 # prohibition. Emits cog.skill-class.check.v1 with class, ok, missing[],
-# forbidden_present[], and the resolved tier. Claude-only facets (plan-mode gate,
-# Claude tier) mirror the facet rules' runtime gating; an `other`-class skill is
-# ungoverned and passes.
+# forbidden_present[], and the resolved tier. The Claude-only tier facet mirrors
+# the facet rule's runtime gating; an `other`-class skill is ungoverned and passes.
 cog::fn::skill_class::check_json() {
-  local file="$1" name runtime class data contract gate_req model effort expected actual
+  local file="$1" name runtime class data contract model effort expected actual
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" \
     "skill file is not readable" "path: ${file}" "" "pass a readable SKILL.md"
   name="$(cog::fn::skill::frontmatter_name "$file")"
@@ -84,7 +83,6 @@ cog::fn::skill_class::check_json() {
   if cog::fn::skill_class::is_governed_class "$class"; then
     data="$(cog::fn::skill_class::data_json)"
     contract="$(jq -c --arg c "$class" '.skill_classes[$c]' <<<"$data")"
-    gate_req="$(jq -r '.plan_mode_gate' <<<"$contract")"
 
     # Required markers.
     local m
@@ -99,15 +97,8 @@ cog::fn::skill_class::check_json() {
       cog::fn::skill_class::has_marker "$file" "$m" && forbidden_present+=("marker:${m}")
     done < <(jq -r '.forbidden_markers[]?' <<<"$contract")
 
-    # Plan-mode gate (Claude runtime only; Codex has no Claude plan mode).
+    # Tier (Claude registry/prefix expectation; Codex has no Claude tier).
     if [[ $runtime == claude ]]; then
-      if [[ $gate_req == required ]] && ! cog::fn::skill::has_plan_mode_gate "$file"; then
-        missing+=("plan-mode-gate")
-      elif [[ $gate_req == forbidden ]] && cog::fn::skill::has_plan_mode_gate "$file"; then
-        forbidden_present+=("plan-mode-gate")
-      fi
-
-      # Tier (Claude registry/prefix expectation).
       expected="$(cog::fn::skill::expected_tier "$name")"
       tier_expected="$expected"
       if [[ $expected != exempt ]]; then

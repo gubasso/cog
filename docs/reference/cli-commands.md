@@ -34,7 +34,7 @@ this reference table.
 | Command | Summary |
 | ------- | ------- |
 | `ask-flag` | Render canonical ask-skill research-flag instruction paragraphs. |
-| `ask-flag render --flag <web-search\|real-world>` | Print one research flag's canonical instruction paragraph for the `ask` skill to inject at runtime. |
+| `ask-flag render --flag <key>` | Print one research flag's canonical instruction paragraph for the `ask` skill to inject at runtime; valid keys come from `cog ask-flag list` (currently `real-world`). |
 | `ask-flag list [--format text\|json]` | List the known ask research flags with a one-line summary each. |
 | `bootstrap-template-review` | Check or stamp bootstrap template review freshness. |
 | `bootstrap-template-review check --domain <d> --type <t> [--research-root <dir>] --json` | Report a domain/type template review's freshness (`fresh`/`stale`/`missing`/`invalid`) with skill-refs origin and template roots. |
@@ -62,11 +62,10 @@ this reference table.
 | `doctor` | Check cog runtime health and installation prerequisites. |
 | `executor` | Manage shared executor run contracts and stage artifacts. |
 | `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
-| `gate` | Render, check, stamp, and list canonical skill gate stanzas. |
-| `gate render --id <id> --skill <name>` | Render a canonical gate stanza (`--id plan-mode\|context-brief`) for a skill. |
-| `gate check --id <id> --skill <name> --input <file> [--format text\|json]` | Report whether a skill's stamped gate stanza matches the canonical render (drift). |
-| `gate stamp --id <id> --skill <name> --input <file>` | Stamp or refresh a gate's canonical block in a file in place (idempotent). |
-| `gate list [--format text\|json]` | List the registered gate ids and their descriptions. |
+| `gate` | Manage operator-approval gate records (approve, check-approval, prune). |
+| `gate approve --round-id <id> --round-path <file> [--approver <name>] [--notes <text>]` | Record an operator approval for a plan round. |
+| `gate check-approval --round-id <id> --round-path <file> [--ttl <secs>]` | Report whether a fresh operator approval exists for a round. |
+| `gate prune-approvals [--older-than <secs>]` | Remove stale operator-approval records. |
 | `gc-classify-failure` | Classify commit or push failure logs. |
 | `gc-commit` | Commit with a message file and explicit pathspec. |
 | `gc-commit-lint` | Validate a commit message against Conventional Commits (or defer to the repo linter). |

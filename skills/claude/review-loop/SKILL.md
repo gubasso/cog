@@ -38,13 +38,9 @@ Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-res
 to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume`
 against the round-1 reviewer thread.
 
-<!-- cog-context-brief-gate -->
-
-**Context-brief gate.** Before `/review-loop` dispatches to any fresh-context worker — an Agent subagent
-or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
-accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
-substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
-context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
+brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
+`cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ## Inputs
 

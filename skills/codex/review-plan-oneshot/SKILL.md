@@ -92,8 +92,9 @@ Do not copy old web findings into the skill body as permanent facts.
 ## Phase 3: Review Axes
 
 Review the plan adversarially before implementation. Actively verify high-risk claims against the
-live repo and current official documentation; do not rely on memory for commands, APIs, package
-names, model/runtime behavior, or security-sensitive guidance.
+live repo and against primary sources per `$(cog skill-refs path research/primary-source-verification.md)`;
+do not rely on memory for commands, APIs, package names, model/runtime behavior, or
+security-sensitive guidance.
 
 Evaluate all axes:
 

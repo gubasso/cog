@@ -22,13 +22,9 @@ Coordinate two independent lean planners from one identical raw brief, then synt
 lean plan through `cog plan-doc`. The workers are `/plan-oneshot` instances; the coordinator builds
 their complete input and owns the final plan.
 
-<!-- cog-context-brief-gate -->
-
-**Context-brief gate.** Before `/plan-multi` dispatches to any fresh-context worker — an Agent subagent
-or a `cog codex-runner` Codex job — build its input as a validated context brief from your whole
-accumulated raw context: attach the raw request as-is, author an oriented objective, carry the full
-substance and load-bearing artifacts, and omit your own verdict. Build the brief with `cog
-context-brief build` and confirm it with `cog context-brief validate` before dispatch.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
+brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
+`cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ## Inputs
 

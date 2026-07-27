@@ -59,7 +59,7 @@ Commands:
   editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
-  gate           Render, check, stamp, and list canonical skill gate stanzas.
+  gate           Manage operator-approval gate records (approve, check-approval, prune).
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
@@ -195,7 +195,7 @@ Commands:
   editorconfig-detect Detect editorconfig template type.
   executor       Manage shared executor run contracts and stage artifacts.
   executor-prex-parse-args Parse executor-prex arguments into run state.
-  gate           Render, check, stamp, and list canonical skill gate stanzas.
+  gate           Manage operator-approval gate records (approve, check-approval, prune).
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).

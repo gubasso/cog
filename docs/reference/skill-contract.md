@@ -116,7 +116,7 @@ gate); those ADRs are referenced here, not changed.
 ## Skill class contracts
 
 Each governed class — `plan`, `review`, `review-plan`, `executor`, `runner`, `bootstrap` — carries one
-positive membership contract: the markers, plan-mode-gate requirement, expected tier, and input/output
+positive membership contract: the markers, expected tier, and input/output
 obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review
 obligation: a `bootstrap-*` worker that ships cog templates references the template-refresh routine
 (`cog bootstrap-template-review`), enforced by the `bootstrap-template-review` rule for any worker
@@ -125,9 +125,9 @@ whose domain is a valid template-review domain. The source of truth is
 cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
 list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.
 
-`cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks (`plan-mode-gate`,
-`skill-prefix-taxonomy`, `model-effort-tier`, `producer-blindness`, `input-fidelity`,
-`context-brief-gate`, `stage-agnostic-identifiers`) into a single class-membership assertion that
+`cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks
+(`skill-prefix-taxonomy`, `model-effort-tier`, `producer-blindness`, `input-fidelity`,
+`stage-agnostic-identifiers`) into a single class-membership assertion that
 fails closed on any missing prerequisite or present prohibition. The facet rules stay authoritative
 for their facet; the class rule asserts the per-class union. An ungoverned (`other`-class) skill is
 exempt. The full per-class table lives in
@@ -477,51 +477,47 @@ Bash environment, so detection cannot be a `cog` subcommand; it stays probabilis
 worker delegated via the Agent tool runs in a fresh subagent that never sees plan mode, so the gate
 only ever matters at the entry-point orchestrator.
 
-The gate stanza is a **Phase 0** marked `<!-- cog-plan-mode-gate -->` that runs before all other work,
-and its wording is a single source of truth owned by `cog gate render --id plan-mode` — never
-hand-write it:
+Every Claude `executor-*`/`runner-*` skill carries a short **Phase 0** pointer that keeps the STOP
+imperative in the always-loaded body and defers the full protocol to the shared source of truth,
+`skill-refs/orchestration/plan-mode-gate.md`:
 
-```bash
-cog gate render --id plan-mode --skill <name>
+```text
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
+follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 ```
 
-The rendered stanza tells the user, if Claude Code plan mode is active, to STOP before any other work
-and exit plan mode (`Shift+Tab`) and re-invoke `/<name>`. It must **not** call `ExitPlanMode` (that
-presents a plan for approval — wrong semantics) and must not silently continue.
-
-`cog skill-lint` enforces this with the `plan-mode-gate` rule: every Claude `executor-*`/`runner-*`
-skill must carry the canonical gate (hard-fails when missing or when the inlined stanza drifts,
-whitespace-normalized, from `cog gate render --id plan-mode`), and every other Claude skill must **not**
-carry the gate (it belongs on the calling orchestrator). Codex skills are exempt — Codex has no Claude
-plan mode.
+The referenced directive tells the user, if plan mode is active, to STOP, exit plan mode (`Shift+Tab`),
+and re-invoke the skill; it must **not** call `ExitPlanMode` (that presents a plan for approval — wrong
+semantics) and must not silently continue. The gate is a prose pointer to one skill-refs source of
+truth, not a stamped, lint-drift-checked stanza — skill-refs is the single mechanism for shared
+cross-skill text. Codex skills are exempt — Codex has no Claude plan mode.
 
 ## Context-brief gate
 
 Every orchestrator that hands substantive work (planning, review, implementation) to a **fresh
 context** — an Agent subagent or a `cog codex-runner` Codex job — must build that worker's input as a
 validated context brief (the best-constructed input standard, see "Context brief" above and
-[ADR-0043](../decisions/0043-best-constructed-input-standard.md)). The obligation is stamped and
-drift-linted like the plan-mode gate, but the rule is the source of truth while `cog context-brief` and
-the contract own the mechanics. See [ADR-0044](../decisions/0044-context-brief-gate.md).
+[ADR-0043](../decisions/0043-best-constructed-input-standard.md)). See
+[ADR-0044](../decisions/0044-context-brief-gate.md) and
+[ADR-0089](../decisions/0089-gates-as-skill-refs-references.md).
 
-The gate stanza is marked `<!-- cog-context-brief-gate -->`, and its wording is a single source of
-truth owned by `cog gate render --id context-brief` — never hand-write it:
+Every fresh-context-boundary orchestrator carries a short pointer to the shared source of truth,
+`skill-refs/orchestration/context-brief-gate.md`, and honors it with a real `cog context-brief build`
+or `cog context-brief validate` call (build constructs the brief; validate confirms one obtained from
+the handoff input or assembled via `/context-builder`):
 
-```bash
-cog gate render --id context-brief --skill <name>
+```text
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
+brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
+`cog context-brief build --request` and confirm it with `cog context-brief validate`.
 ```
 
-`cog skill-lint` enforces this with the `context-brief-gate` rule, keyed off a curated, **runtime-
-agnostic** boundary set (Codex orchestrators included, unlike the Claude-only plan-mode gate). A skill
-in the set must carry BOTH the un-drifted canonical stanza AND a real `cog context-brief build` or
-`cog context-brief validate` call (build constructs the brief; validate confirms one obtained from the
-handoff input or assembled via `/context-builder`). The rule hard-fails a boundary skill that is
-missing the stanza, has drifted wording, or never builds/validates a brief, and forbids the marker on
-any skill outside the set. Read-only Q&A relays (`ask`), inline same-context chainers
-(`executor-vetted`, `context-builder`), and verbatim transport runners (`runner-*`, `gc`) are out of
-scope; the human top-level operator orients the first skill directly and is exempt.
-`executor-greenfield-from-spec` is in scope because it builds validated briefs for fresh-context
-pipeline workers.
+Read-only Q&A relays (`ask`), inline same-context chainers (`executor-vetted`, `context-builder`), and
+verbatim transport runners (`runner-*`, `gc`) do not cross a fresh-context boundary and carry no
+pointer; the human top-level operator orients the first skill directly and is exempt.
+`executor-greenfield-from-spec` carries it because it builds validated briefs for fresh-context
+pipeline workers. The gate is a prose pointer to one skill-refs source of truth, not a stamped,
+lint-drift-checked stanza.
 
 ## Premise Lint Checks
 
@@ -549,7 +545,7 @@ The suppression names `allow-inline-shell` and `allow-orchestration-history` mus
 - Does every deterministic routine live behind `cog` or an existing external tool contract?
 - Is repeated command logic shared through `cog::fn::*`?
 - Does orchestration prose follow `docs/reference/orchestration-contract.md`?
-- Does every plan-emitting skill carry the `cog-plan-mode-gate` stanza (see Plan-mode gate)?
+- Does every `executor-*`/`runner-*` skill carry the Phase 0 plan-mode gate pointer (see Plan-mode gate)?
 - Does every brief-building delegator carry the `input-fidelity` marker and enrichment-only prose?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?

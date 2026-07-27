@@ -92,6 +92,8 @@ This directory is organized using Diataxis zones.
 - [ADR-0085: devShell-aware command execution for hook-triggering cog commands](decisions/0085-devshell-aware-command-execution.md)
 - [ADR-0086: Knowledge-base metadata lives under `_docs/`](decisions/0086-kb-metadata-underscore-docs.md)
 - [ADR-0087: Runtime-rendered `ask` flag instructions](decisions/0087-runtime-rendered-ask-flag-instructions.md)
+- [ADR-0088: Primary-source-verification shared reference](decisions/0088-primary-source-verification-shared-reference.md)
+- [ADR-0089: Gates delivered as skill-refs references; stamp+lint retired](decisions/0089-gates-as-skill-refs-references.md)
 
 ## Guides
 

@@ -1,5 +1,9 @@
 # ADR-0037: Plan-Mode Gate Lives on the Orchestrator Layer, Rendered From One Source
 
+> **Superseded by [ADR-0089](0089-gates-as-skill-refs-references.md).** The plan-mode gate is now a
+> prose pointer to `skill-refs/orchestration/plan-mode-gate.md`, not a stamped, lint-drifted stanza.
+> The orchestrator-layer placement and read-only policy still hold.
+
 ## Context and Problem Statement
 
 [ADR-0015](0015-plan-skills-not-in-plan-mode.md) put a Phase 0 plan-mode gate on every plan-emitting

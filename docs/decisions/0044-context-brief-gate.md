@@ -1,5 +1,9 @@
 # ADR-0044: Context-Brief Gate on Fresh-Context-Boundary Orchestrators
 
+> **Superseded by [ADR-0089](0089-gates-as-skill-refs-references.md).** The context-brief gate is now a
+> prose pointer to `skill-refs/orchestration/context-brief-gate.md`, not a stamped, lint-drifted stanza.
+> The obligation to build/validate a brief at a fresh-context boundary still holds.
+
 ## Context and Problem Statement
 
 [ADR-0043](0043-best-constructed-input-standard.md) defined the best-constructed input standard and

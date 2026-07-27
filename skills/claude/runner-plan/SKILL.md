@@ -17,12 +17,8 @@ allowed-tools: Bash Read Agent Skill
 
 # Runner Plan
 
-<!-- cog-plan-mode-gate -->
-
-**Phase 0 — Plan-mode gate.** If Claude Code **plan mode** is active (a system-reminder says plan
-mode is on / that you must not make edits), **STOP** before any other work — parsing args,
-researching, interviewing, delegating, or writing. Tell the user in one line to exit plan mode
-(`Shift+Tab`) and re-invoke `/runner-plan`. Do not call `ExitPlanMode`, and do not silently continue.
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
+follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 
 Drive one flat plan directory in the resolved cog plan vault (local or global store), resolved by
 `cog runner-plan-setup` via `cog plan runner-resolve`. This skill runs inline in its own invocation; it

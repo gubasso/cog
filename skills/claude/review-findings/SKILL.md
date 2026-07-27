@@ -85,5 +85,5 @@ severity wording needs the shared output contract, load
 
 - Fix only findings that pass relevance and verification checks.
 - Cite changed files in the report when edits are made.
-- Use official docs as primary sources for external API or spec claims.
+- Verify external API, library, or spec claims against primary sources per `$(cog skill-refs path research/primary-source-verification.md)`.
 - Preserve the input order unless dependencies between findings require grouping.
