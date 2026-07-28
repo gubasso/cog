@@ -1,32 +1,16 @@
 # Research Shelf
 
-The research shelf is the repository store for dated, sourced findings that skills can reuse instead
-of repeating live web research on every run. The shelf index is
-`data/research-shelf/index.jsonl`; each line is one JSON object recorded by
-`cog research-shelf record`.
+The research shelf is the repository store for dated, sourced findings that skills can reuse instead of repeating live web research on every run. The shelf index is `data/research-shelf/index.jsonl`; each line is one JSON object recorded by `cog research-shelf record`.
 
 ## Consumer Contract
 
-Consuming skills read relevant shelf entries before duplicating research. An entry is reusable when
-its `revalidate-after` date has not passed and the skill judges its `topic-tags` and
-`consuming-skills` to match the current task. That matching is the consuming skill's judgment over
-the entries it reads; `cog research-shelf` does not select entries by tag or skill.
+Consuming skills read relevant shelf entries before duplicating research. An entry is reusable when its `revalidate-after` date has not passed and the skill judges its `topic-tags` and `consuming-skills` to match the current task. That matching is the consuming skill's judgment over the entries it reads; `cog research-shelf` does not select entries by tag or skill.
 
-When a relevant entry is overdue, stale, or missing for the needed topic, the skill re-researches the
-topic from current sources and records the refreshed finding through `cog research-shelf record`.
-Skills cite or summarize shelf entries as supporting context; they do not copy old web findings into
-skill bodies as permanent facts.
+When a relevant entry is overdue, stale, or missing for the needed topic, the skill re-researches the topic from current sources and records the refreshed finding through `cog research-shelf record`. Skills cite or summarize shelf entries as supporting context; they do not copy old web findings into skill bodies as permanent facts.
 
-The shelf contract is intended for `lean-plan-and-review-skills`, `plan-*`, `review-plan-*`, and
-executor skills. Those skills should treat the shelf as reusable context, not as deterministic
-mechanics. Persistence, validation, IDs, dates, and source shape are owned by `cog research-shelf`.
+The shelf contract is intended for `lean-plan-and-review-skills`, `plan-*`, `review-plan-*`, and executor skills. Those skills should treat the shelf as reusable context, not as deterministic mechanics. Persistence, validation, IDs, dates, and source shape are owned by `cog research-shelf`.
 
-The `bootstrap-*` workers are a deterministic exception: they select and record shelf entries through
-`cog bootstrap-template-review check|stamp`, which keys freshness on the
-`bootstrap-template,<domain>,<type>` topic-tag convention (for example
-`bootstrap-template,precommit,rust`) with `consuming-skills` of `bootstrap-<domain>`. That freshness
-selection lives in `bootstrap-template-review`, not in `research-shelf`, which still does not select
-entries by tag or skill.
+The `bootstrap-*` workers are a deterministic exception: they select and record shelf entries through `cog bootstrap-template-review check|stamp`, which keys freshness on the `bootstrap-template,<domain>,<type>` topic-tag convention (for example `bootstrap-template,precommit,rust`) with `consuming-skills` of `bootstrap-<domain>`. That freshness selection lives in `bootstrap-template-review`, not in `research-shelf`, which still does not select entries by tag or skill.
 
 ## Entry Fields
 

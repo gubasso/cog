@@ -2,9 +2,7 @@
 
 Format: Markdown Architecture Decision Record (MADR) v3. Spec: <https://adr.github.io/madr/>
 
-The skill scaffolds the first two ADRs at plan-creation time (`0001-rewrite-decision.md`,
-`0002-parity-boundary.md`). The implementation agent writes additional ADRs (`0003-*`, …) as it
-encounters non-trivial design choices during Phase C.
+The skill scaffolds the first two ADRs at plan-creation time (`0001-rewrite-decision.md`, `0002-parity-boundary.md`). The implementation agent writes additional ADRs (`0003-*`, …) as it encounters non-trivial design choices during Phase C.
 
 ## Template
 
@@ -21,8 +19,7 @@ informed: [<names or roles>]
 
 ## Context and Problem Statement
 
-<What is the problem? What is the context? What forces are at play? 2–6 sentences. Cite the contract
-item or the target-language idiom that forces this decision.>
+<What is the problem? What is the context? What forces are at play? 2–6 sentences. Cite the contract item or the target-language idiom that forces this decision.>
 
 ## Decision Drivers
 
@@ -40,8 +37,7 @@ item or the target-language idiom that forces this decision.>
 
 Chosen option: **<Option X>**. Justification:
 
-<2–4 sentences explaining why this option wins on the drivers above. Cite §6 of the canonical
-guideline if rejecting a transliteration shortcut.>
+<2–4 sentences explaining why this option wins on the drivers above. Cite §6 of the canonical guideline if rejecting a transliteration shortcut.>
 
 ### Consequences
 
@@ -52,8 +48,7 @@ guideline if rejecting a transliteration shortcut.>
 
 ## Validation
 
-<How will we know this decision is correct? Which parity test pins the behavior? Which property test
-exercises it?>
+<How will we know this decision is correct? Which parity test pins the behavior? Which property test exercises it?>
 
 ## Pros and Cons of the Options
 
@@ -83,14 +78,12 @@ exercises it?>
 
 Write one when any of the following is true:
 
-1. The decision is hard to reverse (data format, public API shape, error model, concurrency
-   primitive).
+1. The decision is hard to reverse (data format, public API shape, error model, concurrency primitive).
 2. The decision deviates from the contract (any `parity-boundary.not-preserved` item).
 3. A reasonable reader would ask "why this and not <obvious alternati".
 4. The decision is forced by a target-language idiom that isn't obvious from the contract.
 
-Trivial dependency picks, cosmetic naming, and per-feature tactical decisions do NOT need an ADR.
-Use the design files (`design/*.md`) instead.
+Trivial dependency picks, cosmetic naming, and per-feature tactical decisions do NOT need an ADR. Use the design files (`design/*.md`) instead.
 
 ## Numbering
 

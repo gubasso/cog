@@ -2,9 +2,7 @@
 
 ## Context and Problem Statement
 
-`cog` has Bash formatting, ShellCheck, unit tests, integration tests, live tests, e2e tests, and a
-Codex wrapper invariant. These gates need one source of truth so local runs, hooks, and documented
-commands do not drift.
+`cog` has Bash formatting, ShellCheck, unit tests, integration tests, live tests, e2e tests, and a Codex wrapper invariant. These gates need one source of truth so local runs, hooks, and documented commands do not drift.
 
 ## Considered Options
 
@@ -14,9 +12,7 @@ commands do not drift.
 
 ## Decision Outcome
 
-Chosen option: **pre-commit is the test source of truth**. `.pre-commit-config.yaml` defines
-formatting, linting, unit, integration, live, e2e, and `lint-codex-wrapper` hooks. `just lint` runs
-`pre-commit run --all-files`; `just test` runs the unit hook and the integration hook.
+Chosen option: **pre-commit is the test source of truth**. `.pre-commit-config.yaml` defines formatting, linting, unit, integration, live, e2e, and `lint-codex-wrapper` hooks. `just lint` runs `pre-commit run --all-files`; `just test` runs the unit hook and the integration hook.
 
 ## Consequences
 

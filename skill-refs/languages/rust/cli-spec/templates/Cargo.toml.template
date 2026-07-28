@@ -1,0 +1,36 @@
+# Cargo.toml template for a new CLI per the Rust CLI spec.
+# Copy to your crate root, rename `app-template` -> your name, drop unused deps.
+
+[package]
+name        = "app-template"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.85"
+license     = "MIT OR Apache-2.0"
+description = "One-line description of the CLI."
+repository  = "https://github.com/you/app-template"
+readme      = "README.md"
+
+# Binary name can differ from crate name (e.g. crate `riptask`, binary `tsk`).
+[[bin]]
+name = "app"
+path = "src/main.rs"
+
+# Dependencies are NOT listed here. Install them with `cargo add` before the first build so the
+# resolver picks the latest SemVer-compatible versions and writes Cargo.lock. Do not hand-edit
+# dependency versions/features. See 07-dependencies.md "Adding dependencies" for the exact command
+# list (runtime stack via `cargo add ...`, dev tools via `cargo add --dev ...`). `cargo add`
+# populates [dependencies]/[dev-dependencies] here for you.
+
+[profile.release]
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"
+
+[lints.rust]
+unused_must_use = "deny"
+unsafe_code     = "forbid"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"

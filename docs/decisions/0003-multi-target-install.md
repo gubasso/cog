@@ -2,10 +2,7 @@
 
 ## Context and Problem Statement
 
-`cog` installs more than one kind of artifact: the CLI app root, a PATH symlink, Bash completion, an
-optional man page, Claude skills, Claude agents, and Codex skills. GNU Stow is a good fit for
-dotfile packages, but this project needs ownership tracking and uninstall safety across several user
-targets.
+`cog` installs more than one kind of artifact: the CLI app root, a PATH symlink, Bash completion, an optional man page, Claude skills, Claude agents, and Codex skills. GNU Stow is a good fit for dotfile packages, but this project needs ownership tracking and uninstall safety across several user targets.
 
 ## Considered Options
 
@@ -15,10 +12,7 @@ targets.
 
 ## Decision Outcome
 
-Chosen option: **manifest-based installer**. `install.sh` copies the app payload to
-`$PREFIX/lib/cog`, creates `$PREFIX/bin/cog`, installs completion and man artifacts under
-`$XDG_DATA_HOME`, copies skills and agents into their runtime trees, and records owned files in
-`$XDG_STATE_HOME/cog/install-manifest`.
+Chosen option: **manifest-based installer**. `install.sh` copies the app payload to `$PREFIX/lib/cog`, creates `$PREFIX/bin/cog`, installs completion and man artifacts under `$XDG_DATA_HOME`, copies skills and agents into their runtime trees, and records owned files in `$XDG_STATE_HOME/cog/install-manifest`.
 
 ## Consequences
 

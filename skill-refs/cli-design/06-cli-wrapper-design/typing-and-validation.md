@@ -1,12 +1,8 @@
 # Wrapper Design — Typing & Validation
 
-> **See also.** The sibling chapter [Process & POSIX](./process-and-posix.md) covers the
-> _invocation_ side: argv layout, `--` separator, exec vs spawn, signal forwarding, exit-code
-> propagation, plugin namespacing, failure modes. Read both — this one is about _what you build_;
-> the sibling is about _how you run it_.
+> **See also.** The sibling chapter [Process & POSIX](./process-and-posix.md) covers the _invocation_ side: argv layout, `--` separator, exec vs spawn, signal forwarding, exit-code propagation, plugin namespacing, failure modes. Read both — this one is about _what you build_; the sibling is about _how you run it_.
 >
-> This chapter is part of [CLI Wrapper Design](./README.md) under the general
-> [CLI design principles](../README.md).
+> This chapter is part of [CLI Wrapper Design](./README.md) under the general [CLI design principles](../README.md).
 
 Reference for building CLI programs that wrap other CLI tools using typed data structures.
 
@@ -17,18 +13,15 @@ Typed model  -->  to_args() / into_command()  -->  OS execution
 (your domain)     (serialization boundary)         (subprocess / Command)
 ```
 
-Model the wrapped CLI's domain as typed structures, validate at construction time, and serialize
-into command arguments only at the execution boundary.
+Model the wrapped CLI's domain as typed structures, validate at construction time, and serialize into command arguments only at the execution boundary.
 
 ## Design Rules
 
-1. **Type the domain, not the strings.** Flags become bools/enums, not scattered `.arg("--flag")`
-   calls.
-1. **Separate build from execution.** Builder produces a `Command` / `list[str]`; caller decides how
-   to run it.
-1. **Make invalid states unrepresentable.** Mutually exclusive flags = enum, not two bools.
-1. **Error handling at the boundary.** Parse stdout/stderr into your own result types.
-1. **Common execution interface.** A trait/protocol shared across all wrapped CLIs.
+1. **Type the domain, not the strings.** Flags become bools/enums, not scattered `.arg("--flag")` calls.
+2. **Separate build from execution.** Builder produces a `Command` / `list[str]`; caller decides how to run it.
+3. **Make invalid states unrepresentable.** Mutually exclusive flags = enum, not two bools.
+4. **Error handling at the boundary.** Parse stdout/stderr into your own result types.
+5. **Common execution interface.** A trait/protocol shared across all wrapped CLIs.
 
 ## Complexity Ladder
 
@@ -117,8 +110,7 @@ impl GitCommit {
 
 **Key decisions:**
 
-- `self` (consuming) vs `&mut self` in builder methods — consuming is more idiomatic, prevents reuse
-  of partial state.
+- `self` (consuming) vs `&mut self` in builder methods — consuming is more idiomatic, prevents reuse of partial state.
 - `into_command()` as the clean boundary between domain and OS.
 - Don't bake `.status()` / `.output()` into the builder.
 
@@ -323,8 +315,7 @@ Works fine, but you lose automatic validation. Use `__post_init__` for constrain
 | Best for                   | External data boundaries, complex constraints     | Internal state, simple grouping |
 | Adding methods             | Totally fine                                      | Totally fine                    |
 
-**For CLI wrappers:** Pydantic is the better fit — you're modeling external constraints (mutually
-exclusive flags, required combinations), and validators express that cleanly.
+**For CLI wrappers:** Pydantic is the better fit — you're modeling external constraints (mutually exclusive flags, required combinations), and validators express that cleanly.
 
 ### Python Projects Using These Patterns
 

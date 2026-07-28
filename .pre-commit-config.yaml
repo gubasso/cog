@@ -20,13 +20,17 @@ repos:
   # formats). Markdown is excluded: editorconfig-checker flags fenced-code-block
   # interiors and defaults to indent_size=4 even when unset, and .editorconfig
   # keeps trim_trailing_whitespace=false for *.md.
+  # fn_match_telemetry.sh is excluded because it intentionally embeds a 0x1F
+  # (unit-separator) control byte as a collision-safe jq join-key delimiter, so
+  # ec classifies it as binary before it can read any in-file disable directive;
+  # shfmt still owns that file's formatting.
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
     rev: v3.8.0
     hooks:
       - id: editorconfig-checker
         alias: ec
         args: [-disable-insert-final-newline, '-exclude', 'LICENSE']
-        exclude: '\.md$'
+        exclude: '\.md$|^lib/functions/fn_match_telemetry\.sh$'
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1

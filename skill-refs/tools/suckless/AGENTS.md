@@ -11,8 +11,7 @@ token-estimate: 500
 
 ## Scope
 
-Suckless tool customization: patch application strategies, conflict resolution for `.rej` files, and
-dwm-specific gotchas.
+Suckless tool customization: patch application strategies, conflict resolution for `.rej` files, and dwm-specific gotchas.
 
 ## Key Points
 
@@ -23,14 +22,10 @@ dwm-specific gotchas.
 
 ### Common Conflict Patterns
 
-1. **Line offset shift**: prior patches shifted line numbers. Search for context lines to find
-   actual location.
-2. **Config mismatch**: `config.def.h` modified by previous patch. Match structural intent, not
-   exact lines.
-3. **Function signature changed**: another patch modified the same function. Understand both
-   patches' intent.
-4. **Struct member conflicts**: multiple patches add members to same struct. Add at end; order
-   rarely matters.
+1. **Line offset shift**: prior patches shifted line numbers. Search for context lines to find actual location.
+2. **Config mismatch**: `config.def.h` modified by previous patch. Match structural intent, not exact lines.
+3. **Function signature changed**: another patch modified the same function. Understand both patches' intent.
+4. **Struct member conflicts**: multiple patches add members to same struct. Add at end; order rarely matters.
 5. **Keybinding/rules array conflicts**: merge entries; warn about duplicate key combos.
 
 ### Manual Hunk Application

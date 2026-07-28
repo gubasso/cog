@@ -2,9 +2,7 @@
 
 ## Context and Problem Statement
 
-Runtime skills had two load-bearing reference leaks: some pointed at the maintenance-only Codex
-conventions document, and some resolved private DocsNNotes paths. Shipped skills must work from a
-fresh `cog` install without private checkouts or source-repo maintenance docs.
+Runtime skills had two load-bearing reference leaks: some pointed at the maintenance-only Codex conventions document, and some resolved private DocsNNotes paths. Shipped skills must work from a fresh `cog` install without private checkouts or source-repo maintenance docs.
 
 ## Considered Options
 
@@ -14,9 +12,7 @@ fresh `cog` install without private checkouts or source-repo maintenance docs.
 
 ## Decision Outcome
 
-Chosen option: **make `cog codex-runner` and `skill-refs/` the runtime reference boundaries** —
-skills use the `cog codex-runner` command surface for Codex mechanics, and load-bearing shared
-references live in `skill-refs/` and resolve with `cog skill-refs path <rel>`.
+Chosen option: **make `cog codex-runner` and `skill-refs/` the runtime reference boundaries** — skills use the `cog codex-runner` command surface for Codex mechanics, and load-bearing shared references live in `skill-refs/` and resolve with `cog skill-refs path <rel>`.
 
 ## Consequences
 
@@ -26,7 +22,4 @@ references live in `skill-refs/` and resolve with `cog skill-refs path <rel>`.
 
 ## Status
 
-Implemented. Extends [ADR-0017](0017-reference-self-containment.md) and
-[ADR-0023](0023-skill-refs-unified-resource-sot.md), and is enforced by `cog skill-lint` over both
-runtime `skills/**/SKILL.md` bodies and the runtime `skill-refs/**` references they load (the
-`skill-refs/templates/**` deploy payload is exempt).
+Implemented. Extends [ADR-0017](./0017-reference-self-containment.md) and [ADR-0023](./0023-skill-refs-unified-resource-sot.md), and is enforced by `cog skill-lint` over both runtime `skills/**/SKILL.md` bodies and the runtime `skill-refs/**` references they load (the `skill-refs/templates/**` deploy payload is exempt).

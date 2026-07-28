@@ -1,12 +1,10 @@
+<!-- markdownlint-disable-file MD041 -->
+
 ## Stage 5: Optional Review Loop
 
-This stage delegates to the leaned `review-loop` skill instead of calling Codex review directly. The
-`review-loop` skill validates the handoff input through `cog review-loop-input validate`, creates its
-own run directory, handles Codex invocation, multi-round triage, and fix application autonomously,
-and writes its final summary to `<child-run-dir>/summary.md`.
+This stage delegates to the leaned `review-loop` skill instead of calling Codex review directly. The `review-loop` skill validates the handoff input through `cog review-loop-input validate`, creates its own run directory, handles Codex invocation, multi-round triage, and fix application autonomously, and writes its final summary to `<child-run-dir>/summary.md`.
 
-Run this stage only after all `NEEDS_DISCUSSION` items from the implementation review have been
-resolved, when any of the following is true:
+Run this stage only after all `NEEDS_DISCUSSION` items from the implementation review have been resolved, when any of the following is true:
 
 - The mode is `auto-approve-review-loop`.
 - The user requests it (e.g., "deep review", "review loop", "keep reviewing").
@@ -21,10 +19,7 @@ Before invoking the skill, release the workflow lock so it does not interfere:
 cog lock release "$LOCK_FILE"
 ```
 
-Assemble and validate the handoff input. `cog review-loop-input` owns the handoff schema; `build`
-reads `request.md`, `vetted-plan.md`, `review.md`, and the optional thread-id files
-from `$RUN_DIR`, assembles `{task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id}`,
-and validates the result before it is written:
+Assemble and validate the handoff input. `cog review-loop-input` owns the handoff schema; `build` reads `request.md`, `vetted-plan.md`, `review.md`, and the optional thread-id files from `$RUN_DIR`, assembles `{task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id}`, and validates the result before it is written:
 
 ```bash
 cog review-loop-input build \
@@ -32,23 +27,11 @@ cog review-loop-input build \
   --out "$RUN_DIR/review_loop_input.json"
 ```
 
-When a rich-context brief conforming to
-`$(cog skill-refs path orchestration/context-brief-contract.md)` has been assembled for this run,
-pass it through with `--context "$RUN_DIR/context-brief.md"`; the consumer then seeds its round-1
-context from that brief instead of reassembling one. Omit the flag when no brief was built — the
-canonical 5-key envelope is unchanged and the consumer assembles its own context from `task`,
-`reviewed_plan`, and `implementation_review`.
+When a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` has been assembled for this run, pass it through with `--context "$RUN_DIR/context-brief.md"`; the consumer then seeds its round-1 context from that brief instead of reassembling one. Omit the flag when no brief was built — the canonical 5-key envelope is unchanged and the consumer assembles its own context from `task`, `reviewed_plan`, and `implementation_review`.
 
-The implementation stage runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id`
-records the implementation exec when available. Both fields are kept in the handoff JSON and may be
-null. The schema and its
-required-field contract are owned and enforced by `cog review-loop-input`; do not restate or
-hand-format the JSON here.
+The implementation stage runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id` records the implementation exec when available. Both fields are kept in the handoff JSON and may be null. The schema and its required-field contract are owned and enforced by `cog review-loop-input`; do not restate or hand-format the JSON here.
 
-Before delegation, snapshot the run base directory for existing `review-loop-*` children so the new
-child run dir can be located after the call returns. `cog rundir snapshot-children` resolves the base
-from `cog rundir` itself (never a hardcoded path, so this never drifts when the base moves) and
-writes the sorted snapshot:
+Before delegation, snapshot the run base directory for existing `review-loop-*` children so the new child run dir can be located after the call returns. `cog rundir snapshot-children` resolves the base from `cog rundir` itself (never a hardcoded path, so this never drifts when the base moves) and writes the sorted snapshot:
 
 ```bash
 cog rundir snapshot-children \
@@ -75,13 +58,9 @@ cog rundir snapshot-children \
   belongs in summary.md.
   ```
 
-Do NOT use the `Skill` tool for this call — see
-`$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The
-`Agent` tool is the only mechanism that produces a real fork with a structured return.
+Do NOT use the `Skill` tool for this call — see `$(cog skill-refs path skills-and-orchestration.md)` (Dispatch vs Delegation). The `Agent` tool is the only mechanism that produces a real fork with a structured return.
 
-After the Agent tool call returns, locate the child run directory and validate proof of delegation.
-`cog rundir locate-child` takes the matching pre/post snapshots, writes the proof diff, and emits the
-new `review-loop-*` directory. Both snapshots scan the identical `cog rundir` base:
+After the Agent tool call returns, locate the child run directory and validate proof of delegation. `cog rundir locate-child` takes the matching pre/post snapshots, writes the proof diff, and emits the new `review-loop-*` directory. Both snapshots scan the identical `cog rundir` base:
 
 ```bash
 cog rundir snapshot-children \
@@ -99,9 +78,7 @@ cog rundir locate-child \
 CHILD_RUN_DIR=<path>
 ```
 
-Read that path as `RL_RUN_DIR`. If `CHILD_RUN_DIR` is empty, the review-loop did not create a new run
-directory; report the failure and stop (do not retry automatically). Otherwise validate proof and
-record the child run dir:
+Read that path as `RL_RUN_DIR`. If `CHILD_RUN_DIR` is empty, the review-loop did not create a new run directory; report the failure and stop (do not retry automatically). Otherwise validate proof and record the child run dir:
 
 ```bash
 cog codex-runner verify-proof \
@@ -109,35 +86,21 @@ cog codex-runner verify-proof \
   --artifact "$RL_RUN_DIR/summary.md"
 ```
 
-`cog rundir locate-child` writes the snapshot diff and identifies the new `review-loop-*` directory
-(proof that delegation actually ran); `verify-proof` then fails closed unless the snapshot diff is
-non-empty **and** the child wrote `summary.md`. On success, record the child run dir and continue:
+`cog rundir locate-child` writes the snapshot diff and identifies the new `review-loop-*` directory (proof that delegation actually ran); `verify-proof` then fails closed unless the snapshot diff is non-empty **and** the child wrote `summary.md`. On success, record the child run dir and continue:
 
 ```bash
 printf '%s\n' "$RL_RUN_DIR" > "$RUN_DIR/review-loop-run-dir.txt"
 ```
 
-**Boundary-owned finalize.** When `verify-proof` fails but the located `$RL_RUN_DIR` shows the loop
-actually ran — `$RL_RUN_DIR/round-1-findings.json` exists — the child completed its review but did not
-run its terminal step. The terminal step is a cog-owned postcondition, so the caller finalizes it
-directly rather than re-dispatching an agent:
+**Boundary-owned finalize.** When `verify-proof` fails but the located `$RL_RUN_DIR` shows the loop actually ran — `$RL_RUN_DIR/round-1-findings.json` exists — the child completed its review but did not run its terminal step. The terminal step is a cog-owned postcondition, so the caller finalizes it directly rather than re-dispatching an agent:
 
 ```bash
 cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
 ```
 
-`finalize` reads the child's maintained `summary-body.md` and recorded `termination-reason.txt`,
-assembles and asserts `summary.md`, and is idempotent. Then re-run the `verify-proof` command above and,
-on success, record the run dir and continue. If `finalize` fails closed because the child left no
-`summary-body.md` but the loop ran and you have independently verified the changeset, recover by
-supplying the narrative you verified — `cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
---body-file <verified-body.md>` (sections `Files changed`, `Remaining findings`, `Followups`); `cog`
-still asserts the body and invents nothing. If you cannot verify the changeset, or
-`$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran), stop: report the failure and ask
-the user whether to retry the review loop, skip it, or abort the workflow. There is no agent re-dispatch.
+`finalize` reads the child's maintained `summary-body.md` and recorded `termination-reason.txt`, assembles and asserts `summary.md`, and is idempotent. Then re-run the `verify-proof` command above and, on success, record the run dir and continue. If `finalize` fails closed because the child left no `summary-body.md` but the loop ran and you have independently verified the changeset, recover by supplying the narrative you verified — `cog review-loop-summary finalize --run-dir "$RL_RUN_DIR"
+--body-file <verified-body.md>` (sections `Files changed`, `Remaining findings`, `Followups`); `cog` still asserts the body and invents nothing. If you cannot verify the changeset, or `$RL_RUN_DIR/round-1-findings.json` was absent (the loop never ran), stop: report the failure and ask the user whether to retry the review loop, skip it, or abort the workflow. There is no agent re-dispatch.
 
-The review-loop skill parses the validated JSON for task context, the reviewed plan, and prior
-findings, then captures the live git diff independently.
+The review-loop skill parses the validated JSON for task context, the reviewed plan, and prior findings, then captures the live git diff independently.
 
-After the delegated review loop completes, read `$RL_RUN_DIR/summary.md` and incorporate the results
-into the final output of this workflow.
+After the delegated review loop completes, read `$RL_RUN_DIR/summary.md` and incorporate the results into the final output of this workflow.

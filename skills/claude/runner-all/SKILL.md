@@ -16,33 +16,21 @@ allowed-tools: Bash Read Agent Skill
 
 # Runner All
 
-**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
-follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 
-Drive the resolved cog plan vault's top-level `queue-plans.yaml` `plans:` queue (local or global
-store), resolved by `cog runner-all-setup` via `cog plan runner-resolve`. This skill runs inline in the
-orchestrating session; it never delegates the main loop. Each selected main item carries the command
-to run in its `prompt:` field, and this runner sends that text unchanged to a queue-blind
-`claude-delegate` subagent.
+Drive the resolved cog plan vault's top-level `queue-plans.yaml` `plans:` queue (local or global store), resolved by `cog runner-all-setup` via `cog plan runner-resolve`. This skill runs inline in the orchestrating session; it never delegates the main loop. Each selected main item carries the command to run in its `prompt:` field, and this runner sends that text unchanged to a queue-blind `claude-delegate` subagent.
 
 ## Contract
 
 - `runner-all` consumes only the structural `plans:` queue contract.
 - The selected item prompt is opaque data. Dispatch it exactly as read from `cog queue-select`.
-- The delegated subagent owns the selected prompt. For current plan queues that prompt is normally
-  `/runner-plan -ar @<plan-dir>/`, where the plan dir is an absolute vault path for a global store.
-- Main-plan `done` is plan-owned and runner-reconciled: after the delegate returns, ensure the main
-  item is `done` with `cog queue-status-set --schema plans --from todo --to done --idempotent`.
-- `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`.
-  Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is
-  `{ok, commits[]}`.
-- `cog runner-all-setup` emits `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and
-  `PROJECT_KEY` into `ctx.env`.
-- After each committed main item, run the `review-queue-rounds` boundary. That boundary performs
-  `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
+- The delegated subagent owns the selected prompt. For current plan queues that prompt is normally `/runner-plan -ar @<plan-dir>/`, where the plan dir is an absolute vault path for a global store.
+- Main-plan `done` is plan-owned and runner-reconciled: after the delegate returns, ensure the main item is `done` with `cog queue-status-set --schema plans --from todo --to done --idempotent`.
+- `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`. Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is `{ok, commits[]}`.
+- `cog runner-all-setup` emits `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and `PROJECT_KEY` into `ctx.env`.
+- After each committed main item, run the `review-queue-rounds` boundary. That boundary performs `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
 
-Depth budget: `runner-all` at depth 0 dispatches `runner-plan` at depth 1; `runner-plan` dispatches
-an executor at depth 2; executor review subagents run at depth 3, below the fixed cap of 5.
+Depth budget: `runner-all` at depth 0 dispatches `runner-plan` at depth 1; `runner-plan` dispatches an executor at depth 2; executor review subagents run at depth 3, below the fixed cap of 5.
 
 ## Usage
 
@@ -54,12 +42,9 @@ an executor at depth 2; executor review subagents run at depth 3, below the fixe
 /runner-all --dry-run .cog/plans/queue-plans.yaml
 ```
 
-`--max N` counts completed and committed main plans. `--dry-run` selects and prints the next main
-item, its verbatim prompt, remaining `todo` plans, and the planned `/gc -a` step without dispatching,
-flipping status, committing, or running revision.
+`--max N` counts completed and committed main plans. `--dry-run` selects and prints the next main item, its verbatim prompt, remaining `todo` plans, and the planned `/gc -a` step without dispatching, flipping status, committing, or running revision.
 
-The queue path must not contain whitespace. Arguments are tokenized by word splitting, matching the
-vault layout convention.
+The queue path must not contain whitespace. Arguments are tokenized by word splitting, matching the vault layout convention.
 
 ## Algorithm
 
@@ -84,8 +69,7 @@ vault layout convention.
      || { echo "ERROR: queue-select failed; see $RUN_DIR/main-select-$RUN_COUNT.json" >&2; exit 1; }
    ```
 
-4. If `.state` is `complete`, stop successfully. If selection fails or reports blocked work, stop
-   failed closed and report `$RUN_DIR`.
+4. If `.state` is `complete`, stop successfully. If selection fails or reports blocked work, stop failed closed and report `$RUN_DIR`.
 5. For dry-run, print `.selected.item`, `.selected.prompt`, and `.todo_remaining`, then stop.
 6. Dispatch the selected prompt through a foreground Agent call:
 
@@ -104,8 +88,7 @@ vault layout convention.
      Codex call in the foreground. Return your structured result.
      ```
 
-   A malformed or non-runnable prompt fails inside the delegate. In that case the main item will not
-   reconcile to `done`; stop and surface the delegate result plus `$RUN_DIR`.
+   A malformed or non-runnable prompt fails inside the delegate. In that case the main item will not reconcile to `done`; stop and surface the delegate result plus `$RUN_DIR`.
 
 7. Reconcile the selected main item:
 
@@ -119,8 +102,7 @@ vault layout convention.
      || { echo "ERROR: main plan '$PLAN_ITEM' not reconciled to done" >&2; exit 1; }
    ```
 
-8. Commit through a foreground `claude-delegate` running `/gc -a`, capture only `COMMIT_*` lines to
-   `$RUN_DIR/commit-$RUN_COUNT.out`, and parse:
+8. Commit through a foreground `claude-delegate` running `/gc -a`, capture only `COMMIT_*` lines to `$RUN_DIR/commit-$RUN_COUNT.out`, and parse:
 
    ```bash
    . "$RUN_DIR/ctx.env"
@@ -145,20 +127,14 @@ vault layout convention.
    scan, verify, graph-check, or commit failure.
    ```
 
-   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean
-   verified postcondition before selecting more work.
+   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean verified postcondition before selecting more work.
 
 10. Increment `RUN_COUNT`, honor `--max N`, and loop.
 
 ## Multi-Repo
 
-If the main queue carries a top-level `repos:` list, `runner-all-setup` persists it as newline-joined
-`REPOS`. Rebuild `--repo <path>` flags from that value whenever shelling out. Commit steps normally
-commit `REPO_ROOT`; nested `runner-plan` commits plan satellite repos from each inner queue.
+If the main queue carries a top-level `repos:` list, `runner-all-setup` persists it as newline-joined `REPOS`. Rebuild `--repo <path>` flags from that value whenever shelling out. Commit steps normally commit `REPO_ROOT`; nested `runner-plan` commits plan satellite repos from each inner queue.
 
 ## Failure Handling
 
-Stop immediately on setup failure, invalid queue data, duplicate items, existing `doing`, dirty
-worktree, blocked dependencies, delegate failure, reconcile failure, missing or failed `COMMIT_*`,
-or revision failure. An intentional `--max` stop is normal and reports remaining work. Dry-run never
-dispatches, flips status, commits, or runs revision.
+Stop immediately on setup failure, invalid queue data, duplicate items, existing `doing`, dirty worktree, blocked dependencies, delegate failure, reconcile failure, missing or failed `COMMIT_*`, or revision failure. An intentional `--max` stop is normal and reports remaining work. Dry-run never dispatches, flips status, commits, or runs revision.

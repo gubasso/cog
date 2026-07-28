@@ -15,7 +15,7 @@ _write_config() {
 
 @test "cog ci-detect classifies a github https remote" {
   _write_config '[remote "origin"]
-	url = https://github.com/owner/repo.git'
+  url = https://github.com/owner/repo.git'
 
   run cog ci-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -25,7 +25,7 @@ _write_config() {
 
 @test "cog ci-detect classifies a github scp-style remote" {
   _write_config '[remote "origin"]
-	url = git@github.com:owner/repo.git'
+  url = git@github.com:owner/repo.git'
 
   run cog ci-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -35,7 +35,7 @@ _write_config() {
 
 @test "cog ci-detect classifies a gitlab remote" {
   _write_config '[remote "origin"]
-	url = git@gitlab.com:owner/repo.git'
+  url = git@gitlab.com:owner/repo.git'
 
   run cog ci-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -45,7 +45,7 @@ _write_config() {
 
 @test "cog ci-detect reports none with no remote" {
   _write_config '[core]
-	bare = false'
+  bare = false'
 
   run cog ci-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -55,7 +55,7 @@ _write_config() {
 
 @test "cog ci-detect reports other for an unsupported host" {
   _write_config '[remote "origin"]
-	url = git@bitbucket.org:owner/repo.git'
+  url = git@bitbucket.org:owner/repo.git'
 
   run cog ci-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
@@ -65,7 +65,7 @@ _write_config() {
 
 @test "cog ci-detect surfaces existing CI files" {
   _write_config '[remote "origin"]
-	url = https://github.com/owner/repo.git'
+  url = https://github.com/owner/repo.git'
   mkdir -p "${BATS_TEST_TMPDIR}/repo/.github/workflows"
   touch "${BATS_TEST_TMPDIR}/repo/.github/workflows/ci.yml"
 

@@ -2,9 +2,7 @@
 
 ## Context and Problem Statement
 
-The old helper could have been lifted as one large Bash file, but `cog` needs a growing command
-surface with testable modules, stable namespacing, and generated help. A monolith would make
-dispatch, command ownership, and documentation harder to keep coherent.
+The old helper could have been lifted as one large Bash file, but `cog` needs a growing command surface with testable modules, stable namespacing, and generated help. A monolith would make dispatch, command ownership, and documentation harder to keep coherent.
 
 ## Considered Options
 
@@ -14,10 +12,7 @@ dispatch, command ownership, and documentation harder to keep coherent.
 
 ## Decision Outcome
 
-Chosen option: **loader-based architecture**. `bin/cog` eagerly sources core functions, parses
-global flags, loads config, and calls `cog::loader::dispatch`. The loader maps a dash-form command
-to `lib/commands/cmd_<slug>.sh` and invokes `cog::cmd::<slug>`. Shared behavior lives in
-`lib/functions/` under `cog::fn::*`.
+Chosen option: **loader-based architecture**. `bin/cog` eagerly sources core functions, parses global flags, loads config, and calls `cog::loader::dispatch`. The loader maps a dash-form command to `lib/commands/cmd_<slug>.sh` and invokes `cog::cmd::<slug>`. Shared behavior lives in `lib/functions/` under `cog::fn::*`.
 
 ## Consequences
 

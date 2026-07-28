@@ -13,9 +13,7 @@ allowed-tools: Bash Read Write Grep Glob
 
 # Plan Solution Spec
 
-Produce the target solution bundle described by
-`$(cog skill-refs path spec-pipeline/solution-spec-contract.md)`. The input is a sanitized public
-capability bundle plus target references. Treat the bundle as the source of behavioral truth.
+Produce the target solution bundle described by `$(cog skill-refs path spec-pipeline/solution-spec-contract.md)`. The input is a sanitized public capability bundle plus target references. Treat the bundle as the source of behavioral truth.
 
 ## Inputs
 
@@ -43,8 +41,7 @@ Write the solution bundle files:
 - `requirement-trace.yaml`
 - `docs-and-decisions.md`
 
-The solution bundle binds target choices from the user's references. It does not infer behavior from
-any private extraction notes or source-specific token list.
+The solution bundle binds target choices from the user's references. It does not infer behavior from any private extraction notes or source-specific token list.
 
 ## Hydration
 
@@ -57,8 +54,7 @@ Use the public capability bundle to define behavior and the user references to d
 - Layer-B acceptance tests against the new interface;
 - documentation and decision updates.
 
-The target interface may use new command names, routes, modules, and tests that fit the target stack.
-Preserve Layer-A requirement IDs in `requirement-trace.yaml`.
+The target interface may use new command names, routes, modules, and tests that fit the target stack. Preserve Layer-A requirement IDs in `requirement-trace.yaml`.
 
 ## Coverage Gate
 
@@ -68,5 +64,4 @@ Before returning, verify traceability:
 cog round-split coverage "$SOLUTION_BUNDLE_DIR/requirement-trace.yaml" --json
 ```
 
-If coverage fails, revise `requirement-trace.yaml`, `implementation-plan.md`, or
-`acceptance-test-plan.md` until every requirement is covered or explicitly waived.
+If coverage fails, revise `requirement-trace.yaml`, `implementation-plan.md`, or `acceptance-test-plan.md` until every requirement is covered or explicitly waived.

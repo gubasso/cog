@@ -13,8 +13,7 @@ Any `.c`/`.h` file in the diff.
 - Use-after-free → `[blocking]`.
 - Pointer dereference without prior null check (when null is possible) → `[blocking]`.
 - `strcpy`/`sprintf`/`gets` (unbounded) → `[blocking]` "Use `strncpy`/`snprintf`/`fgets`."
-- `strncpy` not null-terminating when source >= dest → `[blocking]` (yes, that's a `strncpy`
-  footgun).
+- `strncpy` not null-terminating when source >= dest → `[blocking]` (yes, that's a `strncpy` footgun).
 
 ### Buffer / index
 
@@ -31,8 +30,7 @@ Any `.c`/`.h` file in the diff.
 ### Pointers
 
 - Pointer arithmetic without explicit type sense → `[important]`.
-- Casting from `void*` to a specific type without alignment check on platforms that care →
-  `[important]`.
+- Casting from `void*` to a specific type without alignment check on platforms that care → `[important]`.
 - `restrict` violated (two `restrict` pointers aliasing) → `[blocking]`.
 
 ### Undefined behavior

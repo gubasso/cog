@@ -2,8 +2,7 @@
 
 ## Context and Problem Statement
 
-Some skills duplicated shared judgment workflows inline, which made their behavior drift. The
-reference case is review-loop reimplementing finding triage that belongs in review-findings.
+Some skills duplicated shared judgment workflows inline, which made their behavior drift. The reference case is review-loop reimplementing finding triage that belongs in review-findings.
 
 ## Considered Options
 
@@ -13,9 +12,7 @@ reference case is review-loop reimplementing finding triage that belongs in revi
 
 ## Decision Outcome
 
-Chosen option: **delegate shared judgment workflows to one canonical executor skill** — callers keep
-sequencing and context assembly, while the executor skill owns the reusable judgment contract and
-output shape.
+Chosen option: **delegate shared judgment workflows to one canonical executor skill** — callers keep sequencing and context assembly, while the executor skill owns the reusable judgment contract and output shape.
 
 ## Consequences
 

@@ -27,12 +27,12 @@ EOF
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.assess-input.facts.v1" and
-     .ok == true and
-     .totals.plan_files == 1 and
-     .totals.readable_plan_files == 1 and
-     .totals.max_heading_count >= 4 and
-     (.files[0].plan_headings | index("goal")) and
-     (.files[0].plan_headings | index("acceptance criteria"))' >/dev/null
+    .ok == true and
+    .totals.plan_files == 1 and
+    .totals.readable_plan_files == 1 and
+    .totals.max_heading_count >= 4 and
+    (.files[0].plan_headings | index("goal")) and
+    (.files[0].plan_headings | index("acceptance criteria"))' >/dev/null
 }
 
 @test "cog assess-input facts reports a thin file with no plan headings" {
@@ -56,11 +56,11 @@ EOF
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.assess-input.v1" and
-     .ok == true and
-     .route == "good-input" and
-     .good_input == true and
-     .confidence == "high" and
-     .signals.max_heading_count == "5"' >/dev/null
+    .ok == true and
+    .route == "good-input" and
+    .good_input == true and
+    .confidence == "high" and
+    .signals.max_heading_count == "5"' >/dev/null
   assert_file_exists "${run_dir}/assess-input.json"
 
   run cog assess-input validate "${run_dir}/assess-input.json" --json

@@ -18,21 +18,16 @@ token-estimate: 2400
 
 ## Scope
 
-Cross-cutting code review discipline: four-phase process, LLM review discipline, universal quality
-heuristics, common bug families, and three on-demand lenses (architecture, performance, security).
+Cross-cutting code review discipline: four-phase process, LLM review discipline, universal quality heuristics, common bug families, and three on-demand lenses (architecture, performance, security).
 
 ## Key Points
 
 ### Review Process (4 phases)
 
-1. **Context** (2-3 min): PR description, diff size (>400 LOC non-generated -> ask to split), CI
-   status, touched surface, local conventions.
-2. **High-level** (5-10 min): Solution fit, performance shape, test strategy, file organization +
-   reuse audit.
-3. **Line-by-line** (10-20 min): Logic, security, performance, maintainability, error handling,
-   tests, language-specific traps.
-4. **Summary**: TL;DR, findings by severity, strengths, decision
-   (`[approve]`/`[comment]`/`[request-changes]`).
+1. **Context** (2-3 min): PR description, diff size (>400 LOC non-generated -> ask to split), CI status, touched surface, local conventions.
+2. **High-level** (5-10 min): Solution fit, performance shape, test strategy, file organization + reuse audit.
+3. **Line-by-line** (10-20 min): Logic, security, performance, maintainability, error handling, tests, language-specific traps.
+4. **Summary**: TL;DR, findings by severity, strengths, decision (`[approve]`/`[comment]`/`[request-changes]`).
 
 ### Severity Labels
 
@@ -45,13 +40,10 @@ heuristics, common bug families, and three on-demand lenses (architecture, perfo
 
 ### LLM Review Discipline
 
-- **Headline rule**: every finding must cite file:line, a quoted snippet, or a docs URL. No citation
-  -> downgrade to `[question]`.
-- Structured finding record: severity, file, evidence (verbatim), reasoning (names failure mode),
-  suggestion, confidence (high/medium/low).
+- **Headline rule**: every finding must cite file:line, a quoted snippet, or a docs URL. No citation -> downgrade to `[question]`.
+- Structured finding record: severity, file, evidence (verbatim), reasoning (names failure mode), suggestion, confidence (high/medium/low).
 - Low confidence -> demote to `[question]`. No vibes-based criticism.
-- False-positive triage: construct minimum failing input mentally; trace null-deref proofs, race
-  conditions, source-to-sink paths.
+- False-positive triage: construct minimum failing input mentally; trace null-deref proofs, race conditions, source-to-sink paths.
 
 ### Universal Code Quality
 
@@ -63,18 +55,14 @@ heuristics, common bug families, and three on-demand lenses (architecture, perfo
 
 ### Common Bugs Checklist
 
-Off-by-one, null deref, integer overflow, race conditions, concurrency (lock ordering, held across
-await), resource leaks, error handling (swallow, wrong type), state machine bugs, API misuse, float
-equality, date/time (DST, naive datetimes), string encoding, boolean logic, collection mutation
-during iteration, defensive copies.
+Off-by-one, null deref, integer overflow, race conditions, concurrency (lock ordering, held across await), resource leaks, error handling (swallow, wrong type), state machine bugs, API misuse, float equality, date/time (DST, naive datetimes), string encoding, boolean logic, collection mutation during iteration, defensive copies.
 
 ### Architecture Review (on-demand lens)
 
 - Trigger: new module, new interface with >=2 impls, cross-layer file move, schema change, refactor.
 - Headline questions: what boundary, who owns it, what's new on the other side, rollback path.
 - SOLID as smell-detectors. Coupling/cohesion: >15 unique imports = god-module candidate.
-- Anti-patterns: god object, anemic domain, service explosion, generic-name dumping ground,
-  premature abstraction.
+- Anti-patterns: god object, anemic domain, service explosion, generic-name dumping ground, premature abstraction.
 
 ### Performance Review (on-demand lens)
 
@@ -108,8 +96,6 @@ during iteration, defensive copies.
 
 ## Maintenance Notes
 
-- Language-specific review guides live in the `languages/<lang>/code-review-guide.md` files (not
-  digested here).
+- Language-specific review guides live in the `languages/<lang>/code-review-guide.md` files (not digested here).
 - CLI-specific review heuristics are distilled from the in-repo `cli-design/` chapters.
-- Quarterly refresh against upstream `awesome-skills/code-review-skill`; see `SOURCES.md` for the
-  protocol.
+- Quarterly refresh against upstream `awesome-skills/code-review-skill`; see `SOURCES.md` for the protocol.

@@ -9,14 +9,14 @@ setup() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-	  .schema == "cog.power-grade.validate.v1" and
-	  .ok == true and
-	  .model_cell_count == 27 and
-	  ([.warnings[] | select(.kind == "needs_verification")] | length) == 1 and
-	  ([.warnings[] | select(.kind == "sourced_without_allowlisted_source")] | length) == 0 and
-	  ([.warnings[] | select(.kind == "tier3_source_cited")] | length) == 0 and
-	  .errors == []
-	' >/dev/null
+    .schema == "cog.power-grade.validate.v1" and
+    .ok == true and
+    .model_cell_count == 27 and
+    ([.warnings[] | select(.kind == "needs_verification")] | length) == 1 and
+    ([.warnings[] | select(.kind == "sourced_without_allowlisted_source")] | length) == 0 and
+    ([.warnings[] | select(.kind == "tier3_source_cited")] | length) == 0 and
+    .errors == []
+  ' >/dev/null
 }
 
 @test "power-grade cell returns a model effort cell" {
@@ -24,13 +24,13 @@ setup() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-	  .schema == "cog.power-grade.cell.v1" and
-	  .ok == true and
-	  .cell.id == "codex-gpt-5.5-medium" and
-	  .cell.grade == 8 and
-	  (.cell.source_refs | length > 0) and
-	  (.cell.benchmark_source_ids | length > 0)
-	' >/dev/null
+    .schema == "cog.power-grade.cell.v1" and
+    .ok == true and
+    .cell.id == "codex-gpt-5.5-medium" and
+    .cell.grade == 8 and
+    (.cell.source_refs | length > 0) and
+    (.cell.benchmark_source_ids | length > 0)
+  ' >/dev/null
 }
 
 @test "power-grade cleared claude opus 4.7 cell has allowlisted benchmark sources" {

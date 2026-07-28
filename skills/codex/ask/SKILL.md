@@ -11,30 +11,24 @@ description: >
 
 Answer a question about the project. **Do not modify any files.**
 
-By default the skill answers inline in the current session using the active Codex model/effort. The
-only exception is the `-f/--fast` path, which spawns a single nested
-`cog codex-runner run-exec --mode quick-auto --effort low` call to actually run the
-answer at low effort and relays its captured `--output-last-message` output.
+By default the skill answers inline in the current session using the active Codex model/effort. The only exception is the `-f/--fast` path, which spawns a single nested `cog codex-runner run-exec --mode quick-auto --effort low` call to actually run the answer at low effort and relays its captured `--output-last-message` output.
 
 ## Rules
 
-- **Read-only**: do not use any tool that creates, modifies, or deletes files inside the repository.
-  No `apply_patch`, no shell redirection that writes to tracked paths, no `mv`, `rm`, `sed -i`, etc.
+- **Read-only**: do not use any tool that creates, modifies, or deletes files inside the repository. No `apply_patch`, no shell redirection that writes to tracked paths, no `mv`, `rm`, `sed -i`, etc.
 - Read-only shell is allowed (`git log`, `git blame`, `git show`, `rg`, `cat`, `ls`, etc.).
-- Scratch writes under `$RUN_DIR` (created by `cog rundir`) are allowed **only** on the `-f`
-  orchestration path, to stage the nested prompt and capture its output.
+- Scratch writes under `$RUN_DIR` (created by `cog rundir`) are allowed **only** on the `-f` orchestration path, to stage the nested prompt and capture its output.
 - Give a concise, direct answer. Cite file paths and line numbers where relevant.
 
 ## Flags
 
-| Flag           | Short | Effect                                                                                                                                                                                                                                 |
-| -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call. |
-| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the answer in the latest official docs/specs from reliable sources.                                |
+| Flag           | Short | Effect                                                                                                                                                                                                                                                             |
+| -------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                          |
+| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the answer in the latest official docs/specs from reliable sources.                                    |
 | `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
 
-Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`),
-and must appear before the question text.
+Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`), and must appear before the question text.
 
 ## Execution
 
@@ -42,40 +36,26 @@ and must appear before the question text.
    - Long form `--fast` → set `FAST = true`.
    - Long form `--web-search` → set `WEB_SEARCH = true`.
    - Long form `--real-world` → set `REAL_WORLD = true`.
-   - Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character,
-     apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`, `r` → `REAL_WORLD = true`. Accepts `-f`,
-     `-w`, `-r`, `-fw`, `-wr`, `-fwr`. If any character in the cluster is not a known flag letter,
-     **do not** partially apply — stop parsing and treat the whole token as the start of the question.
+   - Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character, apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`, `r` → `REAL_WORLD = true`. Accepts `-f`, `-w`, `-r`, `-fw`, `-wr`, `-fwr`. If any character in the cluster is not a known flag letter, **do not** partially apply — stop parsing and treat the whole token as the start of the question.
    - Any other token → stop parsing; this token and the rest are the question.
 
    Defaults: `FAST = false`, `WEB_SEARCH = false`, `REAL_WORLD = false`.
 
 2. **Honor flags.**
-   - If `WEB_SEARCH = true`, read `$(cog skill-refs path research/primary-source-verification.md)` and
-     follow it when researching and answering. (When `FAST = true`, this is forwarded to the nested
-     call via the `-w` flag in its prompt rather than executed here.)
-   - If `REAL_WORLD = true`, run `cog ask-flag render --flag real-world` and follow the rendered
-     instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is
-     forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
-   - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering
-     inline.
+   - If `WEB_SEARCH = true`, read `$(cog skill-refs path research/primary-source-verification.md)` and follow it when researching and answering. (When `FAST = true`, this is forwarded to the nested call via the `-w` flag in its prompt rather than executed here.)
+   - If `REAL_WORLD = true`, run `cog ask-flag render --flag real-world` and follow the rendered instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
+   - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering inline.
 
 3. **Answer.**
-   - **If `FAST = false`**: read whatever code, git history, or external sources are needed (subject
-     to the rules above), then give a concise, direct answer with file-path/line-number citations
-     and — if web search was used — source URLs.
-   - **If `FAST = true`**: perform the orchestration below, then **relay** the nested call's
-     `--output-last-message` content verbatim. Do not re-research or rewrite on top of the relayed
-     answer.
+   - **If `FAST = false`**: read whatever code, git history, or external sources are needed (subject to the rules above), then give a concise, direct answer with file-path/line-number citations and — if web search was used — source URLs.
+   - **If `FAST = true`**: perform the orchestration below, then **relay** the nested call's `--output-last-message` content verbatim. Do not re-research or rewrite on top of the relayed answer.
 
 ## Fast-flag orchestration (`-f` path)
 
 Single nested call, no synthesis. Mirrors the Claude `ask -c` orchestration shape.
 
 `cog rundir` creates the scratch dir; `cog codex-runner gate
-sandbox` is the degrade signal — it self-resolves the preflight and exits non-zero
-(with a legible message) when codex-session is unavailable/unhealthy. The
-degrade DECISION (run nested vs. answer inline) stays here, in prose.
+sandbox` is the degrade signal — it self-resolves the preflight and exits non-zero (with a legible message) when codex-session is unavailable/unhealthy. The degrade DECISION (run nested vs. answer inline) stays here, in prose.
 
 ```bash
 RUN_DIR="$(cog rundir ask-fast | sed -n 's/^RUN_DIR=//p')"
@@ -107,16 +87,11 @@ EOF
 fi
 ```
 
-The nested Codex run is a cog-owned durable job. Poll-and-classify with one verb,
-`cog codex-runner finalize --max-wall <secs>`, which reconstructs the answer from the durable
-artifacts: the exit code is the signal (0 ok · 1 failed · 75 still running). Re-run finalize while it
-exits 75; duration is never judged.
+The nested Codex run is a cog-owned durable job. Poll-and-classify with one verb, `cog codex-runner finalize --max-wall <secs>`, which reconstructs the answer from the durable artifacts: the exit code is the signal (0 ok · 1 failed · 75 still running). Re-run finalize while it exits 75; duration is never judged.
 
-**Recursion guard.** The inner prompt must never contain `-f` / `--fast`; the orchestration strips
-it unconditionally. `-w` and `-r` are forwarded as-is when set.
+**Recursion guard.** The inner prompt must never contain `-f` / `--fast`; the orchestration strips it unconditionally. `-w` and `-r` are forwarded as-is when set.
 
-**Failure handling.** If `$RUN_DIR/runner.json` has a non-`ok` status or `$RUN_DIR/answer.txt` is
-empty, **degrade gracefully**: answer inline with the active model/effort and prepend a single line:
+**Failure handling.** If `$RUN_DIR/runner.json` has a non-`ok` status or `$RUN_DIR/answer.txt` is empty, **degrade gracefully**: answer inline with the active model/effort and prepend a single line:
 
 ```text
 (fast-flag fallback: <short reason>)

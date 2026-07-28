@@ -1,4 +1,8 @@
 # shellcheck shell=bash
+# NOTE: this file intentionally embeds a 0x1F (US, unit-separator) control byte
+# as a collision-safe jq join-key delimiter, so editorconfig-checker classifies
+# it as binary and it is excluded from that hook in .pre-commit-config.yaml.
+# shfmt still owns this file's formatting.
 
 # Match-outcome telemetry (ADR-0058). One cross-project, append-only JSONL stream
 # at the ALWAYS-GLOBAL cog data root, independent of plan-store mode, so every cog
@@ -272,29 +276,29 @@ cog::fn::match_telemetry::report_json() {
         | (.project_key + "" + .plan_slug + "" + .round_id) as $k
         | ($predmap[$k]) as $p
         | (if $o.actual_executor == "executor-prex" then $o.review_loop_findings
-           elif $o.actual_executor == "executor-vetted" then $o.cross_engine_deltas
-           else null end) as $mv
+          elif $o.actual_executor == "executor-vetted" then $o.cross_engine_deltas
+          else null end) as $mv
         | ($o.round_scope.actual.files) as $af
         | ($p.score // null) as $score
         | ((($o.result // "") == "fail") or (($o.reverted // false) == true)) as $has_fail
         | (((($o.retries // 0)) >= 2)) as $high_retries
         | (if $has_fail or $high_retries then "under-powered"
-           elif ($mv != null and $mv == 0) then "over-powered"
-           elif ($score != null and $score >= 25
-                 and $af != null and $af <= 3
-                 and $mv != null and $mv <= 1) then "over-powered"
-           else "well-matched" end) as $q
+          elif ($mv != null and $mv == 0) then "over-powered"
+          elif ($score != null and $score >= 25
+                and $af != null and $af <= 3
+                and $mv != null and $mv <= 1) then "over-powered"
+          else "well-matched" end) as $q
         | (($p == null)
-           or (($p.predicted_executor // null) != null
-               and ($o.actual_executor // null) != null
-               and $p.predicted_executor != $o.actual_executor)) as $needs
+          or (($p.predicted_executor // null) != null
+              and ($o.actual_executor // null) != null
+              and $p.predicted_executor != $o.actual_executor)) as $needs
         | {project_key: $o.project_key, plan_slug: $o.plan_slug, round_id: $o.round_id,
-           predicted_executor: ($p.predicted_executor // null), actual_executor: $o.actual_executor,
-           score: ($p.score // null), grade: ($p.grade // null),
-           result: ($o.result // null), reverted: ($o.reverted // false),
-           retries: ($o.retries // 0), marginal_value: $mv,
-           round_scope: ($o.round_scope // null),
-           matched_prediction: ($p != null), match_quality: $q, needs_review: $needs}
+          predicted_executor: ($p.predicted_executor // null), actual_executor: $o.actual_executor,
+          score: ($p.score // null), grade: ($p.grade // null),
+          result: ($o.result // null), reverted: ($o.reverted // false),
+          retries: ($o.retries // 0), marginal_value: $mv,
+          round_scope: ($o.round_scope // null),
+          matched_prediction: ($p != null), match_quality: $q, needs_review: $needs}
       )) as $joined
     | ($preds | map(select((keyof) as $k | ($collapsed | map(keyof) | index($k)) == null))) as $pending
     | {
@@ -338,19 +342,19 @@ cog::fn::match_telemetry::recalibrate_json() {
     | ([ $roster[] as $e
         | ($rows | map(select(.actual_executor == $e))) as $r
         | {executor: $e, outcomes: ($r | length),
-           share: (if $total == 0 then 0 else (($r | length) / $total) end),
-           "well-matched": ($r | map(select(.match_quality == "well-matched")) | length),
-           "over-powered": ($r | map(select(.match_quality == "over-powered")) | length),
-           "under-powered": ($r | map(select(.match_quality == "under-powered")) | length)} ]) as $by
+          share: (if $total == 0 then 0 else (($r | length) / $total) end),
+          "well-matched": ($r | map(select(.match_quality == "well-matched")) | length),
+          "over-powered": ($r | map(select(.match_quality == "over-powered")) | length),
+          "under-powered": ($r | map(select(.match_quality == "under-powered")) | length)} ]) as $by
     | ([ $by[]
         | if .outcomes == 0 then {executor: .executor, kind: "zero-data",
-             detail: (.executor + ": 0 outcomes — no calibration data")}
+            detail: (.executor + ": 0 outcomes — no calibration data")}
           elif (.share > 0.8) then {executor: .executor, kind: "saturated",
-             detail: (.executor + ": " + (((.share * 100) | floor) | tostring) + "% of all outcomes")}
+            detail: (.executor + ": " + (((.share * 100) | floor) | tostring) + "% of all outcomes")}
           else empty end ]) as $flags
     | {schema: "cog.match-telemetry.recalibrate.v1", ok: true,
-       filters: {project_key: $project_key, since: $since},
-       logical_rounds: $total, by_executor: $by, saturation_flags: $flags,
-       note: "bands held; enrich and gather spread before any reweight (ADR-0077)"}
+      filters: {project_key: $project_key, since: $since},
+      logical_rounds: $total, by_executor: $by, saturation_flags: $flags,
+      note: "bands held; enrich and gather spread before any reweight (ADR-0077)"}
   '
 }

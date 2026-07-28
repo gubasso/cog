@@ -1,8 +1,6 @@
 # Common Bugs (Cross-language)
 
-A non-exhaustive catalogue of recurring bug families. Language-specific instances live in
-[`languages/<lang>.md`](languages/); this file holds the categories themselves so the reviewer has a
-checklist regardless of stack.
+A non-exhaustive catalogue of recurring bug families. Language-specific instances live in [`languages/<lang>.md`](languages/); this file holds the categories themselves so the reviewer has a checklist regardless of stack.
 
 ## Off-by-one
 
@@ -30,7 +28,7 @@ Confirm by writing the boundary input mentally: `len=0`, `len=1`, `len=N`.
 ## Off-by-time
 
 - Race conditions: two threads writing without synchronization.
-- TOCTOU: see [code-quality-universal.md](code-quality-universal.md).
+- TOCTOU: see [code-quality-universal.md](./code-quality-universal.md).
 - Cancellation: future dropped mid-await leaves state half-written.
 - Cache stale: read uses pre-write cached value.
 
@@ -44,18 +42,16 @@ Confirm by writing the boundary input mentally: `len=0`, `len=1`, `len=N`.
 
 ## Resource leaks
 
-- File/socket/handle opened without a paired close in every exit path (including the exception
-  path).
+- File/socket/handle opened without a paired close in every exit path (including the exception path).
 - Connection pool acquire without release on error.
 - Timer/interval set without clear on unmount/cleanup.
 - Subscriber/listener registered without unregister.
 
 ## Error handling
 
-- Catch-all that swallows. See [code-quality-universal.md](code-quality-universal.md).
+- Catch-all that swallows. See [code-quality-universal.md](./code-quality-universal.md).
 - Catch that catches but re-throws a different type, losing the original cause.
-- Error path that returns the wrong type (e.g., returning the partial result on failure instead of
-  an error).
+- Error path that returns the wrong type (e.g., returning the partial result on failure instead of an error).
 - Cleanup-on-error skipped because the cleanup itself can fail.
 - Retry loop without backoff or max-attempts.
 
@@ -111,8 +107,7 @@ Confirm by writing the boundary input mentally: `len=0`, `len=1`, `len=N`.
 ## Defensive copies missing
 
 - Method returns a reference to a mutable internal field; callers mutate it.
-- Method accepts a mutable input and stores the reference, then later mutations from the caller
-  affect internal state.
+- Method accepts a mutable input and stores the reference, then later mutations from the caller affect internal state.
 - Defensive copy implemented shallowly when deep is needed.
 
 ## Tests that don't test
@@ -123,12 +118,11 @@ Confirm by writing the boundary input mentally: `len=0`, `len=1`, `len=N`.
 - Test uses real network/database and fails sporadically — flake.
 - Test passes because there are no assertions.
 
-See the `test-review` skill and
-`$(cog skill-refs path cli-design/08-testing-and-quality/testing-strategy.md)`.
+See the `test-review` skill and `$(cog skill-refs path cli-design/08-testing-and-quality/testing-strategy.md)`.
 
 ## See also
 
 - [`languages/<lang>.md`](languages/) — concrete instances of each category, language-tagged.
-- [code-quality-universal.md](code-quality-universal.md) — anti-patterns at a higher level.
-- [security-review.md](security-review.md) — security-specific bug families.
-- [performance-review.md](performance-review.md) — performance-specific bug families.
+- [code-quality-universal.md](./code-quality-universal.md) — anti-patterns at a higher level.
+- [security-review.md](./security-review.md) — security-specific bug families.
+- [performance-review.md](./performance-review.md) — performance-specific bug families.

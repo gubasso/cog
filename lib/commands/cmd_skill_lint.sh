@@ -226,8 +226,23 @@ __cog_skill_lint_check_source_paths() {
   return "$failed"
 }
 
+# A shipped runtime skill or skill-ref must be self-contained: it may cite public
+# URLs, but it must never point at an external/local/personalized knowledge repo
+# as a load-bearing source (ADR-0071, ADR-0091). Match the known personal shelves
+# by name, case-insensitively. Echoes the offending token when found; the
+# templates/ deploy payload is out of scanned scope, so example placeholders there
+# never reach this check.
+__cog_skill_lint_external_local_repo_match() {
+  local line_lc="${1,,}"
+  case "$line_lc" in
+    *exobrain*) printf 'exobrain' ;;
+    *docs-n-notes* | *docsnnotes*) printf 'docs-n-notes' ;;
+    *) return 1 ;;
+  esac
+}
+
 __cog_skill_lint_check_forbidden_runtime_refs() {
-  local file="$1" runtime failed=0
+  local file="$1" runtime failed=0 repo
   local line line_no=0 in_frontmatter=false frontmatter_done=false
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
   [[ -n $runtime ]] || return 0
@@ -259,6 +274,12 @@ __cog_skill_lint_check_forbidden_runtime_refs() {
       __cog_skill_lint_finding "$file" "$line_no" "skill-external-repo-dependency" \
         "runtime skill takes a load-bearing dependency on an external/local docs repository" \
         "import load-bearing references to skill-refs and resolve them with cog skill-refs path"
+      failed=1
+    fi
+    if repo="$(__cog_skill_lint_external_local_repo_match "$line")"; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-external-local-repo-reference" \
+        "runtime skill references the external/local knowledge repo '$repo'" \
+        "import the needed content into skill-refs and resolve it with cog skill-refs path; cite only public URLs"
       failed=1
     fi
   done <"$file"
@@ -599,7 +620,7 @@ __cog_skill_lint_is_skill_refs_runtime() {
 # rules that bind SKILL.md bodies bind the refs they load. Scan the whole file;
 # refs carry no frontmatter to skip.
 __cog_skill_lint_check_skill_refs_forbidden() {
-  local file="$1" failed=0 line line_no=0
+  local file="$1" failed=0 line line_no=0 repo
   # shellcheck disable=SC2094
   while IFS= read -r line || [[ -n $line ]]; do
     line_no=$((line_no + 1))
@@ -613,6 +634,12 @@ __cog_skill_lint_check_skill_refs_forbidden() {
       __cog_skill_lint_finding "$file" "$line_no" "skill-refs-external-repo-dependency" \
         "runtime skill-refs takes a load-bearing dependency on an external/local docs repository" \
         "import the reference into skill-refs and resolve it with cog skill-refs path"
+      failed=1
+    fi
+    if repo="$(__cog_skill_lint_external_local_repo_match "$line")"; then
+      __cog_skill_lint_finding "$file" "$line_no" "skill-refs-external-local-repo-reference" \
+        "runtime skill-refs references the external/local knowledge repo '$repo'" \
+        "import the needed content into skill-refs and resolve it with cog skill-refs path; cite only public URLs"
       failed=1
     fi
   done <"$file"

@@ -9,14 +9,11 @@ description: >
 
 # Review Lean
 
-Run a deep, single-pass review of the live diff. When a reviewed plan is supplied, treat plan
-conformance as an explicit review dimension.
+Run a deep, single-pass review of the live diff. When a reviewed plan is supplied, treat plan conformance as an explicit review dimension.
 
 ## Inputs
 
-Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]` from the prompt.
-Default severity is `praise`, the permissive floor for deterministic filtering. Default format is
-`markdown`.
+Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]` from the prompt. Default severity is `praise`, the permissive floor for deterministic filtering. Default format is `markdown`.
 
 ## Phase 0: Mechanical Setup
 
@@ -27,8 +24,7 @@ cog review-scope "$SCOPE_JSON"
 cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
 ```
 
-If the scope has no changed files and no status files, stop. If `--scope <glob>` is present, limit
-the review judgment to matching paths while leaving the deterministic scope artifact intact.
+If the scope has no changed files and no status files, stop. If `--scope <glob>` is present, limit the review judgment to matching paths while leaving the deterministic scope artifact intact.
 
 Load:
 
@@ -37,11 +33,9 @@ Load:
 - `$(cog skill-refs path code-review/review-process.md)`
 - every relative path in `$TECH_SCOPE_JSON` `available_refs[]`, resolved with `cog skill-refs path`
 
-When a reviewed plan is supplied, load it from the task/context input and check that required plan
-phases are materially present in the diff; record gaps as `important` or `question` findings.
+When a reviewed plan is supplied, load it from the task/context input and check that required plan phases are materially present in the diff; record gaps as `important` or `question` findings.
 
-For every `research_targets[]` entry, verify current behavior against primary sources before
-reviewing, per `$(cog skill-refs path research/primary-source-verification.md)`.
+For every `research_targets[]` entry, verify current behavior against primary sources before reviewing, per `$(cog skill-refs path research/primary-source-verification.md)`.
 
 ## Phase 1: Review
 
@@ -55,8 +49,7 @@ Perform exactly one complete review pass:
 4. Validate each candidate finding against evidence and primary sources.
 5. Emit only findings that survive validation; demote uncertainty to question.
 
-Review correctness, security, performance, reliability, maintainability, tests, and plan conformance.
-Drop lint/format findings and speculative claims.
+Review correctness, security, performance, reliability, maintainability, tests, and plan conformance. Drop lint/format findings and speculative claims.
 
 Confidence and severity coupling:
 
@@ -64,12 +57,9 @@ Confidence and severity coupling:
 - medium → version/context-dependent; keep severity but offer alternatives.
 - low → cannot be determined from the diff alone; record as question.
 
-External-behavior verification: for any claim about an external API, language, library, tool, or
-spec, verify against primary sources and cite the source in evidence; otherwise record it as
-question.
+External-behavior verification: for any claim about an external API, language, library, tool, or spec, verify against primary sources and cite the source in evidence; otherwise record it as question.
 
-Finding aggregation: when one anti-pattern recurs across files, emit one finding citing a
-representative location and list the others; severity equals the highest individual instance.
+Finding aggregation: when one anti-pattern recurs across files, emit one finding citing a representative location and list the others; severity equals the highest individual instance.
 
 ## Phase 2: Findings
 
@@ -100,8 +90,7 @@ For JSON output, write candidate findings to `$FINDINGS_JSON` using this schema:
 }
 ```
 
-`schema_version`, `scope`, and `external_sources` are optional metadata; cog normalization passes
-them through unchanged.
+`schema_version`, `scope`, and `external_sources` are optional metadata; cog normalization passes them through unchanged.
 
 Decision:
 
@@ -128,13 +117,11 @@ When the prompt opens with two absolute paths, run in orchestrator mode:
 1. `<context-path>`: read task, prior review context, and any reviewed plan.
 2. `<output-path>`: the orchestrator's capture target for the normalized JSON findings.
 
-Force JSON output, skip prompts, run Phases 0-2, and emit the normalized JSON document as the final
-message; the orchestrator persists it to `<output-path>`.
+Force JSON output, skip prompts, run Phases 0-2, and emit the normalized JSON document as the final message; the orchestrator persists it to `<output-path>`.
 
 ## Markdown Output
 
-Return a short summary, findings grouped by file and severity, strengths, and a decision line:
-`[approve]`, `[comment]`, or `[request-changes]`.
+Return a short summary, findings grouped by file and severity, strengths, and a decision line: `[approve]`, `[comment]`, or `[request-changes]`.
 
 ## Guardrails
 

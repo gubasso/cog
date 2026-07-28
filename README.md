@@ -1,8 +1,6 @@
 # cog
 
-`cog` is a deterministic Bash helper CLI for agent-oriented development workflows. It replaces the
-old dotfiles-local helper script with a standalone command, library, installer, documentation, and
-test surface.
+`cog` is a deterministic Bash helper CLI for agent-oriented development workflows. It replaces the old dotfiles-local helper script with a standalone command, library, installer, documentation, and test surface.
 
 The CLI installs as a self-contained app root. The payload includes:
 
@@ -20,8 +18,7 @@ cog doctor
 cog --help
 ```
 
-By default, `install.sh` uses `PREFIX="$HOME/.local"`, writes the app root under
-`$PREFIX/lib/cog`, and creates the PATH symlink at `$PREFIX/bin/cog`.
+By default, `install.sh` uses `PREFIX="$HOME/.local"`, writes the app root under `$PREFIX/lib/cog`, and creates the PATH symlink at `$PREFIX/bin/cog`.
 
 ## Development
 
@@ -31,9 +28,7 @@ just test
 just man
 ```
 
-Quality gates are owned by pre-commit. `just lint` runs `pre-commit run --all-files`; `just test`
-runs the unit and integration pre-commit hooks. `just man` builds `man/cog.1` from
-`man/cog.1.scd` when `scdoc` is available.
+Quality gates are owned by pre-commit. `just lint` runs `pre-commit run --all-files`; `just test` runs the unit and integration pre-commit hooks. `just man` builds `man/cog.1` from `man/cog.1.scd` when `scdoc` is available.
 
 ## Documentation
 

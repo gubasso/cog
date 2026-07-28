@@ -1,0 +1,11 @@
+//! Subcommand handlers.
+//!
+//! One module per subcommand. Each exposes a free function:
+//!
+//!     pub fn run(ctx: &AppContext, args: <Verb>Args) -> Result<(), AppError>
+//!
+//! Handlers project clap args into domain requests, call services/adapters,
+//! render output via `ctx.ui`, and return a typed error. NO clap derives here.
+
+pub mod example;
+// pub mod widget;   // add one per subcommand

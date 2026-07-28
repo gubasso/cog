@@ -10,27 +10,22 @@ description: >
 
 # Suckless Patcher — Codex Twin
 
-The shared mechanical contract is identical to
-the Claude `suckless-patcher` skill.
+The shared mechanical contract is identical to the Claude `suckless-patcher` skill.
 
 ## Reference Resolution
 
-Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver
-always succeeds for shipped references. `REFS/patch-strategies.md` means
-`$(cog skill-refs path tools/suckless/patch-strategies.md)`.
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver always succeeds for shipped references. `REFS/patch-strategies.md` means `$(cog skill-refs path tools/suckless/patch-strategies.md)`.
 
 ## Inputs
 
 The user provides:
 
 1. Patch file - a `.diff` file, local path or to be downloaded.
-2. Patch URL - the suckless.org page for this patch, such as
-   `https://dwm.suckless.org/patches/vanitygaps/`.
+2. Patch URL - the suckless.org page for this patch, such as `https://dwm.suckless.org/patches/vanitygaps/`.
 
 ## Cog Contract
 
-`cog` must be on `PATH`; a bare call fails
-legibly if it is missing. Create the run directory and output paths:
+`cog` must be on `PATH`; a bare call fails legibly if it is missing. Create the run directory and output paths:
 
 ```bash
 RUN_DIR="$(cog rundir suckless-patcher-codex | sed -n 's/^RUN_DIR=//p')"
@@ -79,8 +74,7 @@ cog suckless-conflicts "$CONFLICTS_JSON"
 }
 ```
 
-Any non-zero plain `git apply --check` is treated as conflict evidence. The helper may attempt
-`--3way`; if both checks fail, conflict resolution remains prose work.
+Any non-zero plain `git apply --check` is treated as conflict evidence. The helper may attempt `--3way`; if both checks fail, conflict resolution remains prose work.
 
 `suckless-conflicts` lists reject artifacts:
 
@@ -96,31 +90,19 @@ Any non-zero plain `git apply --check` is treated as conflict evidence. The help
 
 ## Workflow
 
-1. Resolve the source tree and patch file. Run `suckless-preflight`. If the tree is not recognized
-   or is dirty, stop and report the helper's reason. Do not create branches in this skill; repository
-   orchestration remains outside the helper.
+1. Resolve the source tree and patch file. Run `suckless-preflight`. If the tree is not recognized or is dirty, stop and report the helper's reason. Do not create branches in this skill; repository orchestration remains outside the helper.
 
-2. Research the patch URL with Codex web tools. Extract description, latest available version,
-   dependencies, and compatible suckless versions. If the user's patch appears stale, explain the
-   difference and ask whether to proceed or download the latest. Codex does not use
-   `AskUserQuestion`; use normal message-channel prompting for confirmations.
+2. Research the patch URL with Codex web tools. Extract description, latest available version, dependencies, and compatible suckless versions. If the user's patch appears stale, explain the difference and ask whether to proceed or download the latest. Codex does not use `AskUserQuestion`; use normal message-channel prompting for confirmations.
 
-3. Run `suckless-apply`. If it succeeds, inspect the build status and summarize method, files
-   changed, and build result.
+3. Run `suckless-apply`. If it succeeds, inspect the build status and summarize method, files changed, and build result.
 
-4. If `suckless-apply` reports `needs_conflict_resolution=true`, run `suckless-conflicts`, then read
-   the referenced `.rej` files. Use `REFS/patch-strategies.md` for the conflict-resolution playbook.
+4. If `suckless-apply` reports `needs_conflict_resolution=true`, run `suckless-conflicts`, then read the referenced `.rej` files. Use `REFS/patch-strategies.md` for the conflict-resolution playbook.
 
-5. Resolve conflicts in prose and with targeted edits, preferring `apply_patch` for manual conflict
-   edits. For each rejected hunk, identify the intended behavior, apply the intent manually, and
-   explain the edit to the user.
+5. Resolve conflicts in prose and with targeted edits, preferring `apply_patch` for manual conflict edits. For each rejected hunk, identify the intended behavior, apply the intent manually, and explain the edit to the user.
 
-6. Protect `config.h`. Never blindly overwrite it. If the patch changes `config.def.h`, explain
-   which changes may need to be merged into `config.h` and offer selective help.
+6. Protect `config.h`. Never blindly overwrite it. If the patch changes `config.def.h`, explain which changes may need to be merged into `config.h` and offer selective help.
 
-7. If the build fails, read the compiler errors and cross-reference the patch description and source
-   layout. Apply trivial fixes directly; for non-trivial fixes, explain the issue and proposed fix
-   before editing.
+7. If the build fails, read the compiler errors and cross-reference the patch description and source layout. Apply trivial fixes directly; for non-trivial fixes, explain the issue and proposed fix before editing.
 
 8. Final report:
    - patch name, version, and URL;
@@ -140,5 +122,4 @@ Any non-zero plain `git apply --check` is treated as conflict evidence. The help
 
 - Apply one patch at a time and verify builds between stacked patches.
 - When a patch targets a specific commit or version tag, flag ahead/behind risks.
-- Do not treat helper output as conflict resolution. It identifies mechanics; interpretation stays
-  in this skill.
+- Do not treat helper output as conflict resolution. It identifies mechanics; interpretation stays in this skill.

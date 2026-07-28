@@ -1,12 +1,8 @@
 # Code Quality Tools
 
-Per-language tooling reference for the structural quality gates described in
-[10 — Regression Safeguards](regression-safeguards.md). This file covers the **non-testing** quality
-gates: complexity metrics, dependency hygiene, binary analysis, architectural enforcement, dead code
-detection, and code churn tracking.
+Per-language tooling reference for the structural quality gates described in [10 — Regression Safeguards](./regression-safeguards.md). This file covers the **non-testing** quality gates: complexity metrics, dependency hygiene, binary analysis, architectural enforcement, dead code detection, and code churn tracking.
 
-For testing tools (runners, snapshot, property-based, mutation, recording, contract), see
-**[08a — Testing Tools](testing-tools.md)**.
+For testing tools (runners, snapshot, property-based, mutation, recording, contract), see **[08a — Testing Tools](./testing-tools.md)**.
 
 ## Opinionated defaults — "if in doubt, start here"
 
@@ -20,22 +16,16 @@ For testing tools (runners, snapshot, property-based, mutation, recording, contr
 
 ## Complexity metrics
 
-Complexity metrics measure how hard code is to understand and maintain. The two most useful metrics
-for catching AI-agent overengineering:
+Complexity metrics measure how hard code is to understand and maintain. The two most useful metrics for catching AI-agent overengineering:
 
-- **Cognitive complexity** (Sonar model): measures how hard a function is for a human to understand.
-  Penalizes nesting, breaks in linear flow, and boolean operator mixing. The best single metric for
-  flagging AI-generated spaghetti.
-- **Cyclomatic complexity** (McCabe): counts linearly independent paths through a function. Classic
-  metric; useful but doesn't penalize nesting depth.
+- **Cognitive complexity** (Sonar model): measures how hard a function is for a human to understand. Penalizes nesting, breaks in linear flow, and boolean operator mixing. The best single metric for flagging AI-generated spaghetti.
+- **Cyclomatic complexity** (McCabe): counts linearly independent paths through a function. Classic metric; useful but doesn't penalize nesting depth.
 
 Additional metrics worth tracking on critical modules:
 
-- **Halstead metrics** — effort, difficulty, estimated bugs, time to implement. Derived from
-  operator/operand counts.
+- **Halstead metrics** — effort, difficulty, estimated bugs, time to implement. Derived from operator/operand counts.
 - **LLOC** (Logical Lines of Code) — statements, not blank lines. Sudden jumps signal bloat.
-- **Maintainability Index** — combined metric (Halstead + cyclomatic + LLOC); single number for
-  overall health.
+- **Maintainability Index** — combined metric (Halstead + cyclomatic + LLOC); single number for overall health.
 - **NARGS** — function argument count. Functions with > 5 arguments often need a struct.
 - **NEXITS** — exit points (returns, panics, early returns). Many exits increase cognitive load.
 
@@ -50,8 +40,7 @@ These are starting points; calibrate to your codebase:
 | Function length       | <= 60 LOC | 61–100 | > 100         |
 | NARGS                 | <= 5      | 6–7    | > 7           |
 
-**Enforcement pattern:** run on modified files in pre-push; run on all files nightly. Fail CI only
-on red thresholds. Yellow thresholds produce warnings in the PR comment.
+**Enforcement pattern:** run on modified files in pre-push; run on all files nightly. Fail CI only on red thresholds. Yellow thresholds produce warnings in the PR comment.
 
 ### Per-language tools
 
@@ -87,8 +76,7 @@ gocyclo -over 15 . && echo "OK" || exit 1
 
 ## Restriction lints
 
-Beyond standard linting (format + correctness), restriction lints catch patterns AI agents commonly
-leave behind. These are cheap to run and should be in pre-commit.
+Beyond standard linting (format + correctness), restriction lints catch patterns AI agents commonly leave behind. These are cheap to run and should be in pre-commit.
 
 ### What to restrict
 
@@ -161,8 +149,7 @@ linters-settings:
 
 ## Unused dependency detection
 
-Unused dependencies are a common AI-agent artifact: the agent adds a crate to solve a subproblem,
-then refactors the solution to not need it, but forgets to remove the dependency.
+Unused dependencies are a common AI-agent artifact: the agent adds a crate to solve a subproblem, then refactors the solution to not need it, but forgets to remove the dependency.
 
 | Language | Tool                                                       | Approach              | Speed  | Notes                                              |
 | -------- | ---------------------------------------------------------- | --------------------- | ------ | -------------------------------------------------- |
@@ -172,8 +159,7 @@ then refactors the solution to not need it, but forgets to remove the dependency
 | TS/JS    | [`depcheck`](https://github.com/depcheck/depcheck)         | Import analysis       | Fast   | Handles CJS + ESM.                                 |
 | Go       | `go mod tidy` (built-in)                                   | Compiler analysis     | Fast   | Part of the standard toolchain.                    |
 
-**Tier placement:** `cargo-machete` / `deptry` / `depcheck` in pre-commit (fast enough).
-`cargo-udeps` in nightly CI (requires nightly, slower).
+**Tier placement:** `cargo-machete` / `deptry` / `depcheck` in pre-commit (fast enough). `cargo-udeps` in nightly CI (requires nightly, slower).
 
 **Configuration** (`Cargo.toml` for machete):
 
@@ -215,9 +201,7 @@ deny = [
 
 ## Binary size analysis
 
-Binary size is a proxy for complexity. Sudden growth often indicates added dependencies, excessive
-monomorphization (generics bloat), or unnecessary features. Track it to catch AI-introduced bloat
-early.
+Binary size is a proxy for complexity. Sudden growth often indicates added dependencies, excessive monomorphization (generics bloat), or unnecessary features. Track it to catch AI-introduced bloat early.
 
 | Language | Tool                                                       | What it shows                             | Notes                                 |
 | -------- | ---------------------------------------------------------- | ----------------------------------------- | ------------------------------------- |
@@ -240,16 +224,11 @@ CURRENT=$(grep 'file-size' pr-bloat.txt | awk '{print $2}')
 # ... threshold comparison logic
 ```
 
-**Continuous tracking:** [Bencher](https://bencher.dev/) tracks binary size (and benchmarks) across
-commits with statistical regression detection. See
-[10a § Continuous benchmarking](#continuous-benchmarking).
+**Continuous tracking:** [Bencher](https://bencher.dev/) tracks binary size (and benchmarks) across commits with statistical regression detection. See [10a § Continuous benchmarking](#continuous-benchmarking).
 
 ## Architectural boundary enforcement
 
-Architectural boundaries prevent layer violations — `cli/` importing from `domain/` internals,
-`domain/` making I/O calls, `commands/` bypassing `services/`. In languages with strong module
-systems (Rust, Go), the compiler enforces visibility. The gap is at the logical layer level: the
-compiler doesn't know that `adapters/` is the only place that should make HTTP calls.
+Architectural boundaries prevent layer violations — `cli/` importing from `domain/` internals, `domain/` making I/O calls, `commands/` bypassing `services/`. In languages with strong module systems (Rust, Go), the compiler enforces visibility. The gap is at the logical layer level: the compiler doesn't know that `adapters/` is the only place that should make HTTP calls.
 
 ### Approaches by language
 
@@ -277,8 +256,7 @@ compiler doesn't know that `adapters/` is the only place that should make HTTP c
     --glob '!tests/**' src/
 ```
 
-Add these as a `justfile` recipe (`just lint-boundaries`) and wire into pre-commit. They're fast,
-deterministic, and catch the most common layer violations.
+Add these as a `justfile` recipe (`just lint-boundaries`) and wire into pre-commit. They're fast, deterministic, and catch the most common layer violations.
 
 ## Dead code detection
 
@@ -290,14 +268,11 @@ deterministic, and catch the most common layer violations.
 | TS/JS    | [`ts-prune`](https://github.com/nadeesha/ts-prune)   | Finds unused exports.                                       |
 | Go       | `go vet` + `staticcheck` (unused analyzer)           | Built into the standard toolchain.                          |
 
-**Rust note:** `#![allow(dead_code)]` at the crate root should never appear in production code.
-Scope `allow` to the specific item with a justifying comment. See
-[rust/cli-spec/09 § No crate-root allow](../../../languages/rust/cli-spec/09-coding-style.md#4-no-crate-root-allowdead_code).
+**Rust note:** `#![allow(dead_code)]` at the crate root should never appear in production code. Scope `allow` to the specific item with a justifying comment. See [rust/cli-spec/09 § No crate-root allow](../../languages/rust/cli-spec/09-coding-style.md#4-no-crate-root-allowdead_code).
 
 ## Code metrics and churn tracking
 
-Track LLOC, comment ratio, and file size trends over time. Sudden changes correlate with AI-agent
-bulk edits.
+Track LLOC, comment ratio, and file size trends over time. Sudden changes correlate with AI-agent bulk edits.
 
 | Language | Tool                                           | Output formats   | Notes                                     |
 | -------- | ---------------------------------------------- | ---------------- | ----------------------------------------- |
@@ -314,13 +289,11 @@ tokei . --output json | jq '.Rust.code'
 scc --format json .
 ```
 
-**CI pattern:** compare LLOC between `main` and the PR branch. A PR that adds > 500 LLOC to a single
-module is a review flag, not an automatic failure.
+**CI pattern:** compare LLOC between `main` and the PR branch. A PR that adds > 500 LLOC to a single module is a review flag, not an automatic failure.
 
 ## Continuous benchmarking
 
-Performance regressions are invisible without benchmarks. AI agents routinely introduce O(n^2)
-loops, unnecessary allocations, and redundant clones that look correct but perform poorly.
+Performance regressions are invisible without benchmarks. AI agents routinely introduce O(n^2) loops, unnecessary allocations, and redundant clones that look correct but perform poorly.
 
 | Language | Benchmark framework                                                   | CI tracking                     |
 | -------- | --------------------------------------------------------------------- | ------------------------------- |
@@ -330,12 +303,9 @@ loops, unnecessary allocations, and redundant clones that look correct but perfo
 | Go       | `go test -bench` (built-in)                                           | Bencher                         |
 | TS/JS    | [`vitest bench`](https://vitest.dev/guide/features.html#benchmarking) | Bencher                         |
 
-[**Bencher**](https://bencher.dev/) is a continuous benchmarking service that tracks results across
-commits, detects statistical regressions, and integrates with GitHub via PR comments. It supports
-adapters for all major benchmark frameworks.
+[**Bencher**](https://bencher.dev/) is a continuous benchmarking service that tracks results across commits, detects statistical regressions, and integrates with GitHub via PR comments. It supports adapters for all major benchmark frameworks.
 
-**Tier placement:** nightly CI. Benchmarks are too slow for pre-commit/pre-push. Statistical
-regression detection needs a history of measurements, so run consistently.
+**Tier placement:** nightly CI. Benchmarks are too slow for pre-commit/pre-push. Statistical regression detection needs a history of measurements, so run consistently.
 
 ## Pre-commit / CI integration
 
@@ -443,27 +413,19 @@ jobs:
 
 ## See also
 
-- [10 — Regression Safeguards](regression-safeguards.md) — principles and layering model.
-- [08a — Testing Tools](testing-tools.md) — testing tool matrix (runners, snapshot, mutation,
-  property-based, recording).
+- [10 — Regression Safeguards](./regression-safeguards.md) — principles and layering model.
+- [08a — Testing Tools](./testing-tools.md) — testing tool matrix (runners, snapshot, mutation, property-based, recording).
 - [04 — Coding Style](../04-coding-style-rust-zig.md) § 16 — strict lints.
 - [99 — Checklist](../99-checklist.md) — one-page sanity check.
 - Language-specific guides:
-  - [`rust/cli-spec/06b-code-quality.md`](../../../languages/rust/cli-spec/06-testing-and-quality/code-quality.md)
-    — Rust config and integration details.
+  - [`rust/cli-spec/06b-code-quality.md`](../../languages/rust/cli-spec/06-testing-and-quality/code-quality.md) — Rust config and integration details.
 
 ## References
 
-- [rust-code-analysis](https://github.com/mozilla/rust-code-analysis) ·
-  [docs](https://mozilla.github.io/rust-code-analysis/)
-- [radon](https://radon.readthedocs.io/) · [gocyclo](https://github.com/fzipp/gocyclo) ·
-  [gocognit](https://github.com/uudashr/gocognit)
-- [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) ·
-  [cargo-machete](https://github.com/bnjbvr/cargo-machete) ·
-  [cargo-udeps](https://github.com/est31/cargo-udeps)
+- [rust-code-analysis](https://github.com/mozilla/rust-code-analysis) · [docs](https://mozilla.github.io/rust-code-analysis/)
+- [radon](https://radon.readthedocs.io/) · [gocyclo](https://github.com/fzipp/gocyclo) · [gocognit](https://github.com/uudashr/gocognit)
+- [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) · [cargo-machete](https://github.com/bnjbvr/cargo-machete) · [cargo-udeps](https://github.com/est31/cargo-udeps)
 - [cargo-bloat](https://github.com/RazrFalcon/cargo-bloat) · [Bencher](https://bencher.dev/)
 - [tokei](https://github.com/XAMPPRocky/tokei) · [scc](https://github.com/boyter/scc)
-- [clippy lint database](https://rust-lang.github.io/rust-clippy/master/index.html) ·
-  [clippy.toml reference](https://doc.rust-lang.org/clippy/lint_configuration.html)
-- [criterion](https://bheisler.github.io/criterion.rs/book/) ·
-  [divan](https://github.com/nvzqz/divan)
+- [clippy lint database](https://rust-lang.github.io/rust-clippy/master/index.html) · [clippy.toml reference](https://doc.rust-lang.org/clippy/lint_configuration.html)
+- [criterion](https://bheisler.github.io/criterion.rs/book/) · [divan](https://github.com/nvzqz/divan)

@@ -14,12 +14,9 @@ allowed-tools: Bash Read Edit Skill Agent
 
 # Doc Writeback Executor
 
-**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
-follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 
-Apply one structured-findings artifact to explicit canonical documentation paths, then use `gc` for
-the commit workflow. This skill is a write-capable entrypoint and gates plan mode before reading,
-editing, or delegating.
+Apply one structured-findings artifact to explicit canonical documentation paths, then use `gc` for the commit workflow. This skill is a write-capable entrypoint and gates plan mode before reading, editing, or delegating.
 
 ## Inputs
 
@@ -40,8 +37,7 @@ Create scratch space:
 cog rundir doc-writeback
 ```
 
-Write the work report to `<RUN_DIR>/doc-writeback-report.md`. Keep scratch notes under `RUN_DIR`.
-Documentation edits go only to the explicit canonical paths.
+Write the work report to `<RUN_DIR>/doc-writeback-report.md`. Keep scratch notes under `RUN_DIR`. Documentation edits go only to the explicit canonical paths.
 
 ## Workflow
 
@@ -54,9 +50,7 @@ Documentation edits go only to the explicit canonical paths.
 
 ## Boundaries
 
-Do not edit undocumented paths. Do not infer a documentation repository outside the allowlist. Use
-the findings contract and explicit paths as the input contract; do not depend on who produced the
-findings.
+Do not edit undocumented paths. Do not infer a documentation repository outside the allowlist. Use the findings contract and explicit paths as the input contract; do not depend on who produced the findings.
 
 ## Output
 

@@ -3,23 +3,23 @@
 
 # List available recipes.
 default:
-    @just --list
+	@just --list
 
 # Run linters and static analysis.
 lint:
-    @echo "TODO: wire lint command"
+	@echo "TODO: wire lint command"
 
 # Run the test suite.
 test:
-    @echo "TODO: wire test command"
+	@echo "TODO: wire test command"
 
 # Build the project.
 build:
-    @echo "TODO: wire build command"
+	@echo "TODO: wire build command"
 
 # Format the source tree.
 fmt:
-    @echo "TODO: wire fmt command"
+	@echo "TODO: wire fmt command"
 
 # Format, lint, then test.
 check: fmt lint test

@@ -1,0 +1,14 @@
+//! `example` subcommand: parse-shape.
+//!
+//! Holds the clap derive struct only. No I/O, no business logic.
+//! Replace or delete when bootstrapping a real CLI.
+
+#[derive(Debug, clap::Args)]
+pub struct ExampleArgs {
+    /// Name to greet.
+    pub name: String,
+
+    /// Use uppercase output.
+    #[arg(short, long)]
+    pub loud: bool,
+}

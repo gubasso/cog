@@ -1,0 +1,38 @@
+//! Root clap parser.
+//!
+//! Holds the top-level `Cli`, the `Commands` enum, and any global args.
+//! Per-subcommand arg structs live in sibling files (`cli/<name>.rs`).
+//! NO business logic anywhere in this module tree.
+
+pub mod example;
+// pub mod widget;   // add one per subcommand
+
+use clap::{ArgAction, Parser, Subcommand};
+
+#[derive(Debug, Parser)]
+#[command(name = "app", version, about, long_about = None)]
+pub struct Cli {
+    #[command(flatten)]
+    pub global: GlobalArgs,
+
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct GlobalArgs {
+    /// Increase log verbosity (-v info, -vv debug, -vvv trace).
+    /// Overridden by RUST_LOG if set.
+    #[arg(short, long, action = ArgAction::Count, global = true)]
+    pub verbose: u8,
+
+    /// Path to an alternate config file.
+    #[arg(long, value_name = "PATH", global = true)]
+    pub config: Option<std::path::PathBuf>,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    /// Example subcommand. Replace or delete.
+    Example(example::ExampleArgs),
+}

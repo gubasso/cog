@@ -18,13 +18,9 @@ allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 
 # Plan Multi
 
-Coordinate two independent lean planners from one identical raw brief, then synthesize one validated
-lean plan through `cog plan-doc`. The workers are `/plan-oneshot` instances; the coordinator builds
-their complete input and owns the final plan.
+Coordinate two independent lean planners from one identical raw brief, then synthesize one validated lean plan through `cog plan-doc`. The workers are `/plan-oneshot` instances; the coordinator builds their complete input and owns the final plan.
 
-**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input
-brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with
-`cog context-brief build --request` and confirm it with `cog context-brief validate`.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ## Inputs
 
@@ -43,45 +39,33 @@ Parse flags and create run state:
 cog plan-multi-setup "$ARGUMENTS"
 ```
 
-Capture `RUN_DIR`, `SOLO`, `REPO_ROOT`, `ORIENTATION_FILE`, `OUTPUT`, `RESEARCH_ROOT`,
-`BRIEF_FILE`, `CLAUDE_PLAN`, and `CODEX_PLAN`. Shell state does not persist; substitute literal paths
-into later Bash calls.
+Capture `RUN_DIR`, `SOLO`, `REPO_ROOT`, `ORIENTATION_FILE`, `OUTPUT`, `RESEARCH_ROOT`, `BRIEF_FILE`, `CLAUDE_PLAN`, and `CODEX_PLAN`. Shell state does not persist; substitute literal paths into later Bash calls.
 
 ## Phases 2-4: Gather, research, interview
 
 Follow `/plan-oneshot` Phases 2-4 inline:
 
-- Read the research shelf with `cog research-shelf`; pass `--root "$RESEARCH_ROOT"` when
-  `RESEARCH_ROOT` is non-empty.
+- Read the research shelf with `cog research-shelf`; pass `--root "$RESEARCH_ROOT"` when `RESEARCH_ROOT` is non-empty.
 - Research the repo with Read/Grep/Glob/Bash. Capture absolute paths and quoted code or signatures.
-- Interview with `AskUserQuestion` only in this coordinator. If the task is already fully specified,
-  record that no interview was needed.
+- Interview with `AskUserQuestion` only in this coordinator. If the task is already fully specified, record that no interview was needed.
 
 Workers must not ask the user anything.
 
 ## Phase 5: Build the context brief
 
-Build `BRIEF_FILE`, the single identical input for both workers, as a best-constructed context brief
-per `$(cog skill-refs path orchestration/context-brief-contract.md)`. Scaffold the authored sections:
+Build `BRIEF_FILE`, the single identical input for both workers, as a best-constructed context brief per `$(cog skill-refs path orchestration/context-brief-contract.md)`. Scaffold the authored sections:
 
 ```bash
 cog context-brief template --out "$RUN_DIR/brief-body.md"
 ```
 
-Fill `$RUN_DIR/brief-body.md`: a well-oriented **Objective** drawn from the whole session; **Output
-Format** (one lean implementation-plan draft); **Boundaries / Scope** (including hard constraints such
-as no git commands unless explicitly authorized); **Context & Decisions** (quoted conversation,
-interview Q&A, decisions and rationale — summarize narrative for clarity but carry the full substance);
-**Artifacts & Pointers** (codebase research as raw excerpts with absolute paths, plus any
-session-generated plan); **Effort Guidance**; and **Not Evaluated**. Keep your own proposed approach,
-plan, verdict, or solution out — bias isolation is the single deliberate omission.
+Fill `$RUN_DIR/brief-body.md`: a well-oriented **Objective** drawn from the whole session; **Output Format** (one lean implementation-plan draft); **Boundaries / Scope** (including hard constraints such as no git commands unless explicitly authorized); **Context & Decisions** (quoted conversation, interview Q&A, decisions and rationale — summarize narrative for clarity but carry the full substance); **Artifacts & Pointers** (codebase research as raw excerpts with absolute paths, plus any session-generated plan); **Effort Guidance**; and **Not Evaluated**. Keep your own proposed approach, plan, verdict, or solution out — bias isolation is the single deliberate omission.
 
 ```bash
 cog context-brief build --request "$ORIENTATION_FILE" --body "$RUN_DIR/brief-body.md" --out "$BRIEF_FILE"
 ```
 
-`build` attaches the orientation verbatim as the Original Request and fails closed unless every section
-is filled.
+`build` attaches the orientation verbatim as the Original Request and fails closed unless every section is filled.
 
 If `SOLO=1`, skip Phase 6 and the Codex half of Phase 7.
 
@@ -98,8 +82,7 @@ else
 fi
 ```
 
-On failure, mark Codex unavailable and continue Claude-only. If `SANDBOX_MODE=fallback`, tell the
-user in one line.
+On failure, mark Codex unavailable and continue Claude-only. If `SANDBOX_MODE=fallback`, tell the user in one line.
 
 ## Phase 7: Parallel drafts
 
@@ -112,15 +95,11 @@ cog codex-runner snapshot-pre "$RUN_DIR" "$RUN_DIR/drafts-pre.snap" > "$RUN_DIR/
 rm -f "$CLAUDE_PLAN" "$CODEX_PLAN" "$RUN_DIR/drafts-proof.diff"
 ```
 
-The Codex prompt file must open with `$(cog codex-runner orientation write)`, mention
-`$plan-oneshot`, pass `--output <CODEX_PLAN>` plus `--research-root <RESEARCH_ROOT>` when set, and
-inline `BRIEF_FILE` as the sole self-contained context. Tell Codex to research as needed, not
-interview, and save exactly one lean plan through `cog plan-doc`.
+The Codex prompt file must open with `$(cog codex-runner orientation write)`, mention `$plan-oneshot`, pass `--output <CODEX_PLAN>` plus `--research-root <RESEARCH_ROOT>` when set, and inline `BRIEF_FILE` as the sole self-contained context. Tell Codex to research as needed, not interview, and save exactly one lean plan through `cog plan-doc`.
 
 ### 7b: Dispatch both workers
 
-In one assistant message, issue both calls so they run concurrently. Skip Codex when degraded or
-`SOLO=1`.
+In one assistant message, issue both calls so they run concurrently. Skip Codex when degraded or `SOLO=1`.
 
 Claude Agent prompt:
 
@@ -147,8 +126,7 @@ cog codex-runner run-exec \
 ```
 
 After the Agent returns, poll-and-classify with `cog codex-runner finalize --state
-"$RUN_DIR/codex.longrun.json" --max-wall 300`, re-running while it exits 75. Duration is never
-judged.
+"$RUN_DIR/codex.longrun.json" --max-wall 300`, re-running while it exits 75. Duration is never judged.
 
 ### 7c: Verify proof
 
@@ -157,17 +135,11 @@ cog codex-runner snapshot-post "$RUN_DIR" "$RUN_DIR/drafts-pre.snap" "$RUN_DIR/d
 cog codex-runner verify-proof --proof "$RUN_DIR/drafts-proof.diff" --artifact "$CLAUDE_PLAN" > "$RUN_DIR/drafts-verify.json"
 ```
 
-The Claude draft is required; if proof or draft is missing, stop and ask retry or abort. The Codex
-draft is best-effort; if the runner is non-ok, SIGTERM, or `CODEX_PLAN` is missing/empty, continue
-Claude-only and remember the reason.
+The Claude draft is required; if proof or draft is missing, stop and ask retry or abort. The Codex draft is best-effort; if the runner is non-ok, SIGTERM, or `CODEX_PLAN` is missing/empty, continue Claude-only and remember the reason.
 
 ## Phase 8: Synthesize the lean plan
 
-Read `CLAUDE_PLAN` and any usable `CODEX_PLAN`. As neutral judge, steelman both against the
-`/plan-oneshot` lean-plan requirements and the verdict model from
-`$(cog skill-refs path orchestration/verdict-model.md)`: correctness, completeness, feasibility,
-repo fit, currency, and testability. Verify disagreements against the actual codebase before
-deciding; prefer current evidence over either draft.
+Read `CLAUDE_PLAN` and any usable `CODEX_PLAN`. As neutral judge, steelman both against the `/plan-oneshot` lean-plan requirements and the verdict model from `$(cog skill-refs path orchestration/verdict-model.md)`: correctness, completeness, feasibility, repo fit, currency, and testability. Verify disagreements against the actual codebase before deciding; prefer current evidence over either draft.
 
 Write the final plan yourself:
 
@@ -177,16 +149,11 @@ cog plan-doc save --title "$TITLE" --repo-root "$REPO_ROOT" --output "$OUTPUT" -
 cog plan-doc validate "$OUTPUT" --json
 ```
 
-`cog plan-doc save` creates the scaffold and returns the output path (`PLAN_DOC_PATH`); it does not
-accept generated plan content on stdin. After it returns, write the synthesized lean-plan content into
-that returned absolute path, then validate. Pass `--research-root "$RESEARCH_ROOT"` to
-`cog plan-doc save` when set. Preserve the required `plan-doc` headings. If validation fails, fix the
-generated plan headings and validate again. When degraded, synthesize over the Claude plan alone.
+`cog plan-doc save` creates the scaffold and returns the output path (`PLAN_DOC_PATH`); it does not accept generated plan content on stdin. After it returns, write the synthesized lean-plan content into that returned absolute path, then validate. Pass `--research-root "$RESEARCH_ROOT"` to `cog plan-doc save` when set. Preserve the required `plan-doc` headings. If validation fails, fix the generated plan headings and validate again. When degraded, synthesize over the Claude plan alone.
 
 ## Phase 9: Confirm
 
-Print the final lean plan, report `OUTPUT`, assumptions, ambiguities, and synthesis provenance:
-independent Claude and Codex drafts, or Claude-only if degraded. If Codex was unavailable, prepend:
+Print the final lean plan, report `OUTPUT`, assumptions, ambiguities, and synthesis provenance: independent Claude and Codex drafts, or Claude-only if degraded. If Codex was unavailable, prepend:
 
 ```text
 (codex cross-check unavailable: <short reason>)

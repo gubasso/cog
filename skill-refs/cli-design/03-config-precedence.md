@@ -1,20 +1,18 @@
 # 03 — Config Precedence
 
-Every configurable value comes from one of five sources. They merge in a fixed precedence order. The
-loader tracks **which source set which value**, so error messages can name the file and line.
+Every configurable value comes from one of five sources. They merge in a fixed precedence order. The loader tracks **which source set which value**, so error messages can name the file and line.
 
 ## The precedence rule
 
 From **lowest** to **highest** precedence (later sources override earlier ones):
 
-```
+```text
 defaults  <  user file  <  project file  <  env vars  <  CLI flags
 ```
 
 Compact form: **`cli > env > project > user > defaults`**.
 
-This is the standard followed by AWS CLI, OCI CLI, kubectl, terraform, gcloud, and effectively every
-well-designed CLI tool. Reuse it; don't reinvent.
+This is the standard followed by AWS CLI, OCI CLI, kubectl, terraform, gcloud, and effectively every well-designed CLI tool. Reuse it; don't reinvent.
 
 ### Why this order
 
@@ -28,7 +26,7 @@ well-designed CLI tool. Reuse it; don't reinvent.
 
 ## Implementation pattern (language-agnostic)
 
-```
+```text
 1. Construct a default `Config` value.
 2. Merge the user file (if it exists). Missing file = no-op, not error.
 3. Merge the project file (if it exists). Same.
@@ -39,12 +37,9 @@ well-designed CLI tool. Reuse it; don't reinvent.
 
 The merge must:
 
-- Preserve **per-key source provenance** so errors say _"`timeout_secs` from `./app.toml` line 12
-  was negative"_ instead of _"invalid value"_.
-- Reject **unknown keys** at the file layer — silent acceptance hides typos. (Trade-off: this makes
-  forward-compat configs harder. Surface it via a `--config-strict` toggle if you need both.)
-- Treat env vars and CLI flags as having a known schema; ignore unknown env vars (don't crash on
-  `LANG=en_US`).
+- Preserve **per-key source provenance** so errors say _"`timeout_secs` from `./app.toml` line 12 was negative"_ instead of _"invalid value"_.
+- Reject **unknown keys** at the file layer — silent acceptance hides typos. (Trade-off: this makes forward-compat configs harder. Surface it via a `--config-strict` toggle if you need both.)
+- Treat env vars and CLI flags as having a known schema; ignore unknown env vars (don't crash on `LANG=en_US`).
 
 ## XDG paths
 
@@ -58,33 +53,25 @@ Use the XDG Base Directory spec everywhere; do not hand-roll `$HOME/.<app>/`.
 | Cache                 | `XDG_CACHE_HOME`  | `~/.cache/<app>/`       |
 | Runtime sockets       | `XDG_RUNTIME_DIR` | `/run/user/$UID/`       |
 
-Use your language's XDG library (`directories` in Rust, `platformdirs` in Python, `xdg` in Go,
-`XDG_*` env-var probes in Bash). Don't reimplement the lookup.
+Use your language's XDG library (`directories` in Rust, `platformdirs` in Python, `xdg` in Go, `XDG_*` env-var probes in Bash). Don't reimplement the lookup.
 
-References:
-[XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/index.html).
+References: [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/index.html).
 
 ## Env-var conventions
 
 - Prefix all app-specific env vars with `<APP>_` (uppercased).
-- Use `<APP>_*` for top-level keys, `<APP>_NESTED__KEY` (double underscore) for nested keys to avoid
-  collisions with naturally underscored key names.
+- Use `<APP>_*` for top-level keys, `<APP>_NESTED__KEY` (double underscore) for nested keys to avoid collisions with naturally underscored key names.
 - Example: `MYAPP_TIMEOUT_SECS=60`, `MYAPP_LOG__FORMAT=json`.
-- For logging level, reuse the ecosystem standard (`RUST_LOG`, `PYTHONLOGLEVEL`) — do not invent
-  `<APP>_LOG`. Users have muscle memory.
-- For paths overrides, support both `<APP>_CONFIG_FILE` and the standard XDG vars (`XDG_CONFIG_HOME`
-  is a base directory; your `<APP>_CONFIG_FILE` is a full path to a specific file).
+- For logging level, reuse the ecosystem standard (`RUST_LOG`, `PYTHONLOGLEVEL`) — do not invent `<APP>_LOG`. Users have muscle memory.
+- For paths overrides, support both `<APP>_CONFIG_FILE` and the standard XDG vars (`XDG_CONFIG_HOME` is a base directory; your `<APP>_CONFIG_FILE` is a full path to a specific file).
 
 ## Schema discipline
 
-The resolved `Config` is **immutable after construction**. It is built in `main` (before
-`AppContext`), then handed to `AppContext` and never modified.
+The resolved `Config` is **immutable after construction**. It is built in `main` (before `AppContext`), then handed to `AppContext` and never modified.
 
 - **Config holds user-facing knobs.** What the user can tune.
-- **Config does NOT hold domain invariants.** Those live in `domain/`. (E.g. "widget IDs must be
-  1..=64 chars" is a domain invariant, not a config knob.)
-- **Config is serializable both ways.** It deserializes from the file/env layers and can be
-  re-serialized for a `--print-config` debug subcommand.
+- **Config does NOT hold domain invariants.** Those live in `domain/`. (E.g. "widget IDs must be 1..=64 chars" is a domain invariant, not a config knob.)
+- **Config is serializable both ways.** It deserializes from the file/env layers and can be re-serialized for a `--print-config` debug subcommand.
 
 ## Loader-library choices
 
@@ -105,15 +92,14 @@ Skip:
 
 A loader that can answer _"where did this value come from?"_ lets your errors say:
 
-```
+```text
 config: invalid value
   where: /home/user/.config/app/config.toml (line 12, [defaults] timeout_secs)
   why:   timeout_secs must be a positive integer, got -1
   hint:  set timeout_secs = 30 and retry
 ```
 
-A loader that can't say which file/key was responsible forces you into messages like _"some config
-value was invalid"_, which costs the user a debugging session.
+A loader that can't say which file/key was responsible forces you into messages like _"some config value was invalid"_, which costs the user a debugging session.
 
 ## Example layouts
 
@@ -149,8 +135,7 @@ MYAPP_TIMEOUT_SECS=90 myapp sync
 myapp sync --timeout-secs 5
 ```
 
-Order of precedence (high → low): the flag wins; the env wins over files; project file wins over
-user file; user file wins over default.
+Order of precedence (high → low): the flag wins; the env wins over files; project file wins over user file; user file wins over default.
 
 ## Minimal Python loader pattern
 
@@ -177,41 +162,30 @@ def get_config_path(cli_config_path: Optional[Path] = None) -> Path:
     )
 ```
 
-The pattern: a single fallback chain, an `lru_cache` for the duration of the process, and an error
-that names every location checked. This generalizes to most languages.
+The pattern: a single fallback chain, an `lru_cache` for the duration of the process, and an error that names every location checked. This generalizes to most languages.
 
-For full Python guidance see
-[`python/cli-spec/config-precedence-python.md`](../../languages/python/cli-spec/config-precedence-python.md).
+For full Python guidance see [`python/cli-spec/config-precedence-python.md`](../languages/python/cli-spec/config-precedence-python.md).
 
 ## Anti-patterns
 
-- **Implicit precedence**: different keys with different ordering rules ("for `timeout`, env wins;
-  for `editor`, file wins"). Pick one global rule and apply it to every key.
+- **Implicit precedence**: different keys with different ordering rules ("for `timeout`, env wins; for `editor`, file wins"). Pick one global rule and apply it to every key.
 - **Mutating config at runtime**: makes behavior unrepeatable. Resolve once at startup.
-- **Mixing config and CLI parser definitions**: keep them separate. The CLI parser knows about
-  flags; the config knows about persistent settings.
-- **No way to inspect the resolved config**: add a `--print-config` (or `config show`) subcommand
-  that dumps the resolved value with source annotations. Indispensable for support.
-- **Silent unknown-key acceptance** at the file layer. Typos like `timeut_secs = 30` should fail
-  loudly.
-- **App-specific env vars for ecosystem concerns**: don't invent `MYAPP_LOG_LEVEL` when
-  `RUST_LOG`/`PYTHONLOGLEVEL` already exists.
-- **Reading from `~/.<app>/`** instead of XDG: surprises users and breaks tooling that scans XDG
-  dirs.
+- **Mixing config and CLI parser definitions**: keep them separate. The CLI parser knows about flags; the config knows about persistent settings.
+- **No way to inspect the resolved config**: add a `--print-config` (or `config show`) subcommand that dumps the resolved value with source annotations. Indispensable for support.
+- **Silent unknown-key acceptance** at the file layer. Typos like `timeut_secs = 30` should fail loudly.
+- **App-specific env vars for ecosystem concerns**: don't invent `MYAPP_LOG_LEVEL` when `RUST_LOG`/`PYTHONLOGLEVEL` already exists.
+- **Reading from `~/.<app>/`** instead of XDG: surprises users and breaks tooling that scans XDG dirs.
 
 ## References
 
 - [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/index.html)
-- AWS CLI precedence:
-  [Configuration and credential file settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- OCI CLI configuration:
-  [SDK and CLI configuration file](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm)
+- AWS CLI precedence: [Configuration and credential file settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+- OCI CLI configuration: [SDK and CLI configuration file](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm)
 - `figment` (Rust): per-key source tracking — [docs](https://docs.rs/figment/)
 - `pydantic-settings` (Python): [docs](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 
 ## See also
 
-- [00 — Architecture](00-architecture.md) — where `config/` and `context.rs` sit in the tree.
-- [01 — Logging & Output](01-logging-and-output.md) — log-file path resolution uses the same
-  precedence.
-- Language-specific: [`rust/cli-spec/05-config.md`](../../languages/rust/cli-spec/05-config.md).
+- [00 — Architecture](./00-architecture.md) — where `config/` and `context.rs` sit in the tree.
+- [01 — Logging & Output](./01-logging-and-output.md) — log-file path resolution uses the same precedence.
+- Language-specific: [`rust/cli-spec/05-config.md`](../languages/rust/cli-spec/05-config.md).

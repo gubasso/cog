@@ -1,0 +1,63 @@
+//! Binary entry point.
+//!
+//! Parses args, initializes logging, builds `AppContext`, dispatches to the
+//! selected subcommand, maps the resulting `AppError` to a sysexits exit code.
+//! NO business logic here — if you find yourself writing logic, lift it into
+//! `commands/`, `services/`, or `adapters/`.
+
+use clap::Parser;
+use std::process::ExitCode;
+
+mod cli;
+mod commands;
+mod config;
+mod context;
+mod domain;
+mod error;
+mod logging;
+mod ui;
+// mod adapters;   // uncomment when you add adapters
+// mod services;   // uncomment when you add shared services
+
+use crate::cli::{Cli, Commands};
+use crate::context::AppContext;
+use crate::error::AppError;
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+
+    if let Err(e) = logging::init(cli.global.verbose) {
+        eprintln!("app: failed to initialize logging: {e}");
+        return ExitCode::from(70); // EX_SOFTWARE
+    }
+
+    let ctx = match AppContext::new(&cli) {
+        Ok(c) => c,
+        Err(e) => {
+            print_error(&e);
+            return ExitCode::from(e.exit_code());
+        }
+    };
+
+    let result = match cli.command {
+        Commands::Example(args) => commands::example::run(&ctx, args),
+        // add one arm per subcommand
+    };
+
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            print_error(&e);
+            ExitCode::from(e.exit_code())
+        }
+    }
+}
+
+fn print_error(e: &AppError) {
+    eprintln!("app: {e}");
+    let mut source = std::error::Error::source(e);
+    while let Some(cause) = source {
+        eprintln!("  caused by: {cause}");
+        source = cause.source();
+    }
+}

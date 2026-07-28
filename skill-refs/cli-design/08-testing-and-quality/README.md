@@ -2,21 +2,18 @@
 
 > Part of the general [CLI design principles](../README.md).
 
-Testing strategy, per-language tooling, regression safeguards, and code quality gates. This chapter
-covers **what** to test, **how** to test it, what tools to use, and how to prevent regressions from
-both human and AI coding agents.
+Testing strategy, per-language tooling, regression safeguards, and code quality gates. This chapter covers **what** to test, **how** to test it, what tools to use, and how to prevent regressions from both human and AI coding agents.
 
 ## Chapters
 
-| Chapter                                           | Question it answers                                                                                       |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [Testing strategy](testing-strategy.md)           | "What does the test pyramid look like for a CLI? What goes in each tier? How do I keep tests isolated?"   |
-| [Testing tools](testing-tools.md)                 | "Which runner, snapshot library, property framework, and mutation tool should I use for my language?"     |
-| [Regression safeguards](regression-safeguards.md) | "How do I prevent AI agents (and humans) from introducing regressions? What's the verification workflow?" |
-| [Code quality tools](code-quality-tools.md)       | "Which tools enforce complexity limits, catch unused deps, track binary size, and guard architecture?"    |
+| Chapter                                             | Question it answers                                                                                       |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [Testing strategy](./testing-strategy.md)           | "What does the test pyramid look like for a CLI? What goes in each tier? How do I keep tests isolated?"   |
+| [Testing tools](./testing-tools.md)                 | "Which runner, snapshot library, property framework, and mutation tool should I use for my language?"     |
+| [Regression safeguards](./regression-safeguards.md) | "How do I prevent AI agents (and humans) from introducing regressions? What's the verification workflow?" |
+| [Code quality tools](./code-quality-tools.md)       | "Which tools enforce complexity limits, catch unused deps, track binary size, and guard architecture?"    |
 
-Read in this order: strategy first (principles), then tools (implementation), then safeguards
-(workflow), then quality tools (structural gates).
+Read in this order: strategy first (principles), then tools (implementation), then safeguards (workflow), then quality tools (structural gates).
 
 ## When you need this chapter
 
@@ -34,6 +31,6 @@ Read in this order: strategy first (principles), then tools (implementation), th
 - [05 — Designing for LLM Agents](../05-designing-for-llm-agents.md) — agent-specific test hazards.
 - [99 — Checklist](../99-checklist.md) — testing and quality sections.
 - Language-specific guides:
-  - [`rust/cli-spec/06-testing-and-quality/`](../../../languages/rust/cli-spec/06-testing-and-quality/)
-  - [`python/cli-spec/`](../../../languages/python/cli-spec/)
-  - [`bash/cli-spec/`](../../../languages/bash/cli-spec/)
+  - [`rust/cli-spec/06-testing-and-quality/`](../../languages/rust/cli-spec/06-testing-and-quality/)
+  - [`python/cli-spec/`](../../languages/python/cli-spec/)
+  - [`bash/cli-spec/`](../../languages/bash/cli-spec/)

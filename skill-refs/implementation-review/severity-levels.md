@@ -1,12 +1,10 @@
 # Severity Levels
 
-Use these severity levels consistently across all findings in the review report. Each finding must
-have exactly one severity. Use the decision criteria below to select it.
+Use these severity levels consistently across all findings in the review report. Each finding must have exactly one severity. Use the decision criteria below to select it.
 
 ## CRITICAL
 
-Immediate risk of data loss, security breach, service outage, or corruption. The implementation must
-not be deployed or merged without addressing this. Examples:
+Immediate risk of data loss, security breach, service outage, or corruption. The implementation must not be deployed or merged without addressing this. Examples:
 
 - SQL injection vector in user-facing endpoint.
 - Credentials hardcoded in source code.
@@ -16,8 +14,7 @@ not be deployed or merged without addressing this. Examples:
 
 ## HIGH
 
-Significant correctness, security, or reliability issue that will cause problems in production but
-may not be immediately catastrophic. Examples:
+Significant correctness, security, or reliability issue that will cause problems in production but may not be immediately catastrophic. Examples:
 
 - Missing error handling on a critical path (crashes under predictable conditions).
 - Incorrect API usage that works in tests but fails under real load or data.
@@ -27,8 +24,7 @@ may not be immediately catastrophic. Examples:
 
 ## MEDIUM
 
-Issue that affects quality, maintainability, or has potential to cause problems under specific but
-realistic conditions. Examples:
+Issue that affects quality, maintainability, or has potential to cause problems under specific but realistic conditions. Examples:
 
 - Missing pagination on a query that will grow over time.
 - Error messages that leak internal implementation details.
@@ -38,8 +34,7 @@ realistic conditions. Examples:
 
 ## LOW
 
-Minor issue, style concern, or improvement opportunity. Will not cause failures but should be
-addressed for code health. Examples:
+Minor issue, style concern, or improvement opportunity. Will not cause failures but should be addressed for code health. Examples:
 
 - Suboptimal algorithm where data scale does not warrant optimization.
 - Missing log context that would help debugging.
@@ -49,8 +44,7 @@ addressed for code health. Examples:
 
 ## INFO
 
-Not a problem. An observation, suggestion, alternative approach, or positive note about something
-done well. Examples:
+Not a problem. An observation, suggestion, alternative approach, or positive note about something done well. Examples:
 
 - "The retry strategy here is well-implemented with exponential backoff."
 - "Consider extracting this into a shared utility if other services need it."
@@ -67,5 +61,4 @@ When choosing a severity level, ask these questions in order:
 4. Is this a code quality issue with no runtime impact? → LOW
 5. Is this a suggestion or positive observation? → INFO
 
-When uncertain between two adjacent levels, choose the higher severity. It is better to over-report
-than to under-report.
+When uncertain between two adjacent levels, choose the higher severity. It is better to over-report than to under-report.

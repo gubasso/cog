@@ -27,10 +27,10 @@ __cog_review_comment_body() {
     --arg reasoning "$reasoning" \
     --arg suggestion "$suggestion" \
     '"<!-- cog-review-finding:" + $key + " -->\n" +
-     "**" + $severity + "**: " + $headline + "\n\n" +
-     $file + ":" + $line_start + "-" + $line_end + "\n\n" +
-     $reasoning + "\n\n" +
-     "Suggestion: " + $suggestion'
+    "**" + $severity + "**: " + $headline + "\n\n" +
+    $file + ":" + $line_start + "-" + $line_end + "\n\n" +
+    $reasoning + "\n\n" +
+    "Suggestion: " + $suggestion'
 }
 
 __cog_review_comment_planned_json() {

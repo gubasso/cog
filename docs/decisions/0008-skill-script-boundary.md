@@ -2,9 +2,7 @@
 
 ## Context and Problem Statement
 
-`cog` skills already depended on deterministic CLI helpers, but the boundary was scattered across
-architecture notes and individual skill bodies. Without one enforced contract, shell parsing and
-workflow mechanics can accrete in prose, and command logic can be duplicated instead of shared.
+`cog` skills already depended on deterministic CLI helpers, but the boundary was scattered across architecture notes and individual skill bodies. Without one enforced contract, shell parsing and workflow mechanics can accrete in prose, and command logic can be duplicated instead of shared.
 
 ## Considered Options
 
@@ -14,14 +12,9 @@ workflow mechanics can accrete in prose, and command logic can be duplicated ins
 
 ## Decision Outcome
 
-Chosen option: **keep skills as orchestrators and enforce deterministic mechanics through `cog`**.
-Skills own sequencing, judgment, and runtime-specific orchestration; deterministic routines live in
-`cog` subcommands and shared `cog::fn::*` helpers. `cog skill-lint` and pre-commit enforce the skill
-side of this contract.
+Chosen option: **keep skills as orchestrators and enforce deterministic mechanics through `cog`**. Skills own sequencing, judgment, and runtime-specific orchestration; deterministic routines live in `cog` subcommands and shared `cog::fn::*` helpers. `cog skill-lint` and pre-commit enforce the skill side of this contract.
 
-This extends [ADR-0001](0001-project-extraction.md), [ADR-0002](0002-name-cog.md), and
-[ADR-0006](0006-loader-based-architecture.md). The detailed contract lives in
-[Skill contract](../reference/skill-contract.md).
+This extends [ADR-0001](./0001-project-extraction.md), [ADR-0002](./0002-name-cog.md), and [ADR-0006](./0006-loader-based-architecture.md). The detailed contract lives in [Skill contract](../reference/skill-contract.md).
 
 ## Consequences
 
@@ -32,6 +25,4 @@ This extends [ADR-0001](0001-project-extraction.md), [ADR-0002](0002-name-cog.md
 
 ## Status
 
-Implemented. Enacted by [`lib/commands/cmd_skill_lint.sh`](../../lib/commands/cmd_skill_lint.sh),
-the shared [`lib/functions/fn_skill.sh`](../../lib/functions/fn_skill.sh) helper, and the `skill-lint`
-hook in [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml).
+Implemented. Enacted by [`lib/commands/cmd_skill_lint.sh`](../../lib/commands/cmd_skill_lint.sh), the shared [`lib/functions/fn_skill.sh`](../../lib/functions/fn_skill.sh) helper, and the `skill-lint` hook in [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml).

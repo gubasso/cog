@@ -12,29 +12,22 @@ effort: low
 
 # Review Findings
 
-`review-findings` is the triage source of truth for review findings. It accepts freeform findings
-and the shared structured-findings contract:
+`review-findings` is the triage source of truth for review findings. It accepts freeform findings and the shared structured-findings contract:
 
 - `severity`: `blocking|important|nit|suggestion|question|praise`
-- `file`, `line_start`, `line_end`, `category`, `headline`, `evidence`, `reasoning`, `suggestion`,
-  `confidence`
+- `file`, `line_start`, `line_end`, `category`, `headline`, `evidence`, `reasoning`, `suggestion`, `confidence`
 
 ## Reference Resolution
 
-Load review discipline from `$(cog skill-refs path code-review/llm-review-discipline.md)`. When
-severity wording needs the shared output contract, load
-`$(cog skill-refs path implementation-review/severity-levels.md)`.
+Load review discipline from `$(cog skill-refs path code-review/llm-review-discipline.md)`. When severity wording needs the shared output contract, load `$(cog skill-refs path implementation-review/severity-levels.md)`.
 
 ## Workflow
 
-1. Parse the findings and task context. If the task context is missing and affects triage, ask one
-   focused question before editing.
+1. Parse the findings and task context. If the task context is missing and affects triage, ask one focused question before editing.
 2. Classify each finding as `Issue`, `Suggestion`, or `Question`.
-3. Verify issues and suggestions against the current code, local docs, and official sources when the
-   claim depends on API behavior, library semantics, configuration, or an external specification.
+3. Verify issues and suggestions against the current code, local docs, and official sources when the claim depends on API behavior, library semantics, configuration, or an external specification.
 4. Assign status:
-   - `blocking` or `important` with `high`/`medium` confidence: `FIXED` when the fix is minor and
-     clear; otherwise `NEEDS_DISCUSSION`.
+   - `blocking` or `important` with `high`/`medium` confidence: `FIXED` when the fix is minor and clear; otherwise `NEEDS_DISCUSSION`.
    - `nit` or `suggestion`: `ACKNOWLEDGED` unless the user explicitly asks for cleanup.
    - `question`: `QUESTION`.
    - `praise`: omit from actionable output.

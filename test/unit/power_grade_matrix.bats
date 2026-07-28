@@ -135,11 +135,11 @@ validate_matrix_fixture() {
       (.grade | type == "number") and
       (.executable | type == "boolean") and
       (.policy_selectable | type == "boolean") and
-	      ((.evidence_status == "sourced") or (.evidence_status == "needs_verification")) and
-	      (.confidence | type == "string" and length > 0) and
-	      (.source_refs | type == "array" and length > 0) and
-	      (.benchmark_source_ids | type == "array") and
-	      (.description | type == "string" and length > 0) and
+        ((.evidence_status == "sourced") or (.evidence_status == "needs_verification")) and
+        (.confidence | type == "string" and length > 0) and
+        (.source_refs | type == "array" and length > 0) and
+        (.benchmark_source_ids | type == "array") and
+        (.description | type == "string" and length > 0) and
       (.use_where | type == "array" and length > 0) and
       (.caveats | type == "array");
 
@@ -155,14 +155,14 @@ validate_matrix_fixture() {
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-	    ([.model_cells[] | select(.model == "claude-haiku-4-5")] | length) == 1 and
-	    (.model_cells[] | select(.model == "claude-haiku-4-5") | .effort == "none") and
-	    ([.model_cells[] | select(.evidence_status == "needs_verification")] | length) == 1 and
-	    (.model_cells[] | select(.model == "gpt-5.3-codex-spark") |
-	      .executable == false and
-	      .evidence_status == "needs_verification" and
-	      .effort == "needs-verification")
-	  ' >/dev/null
+      ([.model_cells[] | select(.model == "claude-haiku-4-5")] | length) == 1 and
+      (.model_cells[] | select(.model == "claude-haiku-4-5") | .effort == "none") and
+      ([.model_cells[] | select(.evidence_status == "needs_verification")] | length) == 1 and
+      (.model_cells[] | select(.model == "gpt-5.3-codex-spark") |
+        .executable == false and
+        .evidence_status == "needs_verification" and
+        .effort == "needs-verification")
+    ' >/dev/null
 }
 
 @test "power grade source allowlist satisfies committed schema" {

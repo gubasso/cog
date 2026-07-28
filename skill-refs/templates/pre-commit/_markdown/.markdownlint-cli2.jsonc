@@ -64,6 +64,7 @@
     "MD050": false,  // strong-style          (dprint owns)
     "MD051": false,  // link-fragments        (would auto-edit)
     "MD054": false,  // link/image-style      (would auto-edit content)
+    "MD060": false, // table-column-style    (dprint owns table formatting)
     // --- end fixable-OFF block ---
 
 

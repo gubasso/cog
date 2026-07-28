@@ -275,9 +275,9 @@ __cog_jira_ticket_creator_finalize_build_json() {
     | ($all - $claimedset) as $unclaimed
     | ($flat | group_by(.) | map(select(length > 1) | .[0])) as $duplicated
     | {total_shas: ($all | length),
-       claimed: (($all - $unclaimed) | length),
-       unclaimed: $unclaimed,
-       duplicated: $duplicated}
+      claimed: (($all - $unclaimed) | length),
+      unclaimed: $unclaimed,
+      duplicated: $duplicated}
   ' "$manifest")"
 
   index_text="$(jq -r --arg draft_dir "$draft_dir" '
@@ -308,16 +308,16 @@ __cog_jira_ticket_creator_finalize_build_json() {
       "",
       (if ($roots | length) > 0 then
         ("## Create order (parent → its children)",
-         "",
-         "Create each parent first, then create every child under it and set the child'"'"'s Epic Link to it.",
-         "",
-         ($roots[]
-           | (.path | bn) as $rbn
-           | (.path | rp) as $rrp
-           | ("- [\($rrp)](\($rrp)) — \(.title // "")"),
-             render($rbn; 1)),
-         "")
-       else empty end),
+        "",
+        "Create each parent first, then create every child under it and set the child'"'"'s Epic Link to it.",
+        "",
+        ($roots[]
+          | (.path | bn) as $rbn
+          | (.path | rp) as $rrp
+          | ("- [\($rrp)](\($rrp)) — \(.title // "")"),
+            render($rbn; 1)),
+        "")
+      else empty end),
       "## Tickets",
       "",
       "| Ticket file | Type | Epic Link (file) | Source SHAs |",

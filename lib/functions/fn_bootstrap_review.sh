@@ -125,18 +125,18 @@ cog::fn::bootstrap_review::check_json() {
     | ($fresh | sort_by(."recorded-date") | last) as $freshest
     | ($all | sort_by(."recorded-date") | last) as $newest
     | (if $origin == "none" then {state: "invalid", fresh: false, pick: null}
-       elif ($fresh | length) > 0 then {state: "fresh", fresh: true, pick: $freshest}
-       elif ($all | length) > 0 then {state: "stale", fresh: false, pick: $newest}
-       else {state: "missing", fresh: false, pick: null} end) as $r
+      elif ($fresh | length) > 0 then {state: "fresh", fresh: true, pick: $freshest}
+      elif ($all | length) > 0 then {state: "stale", fresh: false, pick: $newest}
+      else {state: "missing", fresh: false, pick: null} end) as $r
     | {schema: $schema, ok: ($origin != "none"), action: "check",
-       domain: $domain, type: $type, topic_tags: $tags, as_of: $as_of,
-       review: {state: $r.state, fresh: $r.fresh},
-       last_recorded_date: ($r.pick."recorded-date" // null),
-       revalidate_after: ($r.pick."revalidate-after" // null),
-       entry_id: ($r.pick.id // null),
-       summary: ($r.pick."stable-summary" // null),
-       skill_refs: {root: $skill_refs.root, origin: $skill_refs.origin, writable: $skill_refs.writable},
-       template_roots: $template_roots}'
+      domain: $domain, type: $type, topic_tags: $tags, as_of: $as_of,
+      review: {state: $r.state, fresh: $r.fresh},
+      last_recorded_date: ($r.pick."recorded-date" // null),
+      revalidate_after: ($r.pick."revalidate-after" // null),
+      entry_id: ($r.pick.id // null),
+      summary: ($r.pick."stable-summary" // null),
+      skill_refs: {root: $skill_refs.root, origin: $skill_refs.origin, writable: $skill_refs.writable},
+      template_roots: $template_roots}'
 }
 
 # Record a dated template review for a domain/type and report it with the template
@@ -209,8 +209,8 @@ cog::fn::bootstrap_review::stamp_json() {
     --argjson changed "$changed_json" \
     --argjson skill_refs "$skill_refs" '
     {schema: $schema, ok: true, action: "stamp", domain: $domain, type: $type,
-     freshness_days: $freshness_days, recorded_date: $recorded_date,
-     revalidate_after: $revalidate_after, entry_id: $entry_id, entry: $entry,
-     index: $index, changed_templates: $changed,
-     skill_refs: {root: $skill_refs.root, origin: $skill_refs.origin, writable: $skill_refs.writable}}'
+    freshness_days: $freshness_days, recorded_date: $recorded_date,
+    revalidate_after: $revalidate_after, entry_id: $entry_id, entry: $entry,
+    index: $index, changed_templates: $changed,
+    skill_refs: {root: $skill_refs.root, origin: $skill_refs.origin, writable: $skill_refs.writable}}'
 }

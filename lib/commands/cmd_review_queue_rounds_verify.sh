@@ -72,15 +72,15 @@ __cog_review_queue_rounds_verify_history_preserved() {
   jq -n -e --argjson before "$before_json" --argjson after "$after_json" '
     def flat($scan): [$scan.queues[]? | .items[]?];
     (flat($after)) as $after_items
-	    | all(flat($before)[]? | select(.status == "done" or .status == "doing"); . as $b |
-	        ([ $after_items[]? |
-	          select(.schema == $b.schema and .queue_path == $b.queue_path and .item == $b.item)
-	        ]) as $matches
-	        | ($matches | length) == 1
-	          and ($matches[0].status == $b.status)
-	          and ($matches[0].prompt == $b.prompt)
-	          and ($matches[0].depends_on == $b.depends_on)
-	          and ($matches[0].notes == $b.notes)
+      | all(flat($before)[]? | select(.status == "done" or .status == "doing"); . as $b |
+          ([ $after_items[]? |
+            select(.schema == $b.schema and .queue_path == $b.queue_path and .item == $b.item)
+          ]) as $matches
+          | ($matches | length) == 1
+            and ($matches[0].status == $b.status)
+            and ($matches[0].prompt == $b.prompt)
+            and ($matches[0].depends_on == $b.depends_on)
+            and ($matches[0].notes == $b.notes)
       )
   ' >/dev/null
 }
@@ -143,29 +143,29 @@ __cog_review_queue_rounds_verify_build_json() {
             | select(([ $before_items[]? | select(item_key == ($a | item_key)) ] | length) == 0)
             | {schema: $a.schema, queue_path: $a.queue_path, item: $a.item, status: $a.status}
           ],
-	          status_changes: [
-	            $before_items[]? as $b
-	            | ([ $after_items[]? | select(item_key == ($b | item_key)) ]) as $matches
-	            | select(($matches | length) == 1 and $matches[0].status != $b.status)
-	            | {schema: $b.schema, queue_path: $b.queue_path, item: $b.item, from: $b.status, to: $matches[0].status}
-	          ],
-	          deps_changes: [
-	            $before_items[]? as $b
-	            | ([ $after_items[]? | select(item_key == ($b | item_key)) ]) as $matches
-	            | select(($matches | length) == 1 and $matches[0].depends_on != $b.depends_on)
-	            | {schema: $b.schema, queue_path: $b.queue_path, item: $b.item, before: $b.depends_on, after: $matches[0].depends_on}
-	          ],
-	          reordered: [
-	            $before.queues[]? as $b
-	            | ([ $after.queues[]? | select(queue_key == ($b | queue_key)) ]) as $matches
-	            | select(($matches | length) == 1)
-	            | ($b.items | map(.item)) as $before_order
-	            | ($matches[0].items | map(.item)) as $after_order
-	            | select($before_order != $after_order)
-	            | {schema: $b.schema, queue_path: $b.path, before_order: $before_order, after_order: $after_order}
-	          ],
-	          graph_valid: true
-	        }
+            status_changes: [
+              $before_items[]? as $b
+              | ([ $after_items[]? | select(item_key == ($b | item_key)) ]) as $matches
+              | select(($matches | length) == 1 and $matches[0].status != $b.status)
+              | {schema: $b.schema, queue_path: $b.queue_path, item: $b.item, from: $b.status, to: $matches[0].status}
+            ],
+            deps_changes: [
+              $before_items[]? as $b
+              | ([ $after_items[]? | select(item_key == ($b | item_key)) ]) as $matches
+              | select(($matches | length) == 1 and $matches[0].depends_on != $b.depends_on)
+              | {schema: $b.schema, queue_path: $b.queue_path, item: $b.item, before: $b.depends_on, after: $matches[0].depends_on}
+            ],
+            reordered: [
+              $before.queues[]? as $b
+              | ([ $after.queues[]? | select(queue_key == ($b | queue_key)) ]) as $matches
+              | select(($matches | length) == 1)
+              | ($b.items | map(.item)) as $before_order
+              | ($matches[0].items | map(.item)) as $after_order
+              | select($before_order != $after_order)
+              | {schema: $b.schema, queue_path: $b.path, before_order: $before_order, after_order: $after_order}
+            ],
+            graph_valid: true
+          }
     '
 }
 

@@ -32,8 +32,6 @@ plans/<plan-slug>/rounds/*.md
 
 ## Status
 
-Implemented. Partially superseded by [ADR-0057](0057-plan-vault-producer-retarget-and-global-git.md)
-(producer retarget, global git-by-default, project-key collision handling); XDG storage, trust gates,
-local/global tiers, and resolution precedence are unchanged.
+Implemented. Partially superseded by [ADR-0057](./0057-plan-vault-producer-retarget-and-global-git.md) (producer retarget, global git-by-default, project-key collision handling); XDG storage, trust gates, local/global tiers, and resolution precedence are unchanged.
 
 Implemented by [fn_plan_store.sh](../../lib/functions/fn_plan_store.sh), [fn_plan_config.sh](../../lib/functions/fn_plan_config.sh), [fn_plan_trust.sh](../../lib/functions/fn_plan_trust.sh), [fn_plan_resolve.sh](../../lib/functions/fn_plan_resolve.sh), and [cmd_plan.sh](../../lib/commands/cmd_plan.sh).

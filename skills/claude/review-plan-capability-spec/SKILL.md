@@ -14,8 +14,7 @@ allowed-tools: Bash Read Grep Glob
 
 # Review Plan Capability Spec
 
-Review a capability bundle before target solution planning. Keep the review producer-blind: name only
-the public bundle, private denylist, and shared contracts supplied in the brief.
+Review a capability bundle before target solution planning. Keep the review producer-blind: name only the public bundle, private denylist, and shared contracts supplied in the brief.
 
 ## Inputs
 
@@ -37,8 +36,7 @@ Run the scanner on public artifacts:
 cog spec-leakage-scan <public-files> --source-denylist <denylist-path> --json
 ```
 
-Any finding is a blocking `revise` verdict. Include the finding category, file, line, token, and
-reason in the review output.
+Any finding is a blocking `revise` verdict. Include the finding category, file, line, token, and reason in the review output.
 
 ## Review Axes
 
@@ -63,5 +61,4 @@ Emit a structured plan-review verdict using the shared vocabulary:
 - `REMOVED` for leaked or inappropriate material;
 - `ADDED` for missing behavior, invariants, scenarios, or trace entries.
 
-End with `pass` only when the bundle is complete enough for target design and the leakage gate is
-clean. Otherwise end with `revise` and concrete required changes.
+End with `pass` only when the bundle is complete enough for target design and the leakage gate is clean. Otherwise end with `revise` and concrete required changes.

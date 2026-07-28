@@ -1,0 +1,68 @@
+//! `example` subcommand: runtime-shape.
+//!
+//! Demonstrates the canonical handler pattern: project clap args into a
+//! domain `Request`, call the service/adapter layer, render via `ctx.ui`,
+//! return a typed error. Replace or delete when bootstrapping a real CLI.
+
+use crate::cli::example::ExampleArgs;
+use crate::context::AppContext;
+use crate::error::AppError;
+
+pub fn run(ctx: &AppContext, args: ExampleArgs) -> Result<(), AppError> {
+    let request = Request::from_cli(args)?;
+    let report = execute(ctx, request)?;
+    ctx.ui.render_example(&report);
+    Ok(())
+}
+
+struct Request {
+    name: String,
+    loud: bool,
+}
+
+impl Request {
+    fn from_cli(args: ExampleArgs) -> Result<Self, AppError> {
+        if args.name.is_empty() {
+            return Err(AppError::Usage("name must not be empty".into()));
+        }
+        Ok(Self { name: args.name, loud: args.loud })
+    }
+}
+
+pub struct Report {
+    pub greeting: String,
+}
+
+fn execute(_ctx: &AppContext, req: Request) -> Result<Report, AppError> {
+    let greeting = if req.loud {
+        format!("HELLO, {}!", req.name.to_uppercase())
+    } else {
+        format!("hello, {}", req.name)
+    };
+    Ok(Report { greeting })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_name_rejected() {
+        let args = ExampleArgs { name: String::new(), loud: false };
+        assert!(matches!(Request::from_cli(args), Err(AppError::Usage(_))));
+    }
+
+    #[test]
+    fn loud_uppercases() {
+        let args = ExampleArgs { name: "world".into(), loud: true };
+        let req = Request::from_cli(args).unwrap();
+        let rep = execute(&dummy_ctx(), req).unwrap();
+        assert_eq!(rep.greeting, "HELLO, WORLD!");
+    }
+
+    fn dummy_ctx() -> AppContext {
+        // Build a minimal context for tests. The real `AppContext::new` reads
+        // config from disk; tests use a fake. See `context.rs`.
+        unimplemented!("fill in once AppContext exists")
+    }
+}

@@ -2,7 +2,7 @@
 
 The global vault is user data, so it lives in XDG DATA and is implicitly trusted. It is outside project checkouts, can be tracked by the user as a normal repository, and does not depend on any one repo being writable.
 
-Project-local vaults are different. A checked-out repository can carry `.cog/config.sh` and a `project.sh` under its local plan dir (`.cog/plans/project.sh` by default, or the `COG_PLAN_LOCAL_DIR` override), so loading it automatically would let a project influence plan resolution. The local vault is therefore inert until `cog plan trust` records a fingerprint in XDG STATE. The fingerprint hashes `.cog/config.sh` together with the `project.sh` under the *configured* local dir, so trust tracks exactly the local store that resolution will select. This mirrors direnv and mise: local project behavior exists, but activation is deliberate and tied to the current on-disk metadata.
+Project-local vaults are different. A checked-out repository can carry `.cog/config.sh` and a `project.sh` under its local plan dir (`.cog/plans/project.sh` by default, or the `COG_PLAN_LOCAL_DIR` override), so loading it automatically would let a project influence plan resolution. The local vault is therefore inert until `cog plan trust` records a fingerprint in XDG STATE. The fingerprint hashes `.cog/config.sh` together with the `project.sh` under the _configured_ local dir, so trust tracks exactly the local store that resolution will select. This mirrors direnv and mise: local project behavior exists, but activation is deliberate and tied to the current on-disk metadata.
 
 Project identity combines a readable slug with a hash of the git identity alone:
 

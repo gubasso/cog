@@ -33,10 +33,10 @@ write_thread_ids() {
   assert_output "RESOLVED ${run_dir}/review_loop_input.json"
   jq -e \
     '.task == "task text" and
-     .reviewed_plan == "reviewed plan text" and
-     .implementation_review == "stage 4 review text" and
-     .plan_thread_id == "plan-thread-1" and
-     .impl_thread_id == "impl-thread-1"' \
+    .reviewed_plan == "reviewed plan text" and
+    .implementation_review == "stage 4 review text" and
+    .plan_thread_id == "plan-thread-1" and
+    .impl_thread_id == "impl-thread-1"' \
     "${run_dir}/review_loop_input.json" >/dev/null
 }
 
@@ -51,7 +51,7 @@ write_thread_ids() {
   [ ! -e "${run_dir}/review_loop_input.json" ]
   printf '%s\n' "$output" | jq -e \
     'has("task") and has("reviewed_plan") and has("implementation_review") and
-     has("plan_thread_id") and has("impl_thread_id")' >/dev/null
+    has("plan_thread_id") and has("impl_thread_id")' >/dev/null
 }
 
 @test "cog review-loop-input validate accepts valid input" {

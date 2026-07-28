@@ -149,7 +149,7 @@ REVIEW_LOOP_OK ${run_dir}/summary.md rounds=3 reason=findings-empty"
   refute_output --partial 'REVIEW_LOOP_OK'
   printf '%s\n' "$output" | jq -e \
     '.ok == true and .round_count == 2 and .termination_reason == "decision-approve" and
-     (.summary_file | endswith("/summary.md"))' >/dev/null
+    (.summary_file | endswith("/summary.md"))' >/dev/null
   [ -s "${run_dir}/summary.md" ]
 }
 
@@ -385,7 +385,7 @@ REVIEW_LOOP_OK ${run_dir}/summary.md rounds=1 reason=error"
   refute_output --partial 'REVIEW_LOOP_OK'
   printf '%s\n' "$output" | jq -e \
     '.ok == true and .round_count == 2 and .termination_reason == "decision-approve" and
-     (.summary_file | endswith("/summary.md"))' >/dev/null
+    (.summary_file | endswith("/summary.md"))' >/dev/null
 }
 
 @test "cog review-loop-summary finalize --body-file recovers a body-less run" {

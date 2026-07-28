@@ -14,18 +14,18 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.init.v2" and
-     .input == {kind: "prompt", value: "Implement thing", plan_path: null} and
-     .executor == "executor-vetted" and
-     .engine == "claude" and
-     .stages == ["prepare","execution"] and
-     .flow.family == "vetted" and
-     .flow.engine_scope == "claude" and
-     .flow.prepare_producers["needs-plan"].skill == "/plan-vetted" and
-     .flow.prepare_producers["good-input"].skill == "/plan-vetted" and
-     (.phases | length) == 2 and
-     .phases[0].artifact == "prepared-plan.md" and
-     .phases[1].artifact == "execution-report.md" and
-     .artifacts.schema == "cog.executor.artifacts.v2"' >/dev/null
+    .input == {kind: "prompt", value: "Implement thing", plan_path: null} and
+    .executor == "executor-vetted" and
+    .engine == "claude" and
+    .stages == ["prepare","execution"] and
+    .flow.family == "vetted" and
+    .flow.engine_scope == "claude" and
+    .flow.prepare_producers["needs-plan"].skill == "/plan-vetted" and
+    .flow.prepare_producers["good-input"].skill == "/plan-vetted" and
+    (.phases | length) == 2 and
+    .phases[0].artifact == "prepared-plan.md" and
+    .phases[1].artifact == "execution-report.md" and
+    .artifacts.schema == "cog.executor.artifacts.v2"' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   [ -d "$run_dir" ]
@@ -44,8 +44,8 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.input.kind == "plan" and
-     .executor == "executor-oneshot" and
-     .stages == ["prepare","execution"]' >/dev/null
+    .executor == "executor-oneshot" and
+    .stages == ["prepare","execution"]' >/dev/null
   local run_dir
   run_dir="$(printf '%s\n' "$output" | jq -r '.run_dir')"
   assert_file_contains "${run_dir}/plan-source" "$plan"
@@ -58,13 +58,13 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.init.v2" and
-     .executor == "executor-oneshot" and
-     .engine == "codex" and
-     .flow.family == "oneshot" and
-     .flow.prepare_producers["needs-plan"].skill == "/plan-oneshot" and
-     .flow.prepare_producers["good-input"].skill == "/review-plan-oneshot" and
-     .stages == ["prepare","execution"] and
-     .phases[1].phase == "execution"' >/dev/null
+    .executor == "executor-oneshot" and
+    .engine == "codex" and
+    .flow.family == "oneshot" and
+    .flow.prepare_producers["needs-plan"].skill == "/plan-oneshot" and
+    .flow.prepare_producers["good-input"].skill == "/review-plan-oneshot" and
+    .stages == ["prepare","execution"] and
+    .phases[1].phase == "execution"' >/dev/null
 }
 
 @test "cog executor init rejects a codex engine for the Claude-only vetted executor" {
@@ -128,9 +128,9 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.executor == "plan-vetted" and
-     .stages == ["prepare"] and
-     (.phases | length) == 1 and
-     .phases[0].artifact == "prepared-plan.md"' >/dev/null
+    .stages == ["prepare"] and
+    (.phases | length) == 1 and
+    .phases[0].artifact == "prepared-plan.md"' >/dev/null
 
   run --separate-stderr cog executor init --executor plan-vetted --engine codex --input "x"
   assert_failure
@@ -180,11 +180,11 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.artifacts.v2" and
-     .executor == "executor-vetted" and
-     (.phases | length) == 2 and
-     .phases[0].path == "'"${run_dir}"'/prepared-plan.md" and
-     .phases[1].path == "'"${run_dir}"'/execution-report.md" and
-     .summary == "'"${run_dir}"'/executor-summary.json"' >/dev/null
+    .executor == "executor-vetted" and
+    (.phases | length) == 2 and
+    .phases[0].path == "'"${run_dir}"'/prepared-plan.md" and
+    .phases[1].path == "'"${run_dir}"'/execution-report.md" and
+    .summary == "'"${run_dir}"'/executor-summary.json"' >/dev/null
 }
 
 @test "cog executor artifacts rejects uninitialized directory" {
@@ -295,11 +295,11 @@ setup() {
     '.schema == "cog.executor.queue-prompts.v1" and (.prompts | length) == 4' >/dev/null
   printf '%s\n' "$output" | jq -e \
     '[.prompts[].slash] as $s |
-     ($s | index("/executor-prex")) and
-     ($s | index("/executor-vetted")) and
-     ($s | index("/executor-oneshot")) and
-     ($s | index("/executor-oneshot-codex")) and
-     ($s | index("/executor-vetted-codex") | not)' >/dev/null
+    ($s | index("/executor-prex")) and
+    ($s | index("/executor-vetted")) and
+    ($s | index("/executor-oneshot")) and
+    ($s | index("/executor-oneshot-codex")) and
+    ($s | index("/executor-vetted-codex") | not)' >/dev/null
   printf '%s\n' "$output" | jq -e \
     '.match.namespace == "executor" and .match.target_argument == "-ar" and (.match.aliases | length) == 0' >/dev/null
 }
@@ -314,17 +314,17 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.summary.v3" and
-     .ok == true and
-     .executor == "executor-vetted" and
-     .engine == "claude" and
-     .route == "needs-plan" and
-     .producer == "/plan-vetted" and
-     .prepare_engine == "claude" and
-     .input_kind == "prompt" and
-     .stages.prepare.status == "done" and
-     .stages.prepare.phase == "prepare" and
-     .stages.execution.phase == "execution" and
-     .stages.execution.artifact == "execution-report.md"' >/dev/null
+    .ok == true and
+    .executor == "executor-vetted" and
+    .engine == "claude" and
+    .route == "needs-plan" and
+    .producer == "/plan-vetted" and
+    .prepare_engine == "claude" and
+    .input_kind == "prompt" and
+    .stages.prepare.status == "done" and
+    .stages.prepare.phase == "prepare" and
+    .stages.execution.phase == "execution" and
+    .stages.execution.artifact == "execution-report.md"' >/dev/null
   assert_file_exists "${run_dir}/executor-summary.json"
 }
 
@@ -338,10 +338,10 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.summary.v3" and
-     .route == "good-input" and
-     .producer == "/review-plan-oneshot" and
-     .prepare_engine == "codex" and
-     .execute_engine == "claude"' >/dev/null
+    .route == "good-input" and
+    .producer == "/review-plan-oneshot" and
+    .prepare_engine == "codex" and
+    .execute_engine == "claude"' >/dev/null
 }
 
 @test "cog executor summary prints RESOLVED in non-JSON mode" {

@@ -13,9 +13,7 @@ allowed-tools: Bash Read Write Grep Glob
 
 # Plan Split
 
-Split one over-ceiling round into exactly two complete child rounds. The skill makes the seam
-judgment and authors the child prose. Deterministic requirement stamping, slug derivation, and
-coverage verification stay behind `cog`.
+Split one over-ceiling round into exactly two complete child rounds. The skill makes the seam judgment and authors the child prose. Deterministic requirement stamping, slug derivation, and coverage verification stay behind `cog`.
 
 ## Inputs
 
@@ -37,13 +35,11 @@ TEMPLATE_PATH="$(cog skill-refs path plan-rounds/round-templates.md)"
 RUBRIC_PATH="$(cog skill-refs path plan-rounds/complexity-rubric.md)"
 ```
 
-Use the contract for verdict shape and coverage semantics, Template A for child round structure, and
-the rubric for connascence and decomposition rules.
+Use the contract for verdict shape and coverage semantics, Template A for child round structure, and the rubric for connascence and decomposition rules.
 
 ## Phase 1: Pick The Seam
 
-Read the parent round and seam hints. Select the lowest-connascence acceptable seam that preserves
-every parent requirement. Prefer seam hints with explicit ID partitions.
+Read the parent round and seam hints. Select the lowest-connascence acceptable seam that preserves every parent requirement. Prefer seam hints with explicit ID partitions.
 
 Defensively stamp the parent before authoring children:
 
@@ -56,13 +52,11 @@ The stamp is idempotent and gives child rounds stable requirement IDs.
 
 ## Phase 2: Irreducibility Check
 
-If no acceptable seam exists, write no child files. Emit a verdict with `split_performed: false`, a
-clear reason, and no child paths, then stop.
+If no acceptable seam exists, write no child files. Emit a verdict with `split_performed: false`, a clear reason, and no child paths, then stop.
 
 ## Phase 3: Author Child Rounds
 
-Create exactly two child round files in the parent plan directory. Derive each child slug from its
-seam-side label:
+Create exactly two child round files in the parent plan directory. Derive each child slug from its seam-side label:
 
 ```bash
 SLUG_JSON="$(cog plan-slug --text "$SIDE_LABEL" --json)"
@@ -77,8 +71,7 @@ For each child:
 - Keep each parent criterion verbatim in at least one child.
 - Allow a shared foundation criterion to appear in both children.
 - Add new child-specific criteria only when needed for completeness.
-- After both child files exist, run `cog round-req stamp` on each child so new criteria receive fresh
-  IDs from the plan directory's current max.
+- After both child files exist, run `cog round-req stamp` on each child so new criteria receive fresh IDs from the plan directory's current max.
 
 Move surrounding detail to the child where it belongs. Do not mutate queue files.
 
@@ -90,13 +83,11 @@ Run deterministic coverage over the parent and both children:
 cog round-split coverage --parent "$ROUND_PATH" --children "$CHILD_A" "$CHILD_B" --json
 ```
 
-If coverage fails, fix the child rounds and rerun. Do not emit a successful split verdict until
-coverage reports `lost: []`.
+If coverage fails, fix the child rounds and rerun. Do not emit a successful split verdict until coverage reports `lost: []`.
 
 ## Phase 5: Emit Verdict
 
-Write the split verdict to `<output-path-abs>` using the round-splitting contract's verdict YAML
-block. Include:
+Write the split verdict to `<output-path-abs>` using the round-splitting contract's verdict YAML block. Include:
 
 - split_performed
 - parent
@@ -105,9 +96,7 @@ block. Include:
 - coverage
 - notes
 
-For a successful split, include both child paths and the exact coverage JSON summary. For an
-irreducible input, include the reason and leave child paths empty. Re-read the output after writing
-and confirm it is non-empty.
+For a successful split, include both child paths and the exact coverage JSON summary. For an irreducible input, include the reason and leave child paths empty. Re-read the output after writing and confirm it is non-empty.
 
 ## Guardrails
 

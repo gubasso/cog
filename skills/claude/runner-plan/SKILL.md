@@ -17,34 +17,21 @@ allowed-tools: Bash Read Agent Skill
 
 # Runner Plan
 
-**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
-follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
+**Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 
-Drive one flat plan directory in the resolved cog plan vault (local or global store), resolved by
-`cog runner-plan-setup` via `cog plan runner-resolve`. This skill runs inline in its own invocation; it
-never delegates its rounds loop. Each selected round carries the command to run in its `prompt:` field,
-and this runner sends that text unchanged to a queue-blind `claude-delegate` subagent.
+Drive one flat plan directory in the resolved cog plan vault (local or global store), resolved by `cog runner-plan-setup` via `cog plan runner-resolve`. This skill runs inline in its own invocation; it never delegates its rounds loop. Each selected round carries the command to run in its `prompt:` field, and this runner sends that text unchanged to a queue-blind `claude-delegate` subagent.
 
 ## Contract
 
 - `runner-plan` consumes only a plan directory containing `queue-rounds.yaml` with `rounds:` schema.
-- `cog runner-plan-setup` validates the `-ar @<plan-dir>` target through `cog plan runner-resolve`,
-  which resolves the vault store, asserts flatness, and validates the `rounds` schema; setup emits the
-  resolved `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and `PROJECT_KEY` into `ctx.env`.
+- `cog runner-plan-setup` validates the `-ar @<plan-dir>` target through `cog plan runner-resolve`, which resolves the vault store, asserts flatness, and validates the `rounds` schema; setup emits the resolved `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_STORE`, and `PROJECT_KEY` into `ctx.env`.
 - The selected round prompt is opaque data. Dispatch it exactly as read from `cog queue-select`.
-- The executor prompt owns the round's status flip. After the delegate returns, verify the round is
-  exactly `done`; do not edit the round status in this skill.
-- `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`.
-  Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is
-  `{ok, commits[]}`.
-- After each committed round, run the `review-queue-rounds` boundary. That boundary performs
-  `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
-- `ctx.env` carries `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_DIR`, `INNER_QUEUE_PATH`,
-  `QUEUE_PATH`, `QUEUE_SCHEMA`, `PLAN_STORE`, `PROJECT_KEY`, `RUN_DIR`, `DRY_RUN`, `MAX_ROUNDS`, and
-  `REPOS`.
+- The executor prompt owns the round's status flip. After the delegate returns, verify the round is exactly `done`; do not edit the round status in this skill.
+- `/gc` is the only commit authority. Parse its captured result with `cog runner-commit-parse`. Human parse output is `COMMIT_SHA=<sha>` or `COMMIT_SHA=<sha> repo=<root>`; JSON output is `{ok, commits[]}`.
+- After each committed round, run the `review-queue-rounds` boundary. That boundary performs `cog review-queue-rounds-scan` and `cog review-queue-rounds-verify`.
+- `ctx.env` carries `REPO_ROOT`, `PLAN_ROOT`, `MAIN_QUEUE_PATH`, `PLAN_DIR`, `INNER_QUEUE_PATH`, `QUEUE_PATH`, `QUEUE_SCHEMA`, `PLAN_STORE`, `PROJECT_KEY`, `RUN_DIR`, `DRY_RUN`, `MAX_ROUNDS`, and `REPOS`.
 
-Depth budget: `runner-plan` at depth 1 when launched by `runner-all` dispatches an executor at depth
-2; executor review subagents run at depth 3, below the fixed cap of 5.
+Depth budget: `runner-plan` at depth 1 when launched by `runner-all` dispatches an executor at depth 2; executor review subagents run at depth 3, below the fixed cap of 5.
 
 ## Usage
 
@@ -56,12 +43,9 @@ Depth budget: `runner-plan` at depth 1 when launched by `runner-all` dispatches 
 /runner-plan --dry-run -ar @.cog/plans/plans/<slug>/
 ```
 
-`--max N` counts completed and committed rounds. `--dry-run` selects and prints the next round, its
-verbatim prompt, remaining `todo` rounds, and the planned `/gc -a` flags without dispatching,
-flipping status, committing, or running revision.
+`--max N` counts completed and committed rounds. `--dry-run` selects and prints the next round, its verbatim prompt, remaining `todo` rounds, and the planned `/gc -a` flags without dispatching, flipping status, committing, or running revision.
 
-The plan path must not contain whitespace. Arguments are tokenized by word splitting, matching the
-vault layout convention.
+The plan path must not contain whitespace. Arguments are tokenized by word splitting, matching the vault layout convention.
 
 ## Algorithm
 
@@ -86,10 +70,8 @@ vault layout convention.
      || { echo "ERROR: queue-select failed; see $RUN_DIR/round-select-$RUN_COUNT.json" >&2; exit 1; }
    ```
 
-4. If `.state` is `complete`, stop successfully. If selection fails or reports blocked work, stop
-   failed closed and report `$RUN_DIR`.
-5. For dry-run, print `.selected.item`, `.selected.prompt`, `.todo_remaining`, and planned repo
-   flags, then stop.
+4. If `.state` is `complete`, stop successfully. If selection fails or reports blocked work, stop failed closed and report `$RUN_DIR`.
+5. For dry-run, print `.selected.item`, `.selected.prompt`, `.todo_remaining`, and planned repo flags, then stop.
 6. Dispatch the selected prompt through a foreground Agent call:
 
    - `subagent_type`: `claude-delegate`
@@ -124,15 +106,9 @@ vault layout convention.
    fi
    ```
 
-   When a round is an operator-approval gate, it stays not-`done` until the human approves on a channel
-   the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`.
-   Surface the exact `cog gate approve --round-id <id> --round-path <round-file>` command for the human
-   to run — never relay approval or hand-edit the queue to force the round through.
+   When a round is an operator-approval gate, it stays not-`done` until the human approves on a channel the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`. Surface the exact `cog gate approve --round-id <id> --round-path <round-file>` command for the human to run — never relay approval or hand-edit the queue to force the round through.
 
-8. Enforce the round's declared scope before committing. When the selected round declares `scope`,
-   run the scope-guard against the working-tree changeset; a breach means the round rewrote far more
-   than it declared. STOP on breach and report the delta (proceed / split / revert) per Failure
-   Handling:
+8. Enforce the round's declared scope before committing. When the selected round declares `scope`, run the scope-guard against the working-tree changeset; a breach means the round rewrote far more than it declared. STOP on breach and report the delta (proceed / split / revert) per Failure Handling:
 
    ```bash
    . "$RUN_DIR/ctx.env"
@@ -144,9 +120,7 @@ vault layout convention.
    fi
    ```
 
-   Then commit through a foreground `claude-delegate` running `/gc -a` plus one `--repo <path>` per
-   satellite in `REPOS`. Capture only `COMMIT_*` lines to `$RUN_DIR/commit-$RUN_COUNT.out`, then
-   parse:
+   Then commit through a foreground `claude-delegate` running `/gc -a` plus one `--repo <path>` per satellite in `REPOS`. Capture only `COMMIT_*` lines to `$RUN_DIR/commit-$RUN_COUNT.out`, then parse:
 
    ```bash
    . "$RUN_DIR/ctx.env"
@@ -154,11 +128,9 @@ vault layout convention.
    cog runner-commit-parse "$RUN_DIR/commit-$RUN_COUNT.out" --json
    ```
 
-   A round that changed only queue metadata produces a `COMMIT_OK empty` line; treat it as success,
-   skip the per-repo commit, and proceed to the boundary.
+   A round that changed only queue metadata produces a `COMMIT_OK empty` line; treat it as success, skip the per-repo commit, and proceed to the boundary.
 
-9. Run the revision boundary as a foreground `claude-delegate`. Source `MAIN_QUEUE_PATH` from `ctx.env`
-   (emitted by setup) and re-resolve the vault to prove it is still consistent:
+9. Run the revision boundary as a foreground `claude-delegate`. Source `MAIN_QUEUE_PATH` from `ctx.env` (emitted by setup) and re-resolve the vault to prove it is still consistent:
 
    ```bash
    . "$RUN_DIR/ctx.env"
@@ -184,12 +156,9 @@ vault layout convention.
    scan, verify, graph-check, or commit failure.
    ```
 
-   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean
-   verified postcondition before selecting more work.
+   Require `STATUS: OK`, proof that `cog review-queue-rounds-verify` passed, and a clean verified postcondition before selecting more work.
 
-   After the boundary, scan for cross-round no-ops. When the round declared `artifacts` or
-   `idempotency_check`, check whether an earlier round already deployed the same artifact so a
-   re-deploy no-op is reported, not silent:
+   After the boundary, scan for cross-round no-ops. When the round declared `artifacts` or `idempotency_check`, check whether an earlier round already deployed the same artifact so a re-deploy no-op is reported, not silent:
 
    ```bash
    . "$RUN_DIR/ctx.env"
@@ -213,12 +182,8 @@ rounds:
     prompt: /executor-prex -ar /abs/plan-root/plans/<plan>/rounds/round-one.md
 ```
 
-`runner-plan-setup` persists this list as newline-joined `REPOS`. Rebuild `--repo <path>` flags from
-that value for clean-tree checks and `/gc -a` commits.
+`runner-plan-setup` persists this list as newline-joined `REPOS`. Rebuild `--repo <path>` flags from that value for clean-tree checks and `/gc -a` commits.
 
 ## Failure Handling
 
-Stop immediately on setup failure, invalid queue data, duplicate items, existing `doing`, dirty
-worktree, blocked dependencies, delegate failure, a round not verified as `done`, missing or failed
-`COMMIT_*`, or revision failure. An intentional `--max` stop is normal and reports remaining work.
-Dry-run never dispatches, flips status, commits, or runs revision.
+Stop immediately on setup failure, invalid queue data, duplicate items, existing `doing`, dirty worktree, blocked dependencies, delegate failure, a round not verified as `done`, missing or failed `COMMIT_*`, or revision failure. An intentional `--max` stop is normal and reports remaining work. Dry-run never dispatches, flips status, commits, or runs revision.

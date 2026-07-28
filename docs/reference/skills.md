@@ -1,7 +1,6 @@
 # Skills
 
-`cog` ships runtime-specific skill and agent trees. The filesystem is the inventory source of truth;
-this reference describes the layout by pattern.
+`cog` ships runtime-specific skill and agent trees. The filesystem is the inventory source of truth; this reference describes the layout by pattern.
 
 ## Claude
 
@@ -17,8 +16,7 @@ Claude agents live under:
 agents/claude/*.md
 ```
 
-`agents/claude/claude-delegate.md` is the reusable foreground delegation primitive used by
-orchestration skills that need isolated execution and nested subagents.
+`agents/claude/claude-delegate.md` is the reusable foreground delegation primitive used by orchestration skills that need isolated execution and nested subagents.
 
 ## Codex
 
@@ -28,9 +26,7 @@ Codex skills live under:
 skills/codex/*/SKILL.md
 ```
 
-The Codex tree is smaller than the Claude tree because Codex and Claude expose different skill and
-tool surfaces. Keep instructions runtime-native instead of forcing one shared skill body to cover
-both systems.
+The Codex tree is smaller than the Claude tree because Codex and Claude expose different skill and tool surfaces. Keep instructions runtime-native instead of forcing one shared skill body to cover both systems.
 
 ## Project-Local Authoring Skill
 
@@ -40,30 +36,19 @@ The repo-local authoring skill lives under:
 .claude/skills/cog-skill-creator/SKILL.md
 ```
 
-This skill is for maintaining this repository's shipped skill trees. It is not copied by
-`install.sh`, which only installs payload skills from `skills/claude/` and `skills/codex/`.
+This skill is for maintaining this repository's shipped skill trees. It is not copied by `install.sh`, which only installs payload skills from `skills/claude/` and `skills/codex/`.
 
-Skill authoring and lint rules are defined in [Skill contract](skill-contract.md).
+Skill authoring and lint rules are defined in [Skill contract](./skill-contract.md).
 
 ## Reference Resolution
 
-Skill-source references required at runtime live in the packaged `skill-refs/` tree. Skills should
-resolve those references with `cog skill-refs path <rel>`, which checks the XDG-installed
-`$XDG_DATA_HOME/cog/skill-refs` tree first and then falls back to the repo checkout. Every
-load-bearing reference ships in-repo; public online docs are welcome only as optional further
-reading and must degrade gracefully when absent. See
-[ADR-0071](../decisions/0071-repository-self-containment.md).
+Skill-source references required at runtime live in the packaged `skill-refs/` tree. Skills should resolve those references with `cog skill-refs path <rel>`, which checks the XDG-installed `$XDG_DATA_HOME/cog/skill-refs` tree first and then falls back to the repo checkout. Every load-bearing reference ships in-repo; public online docs are welcome only as optional further reading and must degrade gracefully when absent. See [ADR-0071](../decisions/0071-repository-self-containment.md).
 
-Codex-spawning Claude skills must use the wrapper documented in
-[Codex single entrypoint](codex-single-entrypoint.md).
+Codex-spawning Claude skills must use the wrapper documented in [Codex single entrypoint](./codex-single-entrypoint.md).
 
 ## Taxonomy Inventory
 
-The governing skill taxonomy is defined in
-[Skill contract](skill-contract.md) ("Prefix taxonomy") and
-[ADR-0016](../decisions/0016-skill-prefix-taxonomy.md). `cog skill-lint` enforces it with the
-`skill-prefix-taxonomy` rule. The filesystem remains the inventory source of truth; the listing
-below maps each currently shipped artifact to its taxonomy class.
+The governing skill taxonomy is defined in [Skill contract](./skill-contract.md) ("Prefix taxonomy") and [ADR-0016](../decisions/0016-skill-prefix-taxonomy.md). `cog skill-lint` enforces it with the `skill-prefix-taxonomy` rule. The filesystem remains the inventory source of truth; the listing below maps each currently shipped artifact to its taxonomy class.
 
 ### plan-*
 
@@ -102,8 +87,7 @@ Plan-review sub-namespace (`review-plan-*`):
 - skills/claude/executor-oneshot-codex
 - skills/codex/executor-oneshot
 
-`executor-vetted` is a Claude-only orchestrator (its `plan-multi` / `review-plan-multi` producers run
-Claude and Codex together), so it has no Codex twin or `-codex` delegation launcher.
+`executor-vetted` is a Claude-only orchestrator (its `plan-multi` / `review-plan-multi` producers run Claude and Codex together), so it has no Codex twin or `-codex` delegation launcher.
 
 ### runner-*
 

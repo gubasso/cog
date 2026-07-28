@@ -1,0 +1,77 @@
+//! Crate-level error type and exit-code mapping.
+//!
+//! `AppError` aggregates errors from every layer via `#[from]`. `exit_code()`
+//! maps each variant to a BSD sysexits(3) code. Unit-tested below; treat the
+//! matrix as part of the user-facing API.
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum AppError {
+    #[error("usage: {0}")]
+    Usage(String),
+
+    #[error(transparent)]
+    Config(#[from] crate::config::ConfigError),
+
+    #[error("io: {0}")]
+    Io(#[from] std::io::Error),
+
+    // Uncomment these as the corresponding modules grow real error types.
+    //
+    // #[error(transparent)]
+    // Domain(#[from] crate::domain::DomainError),
+    //
+    // #[error(transparent)]
+    // Adapter(#[from] crate::adapters::AdapterError),
+    //
+    // #[error(transparent)]
+    // Service(#[from] crate::services::ServiceError),
+
+    /// Escape hatch for ad-hoc `.context("...")` paths at the binary boundary.
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+impl AppError {
+    /// Map to a BSD sysexits(3) exit code.
+    /// See: https://man.freebsd.org/cgi/man.cgi?query=sysexits&sektion=3
+    pub fn exit_code(&self) -> u8 {
+        match self {
+            AppError::Usage(_)  => 64, // EX_USAGE
+            AppError::Config(_) => 78, // EX_CONFIG
+            AppError::Io(e) if e.kind() == std::io::ErrorKind::NotFound        => 66, // EX_NOINPUT
+            AppError::Io(e) if e.kind() == std::io::ErrorKind::PermissionDenied => 77, // EX_NOPERM
+            AppError::Io(_)     => 74, // EX_IOERR
+            AppError::Other(_)  => 70, // EX_SOFTWARE
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn usage_is_64() {
+        assert_eq!(AppError::Usage("bad flag".into()).exit_code(), 64);
+    }
+
+    #[test]
+    fn not_found_io_is_66() {
+        let e = AppError::Io(std::io::Error::from(std::io::ErrorKind::NotFound));
+        assert_eq!(e.exit_code(), 66);
+    }
+
+    #[test]
+    fn permission_denied_io_is_77() {
+        let e = AppError::Io(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+        assert_eq!(e.exit_code(), 77);
+    }
+
+    #[test]
+    fn other_io_is_74() {
+        let e = AppError::Io(std::io::Error::from(std::io::ErrorKind::BrokenPipe));
+        assert_eq!(e.exit_code(), 74);
+    }
+}

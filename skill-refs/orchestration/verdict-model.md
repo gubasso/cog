@@ -1,8 +1,6 @@
 # Verdict & Severity Model
 
-Shared enums for review verdicts, finding severity, and finding categories. Used by
-`implementation-reviewer`, `review-plan-oneshot`, and
-`review-oneshot` (via `llm-review-discipline.md`).
+Shared enums for review verdicts, finding severity, and finding categories. Used by `implementation-reviewer`, `review-plan-oneshot`, and `review-oneshot` (via `llm-review-discipline.md`).
 
 ## Verdict Enum
 

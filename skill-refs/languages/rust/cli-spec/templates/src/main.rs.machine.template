@@ -1,0 +1,92 @@
+//! Machine-facing binary entry point.
+//!
+//! Parses args, initializes file-first logging with no stderr mirror by default,
+//! builds `AppContext`, dispatches to the selected subcommand, maps the
+//! resulting `AppError` to a sysexits exit code, and emits structured errors to stderr.
+//! NO business logic here — if you find yourself writing logic, lift it into
+//! `commands/`, `services/`, or `adapters/`.
+
+use clap::Parser;
+use std::process::ExitCode;
+
+mod cli;
+mod commands;
+mod config;
+mod context;
+mod domain;
+mod error;
+mod logging;
+// mod adapters;   // uncomment when you add adapters
+// mod output;     // structured machine-output helpers, if needed
+// mod protocol;   // protocol types, if needed
+// mod services;   // uncomment when you add shared services
+
+use crate::cli::{Cli, Commands};
+use crate::context::AppContext;
+use crate::error::AppError;
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+
+    if let Err(e) = logging::init(cli.global.verbose, false) {
+        print_init_error(&e);
+        return ExitCode::from(70); // EX_SOFTWARE
+    }
+
+    let ctx = match AppContext::new(&cli) {
+        Ok(c) => c,
+        Err(e) => {
+            print_error(&e);
+            return ExitCode::from(e.exit_code());
+        }
+    };
+
+    let result = match cli.command {
+        Commands::Example(args) => commands::example::run(&ctx, args),
+        // Commands::Doctor(args) => commands::doctor::run(&ctx, args),
+        // Commands::Init(args) => commands::init::run(&ctx, args),
+        // add one arm per subcommand
+    };
+
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            print_error(&e);
+            ExitCode::from(e.exit_code())
+        }
+    }
+}
+
+// Error envelopes share one stable schema — {"ok":false,"error":{kind,message,exit_code}} — and go
+// to stderr with a non-zero exit code, honoring the universal Unix stdout/stderr contract (see the
+// channel matrix in cli-design/01-logging-and-output.md): stdout carries only the successful result,
+// errors go to stderr. This holds for machine-facing tools too — agents expect it.
+fn print_init_error(e: &anyhow::Error) {
+    // Logging failed before the subscriber was installed; sysexits EX_SOFTWARE (70).
+    eprintln!(
+        "{{\"ok\":false,\"error\":{{\"kind\":\"LogInit\",\"message\":{},\"exit_code\":70}}}}",
+        json_string(&e.to_string())
+    );
+}
+
+fn print_error(e: &AppError) {
+    eprintln!(
+        "{{\"ok\":false,\"error\":{{\"kind\":\"{}\",\"message\":{},\"exit_code\":{}}}}}",
+        error_kind(e),
+        json_string(&e.to_string()),
+        e.exit_code()
+    );
+}
+
+fn error_kind(e: &AppError) -> &'static str {
+    match e {
+        AppError::Usage(_) => "Usage",
+        AppError::Config(_) => "Config",
+        AppError::Io(_) => "Io",
+        AppError::Other(_) => "Other",
+    }
+}
+
+fn json_string(value: &str) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| "\"<unprintable>\"".to_string())
+}

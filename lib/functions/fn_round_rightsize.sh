@@ -154,16 +154,16 @@ cog::fn::round_rightsize::pending_json() {
     ($s.queue | map(select(.status=="awaiting-grade")) | map({round_id, path})) as $ag
     | ($s.queue | map(select(.status=="awaiting-split")) | map({round_id, path, grade, score, report_path})) as $as
     | {schema:"cog.round-rightsize.pending.v1", ok:true,
-       terminal: (($ag|length)==0 and ($as|length)==0),
-       ceiling:$s.ceiling,
-       awaiting_grade:$ag, awaiting_split:$as,
-       counts:{
-         awaiting_grade:($ag|length),
-         awaiting_split:($as|length),
-         final:($s.queue|map(select(.status=="final"))|length),
-         irreducible_over_ceiling:($s.queue|map(select(.status=="irreducible-over-ceiling"))|length),
-         split:($s.queue|map(select(.status=="split"))|length)
-       }}'
+      terminal: (($ag|length)==0 and ($as|length)==0),
+      ceiling:$s.ceiling,
+      awaiting_grade:$ag, awaiting_split:$as,
+      counts:{
+        awaiting_grade:($ag|length),
+        awaiting_split:($as|length),
+        final:($s.queue|map(select(.status=="final"))|length),
+        irreducible_over_ceiling:($s.queue|map(select(.status=="irreducible-over-ceiling"))|length),
+        split:($s.queue|map(select(.status=="split"))|length)
+      }}'
 }
 
 # record-grade ------------------------------------------------------------
@@ -350,8 +350,8 @@ cog::fn::round_rightsize::record_split() {
     --arg bid "$b_id" --arg bpath "$b_abs" '
     def child($cid; $cpath):
       {round_id:$cid, path:$cpath, status:"awaiting-grade", origin:"split-child",
-       parent_round_id:$id, grade:null, score:null, splittable:null,
-       over_ceiling:null, report_path:null, reopened_for:null};
+      parent_round_id:$id, grade:null, score:null, splittable:null,
+      over_ceiling:null, report_path:null, reopened_for:null};
     .updated_at=$now
     | .queue = (.queue | map(if .round_id==$id then .status="split" else . end))
     | .queue += [child($aid;$apath), child($bid;$bpath)]' <<<"$state")"
@@ -378,7 +378,7 @@ cog::fn::round_rightsize::reopen() {
   # shellcheck disable=SC2016 # jq filter; $id/$reason/$now are jq vars bound via --arg.
   new="$(jq -c --arg id "$id" --arg reason "$reason" --arg now "$now" \
     '.updated_at=$now | .state="open" | .finalized_at=null
-     | .queue = (.queue | map(if .round_id==$id then .status="awaiting-split" | .reopened_for=$reason else . end))' <<<"$state")"
+    | .queue = (.queue | map(if .round_id==$id then .status="awaiting-split" | .reopened_for=$reason else . end))' <<<"$state")"
   __cog_round_rightsize_write_state "$state_file" "$new"
   cat -- "$state_file"
 }

@@ -11,18 +11,14 @@ token-estimate: 700
 
 ## Scope
 
-ast-grep structural code search and rewrite: rule syntax reference covering all rule types,
-metavariables, and common patterns.
+ast-grep structural code search and rewrite: rule syntax reference covering all rule types, metavariables, and common patterns.
 
 ## Key Points
 
 ### Rule Categories
 
-- **Atomic**: `pattern` (string or object with selector/context/strictness), `kind` (Tree-sitter
-  node kind), `regex` (Rust regex on node text), `nthChild` (positional), `range` (character
-  positions).
-- **Relational**: `inside` (ancestor), `has` (descendant), `precedes` (before), `follows` (after).
-  All support `stopBy` (neighbor/end/rule) and `field` (for inside/has).
+- **Atomic**: `pattern` (string or object with selector/context/strictness), `kind` (Tree-sitter node kind), `regex` (Rust regex on node text), `nthChild` (positional), `range` (character positions).
+- **Relational**: `inside` (ancestor), `has` (descendant), `precedes` (before), `follows` (after). All support `stopBy` (neighbor/end/rule) and `field` (for inside/has).
 - **Composite**: `all` (AND, ordered), `any` (OR), `not` (negation), `matches` (rule reuse by ID).
 
 ### Metavariables
@@ -73,5 +69,4 @@ rule:
 ## Maintenance Notes
 
 - Rule syntax is tied to the ast-grep version; re-verify when upgrading.
-- The `pattern` object form (selector, context, strictness) is the most powerful but least
-  intuitive; examples in `rule-reference.md` are the primary teaching tool.
+- The `pattern` object form (selector, context, strictness) is the most powerful but least intuitive; examples in `rule-reference.md` are the primary teaching tool.

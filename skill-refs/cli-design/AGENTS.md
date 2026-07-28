@@ -19,34 +19,24 @@ token-estimate: 2800
 
 ## Scope
 
-Language-agnostic CLI design canon: architecture, logging, errors, config, coding style, LLM-agent
-design, naming, reference projects, and a pre-ship checklist. Language-specific implementations live
-in `tech/languages/<lang>/cli-spec/`.
+Language-agnostic CLI design canon: architecture, logging, errors, config, coding style, LLM-agent design, naming, reference projects, and a pre-ship checklist. Language-specific implementations live in `tech/languages/<lang>/cli-spec/`.
 
 ## Key Points
 
 ### Architecture (00)
 
-- Split parse-shape (CLI parser structs) from runtime-shape (domain types). Projection happens once
-  at the top of each handler.
-- Declare the facing category at design time: `human-facing` or `machine-facing`. This is not a
-  runtime `isatty()` flip.
-- One `AppContext` built in `main`, passed by reference. Holds config, paths, runtime handle, clock,
-  and either a human-UX `Ui` or a machine-output/protocol facility. No globals.
-- Directory roles: `cli/` (parse-shape), `commands/` (handlers), `domain/` (pure types, no I/O),
-  `adapters/` (external I/O), `services/` (optional shared orchestration), `config/`, `ui/`
-  (human-facing) or structured-output boundary (machine-facing), `util/`.
+- Split parse-shape (CLI parser structs) from runtime-shape (domain types). Projection happens once at the top of each handler.
+- Declare the facing category at design time: `human-facing` or `machine-facing`. This is not a runtime `isatty()` flip.
+- One `AppContext` built in `main`, passed by reference. Holds config, paths, runtime handle, clock, and either a human-UX `Ui` or a machine-output/protocol facility. No globals.
+- Directory roles: `cli/` (parse-shape), `commands/` (handlers), `domain/` (pure types, no I/O), `adapters/` (external I/O), `services/` (optional shared orchestration), `config/`, `ui/` (human-facing) or structured-output boundary (machine-facing), `util/`.
 - Four-edit rule for subcommands: `cli/<name>`, `cli/root`, `commands/<name>`, `main` dispatch.
 - Single crate by default; workspace only at ~8k LOC or when a real second consumer appears.
 
 ### Logging and Output (01)
 
-- Three message types: human-UX (human-facing default), machine-output (machine-facing default,
-  human-facing opt-in), and log-messages (both categories, always).
-- Default log-messages to `$XDG_STATE_HOME/<app>/<app>.log` in structured `key=value` or JSON, no
-  ANSI. Terminal mirror is opt-in.
-- Machine-output does not paginate by default; if output can be too large, document
-  `--limit`/`--page`/`--cursor`/`--offset` in `--help`.
+- Three message types: human-UX (human-facing default), machine-output (machine-facing default, human-facing opt-in), and log-messages (both categories, always).
+- Default log-messages to `$XDG_STATE_HOME/<app>/<app>.log` in structured `key=value` or JSON, no ANSI. Terminal mirror is opt-in.
+- Machine-output does not paginate by default; if output can be too large, document `--limit`/`--page`/`--cursor`/`--offset` in `--help`.
 - Verbosity: none=warn, `-v`=info, `-vv`=debug, `-vvv`=trace.
 - Respect `NO_COLOR`/`FORCE_COLOR` for human-UX; never color machine-output or log files.
 
@@ -54,8 +44,7 @@ in `tech/languages/<lang>/cli-spec/`.
 
 - Four-part anatomy: what, where, why, hint.
 - Stable `err.kind` per variant (machine-matchable, never rename).
-- BSD sysexits exit codes (64=usage, 65=data, 66=noinput, 69=unavailable, 70=software, 74=ioerr,
-  78=config). No catch-all `1`.
+- BSD sysexits exit codes (64=usage, 65=data, 66=noinput, 69=unavailable, 70=software, 74=ioerr, 78=config). No catch-all `1`.
 - Per-layer typed errors aggregated at top-level `AppError`.
 
 ### Config Precedence (03)
@@ -78,12 +67,9 @@ in `tech/languages/<lang>/cli-spec/`.
 - Default path: CLI + thin Skill wrapper. MCP only for stateful/auth/multi-tenant needs.
 - Three-layer model: CLI (mechanism), SKILL.md (playbook), AGENTS.md (constitution).
 - Every output is a prompt: include affected IDs and next-command suggestions.
-- `--help` is documentation; machine-output is default for machine-facing tools and opt-in for
-  human-facing tools; `doctor` reports health checks.
-- Self-documenting machine surfaces: `help`/usage, `doctor`, `init`, completion, and man pages via a
-  subcommand.
-- Verb-noun structure mirroring kubectl/docker/gh. Familiar flag names (`--dry-run`, `--force`,
-  `--yes`).
+- `--help` is documentation; machine-output is default for machine-facing tools and opt-in for human-facing tools; `doctor` reports health checks.
+- Self-documenting machine surfaces: `help`/usage, `doctor`, `init`, completion, and man pages via a subcommand.
+- Verb-noun structure mirroring kubectl/docker/gh. Familiar flag names (`--dry-run`, `--force`, `--yes`).
 - Deterministic and idempotent operations.
 
 ### Naming and Docs (07)
@@ -95,14 +81,11 @@ in `tech/languages/<lang>/cli-spec/`.
 
 ### Reference Projects (09)
 
-- Ten patterns from real CLIs: single-crate, lib+bin, domain-crates, client+server+common, plugin
-  ABI, uniform exec(), focused error+ui modules, options/output split, context+modules,
-  dependency-direction workspace.
+- Ten patterns from real CLIs: single-crate, lib+bin, domain-crates, client+server+common, plugin ABI, uniform exec(), focused error+ui modules, options/output split, context+modules, dependency-direction workspace.
 
 ### Checklist (99)
 
-- Pre-ship sanity check across architecture, logging, errors, config, coding style, LLM agents,
-  naming, testing, regression safeguards, CI, and wrapper specifics.
+- Pre-ship sanity check across architecture, logging, errors, config, coding style, LLM agents, naming, testing, regression safeguards, CI, and wrapper specifics.
 
 ## Source Map
 
@@ -120,8 +103,6 @@ in `tech/languages/<lang>/cli-spec/`.
 
 ## Maintenance Notes
 
-- Chapters 06 and 08 are subdirectories not included as source files in this digest; load them
-  directly when reviewing wrapper design or testing. They include light category-scoping tags.
-- Language-specific specs (`rust/cli-spec/`, `python/cli-spec/`, `bash/cli-spec/`) apply these
-  principles to concrete ecosystems.
+- Chapters 06 and 08 are subdirectories not included as source files in this digest; load them directly when reviewing wrapper design or testing. They include light category-scoping tags.
+- Language-specific specs (`rust/cli-spec/`, `python/cli-spec/`, `bash/cli-spec/`) apply these principles to concrete ecosystems.
 - Regenerate when any chapter file changes or new chapters are added.

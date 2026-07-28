@@ -1,5 +1,4 @@
-Copy this file to `docs/decisions/NNNN-short-title.md` and fill it in. Keep filled ADRs at or below
-350 words; keep each field brief, and split separate decisions into separate ADRs.
+<!-- Copy this file to `docs/decisions/NNNN-short-title.md` and fill it in. Keep filled ADRs at or below 350 words; keep each field brief, and split separate decisions into separate ADRs. -->
 
 # ADR-NNNN: {Short Title}
 

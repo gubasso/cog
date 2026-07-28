@@ -88,9 +88,9 @@ cog::fn::power_grade::validate_json() {
         ($matrix.model_cells | map(.id)) as $ids
         | ($matrix.model_tiers // [])
         | map(select((.claude_cell as $c | $ids | index($c) | not) or
-                     (.codex_cell as $g | $ids | index($g) | not))
+                    (.codex_cell as $g | $ids | index($g) | not))
           | {kind: "model_tier_unknown_reference", name: (.name // null),
-             claude_cell: (.claude_cell // null), codex_cell: (.codex_cell // null)});
+            claude_cell: (.claude_cell // null), codex_cell: (.codex_cell // null)});
       def needs_verification_warnings:
         $matrix.model_cells
         | map(select(.evidence_status == "needs_verification")
@@ -106,9 +106,9 @@ cog::fn::power_grade::validate_json() {
         allowlist_tiers as $tiers
         | $matrix.model_cells
         | map(select((.evidence_status != "needs_verification") and
-                     ((cell_source_ids(.) | map(select((($tiers[.] // 999) <= 2))) | length) == 0))
+                    ((cell_source_ids(.) | map(select((($tiers[.] // 999) <= 2))) | length) == 0))
             | {kind: "sourced_without_allowlisted_source", cell_id: (.id // null),
-               benchmark_source_ids: cell_source_ids(.)});
+              benchmark_source_ids: cell_source_ids(.)});
       def warnings:
         needs_verification_warnings + tier3_source_warnings + sourced_without_allowlisted_source_warnings;
 
@@ -296,8 +296,8 @@ cog::fn::power_grade::compound_json() {
       "capped_max_plus_artifact_gain" as $supported_formula
       | (($matrix.compound.formula // $supported_formula) != $supported_formula) as $formula_unsupported
       | (if $formula_unsupported then
-           [{ok: false, input: ($matrix.compound.formula // null), index: -1, error: "unknown_formula"}]
-         else [] end) as $formula_errors
+          [{ok: false, input: ($matrix.compound.formula // null), index: -1, error: "unknown_formula"}]
+        else [] end) as $formula_errors
       | ($pass_ids | to_entries | map(pass_cell(.value; .key))) as $passes_resolved
       | ($formula_errors + ($passes_resolved | map(select(.ok != true)))) as $errors
       | ($passes_resolved | map(select(.ok == true) | .cell)) as $cells
@@ -308,9 +308,9 @@ cog::fn::power_grade::compound_json() {
       | ($gains | add // 0) as $artifact_gain
       | ($base_grade + $artifact_gain) as $raw_grade
       | (if ($matrix.compound.cap_to_scale_max // true)
-         then [$matrix.scale.max, $raw_grade] | min
-         else $raw_grade
-         end) as $compound_grade
+        then [$matrix.scale.max, $raw_grade] | min
+        else $raw_grade
+        end) as $compound_grade
       | {
           schema: $schema,
           ok: (($errors | length) == 0 and ($cells | length) > 0),
@@ -406,7 +406,7 @@ cog::fn::power_grade::executor_json() {
                   floor_pct: round1(.prev),
                   ceil_pct: round1($ceil)
                 }])}
-         ) | .out) as $banded
+        ) | .out) as $banded
       | ($banded | map(select($name == "" or .executor == $name))) as $selected
       | {
           schema: $schema,
@@ -418,7 +418,7 @@ cog::fn::power_grade::executor_json() {
           errors: (
             [$resolved[] | select(.power == null) | {kind: "unresolved_cell", executor: .executor}]
             + (if ($name != "" and (($banded | map(.executor) | index($name)) == null))
-               then [{kind: "unknown_executor", executor: $name}] else [] end)
+              then [{kind: "unknown_executor", executor: $name}] else [] end)
           )
         }'
 }
@@ -461,13 +461,13 @@ cog::fn::power_grade::match_json() {
                   floor_pct: .prev,
                   ceil_pct: $ceil
                 }])}
-         ) | .out) as $bands
+        ) | .out) as $bands
       | (if $maxscore > 0 then ($score / $maxscore * 100) else 0 end) as $pct
       | (($over != null) and ($score > $over)) as $reserved
       | (if $reserved then null
-         else (([$bands[] | select($pct <= .ceil_pct)] | first | .executor)
-               // ($bands | last | .executor))
-         end) as $chosen
+        else (([$bands[] | select($pct <= .ceil_pct)] | first | .executor)
+              // ($bands | last | .executor))
+        end) as $chosen
       | {
           schema: $schema,
           ok: true,
@@ -538,13 +538,13 @@ cog::fn::power_grade::executor_validate_json() {
       | (reduce range(0; ($sorted | length)) as $i ({prev: 0, ok: true};
             (if $maxpower > 0 then ($sorted[$i].power / $maxpower * 100) else 0 end) as $ceil
             | {prev: $ceil, ok: (.ok and (.prev <= $ceil))}
-         )) as $bandchain
+        )) as $bandchain
       | (($maxpower > 0) and (($sorted | length) > 0) and (($sorted | last | .power) == $maxpower)) as $covers_top
       | ($maxscore > 0) as $score_ok
       | (($cal.extreme_reserved.over_score // null) as $os
-         | ($cal.extreme_reserved.over_percent // null) as $op
-         | if ($os == null or $op == null or $maxscore == 0) then false
-           else ((($os / $maxscore * 100) - $op) | fabs) <= 0.2 end) as $extreme_ok
+        | ($cal.extreme_reserved.over_percent // null) as $op
+        | if ($os == null or $op == null or $maxscore == 0) then false
+          else ((($os / $maxscore * 100) - $op) | fabs) <= 0.2 end) as $extreme_ok
       | ($bandchain.ok and $covers_top and $score_ok and $extreme_ok) as $calib_ok
       | {
           schema: $schema,

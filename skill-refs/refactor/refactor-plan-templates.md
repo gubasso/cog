@@ -1,7 +1,6 @@
 # Plan Templates
 
-Every template here uses `{{PLACEHOLDER}}` markers the skill must substitute before writing.
-Standard placeholders:
+Every template here uses `{{PLACEHOLDER}}` markers the skill must substitute before writing. Standard placeholders:
 
 | Placeholder               | Source                                                       |
 | ------------------------- | ------------------------------------------------------------ |
@@ -24,21 +23,18 @@ Standard placeholders:
 | `{{QUIRKS}}`              | User-declared undocumented behavior list                     |
 | `{{SCAN_FINGERPRINT}}`    | SHA-256 over source-scan file contents, LC_ALL=C name-sorted |
 
-When a value is unknown, write the literal `<TBD: short description>` and append the question to the
-`Open Questions` list in `00-OVERVIEW.md`.
+When a value is unknown, write the literal `<TBD: short description>` and append the question to the `Open Questions` list in `00-OVERVIEW.md`.
 
 ---
 
 ## TEMPLATE — `AGENTS.md` (Spec Kit interop)
 
-This file is the universal entry point for any AI agent. It conforms to the GitHub Spec Kit
-convention so downstream tools can consume it.
+This file is the universal entry point for any AI agent. It conforms to the GitHub Spec Kit convention so downstream tools can consume it.
 
 ```markdown
 # AGENTS.md — Refactor/Migration Plan {{PLAN_ID}}
 
-> Spec Kit-compatible universal entry point for AI coding agents. See:
-> <https://github.com/github/spec-kit>
+> Spec Kit-compatible universal entry point for AI coding agents. See: <https://github.com/github/spec-kit>
 
 ## Project context
 
@@ -59,17 +55,14 @@ convention so downstream tools can consume it.
 
 This is a **full refactor**, NOT a transliteration.
 
-- Preserve the external contract (CLI surface, exit codes, API, observable behavior, on-disk/wire
-  formats, semver promises).
+- Preserve the external contract (CLI surface, exit codes, API, observable behavior, on-disk/wire formats, semver promises).
 - Re-derive the internal implementation from the contract using `{{TARGET_LANG}}`'s idioms.
-- See `04-ANTI-TRANSLITERATION.md` for the 16-smell refusal list. The agent must refuse to emit code
-  matching any of those smells.
+- See `04-ANTI-TRANSLITERATION.md` for the 16-smell refusal list. The agent must refuse to emit code matching any of those smells.
 - No scope creep. New features ship in a separate change.
 
 ## Canonical guideline
 
-`{{GUIDELINE_PATH}}` — when present, treat as authoritative over this file. Section references in
-plan files (`§0`, `§3`, `§6`) refer to it.
+`{{GUIDELINE_PATH}}` — when present, treat as authoritative over this file. Section references in plan files (`§0`, `§3`, `§6`) refer to it.
 
 ## Phase model
 
@@ -82,24 +75,19 @@ plan files (`§0`, `§3`, `§6`) refer to it.
 | E     | `06-VERIFICATION-PLAN.md`         | `phases.E.status`             |
 | F     | `07-CUTOVER.md`                   | `phases.F.status`             |
 
-Phases are gated. Do not advance past phase X until `phases.X.status` is `complete` and all
-checkboxes in the corresponding file are checked.
+Phases are gated. Do not advance past phase X until `phases.X.status` is `complete` and all checkboxes in the corresponding file are checked.
 
 ## Task ID convention
 
-`T-AA-NN` where `AA` is the phase letter (`A`–`F`) and `NN` is a zero-padded sequence inside the
-phase. Example: `T-A-01`, `T-C-12`, `T-E-03`.
+`T-AA-NN` where `AA` is the phase letter (`A`–`F`) and `NN` is a zero-padded sequence inside the phase. Example: `T-A-01`, `T-C-12`, `T-E-03`.
 
 ## How to advance
 
 After completing a task:
 
-1. Edit the file containing the task. Change `- [ ] T-AA-NN — …` to
-   `- [x] T-AA-NN — … _(completed: <UTC ISO 8601>, by: <agent-name>)_`.
-2. Append a line to `MANIFEST.yaml: implementation-log` describing what changed and any files
-   touched.
-3. When all tasks in a phase are `[x]`, set `phases.<X>.status: complete` in `MANIFEST.yaml` and
-   stamp `phases.<X>.completed-at`.
+1. Edit the file containing the task. Change `- [ ] T-AA-NN — …` to `- [x] T-AA-NN — … _(completed: <UTC ISO 8601>, by: <agent-name>)_`.
+2. Append a line to `MANIFEST.yaml: implementation-log` describing what changed and any files touched.
+3. When all tasks in a phase are `[x]`, set `phases.<X>.status: complete` in `MANIFEST.yaml` and stamp `phases.<X>.completed-at`.
 
 ## Coding canon for `{{TARGET_LANG}}`
 
@@ -108,8 +96,7 @@ Consult: `{{TARGET_LANG_CANON}}`
 ## Style for AI-friendly outputs
 
 - Cite plan files by relative path + section header.
-- When unsure of a contract behavior, do not guess — open a TODO under
-  `00-OVERVIEW.md › Open Questions` and stop.
+- When unsure of a contract behavior, do not guess — open a TODO under `00-OVERVIEW.md › Open Questions` and stop.
 ```
 
 ---
@@ -261,8 +248,7 @@ implementation-log: []
 
 > Read this file ONCE at the start of every implementation session.
 
-You are an AI coding agent. This plan was generated by the `refactor-migration-plan` skill on
-{{TIMESTAMP}}. Your job is to execute the plan, one task at a time, advancing through phases A→F.
+You are an AI coding agent. This plan was generated by the `refactor-migration-plan` skill on {{TIMESTAMP}}. Your job is to execute the plan, one task at a time, advancing through phases A→F.
 
 ## Step 1 — Read three files
 
@@ -277,30 +263,24 @@ Use this algorithm:
 1. Open `MANIFEST.yaml`. Find the lowest-letter phase whose `status` is not `complete`.
 2. Open that phase's file (e.g. `phases.A.file`).
 3. In that file, find the first `- [ ] T-AA-NN — …` line. That is your task.
-4. If every checkbox in the file is `[x]` but the phase status is not `complete`, set the phase
-   status to `complete`, stamp `completed-at` with the current UTC ISO 8601 timestamp, then go to
-   step 1.
+4. If every checkbox in the file is `[x]` but the phase status is not `complete`, set the phase status to `complete`, stamp `completed-at` with the current UTC ISO 8601 timestamp, then go to step 1.
 
-If the next phase is **blocked** by an earlier phase (see `phases.X.blocked-by`), refuse to start it
-and report the blocker to the user.
+If the next phase is **blocked** by an earlier phase (see `phases.X.blocked-by`), refuse to start it and report the blocker to the user.
 
 ### Special rule for Phase C
 
-`phases.C.source-code-access: FORBIDDEN`. While working on Phase C (Idiomatic Design), do **NOT**
-read the source project's code. You may read:
+`phases.C.source-code-access: FORBIDDEN`. While working on Phase C (Idiomatic Design), do **NOT** read the source project's code. You may read:
 
 - `{{TARGET_ROOT}}/refactor-plan/01-CONTRACT.md`
 - `{{TARGET_ROOT}}/refactor-plan/02-CHARACTERIZATION.md`
 - The target-language idiom canon `{{TARGET_LANG_CANON}}`
 - Any official Spec Kit / docs URLs cited in the plan
 
-This separation is the single highest-leverage anti-transliteration guardrail. Re-derive the design
-from the contract.
+This separation is the single highest-leverage anti-transliteration guardrail. Re-derive the design from the contract.
 
 ## Step 3 — Execute exactly one task
 
-Do only what the task description says. Do not bundle adjacent tasks. If a task spawns subtasks, add
-them as `- [ ] T-AA-NN.M — …` _below_ the parent and execute them in order.
+Do only what the task description says. Do not bundle adjacent tasks. If a task spawns subtasks, add them as `- [ ] T-AA-NN.M — …` _below_ the parent and execute them in order.
 
 ## Step 4 — Mark the task done
 
@@ -316,8 +296,7 @@ to:
 - [x] T-AA-NN — <description> _(completed: <UTC-ISO-8601>, by: <agent-name>)_
 ```
 
-Use the actual UTC timestamp at the moment you finish (not when you started). `<agent-name>` is your
-model+harness identifier, e.g. `claude-code/opus-4.7` or `codex-cli/gpt-5.4`.
+Use the actual UTC timestamp at the moment you finish (not when you started). `<agent-name>` is your model+harness identifier, e.g. `claude-code/opus-4.7` or `codex-cli/gpt-5.4`.
 
 ## Step 5 — Append to `MANIFEST.yaml: implementation-log`
 
@@ -334,29 +313,22 @@ implementation-log:
 ## Step 6 — Stop or continue
 
 - If the user invoked you with `one-task` (single-step mode), stop here and report status.
-- If the user invoked you with `phase`, continue executing tasks in the current phase until all are
-  checked, then stop at the phase boundary.
-- If the user invoked you with `full`, advance through phases. Pause at every phase boundary and ask
-  for explicit user permission before starting the next phase.
+- If the user invoked you with `phase`, continue executing tasks in the current phase until all are checked, then stop at the phase boundary.
+- If the user invoked you with `full`, advance through phases. Pause at every phase boundary and ask for explicit user permission before starting the next phase.
 
 ## Step 7 — When you hit a blocker
 
-If you cannot complete a task because of missing information, an ambiguous contract item, or an open
-question:
+If you cannot complete a task because of missing information, an ambiguous contract item, or an open question:
 
 1. Do NOT guess.
 2. Open `00-OVERVIEW.md` and add the question under `## Open
-   Questions` with the task ID and your
-   specific need.
-3. Set the task's status in `MANIFEST.yaml` to `blocked` (add a `blocked` field to
-   `implementation-log` entry).
+   Questions` with the task ID and your specific need.
+3. Set the task's status in `MANIFEST.yaml` to `blocked` (add a `blocked` field to `implementation-log` entry).
 4. Report to the user and stop.
 
 ## Step 8 — Refusal list (always active)
 
-While working in any phase, refuse to emit code that matches any pattern in
-`04-ANTI-TRANSLITERATION.md`. If you find yourself about to write a counterpart of source-language
-code, stop and re-derive from the contract.
+While working in any phase, refuse to emit code that matches any pattern in `04-ANTI-TRANSLITERATION.md`. If you find yourself about to write a counterpart of source-language code, stop and re-derive from the contract.
 
 ## Step 9 — On confusion, read the canonical guideline
 
@@ -374,9 +346,7 @@ code, stop and re-derive from the contract.
 
 ## What this plan covers
 
-Refactor `{{SOURCE_ROOT}}` (`{{SOURCE_LANG}}`) into `{{TARGET_ROOT}}`
-(`{{TARGET_LANG}} {{TARGET_LANG_VERSION}}`) as a **full rewrite**, preserving the external contract
-and re-deriving the internal implementation in `{{TARGET_LANG}}` idioms.
+Refactor `{{SOURCE_ROOT}}` (`{{SOURCE_LANG}}`) into `{{TARGET_ROOT}}` (`{{TARGET_LANG}} {{TARGET_LANG_VERSION}}`) as a **full rewrite**, preserving the external contract and re-deriving the internal implementation in `{{TARGET_LANG}}` idioms.
 
 System type: `{{SYSTEM_TYPE}}` Contract surfaces: {{CONTRACT_SURFACES}}
 
@@ -390,8 +360,7 @@ System type: `{{SYSTEM_TYPE}}` Contract surfaces: {{CONTRACT_SURFACES}}
 
 ## Where the canonical guideline lives
 
-`{{GUIDELINE_PATH}}` — section references throughout the plan (`§0`, `§3`, `§6`, …) refer to this
-document.
+`{{GUIDELINE_PATH}}` — section references throughout the plan (`§0`, `§3`, `§6`, …) refer to this document.
 
 ## Parity boundary
 
@@ -412,10 +381,8 @@ document.
 ## How to use this plan
 
 1. As an implementation agent: read `AGENTS.md` then `00-EXECUTION-GUIDE.md`.
-2. As a human: skim the seven numbered files (01–07) in order; each maps to one phase of the
-   rewrite.
-3. As a reviewer: invoke the skill with `--review` to audit the target against this plan + the
-   source.
+2. As a human: skim the seven numbered files (01–07) in order; each maps to one phase of the rewrite.
+3. As a reviewer: invoke the skill with `--review` to audit the target against this plan + the source.
 ```
 
 ---
@@ -434,9 +401,7 @@ gate: All contract surfaces captured as machine-checkable artifacts.
 
 ## Purpose
 
-Produce a machine-checkable description of what `{{SOURCE_ROOT}}` promises to its users,
-**independent of how it is implemented**. Source code is **not** the authority; observed behavior
-is.
+Produce a machine-checkable description of what `{{SOURCE_ROOT}}` promises to its users, **independent of how it is implemented**. Source code is **not** the authority; observed behavior is.
 
 ## Contract surfaces in scope
 
@@ -444,32 +409,21 @@ is.
 
 ## Tasks
 
-- [ ] T-A-01 — Capture top-level `--help` output of the source binary into
-      `contract/help-text/root.golden`.
+- [ ] T-A-01 — Capture top-level `--help` output of the source binary into `contract/help-text/root.golden`.
 - [ ] T-A-02 — Capture `--help` for each subcommand into `contract/help-text/<subcommand>.golden`.
 - [ ] T-A-03 — Capture `--version` output into `contract/VERSION.txt`.
-- [ ] T-A-04 — Enumerate every exit code the source can emit; populate `contract/exit-codes.md`
-      (markdown table: code → meaning → trigger).
-- [ ] T-A-05 — Document stdout/stderr shape (plain, JSON, table, line-ending behavior, TTY-vs-pipe
-      differences) in `contract/stdout-stderr-shape.md`.
-- [ ] T-A-06 — Document every environment variable the source reads in `contract/env-vars.md` (name,
-      type, default, semantics).
-- [ ] T-A-07 — Extract the config-file schema as JSON Schema into `contract/config-schema.json`. If
-      multiple formats are accepted, list them all.
-- [ ] T-A-08 — If source exposes an HTTP/gRPC API: capture/produce `contract/openapi.yaml` (or
-      `*.proto`) and `contract/error-payloads.md`. Otherwise mark this task `[s]` (skipped) with
-      reason.
-- [ ] T-A-09 — Document on-disk file formats produced/consumed by the source in
-      `contract/on-disk-formats.md`.
+- [ ] T-A-04 — Enumerate every exit code the source can emit; populate `contract/exit-codes.md` (markdown table: code → meaning → trigger).
+- [ ] T-A-05 — Document stdout/stderr shape (plain, JSON, table, line-ending behavior, TTY-vs-pipe differences) in `contract/stdout-stderr-shape.md`.
+- [ ] T-A-06 — Document every environment variable the source reads in `contract/env-vars.md` (name, type, default, semantics).
+- [ ] T-A-07 — Extract the config-file schema as JSON Schema into `contract/config-schema.json`. If multiple formats are accepted, list them all.
+- [ ] T-A-08 — If source exposes an HTTP/gRPC API: capture/produce `contract/openapi.yaml` (or `*.proto`) and `contract/error-payloads.md`. Otherwise mark this task `[s]` (skipped) with reason.
+- [ ] T-A-09 — Document on-disk file formats produced/consumed by the source in `contract/on-disk-formats.md`.
 - [ ] T-A-10 — Document wire formats (if networked) in `contract/wire-formats.md`.
 - [ ] T-A-11 — Document semver promises and compatibility envelope in `contract/semver-promises.md`.
-- [ ] T-A-12 — Finalize the parity boundary in `<parity-boundary>` below. Every item under
-      "not-preserved" must have an ADR.
+- [ ] T-A-12 — Finalize the parity boundary in `<parity-boundary>` below. Every item under "not-preserved" must have an ADR.
 - [ ] T-A-13 — Write `adr/0001-rewrite-decision.md` (MADR; rationale for the rewrite).
 - [ ] T-A-14 — Write `adr/0002-parity-boundary.md` (MADR; what is preserved vs. not).
-- [ ] T-A-15 — Record `source.scan-fingerprint` in `MANIFEST.yaml` — SHA-256 over the concatenated
-      CONTENTS of every file in the source-scan dir, in `LC_ALL=C` filename-sorted order (the
-      deterministic order the skill uses at plan-creation) — used for drift detection in `--review`.
+- [ ] T-A-15 — Record `source.scan-fingerprint` in `MANIFEST.yaml` — SHA-256 over the concatenated CONTENTS of every file in the source-scan dir, in `LC_ALL=C` filename-sorted order (the deterministic order the skill uses at plan-creation) — used for drift detection in `--review`.
 
 ## CLI contract
 
@@ -520,9 +474,7 @@ Intentionally NOT preserved (each requires an ADR): {{NOT_PRESERVED_LIST}}
 
 ## Semantic gaps
 
-See `SEMANTIC-GAPS.md` for `{{SOURCE_LANG}}`↔`{{TARGET_LANG}}` mismatches the implementation agent
-must handle (integer arithmetic, string encoding, null/None semantics, concurrency model, error
-model, …).
+See `SEMANTIC-GAPS.md` for `{{SOURCE_LANG}}`↔`{{TARGET_LANG}}` mismatches the implementation agent must handle (integer arithmetic, string encoding, null/None semantics, concurrency model, error model, …).
 
 ## Reference: canonical guideline §3 Phase A
 
@@ -546,32 +498,19 @@ blocked-by: [A]
 
 ## Purpose
 
-Lock the source's current observable behavior into automated tests that pass against the source
-**now** and will be required to pass against the target later. These are the contract in executable
-form.
+Lock the source's current observable behavior into automated tests that pass against the source **now** and will be required to pass against the target later. These are the contract in executable form.
 
 ## Tasks
 
-- [ ] T-B-01 — Decide the harness language for parity tests (typically the target language or a
-      language-neutral runner like `bats-core` for CLI). Justify in this file.
-- [ ] T-B-02 — Create `parity-tests/golden/` and write one approval/golden test per documented CLI
-      invocation captured in Phase A. Each test asserts stdout, stderr, and exit code.
-- [ ] T-B-03 — Create `parity-tests/help-text/` tests that diff against
-      `contract/help-text/*.golden`.
-- [ ] T-B-04 — Create `parity-tests/exit-codes/` tests; one test per row in
-      `contract/exit-codes.md`.
-- [ ] T-B-05 — If service: create `parity-tests/replay/` with recorded HTTP cassettes
-      (VCR/WireMock/mitmproxy) covering every documented route.
-- [ ] T-B-06 — Define **language-neutral** invariants in `parity-tests/property/` so the same suite
-      can be re-implemented against the target (Hypothesis / proptest / QuickCheck / fast-check /
-      jqwik).
-- [ ] T-B-07 — Establish a performance baseline. Record source runtime/memory for the representative
-      workloads in `parity-tests/perf/`.
-- [ ] T-B-08 — Run the full Phase-B suite against the source. **It must be 100% green** before Phase
-      C. Save the run log to `parity-tests/run-logs/source-<timestamp>.log`.
-- [ ] T-B-09 — Coverage map: a table in this file mapping each contract artifact from Phase A to the
-      parity test that exercises it. Gaps explicitly accepted (with a top-level Open Question) or
-      filled.
+- [ ] T-B-01 — Decide the harness language for parity tests (typically the target language or a language-neutral runner like `bats-core` for CLI). Justify in this file.
+- [ ] T-B-02 — Create `parity-tests/golden/` and write one approval/golden test per documented CLI invocation captured in Phase A. Each test asserts stdout, stderr, and exit code.
+- [ ] T-B-03 — Create `parity-tests/help-text/` tests that diff against `contract/help-text/*.golden`.
+- [ ] T-B-04 — Create `parity-tests/exit-codes/` tests; one test per row in `contract/exit-codes.md`.
+- [ ] T-B-05 — If service: create `parity-tests/replay/` with recorded HTTP cassettes (VCR/WireMock/mitmproxy) covering every documented route.
+- [ ] T-B-06 — Define **language-neutral** invariants in `parity-tests/property/` so the same suite can be re-implemented against the target (Hypothesis / proptest / QuickCheck / fast-check / jqwik).
+- [ ] T-B-07 — Establish a performance baseline. Record source runtime/memory for the representative workloads in `parity-tests/perf/`.
+- [ ] T-B-08 — Run the full Phase-B suite against the source. **It must be 100% green** before Phase C. Save the run log to `parity-tests/run-logs/source-<timestamp>.log`.
+- [ ] T-B-09 — Coverage map: a table in this file mapping each contract artifact from Phase A to the parity test that exercises it. Gaps explicitly accepted (with a top-level Open Question) or filled.
 
 ## Coverage map
 
@@ -610,31 +549,20 @@ During Phase C, **do not read the source project's code**. You may read:
 - The target-language idiom canon: `{{TARGET_LANG_CANON}}`.
 - The canonical guideline at `{{GUIDELINE_PATH}}`.
 
-This separation is the single highest-leverage anti-transliteration guardrail (§3 Phase C of the
-canonical guideline).
+This separation is the single highest-leverage anti-transliteration guardrail (§3 Phase C of the canonical guideline).
 
 ## Tasks
 
-- [ ] T-C-01 — Module layout: propose the target-language source-tree layout and justify each
-      top-level dir/file by (a) a contract requirement, (b) a target-language convention. Write to
-      `design/architecture.md`.
-- [ ] T-C-02 — Dependency choices: for each contract surface, choose the idiomatic `{{TARGET_LANG}}`
-      library. List rejected alternatives. Write to `design/dependencies.md`.
-- [ ] T-C-03 — Error model: design from contract (recoverable vs. bug vs. precondition). Do NOT
-      mirror source error types 1:1. Write to `design/error-model.md`.
-- [ ] T-C-04 — Concurrency model: choose target's native primitives. Write to
-      `design/concurrency-model.md`.
-- [ ] T-C-05 — I/O model: streaming vs. batch, sync vs. async, buffering decisions. Write to
-      `design/io-model.md`.
-- [ ] T-C-06 — CLI parsing strategy (if CLI): idiomatic target library (clap / cobra / typer / oclif
-      / picocli). Write to `design/cli.md`.
-- [ ] T-C-07 — Configuration parsing: typed config (dataclass / pydantic / serde struct), not
-      stringly-typed dict. Write to `design/config.md`.
-- [ ] T-C-08 — Logging/observability: structured logging via target's idiomatic crate/lib (slog /
-      tracing / structlog / pino). Write to `design/observability.md`.
+- [ ] T-C-01 — Module layout: propose the target-language source-tree layout and justify each top-level dir/file by (a) a contract requirement, (b) a target-language convention. Write to `design/architecture.md`.
+- [ ] T-C-02 — Dependency choices: for each contract surface, choose the idiomatic `{{TARGET_LANG}}` library. List rejected alternatives. Write to `design/dependencies.md`.
+- [ ] T-C-03 — Error model: design from contract (recoverable vs. bug vs. precondition). Do NOT mirror source error types 1:1. Write to `design/error-model.md`.
+- [ ] T-C-04 — Concurrency model: choose target's native primitives. Write to `design/concurrency-model.md`.
+- [ ] T-C-05 — I/O model: streaming vs. batch, sync vs. async, buffering decisions. Write to `design/io-model.md`.
+- [ ] T-C-06 — CLI parsing strategy (if CLI): idiomatic target library (clap / cobra / typer / oclif / picocli). Write to `design/cli.md`.
+- [ ] T-C-07 — Configuration parsing: typed config (dataclass / pydantic / serde struct), not stringly-typed dict. Write to `design/config.md`.
+- [ ] T-C-08 — Logging/observability: structured logging via target's idiomatic crate/lib (slog / tracing / structlog / pino). Write to `design/observability.md`.
 - [ ] T-C-09 — Write one MADR per non-trivial design choice in `adr/0003-*.md`, `0004-*.md`, ….
-- [ ] T-C-10 — Self-review against `04-ANTI-TRANSLITERATION.md`. For each smell, confirm the design
-      does not exhibit it.
+- [ ] T-C-10 — Self-review against `04-ANTI-TRANSLITERATION.md`. For each smell, confirm the design does not exhibit it.
 
 ## Reference
 
@@ -645,8 +573,7 @@ canonical guideline).
 
 ## TEMPLATE — `04-ANTI-TRANSLITERATION.md`
 
-See `references/refusal-list.md` — the skill copies that file's body into
-`04-ANTI-TRANSLITERATION.md`, with `{{SOURCE_LANG}}` and `{{TARGET_LANG}}` substituted.
+See `references/refusal-list.md` — the skill copies that file's body into `04-ANTI-TRANSLITERATION.md`, with `{{SOURCE_LANG}}` and `{{TARGET_LANG}}` substituted.
 
 ---
 
@@ -665,39 +592,26 @@ blocked-by: [C]
 
 ## Hard rules for the implementing agent
 
-1. The agent **must refuse** to "translate function X from source to target". The valid request is
-   "implement contract feature Y per `03-DESIGN.md`".
-2. The agent **must refuse** to copy source-side names, file layouts, or module structure when those
-   violate target conventions.
+1. The agent **must refuse** to "translate function X from source to target". The valid request is "implement contract feature Y per `03-DESIGN.md`".
+2. The agent **must refuse** to copy source-side names, file layouts, or module structure when those violate target conventions.
 3. The agent **must consult** `{{TARGET_LANG_CANON}}` for every non-trivial construct.
-4. The agent **must emit a parity test alongside every implemented contract feature**, before
-   committing.
-5. The agent **must scan its own diff** for the 16 smells in `04-ANTI-TRANSLITERATION.md` before
-   declaring a task done.
+4. The agent **must emit a parity test alongside every implemented contract feature**, before committing.
+5. The agent **must scan its own diff** for the 16 smells in `04-ANTI-TRANSLITERATION.md` before declaring a task done.
 
 ## Implementation tasks
 
-Tasks here are **per-feature**, not per-source-file. The implementation agent generates them as a
-derivative of `01-CONTRACT.md`. Example seeds:
+Tasks here are **per-feature**, not per-source-file. The implementation agent generates them as a derivative of `01-CONTRACT.md`. Example seeds:
 
-- [ ] T-D-01 — Implement command `<subcommand-1>` end-to-end (parsing, behavior, output, exit
-      codes). Ship `parity-tests/golden/test_<subcommand-1>.*` alongside.
+- [ ] T-D-01 — Implement command `<subcommand-1>` end-to-end (parsing, behavior, output, exit codes). Ship `parity-tests/golden/test_<subcommand-1>.*` alongside.
 - [ ] T-D-02 — Implement command `<subcommand-2>` end-to-end. Ship parity tests.
-- [ ] T-D-03 — Implement config loader per `design/config.md`. Ship a property test that round-trips
-      every shape in `contract/config-schema.json`.
-- [ ] T-D-04 — Implement error hierarchy per `design/error-model.md`. Ship unit tests for every
-      error path.
-- [ ] T-D-05 — Implement logging per `design/observability.md`. Ship a smoke test that emits each
-      log level.
-- [ ] T-D-06 — Implement I/O layer per `design/io-model.md`. Ship a property test for streaming
-      invariants.
-- [ ] T-D-07 — Implement concurrency layer per `design/concurrency-model.md`. Ship a race/property
-      test.
-- [ ] T-D-08 — Run full self-review against `04-ANTI-TRANSLITERATION.md` over the diff; record
-      findings.
+- [ ] T-D-03 — Implement config loader per `design/config.md`. Ship a property test that round-trips every shape in `contract/config-schema.json`.
+- [ ] T-D-04 — Implement error hierarchy per `design/error-model.md`. Ship unit tests for every error path.
+- [ ] T-D-05 — Implement logging per `design/observability.md`. Ship a smoke test that emits each log level.
+- [ ] T-D-06 — Implement I/O layer per `design/io-model.md`. Ship a property test for streaming invariants.
+- [ ] T-D-07 — Implement concurrency layer per `design/concurrency-model.md`. Ship a race/property test.
+- [ ] T-D-08 — Run full self-review against `04-ANTI-TRANSLITERATION.md` over the diff; record findings.
 
-(Implementation agent may split and re-number tasks freely as long as the parent T-D-NN slots are
-accounted for in `MANIFEST.yaml`.)
+(Implementation agent may split and re-number tasks freely as long as the parent T-D-NN slots are accounted for in `MANIFEST.yaml`.)
 
 ## Reference
 
@@ -721,25 +635,13 @@ blocked-by: [D]
 
 ## Tasks
 
-- [ ] T-E-01 — Run Phase-B parity tests against the target. Resolve every failure (fix code or add
-      ADR for documented diff).
-- [ ] T-E-02 — Run language-neutral property tests against the target with at least the same
-      input-space as Phase B.
-- [ ] T-E-03 — Build a differential test harness that runs identical inputs through source and
-      target and asserts equivalence. Use Trail of Bits DIFFER
-      (<https://blog.trailofbits.com/2024/01/31/introducing-differ-a-new-tool-for-testing-and-validating-transformed-programs/>)
-      or a language-native harness. Run on the corpora from `parity-tests/golden/` and
-      `parity-tests/replay/`.
-- [ ] T-E-04 — Run a coverage-guided fuzz campaign (AFL++ / libFuzzer / cargo-fuzz / jazzer /
-      OSS-Fuzz) for the duration in `MANIFEST.yaml: phases.E.fuzz-budget` (default: 24 CPU-hours).
-      No crashes; no divergence on minimized inputs.
-- [ ] T-E-05 — If service: shadow-traffic the target against production source traffic for the
-      duration in `MANIFEST.yaml: phases.E.shadow-duration`. Investigate and resolve/ADR every
-      divergence.
-- [ ] T-E-06 — Measure performance against the `parity-tests/perf/` baseline from Phase B.
-      Regressions outside the documented envelope block cutover.
-- [ ] T-E-07 — Final coverage report: every contract item covered by at least one test class (golden
-      / property / differential / fuzz / shadow / perf).
+- [ ] T-E-01 — Run Phase-B parity tests against the target. Resolve every failure (fix code or add ADR for documented diff).
+- [ ] T-E-02 — Run language-neutral property tests against the target with at least the same input-space as Phase B.
+- [ ] T-E-03 — Build a differential test harness that runs identical inputs through source and target and asserts equivalence. Use Trail of Bits DIFFER (<https://blog.trailofbits.com/2024/01/31/introducing-differ-a-new-tool-for-testing-and-validating-transformed-programs/>) or a language-native harness. Run on the corpora from `parity-tests/golden/` and `parity-tests/replay/`.
+- [ ] T-E-04 — Run a coverage-guided fuzz campaign (AFL++ / libFuzzer / cargo-fuzz / jazzer / OSS-Fuzz) for the duration in `MANIFEST.yaml: phases.E.fuzz-budget` (default: 24 CPU-hours). No crashes; no divergence on minimized inputs.
+- [ ] T-E-05 — If service: shadow-traffic the target against production source traffic for the duration in `MANIFEST.yaml: phases.E.shadow-duration`. Investigate and resolve/ADR every divergence.
+- [ ] T-E-06 — Measure performance against the `parity-tests/perf/` baseline from Phase B. Regressions outside the documented envelope block cutover.
+- [ ] T-E-07 — Final coverage report: every contract item covered by at least one test class (golden / property / differential / fuzz / shadow / perf).
 
 ## Reference
 
@@ -764,19 +666,14 @@ blocked-by: [E]
 ## Tasks
 
 - [ ] T-F-01 — Deploy the target alongside the source. Wire both to the same upstream traffic.
-- [ ] T-F-02 — Parallel-run (dark launch): only source responses are user-visible; target responses
-      are logged + diffed. Run until divergence rate ≤ threshold in
-      `MANIFEST.yaml: phases.F.divergence-threshold`.
-- [ ] T-F-03 — Canary: route 1–5% of user traffic to the target. Monitor error rate, latency,
-      resource usage.
+- [ ] T-F-02 — Parallel-run (dark launch): only source responses are user-visible; target responses are logged + diffed. Run until divergence rate ≤ threshold in `MANIFEST.yaml: phases.F.divergence-threshold`.
+- [ ] T-F-03 — Canary: route 1–5% of user traffic to the target. Monitor error rate, latency, resource usage.
 - [ ] T-F-04 — Progressive rollout: 5% → 25% → 50% → 100%, gated by SLO adherence at each step.
 - [ ] T-F-05 — Cutover: source goes read-only / off. Target is system of record.
 - [ ] T-F-06 — Document rollback procedure and test it once on a canary before step T-F-05.
-- [ ] T-F-07 — Confidence period: monitor target alone for
-      `MANIFEST.yaml: phases.F.confidence-period-days`. No incidents → proceed to decommission.
+- [ ] T-F-07 — Confidence period: monitor target alone for `MANIFEST.yaml: phases.F.confidence-period-days`. No incidents → proceed to decommission.
 - [ ] T-F-08 — Decommission: remove source code from the repo (or archive). Announce EOL.
-- [ ] T-F-09 — Write `adr/9999-postmortem.md` capturing what worked, what surprised us, and what to
-      do differently next time.
+- [ ] T-F-09 — Write `adr/9999-postmortem.md` capturing what worked, what surprised us, and what to do differently next time.
 
 ## Reference
 
@@ -813,9 +710,7 @@ blocked-by: [E]
 ```markdown
 # Semantic Gaps — `{{SOURCE_LANG}}` → `{{TARGET_LANG}}`
 
-Per the canonical guideline §11 (LLM Code Translation Research), these are the categories where
-mechanical translation fails because of different language semantics. The implementation agent must
-check each item during Phase D and write a parity test that pins behavior on the gap.
+Per the canonical guideline §11 (LLM Code Translation Research), these are the categories where mechanical translation fails because of different language semantics. The implementation agent must check each item during Phase D and write a parity test that pins behavior on the gap.
 
 Common gap categories (instantiate the rows for this specific pair):
 
@@ -863,8 +758,7 @@ implementation-status: <in-progress | complete>
 - Git HEAD diff: <none | drifted: <old> → <new>>
 - Scan fingerprint diff: <match | drifted; see findings below>
 - Findings:
-  - <list any contract surfaces that changed in the source and were not reflected in the plan;
-    recommend Phase A re-run>
+  - <list any contract surfaces that changed in the source and were not reflected in the plan; recommend Phase A re-run>
 
 ## Phase A — Contract adherence
 
@@ -948,8 +842,7 @@ informed: []
 
 ## Decision Outcome
 
-Chosen: option 2. The rewrite preserves the external contract per `01-CONTRACT.md` and re-derives
-the internal implementation in `{{TARGET_LANG}}` idioms per `03-DESIGN.md`.
+Chosen: option 2. The rewrite preserves the external contract per `01-CONTRACT.md` and re-derives the internal implementation in `{{TARGET_LANG}}` idioms per `03-DESIGN.md`.
 
 ### Consequences
 
@@ -974,9 +867,7 @@ decision-makers: [<user>]
 
 ## Context
 
-The rewrite preserves the external contract. Some behaviors are intentionally **not** preserved.
-This ADR makes that boundary explicit so reviewers and the implementation agent know where the line
-is.
+The rewrite preserves the external contract. Some behaviors are intentionally **not** preserved. This ADR makes that boundary explicit so reviewers and the implementation agent know where the line is.
 
 ## Decision
 
@@ -988,15 +879,12 @@ is.
 
 {{NOT_PRESERVED_LIST}}
 
-(Each "not preserved" item also gets its own dedicated ADR explaining the rationale and the
-migration path.)
+(Each "not preserved" item also gets its own dedicated ADR explaining the rationale and the migration path.)
 
 ## Consequences
 
-- Users depending on a "not preserved" behavior must migrate or accept the change. This is the only
-  place such expectations are made explicit.
-- The Phase E parity tests will document each "not preserved" item as an approved diff, not a
-  regression.
+- Users depending on a "not preserved" behavior must migrate or accept the change. This is the only place such expectations are made explicit.
+- The Phase E parity tests will document each "not preserved" item as an approved diff, not a regression.
 ```
 
 ---

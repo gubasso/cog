@@ -1,40 +1,30 @@
 # ast-grep Rule Reference
 
-This document provides comprehensive documentation for ast-grep rule syntax, covering all rule types
-and metavariables.
+This document provides comprehensive documentation for ast-grep rule syntax, covering all rule types and metavariables.
 
 ## Introduction to ast-grep Rules
 
-ast-grep rules are declarative specifications for matching and filtering Abstract Syntax Tree (AST)
-nodes. They enable structural code search and analysis by defining conditions an AST node must meet
-to be matched.
+ast-grep rules are declarative specifications for matching and filtering Abstract Syntax Tree (AST) nodes. They enable structural code search and analysis by defining conditions an AST node must meet to be matched.
 
 ### Rule Categories
 
 ast-grep rules are categorized into three types:
 
-- **Atomic Rules**: Match individual AST nodes based on intrinsic properties like code patterns
-  (`pattern`), node type (`kind`), or text content (`regex`).
-- **Relational Rules**: Define conditions based on a target node's position or relationship to other
-  nodes (e.g., `inside`, `has`, `precedes`, `follows`).
-- **Composite Rules**: Combine other rules using logical operations (AND, OR, NOT) to form complex
-  matching criteria (e.g., `all`, `any`, `not`, `matches`).
+- **Atomic Rules**: Match individual AST nodes based on intrinsic properties like code patterns (`pattern`), node type (`kind`), or text content (`regex`).
+- **Relational Rules**: Define conditions based on a target node's position or relationship to other nodes (e.g., `inside`, `has`, `precedes`, `follows`).
+- **Composite Rules**: Combine other rules using logical operations (AND, OR, NOT) to form complex matching criteria (e.g., `all`, `any`, `not`, `matches`).
 
 ## Anatomy of an ast-grep Rule Object
 
-The ast-grep rule object is the core configuration unit defining how ast-grep identifies and filters
-AST nodes. It's typically written in YAML format.
+The ast-grep rule object is the core configuration unit defining how ast-grep identifies and filters AST nodes. It's typically written in YAML format.
 
 ### General Structure
 
-Every field within an ast-grep Rule Object is optional, but at least one "positive" key (e.g.,
-`kind`, `pattern`) must be present.
+Every field within an ast-grep Rule Object is optional, but at least one "positive" key (e.g., `kind`, `pattern`) must be present.
 
-A node matches a rule if it satisfies all fields defined within that rule object, implying an
-implicit logical AND operation.
+A node matches a rule if it satisfies all fields defined within that rule object, implying an implicit logical AND operation.
 
-For rules using metavariables that depend on prior matching, explicit `all` composite rules are
-recommended to guarantee execution order.
+For rules using metavariables that depend on prior matching, explicit `all` composite rules are recommended to guarantee execution order.
 
 ### Rule Object Properties
 
@@ -80,8 +70,7 @@ pattern: console.log($ARG)
 
 - `context`: Provides surrounding code context for correct parsing.
 
-- `strictness`: Modifies the pattern's matching algorithm (`cst`, `smart`, `ast`, `relaxed`,
-  `signature`).
+- `strictness`: Modifies the pattern's matching algorithm (`cst`, `smart`, `ast`, `relaxed`, `signature`).
 
   ```yaml
   pattern:
@@ -91,9 +80,7 @@ pattern: console.log($ARG)
 
 ### kind: Matching by Node Type
 
-The `kind` rule matches an AST node by its `tree_sitter_node_kind` name, derived from the language's
-Tree-sitter grammar. Useful for targeting constructs like `call_expression` or
-`function_declaration`.
+The `kind` rule matches an AST node by its `tree_sitter_node_kind` name, derived from the language's Tree-sitter grammar. Useful for targeting constructs like `call_expression` or `function_declaration`.
 
 ```yaml
 kind: call_expression
@@ -101,14 +88,11 @@ kind: call_expression
 
 ### regex: Text-Based Node Matching
 
-The `regex` rule matches the entire text content of an AST node using a Rust regular expression.
-It's not a "positive" rule, meaning it matches any node whose text satisfies the regex, regardless
-of its structural kind.
+The `regex` rule matches the entire text content of an AST node using a Rust regular expression. It's not a "positive" rule, meaning it matches any node whose text satisfies the regex, regardless of its structural kind.
 
 ### nthChild: Positional Node Matching
 
-The `nthChild` rule finds nodes by their 1-based index within their parent's children list, counting
-only named nodes by default.
+The `nthChild` rule finds nodes by their 1-based index within their parent's children list, counting only named nodes by default.
 
 - `number`: Matches the exact nth child. Example: `nthChild: 1`
 - `string`: Matches positions using An+B formula. Example: `2n+1`
@@ -119,14 +103,11 @@ only named nodes by default.
 
 ### range: Position-Based Node Matching
 
-The `range` rule matches an AST node based on its character-based start and end positions. A
-`RangeObject` defines `start` and `end` fields, each with 0-based `line` and `column`. `start` is
-inclusive, `end` is exclusive.
+The `range` rule matches an AST node based on its character-based start and end positions. A `RangeObject` defines `start` and `end` fields, each with 0-based `line` and `column`. `start` is inclusive, `end` is exclusive.
 
 ## Relational Rules
 
-Relational rules filter targets based on their position relative to other AST nodes. They can
-include `stopBy` and `field` options.
+Relational rules filter targets based on their position relative to other AST nodes. They can include `stopBy` and `field` options.
 
 ### inside: Matching Within a Parent Node
 
@@ -163,11 +144,9 @@ Both include `stopBy` but not `field`.
 - `"end"`: Searches to the end of the direction (root for `inside`, leaf for `has`).
 - `Rule object`: Stops when a surrounding node matches the provided rule (inclusive).
 
-**field**: Specifies a sub-node within the target node that should match the relational rule. Only
-for `inside` and `has`.
+**field**: Specifies a sub-node within the target node that should match the relational rule. Only for `inside` and `has`.
 
-**Best Practice**: When unsure, always use `stopBy: end` to ensure the search goes to the end of the
-direction.
+**Best Practice**: When unsure, always use `stopBy: end` to ensure the search goes to the end of the direction.
 
 ## Composite Rules
 
@@ -175,8 +154,7 @@ Composite rules combine atomic and relational rules using logical operations.
 
 ### all: Conjunction (AND) of Rules
 
-Matches a node only if all sub-rules in the list match. Guarantees order of rule matching, important
-for metavariables.
+Matches a node only if all sub-rules in the list match. Guarantees order of rule matching, important for metavariables.
 
 ```yaml
 all:
@@ -206,8 +184,7 @@ not:
 
 ### matches: Rule Reuse and Utility Rules
 
-Takes a rule-id string, matching if the referenced utility rule matches. Enables rule reuse and
-recursive rules.
+Takes a rule-id string, matching if the referenced utility rule matches. Enables rule reuse and recursive rules.
 
 ## Metavariables
 
@@ -240,15 +217,12 @@ rule:
 
 Matches zero or more AST nodes (non-greedy). Useful for variable numbers of arguments or statements.
 
-- **Example**: `console.log($$$)` matches `console.log()`, `console.log('hello')`, and
-  `console.log('debug:', key, value)`.
-- **Example**: `function $FUNC($$$ARGS) { $$$ }` matches functions with varying
-  parameters/statements.
+- **Example**: `console.log($$$)` matches `console.log()`, `console.log('hello')`, and `console.log('debug:', key, value)`.
+- **Example**: `function $FUNC($$$ARGS) { $$$ }` matches functions with varying parameters/statements.
 
 ### Non-Capturing Metavariables (_VAR)
 
-Metavariables starting with an underscore (`_`) are not captured. They can match different content
-even if named identically, optimizing performance.
+Metavariables starting with an underscore (`_`) are not captured. They can match different content even if named identically, optimizing performance.
 
 - **Example**: `$_FUNC($_FUNC)` matches `test(a)` and `testFunc(1 + 1)`.
 

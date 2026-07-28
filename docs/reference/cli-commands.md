@@ -1,243 +1,207 @@
 # CLI commands
 
-`cog` is machine-facing. `--json`, generated help, man pages, Bash completion, `doctor`, and `init`
-are self-documentation and setup surfaces for agents and scripts. `init` initializes cog's runtime
-directories and prerequisites.
+`cog` is machine-facing. `--json`, generated help, man pages, Bash completion, `doctor`, and `init` are self-documentation and setup surfaces for agents and scripts. `init` initializes cog's runtime directories and prerequisites.
 
 ## Global flags
 
 `cog` accepts these global flags before the command name:
 
-| Flag | Meaning |
-| ---- | ------- |
-| `-h`, `--help` | Show help. |
-| `-V`, `--version` | Show version. |
-| `--json` | Request JSON when a command has a non-JSON default. |
-| `--dry-run` | Show what would happen without changing state. |
-| `--print-config` | Print resolved configuration and sources. |
-| `-v`, `-vv`, `-vvv` | Increase verbosity. |
+| Flag                | Meaning                                             |
+| ------------------- | --------------------------------------------------- |
+| `-h`, `--help`      | Show help.                                          |
+| `-V`, `--version`   | Show version.                                       |
+| `--json`            | Request JSON when a command has a non-JSON default. |
+| `--dry-run`         | Show what would happen without changing state.      |
+| `--print-config`    | Print resolved configuration and sources.           |
+| `-v`, `-vv`, `-vvv` | Increase verbosity.                                 |
 
 ## Command discovery
 
-Command modules live in `lib/commands/cmd_*.sh`. The loader maps a dash-form command name to an
-underscore-form module and handler:
+Command modules live in `lib/commands/cmd_*.sh`. The loader maps a dash-form command name to an underscore-form module and handler:
 
 ```text
 cog print-config -> lib/commands/cmd_print_config.sh -> cog::cmd::print_config
 ```
 
-The line-2 `: 'desc: ...'` sentinel in each command module is the summary source for root help and
-this reference table.
+The line-2 `: 'desc: ...'` sentinel in each command module is the summary source for root help and this reference table.
 
 ## Commands
 
-| Command | Summary |
-| ------- | ------- |
-| `ask-flag` | Render canonical ask-skill research-flag instruction paragraphs. |
-| `ask-flag render --flag <key>` | Print one research flag's canonical instruction paragraph for the `ask` skill to inject at runtime; valid keys come from `cog ask-flag list` (currently `real-world`). |
-| `ask-flag list [--format text\|json]` | List the known ask research flags with a one-line summary each. |
-| `bootstrap-template-review` | Check or stamp bootstrap template review freshness. |
-| `bootstrap-template-review check --domain <d> --type <t> [--research-root <dir>] --json` | Report a domain/type template review's freshness (`fresh`/`stale`/`missing`/`invalid`) with skill-refs origin and template roots. |
-| `bootstrap-template-review stamp --domain <d> --type <t> --summary <text> --source-json <json> [--changed-template <path> ...] [--freshness-days <n>] --json` | Record a dated template review through the shelf; fails fast when the skill-refs template SoT is unwritable. |
-| `ci-apply` | Apply a CI workflow template to a project. |
-| `ci-detect` | Detect the CI target from the project git remote. |
-| `classify-project` | Classify repository shape. |
-| `claudemd-audit` | Audit CLAUDE.md deterministic signals. |
-| `codex-runner` | Run codex-session orchestration helpers. |
-| `codex-runner run-exec ... --state <file>` | Launch a Codex exec as a cog-owned durable job. |
-| `codex-runner run-resume ... --state <file>` | Launch a Codex resume as a cog-owned durable job. |
-| `codex-runner finalize --state <file> [--max-wall <secs>]` | Poll up to `--max-wall` then classify from durable artifacts; exit 0 ok, 1 failed, 75 still running. |
-| `codex-runner status --state <file>` | Report a Codex durable job's live state. |
-| `codex-runner cancel --state <file>` | Terminate a Codex durable job's process group. |
-| `codex-runner orientation <read-only\|write>` | Print the canonical Codex prompt orientation block. |
-| `codex-runner explain-status <status>` | Explain a Codex runner status. |
-| `cog-skill-creator-scaffold` | Compute skill scaffold paths. |
-| `cog-skill-creator-validate` | Validate cog-skill-creator inputs. |
-| `context-brief` | Template, build, and validate a rich-context handoff brief. |
-| `context-brief template [--out <path>]` | Emit the author-filled context-brief body template. |
-| `context-brief build --request <file> --body <file> --out <path> [--format md\|json]` | Attach the raw request verbatim and assemble a validated brief. |
-| `context-brief validate <path> [--format text\|json]` | Fail closed unless every required brief section is present and filled. |
-| `digest-check` | Check digest frontmatter for source drift. |
-| `digest-stamp` | Stamp digest frontmatter from source files. |
-| `doctor` | Check cog runtime health and installation prerequisites. |
-| `executor` | Manage shared executor run contracts and stage artifacts. |
-| `executor-prex-parse-args` | Parse executor-prex arguments into run state. |
-| `gate` | Manage operator-approval gate records (approve, check-approval, prune). |
-| `gate approve --round-id <id> --round-path <file> [--approver <name>] [--notes <text>]` | Record an operator approval for a plan round. |
-| `gate check-approval --round-id <id> --round-path <file> [--ttl <secs>]` | Report whether a fresh operator approval exists for a round. |
-| `gate prune-approvals [--older-than <secs>]` | Remove stale operator-approval records. |
-| `gc-classify-failure` | Classify commit or push failure logs. |
-| `gc-commit` | Commit with a message file and explicit pathspec. |
-| `gc-commit-lint` | Validate a commit message against Conventional Commits (or defer to the repo linter). |
-| `gc-loop-progress` | Compare commit failure reports across round-loop rounds. |
-| `gc-plan` | Partition session files by owning repo and run safety scan. |
-| `gc-push` | Run git push without force support. |
-| `gc-stage` | Reconcile and stage explicit session files. |
-| `git-identity` | Resolve and check the repo git identity (user.name/user.email). |
-| `git-identity check [--project-root <dir>] (<out.json>\|--json)` | Emit the repo's git-resolved identity (name/email/author_string); exits non-zero when `user.name`/`user.email` are unset. |
-| `gitignore-apply` | Apply a gitignore template to a project. |
-| `gitignore-detect` | Detect gitignore template type. |
-| `governance-apply` | Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project. |
-| `governance-detect` | Detect project governance docs presence and template type. |
-| `help` | Show generated help for cog or a subcommand. |
-| `hook-guard` | Deterministic Stop hook decisions for active workflows. |
-| `init` | Initialize cog runtime directories and prerequisites. |
-| `kb-apply` | Apply a knowledge-base scaffold to a project. |
-| `kb-detect` | Detect knowledge-base scaffold type. |
-| `license-apply` | Apply an SPDX LICENSE to a project. |
-| `lint-codex-wrapper` | Enforce Codex single-entrypoint markdown snippets. |
-| `lock` | Acquire or release a workflow run lock. |
-| `longrun` | Launch, poll, finalize, and cancel cog-owned durable long-running jobs. |
-| `match-telemetry` | Record and report plan→executor match-outcome telemetry. |
-| `msg` | Emit uniform machine status lines. |
-| `nix-devshell-apply` | Apply a nix devshell template to a project. |
-| `nix-devshell-detect` | Detect nix devshell template type. |
-| `noop` | Exercise command dispatch without side effects. |
-| `osc-preflight` | Detect OBS/osc session prerequisites. |
-| `osc-probe-binary` | Resolve a binary RPM to an OBS source package. |
-| `plan-doc` | Write and validate lean plan artifacts. |
-| `plan-complexity` | Extract and compare implementation plan complexity signals. |
-| `plan-doc save` | Write one lean plan artifact. |
-| `plan-doc validate` | Validate one lean plan artifact. |
-| `plan-builder-to-queue-setup` | Parse plan-builder-to-queue arguments and create plan-vault run state. |
-| `plan-init` | Bootstrap implementation plan root files. |
-| `plan-multi-setup` | Parse plan-multi arguments and create run state. |
-| `plan-review` | Write and validate annotated plan review artifacts. |
-| `plan-review save` | Write one annotated plan review artifact. |
-| `plan-review orchestrator` | Write a review artifact from absolute orchestrator input paths. |
-| `plan-review validate` | Validate one annotated plan review artifact. |
-| `plan-slug` | Derive and validate an implementation plan slug. |
-| `review-plan-multi-setup` | Parse review-plan-multi arguments and create run state. |
-| `power-grade` | Inspect and validate model/effort power grades. |
-| `power-grade validate` | Validate the Power Grade matrix schema and source-cited cells. |
-| `power-grade cell --model <model> --effort <effort>` | Print one model/effort cell. |
-| `power-grade classify --grade <n>` | Print executable cells that can handle a difficulty grade. |
-| `power-grade compound --passes <cell,cell,...>` | Compute compounded capability for a pass sequence. |
-| `power-grade tier --name <name>` | Resolve a named tier to its Claude and Codex model/effort cells. |
-| `power-grade skill-tier --skill <name> \| --file <path>` | Resolve a skill's expected vs actual model/effort tier. |
-| `power-grade executor [--executor <name>]` | Derive each executor's capability power and routing band from its pass composition. |
-| `power-grade match --score <n>` | Route a complexity score to the right-sized executor via the normalized-percent overlay. |
-| `power-grade executor-validate` | Check executor capability data for completeness, cell references, and calibration coherence. |
-| `precommit-apply-template` | Apply a pre-commit template to a project. |
-| `precommit-detect` | Detect pre-commit template type. |
-| `precommit-run` | Run pre-commit hooks across stages and collect failures. |
-| `precommit-spell-select` | Select the markdown spell checker for a set of KB content languages. |
-| `preflight` | Run centralized orchestrator preflight checks. |
-| `print-config` | Print resolved configuration values and their sources. |
-| `queue-append` | Append one implementation plan queue entry. |
-| `queue-bootstrap` | Create and validate an implementation plan queue. |
-| `queue-deps-set` | Replace one mutable queue item dependency list with a guarded graph check. |
-| `queue-graph-check` | Validate queue dependency graph references and cycles. |
-| `queue-prompt-set` | Set one queue item prompt with an expected-current-prompt guard. |
-| `queue-reorder` | Reorder mutable queue items by stable dependency topological sort. |
-| `queue-select` | Select the next runnable implementation plan round. |
-| `queue-status-set` | Set one queue item status with an expected-current-status guard. |
-| `refactor-scan-drift` | Compute byte-stable source-scan fingerprint. |
-| `refactor-scan-source` | Run deterministic source static-analysis probes. |
-| `refactor-setup` | Resolve refactor migration setup paths. |
-| `require` | Assert required cog subcommands are installed. |
-| `readme-apply` | Apply a README skeleton to a project. |
-| `research-shelf` | Store and validate dated research findings. |
-| `research-shelf init` | Create the research shelf directory and index. |
-| `research-shelf record` | Append one dated, sourced research finding. |
-| `research-shelf list` | List stored research finding IDs. |
-| `research-shelf get <id>` | Print one stored research finding. |
-| `research-shelf validate` | Validate the research shelf index and entries. |
-| `review-comment` | Plan or post PR comments for review findings. |
-| `review-queue-rounds-check-idempotency` | Flag a round whose declared artifacts an earlier round already deployed. |
-| `review-queue-rounds-scan` | Inventory all plan-vault queues and repo/plan fingerprints. |
-| `review-queue-rounds-verify` | Verify a review-queue-rounds run against a before/after scan. |
-| `review-init` | Create a review run directory and resolve output paths. |
-| `review-loop-input` | Build and validate review-loop handoff input JSON. |
-| `review-loop-progress` | Compare review findings across loop rounds. |
-| `review-loop-summary` | Assemble and validate the review-loop terminal summary. |
-| `review-normalize-findings` | Validate, sort, and severity-filter review findings JSON. |
-| `review-scope` | Detect changed-file review scope. |
-| `review-tech-scope` | Detect review technologies and bundled reference targets. |
-| `review-validate-findings` | Validate review findings JSON. |
-| `round-prompt` | Assemble and validate executor-stamped round prompts. |
-| `round-req` | Stamp and list round acceptance requirement IDs. |
-| `round-split` | Check split-round requirement coverage. |
-| `rundir` | Create a workflow run directory and optionally acquire its lock. |
-| `runner-all-setup` | Parse runner-all arguments and create main queue run state. |
-| `runner-commit-parse` | Parse runner commit result lines. |
-| `runner-plan-setup` | Parse runner-plan arguments and create round queue run state. |
-| `skill-class` | Show and check core skill-class contracts and prerequisites. |
-| `skill-refs root` | Print the resolved skill-reference root. |
-| `skill-refs path <rel>` | Print an existing file under the resolved skill-reference root. |
-| `skill-refs inspect [--json]` | Report the resolved root with its origin (`repo`/`xdg`), writability, and a vcs note. |
-| `skill-lint` | Lint SKILL.md files against the skill/script boundary. |
-| `spec-leakage-scan` | scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage |
-| `suckless-apply` | Check, apply, and build a suckless patch. |
-| `suckless-conflicts` | List suckless patch conflict artifacts. |
-| `suckless-preflight` | Detect suckless tree signals and clean state. |
-| `taskrunner-apply` | Apply a task-runner template to a project. |
-| `taskrunner-detect` | Detect the task-runner type for a project. |
-| `test-review-discover` | Detect test runner and test-review batch status. |
-| `test-review-lint` | Emit deterministic test-review lint signals. |
-| `test-review-manifest` | Update test-review MANIFEST.yaml. |
-| `tracking-scan` | Report tracked artifacts whose revalidation cadence is overdue. |
+| Command                                                                                                                                                       | Summary                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ask-flag`                                                                                                                                                    | Render canonical ask-skill research-flag instruction paragraphs.                                                                                                       |
+| `ask-flag render --flag <key>`                                                                                                                                | Print one research flag's canonical instruction paragraph for the `ask` skill to inject at runtime; valid keys come from `cog ask-flag list` (currently `real-world`). |
+| `ask-flag list [--format text\|json]`                                                                                                                         | List the known ask research flags with a one-line summary each.                                                                                                        |
+| `bootstrap-template-review`                                                                                                                                   | Check or stamp bootstrap template review freshness.                                                                                                                    |
+| `bootstrap-template-review check --domain <d> --type <t> [--research-root <dir>] --json`                                                                      | Report a domain/type template review's freshness (`fresh`/`stale`/`missing`/`invalid`) with skill-refs origin and template roots.                                      |
+| `bootstrap-template-review stamp --domain <d> --type <t> --summary <text> --source-json <json> [--changed-template <path> ...] [--freshness-days <n>] --json` | Record a dated template review through the shelf; fails fast when the skill-refs template SoT is unwritable.                                                           |
+| `ci-apply`                                                                                                                                                    | Apply a CI workflow template to a project.                                                                                                                             |
+| `ci-detect`                                                                                                                                                   | Detect the CI target from the project git remote.                                                                                                                      |
+| `classify-project`                                                                                                                                            | Classify repository shape.                                                                                                                                             |
+| `claudemd-audit`                                                                                                                                              | Audit CLAUDE.md deterministic signals.                                                                                                                                 |
+| `codex-runner`                                                                                                                                                | Run codex-session orchestration helpers.                                                                                                                               |
+| `codex-runner run-exec ... --state <file>`                                                                                                                    | Launch a Codex exec as a cog-owned durable job.                                                                                                                        |
+| `codex-runner run-resume ... --state <file>`                                                                                                                  | Launch a Codex resume as a cog-owned durable job.                                                                                                                      |
+| `codex-runner finalize --state <file> [--max-wall <secs>]`                                                                                                    | Poll up to `--max-wall` then classify from durable artifacts; exit 0 ok, 1 failed, 75 still running.                                                                   |
+| `codex-runner status --state <file>`                                                                                                                          | Report a Codex durable job's live state.                                                                                                                               |
+| `codex-runner cancel --state <file>`                                                                                                                          | Terminate a Codex durable job's process group.                                                                                                                         |
+| `codex-runner orientation <read-only\|write>`                                                                                                                 | Print the canonical Codex prompt orientation block.                                                                                                                    |
+| `codex-runner explain-status <status>`                                                                                                                        | Explain a Codex runner status.                                                                                                                                         |
+| `cog-skill-creator-scaffold`                                                                                                                                  | Compute skill scaffold paths.                                                                                                                                          |
+| `cog-skill-creator-validate`                                                                                                                                  | Validate cog-skill-creator inputs.                                                                                                                                     |
+| `context-brief`                                                                                                                                               | Template, build, and validate a rich-context handoff brief.                                                                                                            |
+| `context-brief template [--out <path>]`                                                                                                                       | Emit the author-filled context-brief body template.                                                                                                                    |
+| `context-brief build --request <file> --body <file> --out <path> [--format md\|json]`                                                                         | Attach the raw request verbatim and assemble a validated brief.                                                                                                        |
+| `context-brief validate <path> [--format text\|json]`                                                                                                         | Fail closed unless every required brief section is present and filled.                                                                                                 |
+| `digest-check`                                                                                                                                                | Check digest frontmatter for source drift.                                                                                                                             |
+| `digest-stamp`                                                                                                                                                | Stamp digest frontmatter from source files.                                                                                                                            |
+| `doctor`                                                                                                                                                      | Check cog runtime health and installation prerequisites.                                                                                                               |
+| `executor`                                                                                                                                                    | Manage shared executor run contracts and stage artifacts.                                                                                                              |
+| `executor-prex-parse-args`                                                                                                                                    | Parse executor-prex arguments into run state.                                                                                                                          |
+| `gate`                                                                                                                                                        | Manage operator-approval gate records (approve, check-approval, prune).                                                                                                |
+| `gate approve --round-id <id> --round-path <file> [--approver <name>] [--notes <text>]`                                                                       | Record an operator approval for a plan round.                                                                                                                          |
+| `gate check-approval --round-id <id> --round-path <file> [--ttl <secs>]`                                                                                      | Report whether a fresh operator approval exists for a round.                                                                                                           |
+| `gate prune-approvals [--older-than <secs>]`                                                                                                                  | Remove stale operator-approval records.                                                                                                                                |
+| `gc-classify-failure`                                                                                                                                         | Classify commit or push failure logs.                                                                                                                                  |
+| `gc-commit`                                                                                                                                                   | Commit with a message file and explicit pathspec.                                                                                                                      |
+| `gc-commit-lint`                                                                                                                                              | Validate a commit message against Conventional Commits (or defer to the repo linter).                                                                                  |
+| `gc-loop-progress`                                                                                                                                            | Compare commit failure reports across round-loop rounds.                                                                                                               |
+| `gc-plan`                                                                                                                                                     | Partition session files by owning repo and run safety scan.                                                                                                            |
+| `gc-push`                                                                                                                                                     | Run git push without force support.                                                                                                                                    |
+| `gc-stage`                                                                                                                                                    | Reconcile and stage explicit session files.                                                                                                                            |
+| `git-identity`                                                                                                                                                | Resolve and check the repo git identity (user.name/user.email).                                                                                                        |
+| `git-identity check [--project-root <dir>] (<out.json>\|--json)`                                                                                              | Emit the repo's git-resolved identity (name/email/author_string); exits non-zero when `user.name`/`user.email` are unset.                                              |
+| `gitignore-apply`                                                                                                                                             | Apply a gitignore template to a project.                                                                                                                               |
+| `gitignore-detect`                                                                                                                                            | Detect gitignore template type.                                                                                                                                        |
+| `governance-apply`                                                                                                                                            | Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.                                                                                       |
+| `governance-detect`                                                                                                                                           | Detect project governance docs presence and template type.                                                                                                             |
+| `help`                                                                                                                                                        | Show generated help for cog or a subcommand.                                                                                                                           |
+| `hook-guard`                                                                                                                                                  | Deterministic Stop hook decisions for active workflows.                                                                                                                |
+| `init`                                                                                                                                                        | Initialize cog runtime directories and prerequisites.                                                                                                                  |
+| `kb-apply`                                                                                                                                                    | Apply a knowledge-base scaffold to a project.                                                                                                                          |
+| `kb-detect`                                                                                                                                                   | Detect knowledge-base scaffold type.                                                                                                                                   |
+| `license-apply`                                                                                                                                               | Apply an SPDX LICENSE to a project.                                                                                                                                    |
+| `lint-codex-wrapper`                                                                                                                                          | Enforce Codex single-entrypoint markdown snippets.                                                                                                                     |
+| `lock`                                                                                                                                                        | Acquire or release a workflow run lock.                                                                                                                                |
+| `longrun`                                                                                                                                                     | Launch, poll, finalize, and cancel cog-owned durable long-running jobs.                                                                                                |
+| `match-telemetry`                                                                                                                                             | Record and report plan→executor match-outcome telemetry.                                                                                                               |
+| `msg`                                                                                                                                                         | Emit uniform machine status lines.                                                                                                                                     |
+| `nix-devshell-apply`                                                                                                                                          | Apply a nix devshell template to a project.                                                                                                                            |
+| `nix-devshell-detect`                                                                                                                                         | Detect nix devshell template type.                                                                                                                                     |
+| `noop`                                                                                                                                                        | Exercise command dispatch without side effects.                                                                                                                        |
+| `osc-preflight`                                                                                                                                               | Detect OBS/osc session prerequisites.                                                                                                                                  |
+| `osc-probe-binary`                                                                                                                                            | Resolve a binary RPM to an OBS source package.                                                                                                                         |
+| `plan-doc`                                                                                                                                                    | Write and validate lean plan artifacts.                                                                                                                                |
+| `plan-complexity`                                                                                                                                             | Extract and compare implementation plan complexity signals.                                                                                                            |
+| `plan-doc save`                                                                                                                                               | Write one lean plan artifact.                                                                                                                                          |
+| `plan-doc validate`                                                                                                                                           | Validate one lean plan artifact.                                                                                                                                       |
+| `plan-builder-to-queue-setup`                                                                                                                                 | Parse plan-builder-to-queue arguments and create plan-vault run state.                                                                                                 |
+| `plan-init`                                                                                                                                                   | Bootstrap implementation plan root files.                                                                                                                              |
+| `plan-multi-setup`                                                                                                                                            | Parse plan-multi arguments and create run state.                                                                                                                       |
+| `plan-review`                                                                                                                                                 | Write and validate annotated plan review artifacts.                                                                                                                    |
+| `plan-review save`                                                                                                                                            | Write one annotated plan review artifact.                                                                                                                              |
+| `plan-review orchestrator`                                                                                                                                    | Write a review artifact from absolute orchestrator input paths.                                                                                                        |
+| `plan-review validate`                                                                                                                                        | Validate one annotated plan review artifact.                                                                                                                           |
+| `plan-slug`                                                                                                                                                   | Derive and validate an implementation plan slug.                                                                                                                       |
+| `review-plan-multi-setup`                                                                                                                                     | Parse review-plan-multi arguments and create run state.                                                                                                                |
+| `power-grade`                                                                                                                                                 | Inspect and validate model/effort power grades.                                                                                                                        |
+| `power-grade validate`                                                                                                                                        | Validate the Power Grade matrix schema and source-cited cells.                                                                                                         |
+| `power-grade cell --model <model> --effort <effort>`                                                                                                          | Print one model/effort cell.                                                                                                                                           |
+| `power-grade classify --grade <n>`                                                                                                                            | Print executable cells that can handle a difficulty grade.                                                                                                             |
+| `power-grade compound --passes <cell,cell,...>`                                                                                                               | Compute compounded capability for a pass sequence.                                                                                                                     |
+| `power-grade tier --name <name>`                                                                                                                              | Resolve a named tier to its Claude and Codex model/effort cells.                                                                                                       |
+| `power-grade skill-tier --skill <name> \| --file <path>`                                                                                                      | Resolve a skill's expected vs actual model/effort tier.                                                                                                                |
+| `power-grade executor [--executor <name>]`                                                                                                                    | Derive each executor's capability power and routing band from its pass composition.                                                                                    |
+| `power-grade match --score <n>`                                                                                                                               | Route a complexity score to the right-sized executor via the normalized-percent overlay.                                                                               |
+| `power-grade executor-validate`                                                                                                                               | Check executor capability data for completeness, cell references, and calibration coherence.                                                                           |
+| `precommit-apply-template`                                                                                                                                    | Apply a pre-commit template to a project.                                                                                                                              |
+| `precommit-detect`                                                                                                                                            | Detect pre-commit template type.                                                                                                                                       |
+| `precommit-run`                                                                                                                                               | Run pre-commit hooks across stages and collect failures.                                                                                                               |
+| `precommit-spell-select`                                                                                                                                      | Select the markdown spell checker for a set of KB content languages.                                                                                                   |
+| `preflight`                                                                                                                                                   | Run centralized orchestrator preflight checks.                                                                                                                         |
+| `print-config`                                                                                                                                                | Print resolved configuration values and their sources.                                                                                                                 |
+| `queue-append`                                                                                                                                                | Append one implementation plan queue entry.                                                                                                                            |
+| `queue-bootstrap`                                                                                                                                             | Create and validate an implementation plan queue.                                                                                                                      |
+| `queue-deps-set`                                                                                                                                              | Replace one mutable queue item dependency list with a guarded graph check.                                                                                             |
+| `queue-graph-check`                                                                                                                                           | Validate queue dependency graph references and cycles.                                                                                                                 |
+| `queue-prompt-set`                                                                                                                                            | Set one queue item prompt with an expected-current-prompt guard.                                                                                                       |
+| `queue-reorder`                                                                                                                                               | Reorder mutable queue items by stable dependency topological sort.                                                                                                     |
+| `queue-select`                                                                                                                                                | Select the next runnable implementation plan round.                                                                                                                    |
+| `queue-status-set`                                                                                                                                            | Set one queue item status with an expected-current-status guard.                                                                                                       |
+| `refactor-scan-drift`                                                                                                                                         | Compute byte-stable source-scan fingerprint.                                                                                                                           |
+| `refactor-scan-source`                                                                                                                                        | Run deterministic source static-analysis probes.                                                                                                                       |
+| `refactor-setup`                                                                                                                                              | Resolve refactor migration setup paths.                                                                                                                                |
+| `require`                                                                                                                                                     | Assert required cog subcommands are installed.                                                                                                                         |
+| `readme-apply`                                                                                                                                                | Apply a README skeleton to a project.                                                                                                                                  |
+| `research-shelf`                                                                                                                                              | Store and validate dated research findings.                                                                                                                            |
+| `research-shelf init`                                                                                                                                         | Create the research shelf directory and index.                                                                                                                         |
+| `research-shelf record`                                                                                                                                       | Append one dated, sourced research finding.                                                                                                                            |
+| `research-shelf list`                                                                                                                                         | List stored research finding IDs.                                                                                                                                      |
+| `research-shelf get <id>`                                                                                                                                     | Print one stored research finding.                                                                                                                                     |
+| `research-shelf validate`                                                                                                                                     | Validate the research shelf index and entries.                                                                                                                         |
+| `review-comment`                                                                                                                                              | Plan or post PR comments for review findings.                                                                                                                          |
+| `review-queue-rounds-check-idempotency`                                                                                                                       | Flag a round whose declared artifacts an earlier round already deployed.                                                                                               |
+| `review-queue-rounds-scan`                                                                                                                                    | Inventory all plan-vault queues and repo/plan fingerprints.                                                                                                            |
+| `review-queue-rounds-verify`                                                                                                                                  | Verify a review-queue-rounds run against a before/after scan.                                                                                                          |
+| `review-init`                                                                                                                                                 | Create a review run directory and resolve output paths.                                                                                                                |
+| `review-loop-input`                                                                                                                                           | Build and validate review-loop handoff input JSON.                                                                                                                     |
+| `review-loop-progress`                                                                                                                                        | Compare review findings across loop rounds.                                                                                                                            |
+| `review-loop-summary`                                                                                                                                         | Assemble and validate the review-loop terminal summary.                                                                                                                |
+| `review-normalize-findings`                                                                                                                                   | Validate, sort, and severity-filter review findings JSON.                                                                                                              |
+| `review-scope`                                                                                                                                                | Detect changed-file review scope.                                                                                                                                      |
+| `review-tech-scope`                                                                                                                                           | Detect review technologies and bundled reference targets.                                                                                                              |
+| `review-validate-findings`                                                                                                                                    | Validate review findings JSON.                                                                                                                                         |
+| `round-prompt`                                                                                                                                                | Assemble and validate executor-stamped round prompts.                                                                                                                  |
+| `round-req`                                                                                                                                                   | Stamp and list round acceptance requirement IDs.                                                                                                                       |
+| `round-split`                                                                                                                                                 | Check split-round requirement coverage.                                                                                                                                |
+| `rundir`                                                                                                                                                      | Create a workflow run directory and optionally acquire its lock.                                                                                                       |
+| `runner-all-setup`                                                                                                                                            | Parse runner-all arguments and create main queue run state.                                                                                                            |
+| `runner-commit-parse`                                                                                                                                         | Parse runner commit result lines.                                                                                                                                      |
+| `runner-plan-setup`                                                                                                                                           | Parse runner-plan arguments and create round queue run state.                                                                                                          |
+| `skill-class`                                                                                                                                                 | Show and check core skill-class contracts and prerequisites.                                                                                                           |
+| `skill-refs root`                                                                                                                                             | Print the resolved skill-reference root.                                                                                                                               |
+| `skill-refs path <rel>`                                                                                                                                       | Print an existing file under the resolved skill-reference root.                                                                                                        |
+| `skill-refs inspect [--json]`                                                                                                                                 | Report the resolved root with its origin (`repo`/`xdg`), writability, and a vcs note.                                                                                  |
+| `skill-lint`                                                                                                                                                  | Lint SKILL.md files against the skill/script boundary.                                                                                                                 |
+| `spec-leakage-scan`                                                                                                                                           | scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage                                                                                     |
+| `suckless-apply`                                                                                                                                              | Check, apply, and build a suckless patch.                                                                                                                              |
+| `suckless-conflicts`                                                                                                                                          | List suckless patch conflict artifacts.                                                                                                                                |
+| `suckless-preflight`                                                                                                                                          | Detect suckless tree signals and clean state.                                                                                                                          |
+| `taskrunner-apply`                                                                                                                                            | Apply a task-runner template to a project.                                                                                                                             |
+| `taskrunner-detect`                                                                                                                                           | Detect the task-runner type for a project.                                                                                                                             |
+| `test-review-discover`                                                                                                                                        | Detect test runner and test-review batch status.                                                                                                                       |
+| `test-review-lint`                                                                                                                                            | Emit deterministic test-review lint signals.                                                                                                                           |
+| `test-review-manifest`                                                                                                                                        | Update test-review MANIFEST.yaml.                                                                                                                                      |
+| `tracking-scan`                                                                                                                                               | Report tracked artifacts whose revalidation cadence is overdue.                                                                                                        |
 
 ## Mirrors
 
-Root help is generated dynamically by `lib/functions/fn_help_generate.sh`.
-`completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command
-surface and must be kept in sync with `lib/commands/cmd_*.sh`.
+Root help is generated dynamically by `lib/functions/fn_help_generate.sh`. `completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command surface and must be kept in sync with `lib/commands/cmd_*.sh`.
 
-`cog queue-select --schema plans|rounds` selects from either queue schema; omitted `--schema`
-defaults to `rounds`.
+`cog queue-select --schema plans|rounds` selects from either queue schema; omitted `--schema` defaults to `rounds`.
 
-`cog preflight claude-env <out.json>` asserts the Claude Code
-no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash
-timeout env vars are recorded as diagnostics only.
+`cog preflight claude-env <out.json>` asserts the Claude Code no-backgrounding session env. Strict mode requires `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`; Bash timeout env vars are recorded as diagnostics only.
 
-`cog codex-runner orientation <read-only|write>` prints the canonical Codex prompt orientation block
-for the requested access mode.
+`cog codex-runner orientation <read-only|write>` prints the canonical Codex prompt orientation block for the requested access mode.
 
-`cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner`
-classification.
+`cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner` classification.
 
-`cog executor init` creates a shared executor run directory for one prompt or plan. Its identity
-flags are split by responsibility:
+`cog executor init` creates a shared executor run directory for one prompt or plan. Its identity flags are split by responsibility:
 
 ```bash
 cog executor init --executor <executor-vetted|executor-oneshot|plan-vetted> --engine <claude|codex> --input <prompt-or-plan> [--json]
 ```
 
-`--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The
-removed `--plan-engine` flag is not accepted. The executor flows share the gated 2-phase shape
-(`prepare`, `execution`): the prepare stage produces or reviews the plan depending on the
-input-quality route, then the plan is executed. `executor-vetted` is Claude-only (`--engine codex` is
-rejected); it delegates the whole prepare stage to `/plan-vetted`. `executor-oneshot` runs on either
-engine; its prepare producers are `/plan-oneshot` (generate) and `/review-plan-oneshot` (review, run on
-the opposite engine for independence). The `plan-vetted` flow is a Claude-only, single prepare phase
-(no execution): its producers are the dual-engine `/plan-multi` (generate) and `/review-plan-multi`
-(review). Input classification (`.md` path vs. prompt) is a hint only; the route comes from the
-`assess-input` verdict.
+`--executor` selects the executor skill/routine and flow; `--engine` selects the coding agent. The removed `--plan-engine` flag is not accepted. The executor flows share the gated 2-phase shape (`prepare`, `execution`): the prepare stage produces or reviews the plan depending on the input-quality route, then the plan is executed. `executor-vetted` is Claude-only (`--engine codex` is rejected); it delegates the whole prepare stage to `/plan-vetted`. `executor-oneshot` runs on either engine; its prepare producers are `/plan-oneshot` (generate) and `/review-plan-oneshot` (review, run on the opposite engine for independence). The `plan-vetted` flow is a Claude-only, single prepare phase (no execution): its producers are the dual-engine `/plan-multi` (generate) and `/review-plan-multi` (review). Input classification (`.md` path vs. prompt) is a hint only; the route comes from the `assess-input` verdict.
 
-`cog executor classify-input <input> --json` reports whether the input is a readable `.md` plan or a
-prompt. `cog executor prepare-step --executor <e> --engine <eng> --route <needs-plan|good-input>
---json` resolves the prepare-stage producer skill, the engine it runs on, and the invocation lane.
-`cog executor adopt-prepared --run-dir <dir> --from <path> --json` copies a producer artifact whose
-output path the executor does not control (the `review-plan-multi` review) into the canonical
-`prepared-plan.md` slot. `cog executor adopt --run-dir <dir> --ordinal <ordinal> --from <path> --json`
-is the stage-agnostic form: it places a staged artifact into the canonical slot resolved for that
-ordinal (used for the native execution report, which the orchestrator produces in-session), emitting
-`schema: "cog.executor.adopt-artifact.v1"`, and fails closed on a missing or empty source. `cog
-executor verify-artifact --run-dir <dir> --ordinal <ordinal> --json` is the deterministic postcondition
-gate: it exits non-zero when the canonical artifact for that ordinal is missing or empty, emitting
-`schema: "cog.executor.verify-artifact.v1"` on success. cog owns the canonical artifact name and its
-verification so an executor skill never hand-writes either (see
-[ADR-0046](../decisions/0046-cog-owned-stage-artifact-writes.md)). `cog executor export-prepared
---run-dir <dir> --output <path> --json` copies
-that canonical `prepared-plan.md` out to a caller-supplied path (used by `plan-vetted` to hand its
-vetted plan back through `--output`).
+`cog executor classify-input <input> --json` reports whether the input is a readable `.md` plan or a prompt. `cog executor prepare-step --executor <e> --engine <eng> --route <needs-plan|good-input>
+--json` resolves the prepare-stage producer skill, the engine it runs on, and the invocation lane. `cog executor adopt-prepared --run-dir <dir> --from <path> --json` copies a producer artifact whose output path the executor does not control (the `review-plan-multi` review) into the canonical `prepared-plan.md` slot. `cog executor adopt --run-dir <dir> --ordinal <ordinal> --from <path> --json` is the stage-agnostic form: it places a staged artifact into the canonical slot resolved for that ordinal (used for the native execution report, which the orchestrator produces in-session), emitting `schema: "cog.executor.adopt-artifact.v1"`, and fails closed on a missing or empty source. `cog
+executor verify-artifact --run-dir <dir> --ordinal <ordinal> --json` is the deterministic postcondition gate: it exits non-zero when the canonical artifact for that ordinal is missing or empty, emitting `schema: "cog.executor.verify-artifact.v1"` on success. cog owns the canonical artifact name and its verification so an executor skill never hand-writes either (see [ADR-0046](../decisions/0046-cog-owned-stage-artifact-writes.md)). `cog executor export-prepared
+--run-dir <dir> --output <path> --json` copies that canonical `prepared-plan.md` out to a caller-supplied path (used by `plan-vetted` to hand its vetted plan back through `--output`).
 
-`cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a
-phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`, and `path`.
+`cog executor artifacts <run-dir> --json` emits `schema: "cog.executor.artifacts.v2"` with a phase-keyed `phases[]` array. Each phase includes `ordinal`, `phase`, `artifact`, and `path`.
 
-`cog executor summary` writes `executor-summary.json` and emits
-`schema: "cog.executor.summary.v3"`:
+`cog executor summary` writes `executor-summary.json` and emits `schema: "cog.executor.summary.v3"`:
 
 ```bash
 cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--json]
@@ -249,54 +213,27 @@ The summary records the route, the resolved producer, and the prepare/execute en
 [--input-file <p>] [--file <p> ...] --json` extracts structural plan-quality signals; `record
 --run-dir <dir> --route <needs-plan|good-input> --confidence <high|medium|low> --rationale <text>
 [--signal <k=v> ...] --json` persists and validates the verdict (`schema:
-"cog.assess-input.v1"`); `validate <path>` checks an existing verdict. The judgment itself lives in
-the `assess-input` skill.
+"cog.assess-input.v1"`); `validate <path>` checks an existing verdict. The judgment itself lives in the `assess-input` skill.
 
-`cog executor queue-prompts` prints the queue-prompt examples used by inner `rounds:` queues. Any
-`/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`;
-the `prompts` array lists known executors as examples, not a closed allowlist. Top-level `plans:`
-queue entries dispatch nested runner prompts such as
-`/runner-plan -ar @<PLAN_ROOT>/plans/<slug>/` through `runner-all`.
+`cog executor queue-prompts` prints the queue-prompt examples used by inner `rounds:` queues. Any `/executor-*` prompt is selected by the queue item itself and dispatched verbatim by `runner-plan`; the `prompts` array lists known executors as examples, not a closed allowlist. Top-level `plans:` queue entries dispatch nested runner prompts such as `/runner-plan -ar @<PLAN_ROOT>/plans/<slug>/` through `runner-all`.
 
-`cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location
-and falling back to the repo checkout.
+`cog skill-refs root` prints the resolved skill-reference root, preferring the XDG install location and falling back to the repo checkout.
 
 `cog skill-refs path <rel>` prints an existing file under the resolved skill-reference root.
 
-`cog skill-refs inspect [--json]` reports the resolved root together with its `origin` (`repo` or
-installed `xdg`), `writable`, and a `vcs_note`, so a caller can see whether a template write lands in the
-tracked repo or the installed, uncommitted tree.
+`cog skill-refs inspect [--json]` reports the resolved root together with its `origin` (`repo` or installed `xdg`), `writable`, and a `vcs_note`, so a caller can see whether a template write lands in the tracked repo or the installed, uncommitted tree.
 
-`cog bootstrap-audit --json` reports, per domain, the machine-explicit scope fields `default_in_scope`,
-`default_action` (`install` when the domain is absent, `reconcile` when present), and
-`requirements_satisfied` alongside the existing `present`/`requirements[]` layers. The orchestrator
-reads `default_action` rather than re-deriving scope (ADR-0062).
+`cog bootstrap-audit --json` reports, per domain, the machine-explicit scope fields `default_in_scope`, `default_action` (`install` when the domain is absent, `reconcile` when present), and `requirements_satisfied` alongside the existing `present`/`requirements[]` layers. The orchestrator reads `default_action` rather than re-deriving scope (ADR-0062).
 
-`cog bootstrap-template-review check|stamp` is the freshness-cached template-review surface the
-`bootstrap-*` workers share. `check` selects a fresh research-shelf entry for a domain and detected type
-(the freshness key is `bootstrap-template,<domain>,<type>`) by comparing today against the stamped
-`revalidate-after`, and folds in the skill-refs origin and template roots; `stamp` records a dated
-review through `cog research-shelf record`, sets `revalidate-after` to the recorded date plus its
-`--freshness-days` window (default 14), and fails fast when the skill-refs template SoT is not writable.
-The freshness window is chosen at stamp time, so `check` only compares dates. Freshness selection lives
-here, not in `research-shelf`.
+`cog bootstrap-template-review check|stamp` is the freshness-cached template-review surface the `bootstrap-*` workers share. `check` selects a fresh research-shelf entry for a domain and detected type (the freshness key is `bootstrap-template,<domain>,<type>`) by comparing today against the stamped `revalidate-after`, and folds in the skill-refs origin and template roots; `stamp` records a dated review through `cog research-shelf record`, sets `revalidate-after` to the recorded date plus its `--freshness-days` window (default 14), and fails fast when the skill-refs template SoT is not writable. The freshness window is chosen at stamp time, so `check` only compares dates. Freshness selection lives here, not in `research-shelf`.
 
 ## Implementation plan layout
 
-Plans live in the resolved cog plan vault (`<PLAN_ROOT>`) — `<PLAN_ROOT>/queue-plans.yaml` is the
-top-level plans queue, and each plan is `<PLAN_ROOT>/plans/<slug>/` with an inner `queue-rounds.yaml`
-and round bodies under `<PLAN_ROOT>/plans/<slug>/rounds/*.md`. `<PLAN_ROOT>` is the local store
-(`<repo>/.cog/plans`) or the global store (`<store>/projects/<project_key>`); the runner setups and the
-revision boundary resolve it through `cog plan runner-resolve --target <plan_dir|queue> [--json]`.
+Plans live in the resolved cog plan vault (`<PLAN_ROOT>`) — `<PLAN_ROOT>/queue-plans.yaml` is the top-level plans queue, and each plan is `<PLAN_ROOT>/plans/<slug>/` with an inner `queue-rounds.yaml` and round bodies under `<PLAN_ROOT>/plans/<slug>/rounds/*.md`. `<PLAN_ROOT>` is the local store (`<repo>/.cog/plans`) or the global store (`<store>/projects/<project_key>`); the runner setups and the revision boundary resolve it through `cog plan runner-resolve --target <plan_dir|queue> [--json]`.
 
-Plan directories are flat siblings a single level under `<PLAN_ROOT>/plans/`; ordering between plans
-lives only in `queue-plans.yaml` `depends_on`, never in the filesystem. Nesting fails closed at three
-boundaries: `cog plan-init` (legacy producer bootstrap), `cog review-queue-rounds-scan` (revision
-inventory, via `cog::fn::plan_assert_flat_root`), and `cog runner-plan-setup` (the invocation target
-must resolve to a flat plan directory via `cog plan runner-resolve`).
+Plan directories are flat siblings a single level under `<PLAN_ROOT>/plans/`; ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the filesystem. Nesting fails closed at three boundaries: `cog plan-init` (legacy producer bootstrap), `cog review-queue-rounds-scan` (revision inventory, via `cog::fn::plan_assert_flat_root`), and `cog runner-plan-setup` (the invocation target must resolve to a flat plan directory via `cog plan runner-resolve`).
 
-Top-level plan queue entries may select different executors while still targeting flat sibling plan
-directories:
+Top-level plan queue entries may select different executors while still targeting flat sibling plan directories:
 
 ```yaml
 plans:

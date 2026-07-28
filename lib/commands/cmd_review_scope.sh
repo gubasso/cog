@@ -27,7 +27,7 @@ __cog_review_scope_check_build_json() {
     ($max_files | if . == "" then null else tonumber end) as $mf
     | ($max_lines | if . == "" then null else tonumber end) as $ml
     | ([ (if ($mf != null and $files > $mf) then "files" else empty end),
-         (if ($ml != null and $lines > $ml) then "lines" else empty end) ]) as $breaches
+        (if ($ml != null and $lines > $ml) then "lines" else empty end) ]) as $breaches
     | {
         schema: "cog.review-scope.check.v1",
         ok: (($breaches | length) == 0),

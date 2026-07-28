@@ -11,18 +11,14 @@ effort: low
 
 ## Overview
 
-This skill helps translate natural language queries into ast-grep rules for structural code search.
-ast-grep uses Abstract Syntax Tree (AST) patterns to match code based on its structure rather than
-just text, enabling powerful and precise code search across large codebases.
+This skill helps translate natural language queries into ast-grep rules for structural code search. ast-grep uses Abstract Syntax Tree (AST) patterns to match code based on its structure rather than just text, enabling powerful and precise code search across large codebases.
 
 ## When to Use This Skill
 
 Use this skill when users:
 
-- Need to search for code patterns using structural matching (e.g., "find all async functions that
-  don't have error handling")
-- Want to locate specific language constructs (e.g., "find all function calls with specific
-  parameters")
+- Need to search for code patterns using structural matching (e.g., "find all async functions that don't have error handling")
+- Want to locate specific language constructs (e.g., "find all function calls with specific parameters")
 - Request searches that require understanding code structure rather than just text
 - Ask to search for code with particular AST characteristics
 - Need to perform complex code queries that traditional text search cannot handle
@@ -42,8 +38,7 @@ Clearly understand what the user wants to find. Ask clarifying questions if need
 
 ### Step 2: Create Example Code
 
-Write a simple code snippet that represents what the user wants to match. Save this to a temporary
-file for testing.
+Write a simple code snippet that represents what the user wants to match. Save this to a temporary file for testing.
 
 **Example:** If searching for "async functions that use await", create a test file:
 
@@ -61,8 +56,7 @@ Translate the pattern into an ast-grep rule. Start simple and add complexity as 
 
 **Key principles:**
 
-- Always use `stopBy: end` for relational rules (`inside`, `has`) to ensure search goes to the end
-  of the direction
+- Always use `stopBy: end` for relational rules (`inside`, `has`) to ensure search goes to the end of the direction
 - Use `pattern` for simple structures
 - Use `kind` with `has`/`inside` for complex structures
 - Break complex queries into smaller sub-rules using `all`, `any`, or `not`
@@ -79,14 +73,13 @@ rule:
     stopBy: end
 ```
 
-See `REFS/rule-reference.md` for comprehensive rule documentation (see
-[Reference resolution](#reference-resolution) for the `REFS` path).
+See `REFS/rule-reference.md` for comprehensive rule documentation (see [Reference resolution](#reference-resolution) for the `REFS` path).
 
 ### Step 4: Test the Rule
 
 Use ast-grep CLI to verify the rule matches the example code. There are two main approaches:
 
-**Option A: Test with inline rules (for quick iterations)**
+**Option A:** Test with inline rules (for quick iterations)
 
 ```bash
 echo "async function test() { await fetch(); }" | ast-grep scan --inline-rules "id: test
@@ -98,7 +91,7 @@ rule:
     stopBy: end" --stdin
 ```
 
-**Option B: Test with rule files (recommended for complex rules)**
+**Option B:** Test with rule files (recommended for complex rules)
 
 ```bash
 ast-grep scan --rule test_rule.yml test_example.js
@@ -254,8 +247,7 @@ has:
   stopBy: end
 ```
 
-This ensures the search traverses the entire subtree rather than stopping at the first non-matching
-node.
+This ensures the search traverses the entire subtree rather than stopping at the first non-matching node.
 
 ### Start Simple, Then Add Complexity
 
@@ -350,11 +342,8 @@ rule:
 
 ## Reference resolution
 
-Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver
-always succeeds for shipped references, so no graceful-degrade fallback is needed.
+Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver always succeeds for shipped references, so no graceful-degrade fallback is needed.
 
 Available references (load on demand):
 
-- `REFS/rule-reference.md` means `$(cog skill-refs path tools/ast-grep/rule-reference.md)` —
-  comprehensive ast-grep rule documentation covering atomic rules, relational rules, composite
-  rules, and metavariables.
+- `REFS/rule-reference.md` means `$(cog skill-refs path tools/ast-grep/rule-reference.md)` — comprehensive ast-grep rule documentation covering atomic rules, relational rules, composite rules, and metavariables.

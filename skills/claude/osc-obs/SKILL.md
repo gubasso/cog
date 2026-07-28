@@ -9,21 +9,15 @@ effort: low
 
 # osc-obs - OBS operations skill
 
-runbook-execute helper extraction is DEFERRED because it is high-risk, environment-sensitive,
-network-dependent, and requires real OBS credentials.
+runbook-execute helper extraction is DEFERRED because it is high-risk, environment-sensitive, network-dependent, and requires real OBS credentials.
 
 ## Scope
 
-This is the generic, portable OBS skill. It reads configuration from environment variables so the
-same skill can drive any OBS overlay project. Per-project copies may hard-code constants, but this
-generic version stays environment-driven.
+This is the generic, portable OBS skill. It reads configuration from environment variables so the same skill can drive any OBS overlay project. Per-project copies may hard-code constants, but this generic version stays environment-driven.
 
-The skill's generic OBS reference content ships in-repo and resolves through
-`cog skill-refs path osc-obs/<file>`. Project-specific references may be supplied through
-`$OBS_DOCS_DIR`.
+The skill's generic OBS reference content ships in-repo and resolves through `cog skill-refs path osc-obs/<file>`. Project-specific references may be supplied through `$OBS_DOCS_DIR`.
 
-Per-lane runbooks are inputs to the skill. They are not skill-owned and are not edited
-unilaterally.
+Per-lane runbooks are inputs to the skill. They are not skill-owned and are not edited unilaterally.
 
 ## Configuration
 
@@ -44,15 +38,13 @@ You may only edit files under:
 - `$OBS_DOCS_DIR/` if set
 - the log directory supplied by the invoker for the current runbook run
 
-All other paths are off-limits, including the consumer project's source tree and user-owned
-configuration. The shipped `osc-obs/` reference tree is read-only and is never an edit target.
+All other paths are off-limits, including the consumer project's source tree and user-owned configuration. The shipped `osc-obs/` reference tree is read-only and is never an edit target.
 
 If a step asks you to edit outside the allowed roots, stop and surface the issue to the user.
 
 ## Cog Contract
 
-`cog` must be installed and on `PATH`; a bare call fails
-legibly if it is missing. Create the run directory and output paths:
+`cog` must be installed and on `PATH`; a bare call fails legibly if it is missing. Create the run directory and output paths:
 
 ```bash
 RUN_DIR="$(cog rundir osc-obs | sed -n 's/^RUN_DIR=//p')"
@@ -72,19 +64,15 @@ Probe binary RPM names before `osc branch`:
 cog osc-probe-binary --binary "$BINARY_RPM" --project "$SOURCE_PROJECT" "$PROBE_JSON"
 ```
 
-If `osc-preflight` exits non-zero, stop. Surface `.reason` and the checks whose `status` is not
-`pass`. If `.checks.auth_probe.details.auth_class` is present, map it to the remediation below:
+If `osc-preflight` exits non-zero, stop. Surface `.reason` and the checks whose `status` is not `pass`. If `.checks.auth_probe.details.auth_class` is present, map it to the remediation below:
 
-- `creds_invalid`: re-seed the `oscrc` per
-  `$(cog skill-refs path osc-obs/auth-in-devcontainers.md)`, Tier 1.
-- `keyring_unavailable`: use a headless-friendly `oscrc` with
-  `credentials_mgr_class = osc.credentials.ObfuscatedConfigFileCredentialsManager`.
+- `creds_invalid`: re-seed the `oscrc` per `$(cog skill-refs path osc-obs/auth-in-devcontainers.md)`, Tier 1.
+- `keyring_unavailable`: use a headless-friendly `oscrc` with `credentials_mgr_class = osc.credentials.ObfuscatedConfigFileCredentialsManager`.
 - `network`: check network egress, proxy, DNS, TLS, or firewall before any further step.
 
 Never respond to auth failures by running or suggesting interactive `osc user` inside this skill.
 
-If `osc-probe-binary` exits non-zero, refuse to branch and escalate rather than guessing a source
-package.
+If `osc-probe-binary` exits non-zero, refuse to branch and escalate rather than guessing a source package.
 
 ## Helper Schemas
 
@@ -187,16 +175,13 @@ For any rebuild that takes more than a few seconds:
 osc -A "$OBS_API" results --watch <project> <package>
 ```
 
-Never poll `osc results` in a shell loop. `--watch` is a server-side long-poll and is safe to detach
-with Ctrl-C.
+Never poll `osc results` in a shell loop. `--watch` is a server-side long-poll and is safe to detach with Ctrl-C.
 
 ### Before Branching
 
-Binary RPM names rarely equal source-package names. `libexpat1` ships from source package `expat`.
-`python311-setuptools` is a binary subpackage of source `python-setuptools`.
+Binary RPM names rarely equal source-package names. `libexpat1` ships from source package `expat`. `python311-setuptools` is a binary subpackage of source `python-setuptools`.
 
-Use `cog osc-probe-binary` first. The returned `source_package` is authoritative. If it
-differs from the binary name, use the four-argument branch form:
+Use `cog osc-probe-binary` first. The returned `source_package` is authoritative. If it differs from the binary name, use the four-argument branch form:
 
 ```bash
 osc -A "$OBS_API" branch <src-prj> <src-pkg> "$OBS_HOME_PROJECT" <binary-name>
@@ -211,16 +196,13 @@ osc -A "$OBS_API" branch <src-prj> <src-pkg> "$OBS_HOME_PROJECT" <binary-name>
 | `blocked: <dep>`                        | transient                   | wait; do not `osc rebuild`                   |
 | `broken`                                | pre-build link/source drift | recover; never branch as if it were terminal |
 
-`blocked: <dep>` usually clears when the dependency republishes. Default to wait. Escalate only
-after checking job history and the project references.
+`blocked: <dep>` usually clears when the dependency republishes. Default to wait. Escalate only after checking job history and the project references.
 
-`broken` is pre-build. The resolver and build did not run. Recovery is usually the `osc add <new>` +
-`osc rm <old>` + `osc ci` sequence inside the OBS workspace.
+`broken` is pre-build. The resolver and build did not run. Recovery is usually the `osc add <new>` + `osc rm <old>` + `osc ci` sequence inside the OBS workspace.
 
 ### Before Rebuild
 
-When a dependency republishes, OBS usually auto-rebuilds consumers. An unconditional rebuild can
-cancel an in-flight auto-rebuild. Check state first:
+When a dependency republishes, OBS usually auto-rebuilds consumers. An unconditional rebuild can cancel an in-flight auto-rebuild. Check state first:
 
 ```bash
 state=$(osc -A "$OBS_API" results <prj> <pkg> --csv \
@@ -240,23 +222,18 @@ osc -A "$OBS_API" api \
   '/build/'"$OBS_HOME_PROJECT"'/<lane>/<arch>/_repository?view=binaryversions&binary=<binary-rpm>&withevr=1'
 ```
 
-If any lane reports `error="not available"`, do not commit. Scope the requirement down or publish
-the provider on the missing lane first.
+If any lane reports `error="not available"`, do not commit. Scope the requirement down or publish the provider on the missing lane first.
 
 ### Common Foot-guns
 
-- `osc getbinaries`: the fifth positional is a single file, not a destination directory. Use
-  `-d <dir>`.
+- `osc getbinaries`: the fifth positional is a single file, not a destination directory. Use `-d <dir>`.
 - `osc results`: use `-v` when you need the human-readable failure reason.
-- `osc whoami` does not exist. Use the helper preflight auth probe or
-  `osc -A "$OBS_API" api /person/<user>`.
+- `osc whoami` does not exist. Use the helper preflight auth probe or `osc -A "$OBS_API" api /person/<user>`.
 - Patch rename in `_link.apply`: `osc add <new>` and `osc rm <old>` must land in the same commit.
 
 ## Diagnostics Protocol
 
-When a step lands on an unfamiliar error, branch point, or fix-and-retry loop, consult
-authoritative sources before proposing a fix. Do not infer `osc` flag behavior, `.spec` macro
-semantics, OBS resolver rules, or package versions from memory.
+When a step lands on an unfamiliar error, branch point, or fix-and-retry loop, consult authoritative sources before proposing a fix. Do not infer `osc` flag behavior, `.spec` macro semantics, OBS resolver rules, or package versions from memory.
 
 Consult sources in this order:
 
@@ -271,11 +248,9 @@ Cite the URL or local path in the structured output summary when it drove the de
 
 ## Persisting Findings
 
-Always record the source URL or local path in the run's closing log next to the decision it
-informed.
+Always record the source URL or local path in the run's closing log next to the decision it informed.
 
-Project-specific findings go to `$OBS_DOCS_DIR/<topic>.md` when set; otherwise they stay in the
-run's log directory. The shipped `osc-obs/` reference tree is read-only and is not a findings sink.
+Project-specific findings go to `$OBS_DOCS_DIR/<topic>.md` when set; otherwise they stay in the run's log directory. The shipped `osc-obs/` reference tree is read-only and is not a findings sink.
 
 ## Structured Output
 
@@ -301,16 +276,13 @@ Runbook execution remains prose in this skill.
 3. Confirm the invoker supplied a log directory. Ask if missing.
 4. Before executing a step, list the log directory and read prior runs for the same lane.
 5. Execute each `## Step N` using the supported verbs and generic operation rules.
-6. If a repeated `{step, failure-signature}` pair appears, do not repeat the same edit. Choose a
-   different strategy, consult references, or escalate.
-7. Close with structured output and a log entry containing commands, outcomes, branch points,
-   references consulted, and remaining risks.
+6. If a repeated `{step, failure-signature}` pair appears, do not repeat the same edit. Choose a different strategy, consult references, or escalate.
+7. Close with structured output and a log entry containing commands, outcomes, branch points, references consulted, and remaining risks.
 
 ## Guardrails
 
 - Preflight is mandatory before any `osc` operation.
-- The helper is detect-only. It never installs packages, creates credentials, runs `osc user`, or
-  creates the OBS workspace.
+- The helper is detect-only. It never installs packages, creates credentials, runs `osc user`, or creates the OBS workspace.
 - The skill does not branch from guessed package names.
 - The skill does not self-provision home projects.
 - The skill does not run `osc` without `-A "$OBS_API"`.

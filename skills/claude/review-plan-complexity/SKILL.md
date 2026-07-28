@@ -13,9 +13,7 @@ allowed-tools: Bash Read Write Grep Glob
 
 # Review Plan Complexity
 
-Grade one implementation input before execution. The input may be a plan README, a round file, or a
-fragment. The skill keeps scoring judgment in prose and delegates deterministic extraction,
-requirement parsing, and reference resolution to `cog`.
+Grade one implementation input before execution. The input may be a plan README, a round file, or a fragment. The skill keeps scoring judgment in prose and delegates deterministic extraction, requirement parsing, and reference resolution to `cog`.
 
 ## Inputs
 
@@ -24,8 +22,7 @@ requirement parsing, and reference resolution to `cog`.
 1. `<input-path-abs>` - the readable input to grade.
 2. `<output-path-abs>` - the report path to write.
 
-If the two-path shape is missing, continue conversationally only when the user supplied a readable
-input and an explicit destination. Ask one focused clarification when either path is ambiguous.
+If the two-path shape is missing, continue conversationally only when the user supplied a readable input and an explicit destination. Ask one focused clarification when either path is ambiguous.
 
 ## Reference Resolution
 
@@ -36,8 +33,7 @@ RUBRIC_PATH="$(cog skill-refs path plan-rounds/complexity-rubric.md)"
 CONTRACT_PATH="$(cog skill-refs path plan-rounds/round-splitting-contract.md)"
 ```
 
-Read both references before scoring. Use the rubric axes, weights, floors, clarity gate, report
-schema, and seam guidance. Use the contract for requirement-ID and seam-hint shape.
+Read both references before scoring. Use the rubric axes, weights, floors, clarity gate, report schema, and seam guidance. Use the contract for requirement-ID and seam-hint shape.
 
 ## Phase 1: Extract Signals
 
@@ -48,9 +44,7 @@ EXTRACT_JSON="$(cog plan-complexity extract "$INPUT_PATH" --json)"
 REQ_JSON="$(cog round-req list "$INPUT_PATH" --json || true)"
 ```
 
-Use `EXTRACT_JSON` as signal input, not as the final score. If `REQ_JSON` reports untagged
-requirements, set `requirements_stamped: false` and include a recommendation to run
-`cog round-req stamp` before splitting. Do not stamp or mutate the input.
+Use `EXTRACT_JSON` as signal input, not as the final score. If `REQ_JSON` reports untagged requirements, set `requirements_stamped: false` and include a recommendation to run `cog round-req stamp` before splitting. Do not stamp or mutate the input.
 
 ## Phase 2: Score
 
@@ -64,8 +58,7 @@ Score the seven rubric axes from the input prose, extracted signals, and referen
 - slice quality
 - operational risk
 
-Apply the rubric's weights, floors, and clarity gate. Produce the final grade from the valid grade
-set: `Trivial`, `Low`, `Moderate`, `High`, `Very High`, `Extreme`, or `Unscorable`.
+Apply the rubric's weights, floors, and clarity gate. Produce the final grade from the valid grade set: `Trivial`, `Low`, `Moderate`, `High`, `Very High`, `Extreme`, or `Unscorable`.
 
 ## Phase 3: Split Signal
 
@@ -85,8 +78,7 @@ seam_hints:
       requirement_ids: [R3, R4]
 ```
 
-When requirements are unstamped, use normalized requirement text labels instead, set
-`requirements_stamped: false`, and recommend `cog round-req stamp "$INPUT_PATH" --json`.
+When requirements are unstamped, use normalized requirement text labels instead, set `requirements_stamped: false`, and recommend `cog round-req stamp "$INPUT_PATH" --json`.
 
 ## Phase 4: Emit Report
 
@@ -102,8 +94,7 @@ Write the report to `<output-path-abs>` using the rubric and contract report sch
 - deterministic_extract
 - recommendation
 
-The report is YAML. Create parent directories when needed. Re-read the output after writing and
-confirm it is non-empty.
+The report is YAML. Create parent directories when needed. Re-read the output after writing and confirm it is non-empty.
 
 ## Guardrails
 
