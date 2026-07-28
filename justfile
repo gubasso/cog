@@ -36,3 +36,15 @@ man:
 		printf '%s\n' 'scdoc not found; skipping man page build' >&2; \
 		exit 0; \
 	fi
+
+# --- build / format / check ---
+
+# cog is a Bash CLI: no compile step. Kept for a uniform recipe surface.
+build:
+	@echo "cog is a Bash CLI; nothing to build"
+
+# Format shell sources with shfmt; the pre-commit fmt hooks stay the SoT.
+fmt:
+	shfmt -w $(git ls-files '*.sh' 'bin/cog')
+
+check: fmt lint test

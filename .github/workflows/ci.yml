@@ -1,0 +1,34 @@
+# CI workflow — lint, test.
+# Jobs reuse the project's Nix devshell so CI runs the same toolchain as local
+# development: `nix develop --command just <recipe>`, where the tasks are the
+# project task runner's recipe names. cog is a Bash CLI, so lint and test are
+# driven through pre-commit hooks behind `just lint` / `just test`.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+      - name: Cache Nix store
+        uses: DeterminateSystems/flakehub-cache-action@v3.21.5
+      - name: Lint
+        run: nix develop --command just lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+      - name: Cache Nix store
+        uses: DeterminateSystems/flakehub-cache-action@v3.21.5
+      - name: Test
+        run: nix develop --command just test

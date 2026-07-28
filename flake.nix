@@ -14,6 +14,11 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
+        # `nix fmt` uses the RFC 166 formatter (also on PATH for the pre-commit hook).
+        # Plain `nixfmt` points at the RFC-style formatter on nixpkgs-unstable
+        # (the `nixfmt-rfc-style` alias still resolves but is slated for deprecation).
+        formatter = pkgs.nixfmt;
+
         devShells.default = pkgs.mkShell {
           # Toolchain pinned to what cog actually builds, tests, lints, and runs.
           packages = [
@@ -42,6 +47,12 @@
             pkgs.mdformat # markdown formatter for docs/ (Diataxis)
             pkgs.markdownlint-cli # markdown linter for docs/
             pkgs.dprint # JSON/JSONC formatter (pre-commit dprint hook)
+
+            # Nix quality tools for the pre-commit `_nix` overlay hooks
+            # (nixfmt/statix/deadnix run as language:system off PATH).
+            pkgs.nixfmt
+            pkgs.statix
+            pkgs.deadnix
 
             # Deterministic GNU coreutils/text tools across macOS + Linux
             pkgs.coreutils
