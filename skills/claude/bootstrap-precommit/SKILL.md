@@ -105,6 +105,15 @@ companion and appends a Nix hook block (`nixfmt` format, `statix`/`deadnix` gate
 each project's per-project flake devShell; the hooks run `language: system` off PATH, so the flake
 devShell must provide `nixfmt`/`statix`/`deadnix` (the bootstrap-nix templates do).
 
+For every type **except `markdown`**, the helper also applies the shared markdown overlay: it copies
+`dprint.markdown.json` and `.markdownlint-cli2.jsonc` as companions and appends a markdown hook block
+(`dprint` unwrap with `textWrap: "never"`, the explicit relative-link guards, and `markdownlint-cli2`)
+to the freshly-copied config, reporting it in `markdown_hook_appended`. Every project carries
+docs/READMEs, so its markdown is formatted and linted uniformly. The `markdown` type is excluded
+because its own template carries the full markdown layer inline (plus KB-only extras). The `dprint`
+markdown hook runs `language: system` off PATH via a dedicated `--config dprint.markdown.json`, so
+`dprint` must be available.
+
 The apply helper emits:
 
 ```json
@@ -127,6 +136,7 @@ The apply helper emits:
   "spell": "typos",
   "spell_hook_appended": false,
   "nix_hook_appended": true,
+  "markdown_hook_appended": true,
   "reason": null
 }
 ```

@@ -87,6 +87,38 @@ setup() {
   grep -q 'id: nixfmt' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
 }
 
+@test "cog precommit-apply-template overlays the markdown layer onto every non-markdown type" {
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type rust --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .markdown_hook_appended == true' >/dev/null
+  jq -e '.markdown.textWrap == "never"' "${BATS_TEST_TMPDIR}/repo/dprint.markdown.json" >/dev/null
+  [ -f "${BATS_TEST_TMPDIR}/repo/.markdownlint-cli2.jsonc" ]
+  grep -q 'id: dprint-markdown' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+  grep -q 'id: markdownlint-cli2' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+  # the type's own json-only dprint.json is left untouched (no markdown plugin)
+  run ! grep -q 'markdown' "${BATS_TEST_TMPDIR}/repo/dprint.json"
+}
+
+@test "cog precommit-apply-template does not overlay the markdown layer onto the markdown type" {
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type markdown --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .markdown_hook_appended == false' >/dev/null
+  [ ! -f "${BATS_TEST_TMPDIR}/repo/dprint.markdown.json" ]
+  run ! grep -q 'id: dprint-markdown' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+}
+
+@test "cog precommit-apply-template does not re-append the markdown hook onto a skipped config" {
+  printf 'repos: []\n' >"${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+
+  run cog precommit-apply-template --project-root "${BATS_TEST_TMPDIR}/repo" --type rust --config-conflict skip --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .markdown_hook_appended == false' >/dev/null
+  run ! grep -q 'id: dprint-markdown' "${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
+}
+
 @test "cog precommit-apply-template does not re-append the nix hook onto a skipped config" {
   printf 'repos: []\n' >"${BATS_TEST_TMPDIR}/repo/.pre-commit-config.yaml"
 

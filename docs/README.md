@@ -94,6 +94,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0087: Runtime-rendered `ask` flag instructions](decisions/0087-runtime-rendered-ask-flag-instructions.md)
 - [ADR-0088: Primary-source-verification shared reference](decisions/0088-primary-source-verification-shared-reference.md)
 - [ADR-0089: Gates delivered as skill-refs references; stamp+lint retired](decisions/0089-gates-as-skill-refs-references.md)
+- [ADR-0090: Markdown pre-commit layer (universal overlay)](decisions/0090-markdown-precommit-layer.md)
 
 ## Guides
 

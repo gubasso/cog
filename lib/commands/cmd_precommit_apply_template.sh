@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Apply a pre-commit template to a project.'
 
-__cog_precommit_apply_template_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.spell|type=="string") and (.spell_hook_appended|type=="boolean") and (.nix_hook_appended|type=="boolean")'
+__cog_precommit_apply_template_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.spell|type=="string") and (.spell_hook_appended|type=="boolean") and (.nix_hook_appended|type=="boolean") and (.markdown_hook_appended|type=="boolean")'
 
 __cog_precommit_apply_template_usage() {
   cog::fn::ui_data "Usage: cog precommit-apply-template --type <type> [--project-root <dir>] [--template-root <dir>] [--spell typos|cspell] [--config-conflict overwrite|skip|abort] [--companion-conflict overwrite|skip|abort] (<out.json>|--json)"
@@ -54,6 +54,22 @@ __cog_precommit_apply_template_enumerate_operations() {
       OPERATIONS+=("$src"$'\t'"$dst"$'\t'"$obase")
     done < <(find "$overlay_dir" -type f -print0 | sort -z)
   fi
+  # Markdown overlay companions (dprint.markdown.json, .markdownlint-cli2.jsonc)
+  # apply to every type EXCEPT markdown: the KB markdown type already carries the
+  # full markdown layer inline, so overlaying would double it. The
+  # hook.pre-commit.yaml fragment is appended to the config in build_json.
+  if [[ $type != markdown ]]; then
+    local md_overlay="$template_root/_markdown" mbase
+    [[ -d $md_overlay ]] || return 7
+    while IFS= read -r -d '' src; do
+      [[ -f $src && ! -L $src ]] || return 2
+      mbase="${src##*/}"
+      [[ $mbase == "hook.pre-commit.yaml" ]] && continue
+      dst="$project_root/$mbase"
+      cog::fn::template::assert_under_project "$project_root" "$dst" || return 3
+      OPERATIONS+=("$src"$'\t'"$dst"$'\t'"$mbase")
+    done < <(find "$md_overlay" -type f -print0 | sort -z)
+  fi
 }
 
 __cog_precommit_apply_template_policy() {
@@ -65,7 +81,8 @@ __cog_precommit_apply_template_build_json() {
   local ok=true reason="" template_dir="$template_root/$type" template_config="$template_root/$type/.pre-commit-config.yaml"
   local spell_hook="$template_root/_spell/$spell/hook.pre-commit.yaml"
   local nix_hook="$template_root/_nix/hook.pre-commit.yaml" nix_statix="$template_root/_nix/statix.toml"
-  local op src dst rel policy enum_status config_copied=false spell_hook_appended=false nix_hook_appended=false copied=() skipped=() conflicts=()
+  local md_hook="$template_root/_markdown/hook.pre-commit.yaml" md_dprint="$template_root/_markdown/dprint.markdown.json" md_lint="$template_root/_markdown/.markdownlint-cli2.jsonc"
+  local op src dst rel policy enum_status config_copied=false spell_hook_appended=false nix_hook_appended=false markdown_hook_appended=false copied=() skipped=() conflicts=()
   if ! cog::fn::template::valid_policy "$config_conflict" || ! cog::fn::template::valid_policy "$companion_conflict"; then
     ok=false
     reason="conflict policy must be overwrite, skip, or abort"
@@ -93,6 +110,9 @@ __cog_precommit_apply_template_build_json() {
   elif [[ ! -f $nix_hook || ! -f $nix_statix ]]; then
     ok=false
     reason="nix overlay not found"
+  elif [[ $type != markdown && (! -f $md_hook || ! -f $md_dprint || ! -f $md_lint) ]]; then
+    ok=false
+    reason="markdown overlay not found"
   elif [[ $type == markdown && ! -f $spell_hook ]]; then
     ok=false
     reason="spell overlay hook not found"
@@ -108,6 +128,7 @@ __cog_precommit_apply_template_build_json() {
         4) reason="committed.toml not found" ;;
         5) reason="spell overlay not found" ;;
         6) reason="nix overlay not found" ;;
+        7) reason="markdown overlay not found" ;;
         *) reason="could not enumerate template files" ;;
       esac
     fi
@@ -163,6 +184,17 @@ __cog_precommit_apply_template_build_json() {
       reason="nix hook append failed"
     fi
   fi
+  # Append the markdown overlay hook block to the freshly-copied config for every
+  # type EXCEPT markdown (which carries the layer inline). Same config_copied guard
+  # as the spell/nix appends so a skipped/pre-existing config is never doubled.
+  if [[ $ok == true && $type != markdown && $config_copied == true ]]; then
+    if cat "$md_hook" >>"$project_root/.pre-commit-config.yaml"; then
+      markdown_hook_appended=true
+    else
+      ok=false
+      reason="markdown hook append failed"
+    fi
+  fi
   jq -n --argjson ok "$ok" --arg project_root "$project_root" --arg template_root "$template_root" \
     --arg type "$type" --arg template_dir "$template_dir" \
     --argjson copied "$(cog::fn::template::json_object_array "${copied[@]}")" \
@@ -170,11 +202,13 @@ __cog_precommit_apply_template_build_json() {
     --argjson conflicts "$(cog::fn::template::json_object_array "${conflicts[@]}")" \
     --arg config_conflict "$config_conflict" --arg companion_conflict "$companion_conflict" \
     --arg spell "$spell" --argjson spell_hook_appended "$spell_hook_appended" \
-    --argjson nix_hook_appended "$nix_hook_appended" --arg reason "$reason" \
+    --argjson nix_hook_appended "$nix_hook_appended" --argjson markdown_hook_appended "$markdown_hook_appended" \
+    --arg reason "$reason" \
     '{ok: $ok, project_root: $project_root, template_root: $template_root, type: $type, template_dir: $template_dir,
       copied: $copied, skipped: $skipped, conflicts: $conflicts, config_conflict: $config_conflict,
       companion_conflict: $companion_conflict, spell: $spell, spell_hook_appended: $spell_hook_appended,
-      nix_hook_appended: $nix_hook_appended, reason: (if $ok then null else $reason end)}'
+      nix_hook_appended: $nix_hook_appended, markdown_hook_appended: $markdown_hook_appended,
+      reason: (if $ok then null else $reason end)}'
 }
 
 cog::cmd::precommit_apply_template() {
