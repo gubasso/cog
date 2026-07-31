@@ -70,6 +70,102 @@ __cog_bootstrap_audit_file_has() {
   printf 'true'
 }
 
+# Print the config's hooks as one JSON array, or fail when the file is absent or
+# does not parse.
+#
+# yq is a real YAML parser, so comments, quoting styles, escapes, and
+# inline-vs-block sequences are its problem rather than ours. An earlier lexical
+# scanner here produced a steady stream of both false positives (a rationale
+# comment merely naming a forbidden flag) and false negatives (a quoted hook id,
+# an escaped quote inside a value) — each fix exposing the next edge case. yq is
+# already a first-class dependency of this CLI.
+__cog_bootstrap_audit_hooks_json() {
+  local root="$1" rel="$2"
+  local f="$root/$rel" docs
+  [[ -f $f ]] || return 1
+  # yq evaluates once per YAML document, so a multi-document file emits a STREAM
+  # of arrays. Slurp and concatenate, or a later `---` document would decide the
+  # verdict on its own. The two steps stay separate so a yq parse failure is not
+  # swallowed by a downstream jq that happily reads empty input.
+  docs="$(yq e -o=json -I=0 '[.repos[]?.hooks[]?]' "$f" 2>/dev/null)" || return 1
+  jq -c -s 'add // []' <<<"$docs" 2>/dev/null || return 1
+}
+
+# Print true when the violation predicate is definitively false.
+#
+# Fails CLOSED. `jq -e` cannot distinguish "predicate is false" from "jq raised
+# an error" — both are non-zero — so using its status alone would report a
+# malformed config (e.g. a scalar `args:`) as compliant. An audit that gates
+# commits must never fail open, so anything other than a literal `false` here
+# means unsatisfied.
+__cog_bootstrap_audit_no_violation() {
+  local hooks="$1" filter="$2" verdict
+  verdict="$(jq -r "$filter" <<<"$hooks" 2>/dev/null)" || {
+    printf 'false'
+    return
+  }
+  if [[ $verdict == false ]]; then
+    printf 'true'
+  else
+    printf 'false'
+  fi
+}
+
+# Print true when no `<hook>` stanza is missing an `args:` key — including when
+# the hook is absent entirely. Backs hooks whose upstream default args are
+# mutating, where overriding nothing silently inherits them.
+#
+# `args: []` counts as set: it is an explicit override to no arguments.
+__cog_bootstrap_audit_hook_sets_args() {
+  local root="$1" rel="$2" hook="$3" hooks
+  hooks="$(__cog_bootstrap_audit_hooks_json "$root" "$rel")" || {
+    printf 'false'
+    return
+  }
+  __cog_bootstrap_audit_no_violation "$hooks" \
+    "any(.[]; .id == \"$hook\" and (.args | not))"
+}
+
+# Print true when the legacy bare `ruff` hook id is absent. Upstream renamed it
+# to `ruff-check` and marks `ruff` a legacy alias.
+__cog_bootstrap_audit_no_legacy_ruff_id() {
+  local root="$1" rel="$2" hooks
+  hooks="$(__cog_bootstrap_audit_hooks_json "$root" "$rel")" || {
+    printf 'false'
+    return
+  }
+  __cog_bootstrap_audit_no_violation "$hooks" 'any(.[]; .id == "ruff")'
+}
+
+# Print true unless the *primary* ruff hook passes `--select`. A CLI `--select`
+# replaces the active rule selection from every resolved config file, so the
+# project's own [tool.ruff.lint] select stops applying.
+#
+# An `alias:` is a weak signal, not proof of intent: pre-commit defines it only
+# as an additional hook identifier, defaulting to the empty string — so null and
+# "" both mean unaliased. An aliased stanza is exempted ONLY when a non-aliased
+# ruff hook also exists — i.e. when it is genuinely secondary, the established
+# shape for a deliberately isolated single-rule hook (e.g. `--select PLC2701`)
+# where `--extend-select` would wrongly enable the project's entire rule set. A
+# lone aliased ruff hook IS the primary hook and is still flagged.
+__cog_bootstrap_audit_ruff_extend_select() {
+  local root="$1" rel="$2" hooks
+  hooks="$(__cog_bootstrap_audit_hooks_json "$root" "$rel")" || {
+    printf 'false'
+    return
+  }
+  # shellcheck disable=SC2016 # `$ruff`/`$primary` are jq variables; the filter must reach jq unexpanded.
+  __cog_bootstrap_audit_no_violation "$hooks" '
+    def is_ruff: .id == "ruff" or .id == "ruff-check";
+    def unaliased: (.alias | . == null or . == "");
+    def uses_select: [(.args // [])[] | tostring] | any(test("^--select(=|$)"));
+    map(select(is_ruff)) as $ruff
+    | ($ruff | map(select(unaliased))) as $primary
+    | ($primary | any(uses_select))
+      or (($primary | length) == 0 and ($ruff | any(uses_select)))
+  '
+}
+
 # Print true when the file under root exists and its bytes exactly match the
 # expected content; false otherwise.
 __cog_bootstrap_audit_file_exact() {
@@ -101,9 +197,25 @@ __cog_bootstrap_audit_build_json() {
   arts="$(__cog_bootstrap_audit_artifacts "$project_root" ".pre-commit-config.yaml")"
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
   local pc_reqs='[]'
-  if [[ $present == true && -e "$project_root/.editorconfig" ]]; then
-    pc_reqs="[$(__cog_bootstrap_audit_req editorconfig-checker-hook \
-      "$(__cog_bootstrap_audit_file_has "$project_root" ".pre-commit-config.yaml" "editorconfig-checker")")]"
+  if [[ $present == true ]]; then
+    local -a pc_items=()
+    if [[ -e "$project_root/.editorconfig" ]]; then
+      pc_items+=("$(__cog_bootstrap_audit_req editorconfig-checker-hook \
+        "$(__cog_bootstrap_audit_file_has "$project_root" ".pre-commit-config.yaml" "editorconfig-checker")")")
+    fi
+    # Upstream renamed `ruff` -> `ruff-check`; the bare id is a legacy alias.
+    pc_items+=("$(__cog_bootstrap_audit_req no-legacy-ruff-id \
+      "$(__cog_bootstrap_audit_no_legacy_ruff_id "$project_root" ".pre-commit-config.yaml")")")
+    pc_items+=("$(__cog_bootstrap_audit_req ruff-extend-select \
+      "$(__cog_bootstrap_audit_ruff_extend_select "$project_root" ".pre-commit-config.yaml")")")
+    # typos' upstream default args are [--write-changes, --force-exclude], so a
+    # stanza that overrides no args auto-fixes rather than reporting.
+    pc_items+=("$(__cog_bootstrap_audit_req typos-args-explicit \
+      "$(__cog_bootstrap_audit_hook_sets_args "$project_root" ".pre-commit-config.yaml" typos)")")
+    pc_reqs="[$(
+      IFS=,
+      printf '%s' "${pc_items[*]}"
+    )]"
   fi
   rows+=("$(__cog_bootstrap_audit_domain precommit "$present" false "pre-commit hooks" "$arts" "$pc_reqs")")
 
@@ -119,6 +231,11 @@ __cog_bootstrap_audit_build_json() {
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
   local nix_reqs='[]'
   if [[ $present == true ]]; then
+    # No nix-direnv requirement: direnv's own `use_flake` passes
+    # `--profile "$(direnv_layout_dir)/flake-profile"`, and a Nix profile
+    # generation is a permanent GC root, so the devShell survives
+    # `nix-collect-garbage` without nix-direnv. nix-direnv buys evaluation
+    # caching, which is a preference, not a correctness requirement.
     nix_reqs="[$(__cog_bootstrap_audit_req gitignore-nix-lines \
       "$(__cog_bootstrap_audit_file_has "$project_root" ".gitignore" ".direnv/" "/result")")]"
   fi

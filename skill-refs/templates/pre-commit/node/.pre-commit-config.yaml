@@ -34,7 +34,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.7.0
+    rev: v3.8.0
     hooks:
       - id: editorconfig-checker
         alias: ec
@@ -60,12 +60,17 @@ repos:
 
   # Pre-commit hook to check for spelling mistakes
   - repo: https://github.com/crate-ci/typos
-    rev: v1.46.0
+    rev: v1.48.0
     hooks:
-      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # Report-only. The `args:` below are LOAD-BEARING: upstream's default
+      # args are [--write-changes, --force-exclude], so a stanza that
+      # overrides no args auto-fixes. typos' auto-fix silently rewrites
       # deliberate identifiers / error-kind strings and can break code. Fix
       # real typos by hand; allowlist false positives in _typos.toml.
       - id: typos
+        # --force-exclude restated so `exclude:` still applies to filenames
+        # pre-commit passes explicitly.
+        args: [--force-exclude]
 
   # Biome – fast unified linter + formatter for JS/TS/JSON/JSONC
   # (use either Biome OR ESLint+Prettier per project — not both)

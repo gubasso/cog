@@ -48,9 +48,10 @@ repos:
   # dprint's json plugin formats JSON and JSONC (comments + trailing commas),
   # which the stdlib-based pretty-format-json cannot. check-json5 above stays the
   # syntax gate; dprint owns formatting. Config in the sibling `./dprint.json`
-  # (plugin version pinned there). External dependency: dprint must be on PATH
-  # (`cargo install dprint` or your package manager). pre-commit only — git push
-  # may strip PATH, and formatting is already applied by commit time.
+  # (plugin version pinned there). `language: system`, so dprint is supplied by
+  # the project's flake devShell (`pkgs.dprint`) — do not install it out-of-band;
+  # the devShell is the single provider. pre-commit only — git push may strip
+  # PATH, and formatting is already applied by commit time.
   - repo: local
     hooks:
       - id: dprint
@@ -63,7 +64,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.7.0
+    rev: v3.8.0
     hooks:
       - id: editorconfig-checker
         alias: ec
@@ -73,28 +74,37 @@ repos:
         # unset. Keep .editorconfig indent aligned with ruff-format (4 spaces).
         exclude: '\.md$'
 
-  # Pre-commit hook for Ruff, a fast Python linter
+  # Ruff — fast Python linter + formatter. Lint runs before format.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.7
+    rev: v0.16.1
     hooks:
-      # linter and sort imports (also covers autoflake + pyupgrade via F/UP rules)
-      - id: ruff
-        args: [--select, "I,UP,F,E,W,B,SIM,RUF", --fix]
+      # linter and sort imports (also covers autoflake + pyupgrade via F/UP rules).
+      # `ruff-check` is the current id; bare `ruff` is upstream's legacy alias.
+      # `--extend-select`, NEVER `--select`: a CLI `--select` replaces the active
+      # rule selection from *every* resolved config file, so the project's own
+      # [tool.ruff.lint] select stops applying.
+      - id: ruff-check
+        args: [--extend-select, "I,UP,F,E,W,B,SIM,RUF", --fix]
       - id: ruff-format
 
   # Pre-commit hook to check for spelling mistakes
   - repo: https://github.com/crate-ci/typos
-    rev: v1.44.0
+    rev: v1.48.0
     hooks:
-      # Report-only (no --write-changes): typos auto-fix silently rewrites
+      # Report-only. The `args:` below are LOAD-BEARING: upstream's default
+      # args are [--write-changes, --force-exclude], so a stanza that
+      # overrides no args auto-fixes. typos' auto-fix silently rewrites
       # deliberate identifiers / error-kind strings and can break code. Fix
       # real typos by hand; allowlist false positives in _typos.toml.
       - id: typos
+        # --force-exclude restated so `exclude:` still applies to filenames
+        # pre-commit passes explicitly.
+        args: [--force-exclude]
 
   # Pre-commit hook for shellcheck (shell script linter)
   # Requires shellcheck to be installed: apt-get install shellcheck / brew install shellcheck
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
 
@@ -116,7 +126,7 @@ repos:
 
   # Pre-commit hook for Gitleaks (secret detection)
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.2
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 

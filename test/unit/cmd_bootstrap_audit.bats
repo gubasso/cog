@@ -231,9 +231,240 @@ setup() {
   [ "$(jq -r '.domains[] | select(.domain == "governance") | .requirements[] | select(.name == "self-containment-principle") | .satisfied' <<<"$output")" = "false" ]
 }
 
+# shellcheck disable=SC2030 # `run --separate-stderr` rebinds `$output` here; each bats @test is its own subshell, so this cannot leak into a later test.
 @test "bootstrap-audit requires an output mode" {
   run --separate-stderr cog::cmd::bootstrap_audit --project-root "$BATS_TEST_TMPDIR"
 
   assert_failure 64
   [[ $stderr == *"MissingArgument"* ]]
+}
+
+# --- ruff-extend-select ------------------------------------------------------
+#
+# A CLI --select replaces the active rule selection from every resolved config
+# file. The audit must flag that on the primary ruff hook, while still allowing
+# a genuinely secondary aliased hook to isolate a single rule.
+
+# Sets RUFF_SELECT_SATISFIED rather than printing, so callers need no command
+# substitution: a subshell would put bats' `run`/`$output` out of scope.
+_audit_ruff_select() {
+  local dir="$BATS_TEST_TMPDIR/ruffsel-$1"
+  mkdir -p "$dir"
+  printf '%s\n' "$2" >"$dir/.pre-commit-config.yaml"
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+  assert_success
+  # shellcheck disable=SC2031 # `$output` is set by `run` in this same shell; shellcheck attributes it to an earlier bats @test subshell.
+  RUFF_SELECT_SATISFIED="$(jq -r '.domains[] | select(.domain == "precommit") | .requirements[] | select(.name == "ruff-extend-select") | .satisfied' <<<"$output")"
+}
+
+@test "bootstrap-audit ruff-extend-select accepts the additive inline form" {
+  _audit_ruff_select ok 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--extend-select, "F", --fix]'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags the inline config-replacing form" {
+  _audit_ruff_select inline 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--select, "F", --fix]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags the block-sequence form" {
+  _audit_ruff_select block 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args:
+          - --select
+          - F'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags the equals form" {
+  _audit_ruff_select equals 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--select=F]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select exempts a secondary aliased single-rule hook" {
+  # The primary hook is additive; the aliased one deliberately isolates one rule.
+  _audit_ruff_select secondary 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--extend-select, "F", --fix]
+      - id: ruff-check
+        alias: ruff-import-private-name
+        args: [--select, "PLC2701"]'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags a lone aliased hook using --select" {
+  # With no non-aliased sibling, the aliased hook IS the primary hook, so the
+  # alias must not buy an exemption.
+  _audit_ruff_select lone 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        alias: lint
+        args: [--select, "F"]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select is unaffected by a comment before args" {
+  _audit_ruff_select commented 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      # a load-bearing rationale comment
+      # spanning several lines
+      # so any fixed line window would miss the args below
+      - id: ruff-check
+        args: [--extend-select, "F"]'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select ignores an in-stanza comment naming --select" {
+  # The prescriptive comment names the forbidden flag; only args values count.
+  _audit_ruff_select instanza 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        # --extend-select, NEVER --select: a CLI --select replaces the active
+        # rule selection from every resolved config file.
+        args: [--extend-select, "F"]'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags a quoted hook id using --select" {
+  _audit_ruff_select quoted 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: "ruff-check"
+        args: [--select=F]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select flags an id line carrying a trailing comment" {
+  _audit_ruff_select trailing 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check # lint
+        args: [--select, "F"]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select ignores --select outside the args region" {
+  # `files:` ends the block-args region, so the later value is not an argument.
+  _audit_ruff_select outside 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args:
+          - --extend-select
+          - F
+        files: ^src/--select/'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select sees --select after a quoted value containing ' #'" {
+  # A `#` inside a quoted YAML scalar is content, not a comment; a naive comment
+  # cut would truncate the line before the real --select and pass the violation.
+  _audit_ruff_select quotedhash 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--config, '"'"'lint.dummy-variable-rgx = "^(_+|foo # bar)$"'"'"', --select=F]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select still honours a real trailing comment after a quoted value" {
+  _audit_ruff_select quotedok 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--config, '"'"'lint.dummy-variable-rgx = "^(_+|foo # bar)$"'"'"'] # never --select
+  - repo: https://github.com/other/other
+    hooks:
+      - id: other'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select sees --select after an escaped double quote" {
+  # `\"` is content inside a double-quoted scalar; treating it as a terminator
+  # would desynchronize the scanner and hide the real --select.
+  _audit_ruff_select escdquote 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--config, "lint.dummy-variable-rgx = \"^(_+|foo # bar)$\"", --select=F]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select sees --select after a doubled single quote" {
+  # '' is a literal quote inside a single-quoted scalar, not a terminator.
+  _audit_ruff_select escsquote 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--config, '"'"'lint.dummy-variable-rgx = "^(it'"''"'s # a) match)$"'"'"', --select=F]'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select treats an empty alias as unaliased" {
+  # pre-commit defaults `alias` to the empty string, so `alias: ""` is NOT a
+  # secondary hook; it must still count as the primary and exempt the isolated one.
+  _audit_ruff_select emptyalias 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        alias: ""
+        args: [--extend-select, "F", --fix]
+      - id: ruff-check
+        alias: ruff-import-private-name
+        args: [--select, "PLC2701"]'
+  [ "$RUFF_SELECT_SATISFIED" = "true" ]
+}
+
+@test "bootstrap-audit ruff-extend-select sees a violation in a later YAML document" {
+  # yq evaluates per document; without slurping, a trailing `---` document would
+  # decide the verdict alone and hide the violation in the first.
+  _audit_ruff_select multidoc 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: [--select=F]
+---
+repos: []'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit ruff-extend-select fails closed on a malformed args value" {
+  # A scalar `args:` makes the jq predicate error; an audit must not read that
+  # as compliant.
+  _audit_ruff_select scalarargs 'repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff-check
+        args: "--select=F"'
+  [ "$RUFF_SELECT_SATISFIED" = "false" ]
+}
+
+@test "bootstrap-audit precommit requirements fail closed on unparseable YAML" {
+  local dir="$BATS_TEST_TMPDIR/badyaml"
+  mkdir -p "$dir"
+  printf 'repos: [\n  - id: "unterminated\n' >"$dir/.pre-commit-config.yaml"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  [ "$(jq -r '.domains[] | select(.domain == "precommit") | .requirements_satisfied' <<<"$output")" = "false" ]
 }

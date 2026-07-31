@@ -179,8 +179,19 @@ repos:
   # complementing the pygrep FORM guards above (form vs. existence). Configure via
   # the sibling ./.markdownlint-cli2.jsonc. Uses the node variant.
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.22.1
+    rev: v0.23.2
     hooks:
+      # `language_version: system` pins this to the node already on PATH, and is
+      # load-bearing here. `additional_dependencies` rules out `language: system`
+      # (there would be no env to install the rule into), so this hook must use
+      # pre-commit's node env — and pre-commit auto-selects `system` only when
+      # node resolves OUTSIDE $HOME (lang_base.exe_exists rejects any executable
+      # under the home dir or in a /shims/ dir). This repo's node comes from a
+      # user nix profile under ~, so without this line pre-commit builds a
+      # `node_env-default` by downloading a generic-glibc node — which cannot
+      # exec on a Nix host and fails with ENOENT on the interpreter it just
+      # selected. See skill-refs/pre-commit/hook-language-resolution.md.
       - id: markdownlint-cli2
+        language_version: system
         additional_dependencies: ['markdownlint-rule-relative-links']
         exclude: '^(skill-refs/templates/|test/test_helper/)'

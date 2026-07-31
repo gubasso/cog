@@ -33,9 +33,10 @@ repos:
   # dprint's json plugin formats JSON and JSONC (comments + trailing commas),
   # which the stdlib-based pretty-format-json cannot. check-json5 above stays the
   # syntax gate; dprint owns formatting. Config in the sibling `./dprint.json`
-  # (plugin version pinned there). External dependency: dprint must be on PATH
-  # (`cargo install dprint` or your package manager). pre-commit only — git push
-  # may strip PATH, and formatting is already applied by commit time.
+  # (plugin version pinned there). `language: system`, so dprint is supplied by
+  # the project's flake devShell (`pkgs.dprint`) — do not install it out-of-band;
+  # the devShell is the single provider. pre-commit only — git push may strip
+  # PATH, and formatting is already applied by commit time.
   - repo: local
     hooks:
       - id: dprint
@@ -158,7 +159,15 @@ repos:
   - repo: https://github.com/crate-ci/typos
     rev: v1.48.0
     hooks:
+      # Report-only. The `args:` below are LOAD-BEARING: upstream's default
+      # args are [--write-changes, --force-exclude], so a stanza that
+      # overrides no args auto-fixes. typos' auto-fix silently rewrites
+      # deliberate identifiers / error-kind strings and can break code. Fix
+      # real typos by hand; allowlist false positives in _typos.toml.
       - id: typos
+        # --force-exclude restated so `exclude:` still applies to filenames
+        # pre-commit passes explicitly.
+        args: [--force-exclude]
 
   # --- Commit message linting (Rust-ecosystem; commit-msg stage) ---
   - repo: https://github.com/crate-ci/committed

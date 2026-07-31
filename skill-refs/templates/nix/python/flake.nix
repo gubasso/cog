@@ -40,6 +40,17 @@
             pkgs.nixfmt-rfc-style
             pkgs.statix
             pkgs.deadnix
+            # Provider for the python template's `language: system` dprint hook.
+            # Every `language: system` hook must have a named provider here —
+            # such hooks get no environment of their own and resolve off PATH.
+            pkgs.dprint
+            # Runtimes pre-commit needs ON PATH to select `system` for its own
+            # managed hook envs: nodejs -> markdownlint-cli2; go -> gitleaks,
+            # editorconfig-checker. Absent them it downloads a generic-glibc
+            # toolchain whose ELF interpreter (/lib64/ld-linux-x86-64.so.2) does
+            # not exist on a Nix host, so the hook cannot run at all.
+            pkgs.nodejs
+            pkgs.go
             # native build deps for C-extensions, uncomment as needed:
             # pkgs.swig pkgs.openssl pkgs.pkg-config
           ];

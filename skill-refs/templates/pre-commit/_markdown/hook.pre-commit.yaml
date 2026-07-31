@@ -14,9 +14,10 @@
   # independent of the type's own JSON dprint.json, and the `dprint-markdown` id
   # never collides with the type's `dprint` hook.
   #
-  # External dependency: dprint must be on PATH (`cargo install dprint` or your
-  # package manager), the same model as the json/nix hooks. pre-commit only —
-  # git push may strip PATH and the format is already applied by commit time.
+  # `language: system`, so dprint is supplied by the project's flake devShell
+  # (`pkgs.dprint`) — the same model as the json/nix hooks. Do not install it
+  # out-of-band; the devShell is the single provider. pre-commit only — git
+  # push may strip PATH and the format is already applied by commit time.
   - repo: local
     hooks:
       - id: dprint-markdown
@@ -56,8 +57,18 @@
   # (report-only) verifies an explicit relative target actually resolves on disk,
   # complementing the pygrep FORM guards above (form vs. existence). Configure via
   # the sibling ./.markdownlint-cli2.jsonc. Uses the node variant.
+  #
+  # `additional_dependencies` rules out `language: system` (there would be no env
+  # to install the rule into), so this hook uses pre-commit's own node env. Add
+  # `language_version: system` when the project's node comes from a nix profile,
+  # mise, asdf or nvm — all under $HOME, which `lang_base.exe_exists` rejects, so
+  # pre-commit silently falls back to downloading a generic-glibc node (~150 MB
+  # per env, and one that cannot exec at all on a Nix host). Leave it unset when
+  # the project may have no node installed: `system` has nothing to point at
+  # then, while the downloaded runtime works. See
+  # `cog skill-refs path pre-commit/hook-language-resolution.md`.
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.22.1
+    rev: v0.23.2
     hooks:
       - id: markdownlint-cli2
         additional_dependencies: ['markdownlint-rule-relative-links']

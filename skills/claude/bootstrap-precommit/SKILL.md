@@ -136,17 +136,28 @@ When `review.fresh` is `true`, reuse the cached `summary` and skip the hook rese
 
 6. Check existing hook repos in the template for latest release tags and maintenance status. Note version bumps, archived repos, and better-maintained replacements.
 
-7. Update the broad template when justified:
+6b. **Read each pinned repo's `.pre-commit-hooks.yaml` at the tag being pinned.** A tag check alone cannot see the defects that matter most, because none of them is a version bump. Reconcile every stanza against that file:
+
+- **the id still exists and is not a legacy alias** — upstream renames without removing (`ruff` → `ruff-check`, where bare `ruff` is marked `# Legacy alias`);
+- **the upstream default `args:`** — overriding no args means inheriting upstream's, so any comment asserting a behavior must be backed by an explicit `args:` in the config. `typos` defaults to `[--write-changes, --force-exclude]` and therefore **auto-fixes** unless told otherwise;
+- **whether a `<id>-system` / `-docker` / `-src` variant exists**, and which one this project's environment calls for.
+
+1. Update the broad template when justified:
    - pin release tags, never branches;
+   - **keep every repo's `rev:` identical across all templates that pin it** — one repo, one rev, tree-wide;
+   - **prefer additive CLI flags over config-replacing ones.** Ruff's `--select` replaces the active rule selection from every resolved config file, so the project's own `select` stops applying and any per-file-ignores for the dropped rules become moot; use `--extend-select`. Verify with a representative input (`ruff check --stdin-filename <path> -`), not `--show-settings`, which reports the rule as enabled either way;
+   - **use upstream's `-system` id when a local binary is wanted; never override `language:` on the default id** — the override reuses the default id's `entry`, which may be an installer script rather than the binary. This choice is environment-conditional: the default id is right when nothing provides the binary, the `-system` id when a devShell already does;
    - preserve the template's section order and comment style;
    - keep the housekeeping base consistent with existing templates;
    - keep `committed` as the single source of truth for commit-message linting;
    - keep the `editorconfig-checker` hook present, aligned with the shared `.editorconfig` baseline;
-   - document `language: system` hooks with their external dependency.
+   - document `language: system` hooks with their external dependency, **and confirm the paired `flake.nix` (bootstrap-nix, same type) actually ships a provider for each**. Such hooks get no environment and resolve off the ambient PATH.
 
-8. Before copying to the project, inspect possible conflicts. Ask the user for the headline `.pre-commit-config.yaml` policy: overwrite, merge, or abort. For companion files, ask overwrite, skip, or abort as needed.
+   The pre-commit internals behind these rules — `system` getting no env, `lang_base.exe_exists` rejecting `$HOME`, the `language_version: system` requirement for `node`/`golang` hooks with `additional_dependencies`, and the venv/devShell PATH-shadowing trap — live in `$(cog skill-refs path pre-commit/hook-language-resolution.md)`. Read it before changing a hook's `language`, `language_version`, or id.
 
-9. If the user chooses merge for `.pre-commit-config.yaml`, perform that merge in prose and targeted edits; do not ask `precommit-apply-template` to merge. For non-merge cases, pass explicit helper policies:
+2. Before copying to the project, inspect possible conflicts. Ask the user for the headline `.pre-commit-config.yaml` policy: overwrite, merge, or abort. For companion files, ask overwrite, skip, or abort as needed.
+
+3. If the user chooses merge for `.pre-commit-config.yaml`, perform that merge in prose and targeted edits; do not ask `precommit-apply-template` to merge. For non-merge cases, pass explicit helper policies:
 
    ```bash
    cog precommit-apply-template \
@@ -157,29 +168,29 @@ When `review.fresh` is `true`, reuse the cached `summary` and skip the hook rese
      --json
    ```
 
-10. Analyze the repository context: README, manifests, CI, tool configs, source layout, tests, and existing pre-commit config if preserved or merged.
+4. Analyze the repository context: README, manifests, CI, tool configs, source layout, tests, and existing pre-commit config if preserved or merged.
 
-11. Search for repo-specific hooks based on the actual stack. Examples include framework upgrades, type-checking integrations, migration linters, or CI config validators.
+5. Search for repo-specific hooks based on the actual stack. Examples include framework upgrades, type-checking integrations, migration linters, or CI config validators.
 
-12. Tailor the local config:
-    - add repo-specific hooks that provide clear value;
-    - remove irrelevant hooks only when they genuinely do not apply;
-    - adjust hook args for repo conventions;
-    - add excludes only for generated, vendored, binary, external, or intentionally unmanaged paths;
-    - tailor companion files such as `lychee.toml` or `.config/nextest.toml`.
+6. Tailor the local config:
+   - add repo-specific hooks that provide clear value;
+   - remove irrelevant hooks only when they genuinely do not apply;
+   - adjust hook args for repo conventions;
+   - add excludes only for generated, vendored, binary, external, or intentionally unmanaged paths;
+   - tailor companion files such as `lychee.toml` or `.config/nextest.toml`.
 
-13. Confirm the config carries an `editorconfig-checker` hook consistent with the shared `.editorconfig` baseline (the language templates ship it). This is a verified postcondition: when reconciling a pre-existing config that lacks the hook while an `.editorconfig` is present, add the hook rather than leaving it absent. Validate the config when the tool is available:
+7. Confirm the config carries an `editorconfig-checker` hook consistent with the shared `.editorconfig` baseline (the language templates ship it). This is a verified postcondition: when reconciling a pre-existing config that lacks the hook while an `.editorconfig` is present, add the hook rather than leaving it absent. Validate the config when the tool is available:
 
-    ```bash
-    pre-commit validate-config
-    ```
+   ```bash
+   pre-commit validate-config
+   ```
 
-14. Present a final summary: template hooks added, updated, or removed; local hooks added, removed, or adjusted; external tool requirements; and next commands:
+8. Present a final summary: template hooks added, updated, or removed; local hooks added, removed, or adjusted; external tool requirements; and next commands:
 
-    ```bash
-    pre-commit install
-    pre-commit run --all-files
-    ```
+   ```bash
+   pre-commit install
+   pre-commit run --all-files
+   ```
 
 ## Guardrails
 

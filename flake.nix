@@ -46,6 +46,10 @@
             pkgs.man-db # `man` for local page inspection
             pkgs.mdformat # markdown formatter for docs/ (Diataxis)
             pkgs.markdownlint-cli # markdown linter for docs/
+            # Runtime for the `language: node` markdownlint-cli2 hook. That hook
+            # carries additional_dependencies, so it needs pre-commit's own node
+            # env; pre-commit selects `system` for it only when node is on PATH.
+            pkgs.nodejs
             pkgs.dprint # JSON/JSONC formatter (pre-commit dprint hook)
 
             # Nix quality tools for the pre-commit `_nix` overlay hooks
@@ -60,6 +64,7 @@
             pkgs.gnugrep
             pkgs.gawk
             pkgs.gnused
+            pkgs.perl # fn_round_req.sh requirement-ID stamping
           ];
         };
       }

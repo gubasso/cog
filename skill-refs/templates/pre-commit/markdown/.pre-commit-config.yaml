@@ -60,7 +60,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.7.0
+    rev: v3.8.0
     hooks:
       - id: editorconfig-checker
         alias: ec
@@ -86,8 +86,9 @@ repos:
   # MD029 renumbering, fix-mode isolation, and the SoT decision are documented in
   # this project's markdown formatting toolchain notes.
   #
-  # External dependency: dprint must be on PATH (e.g., `cargo install dprint`
-  # or your package manager). Pinned through dprint.json, not pre-commit.
+  # `language: system`, so dprint is supplied by the project's flake devShell
+  # (`pkgs.dprint`); do not install it out-of-band. The dprint *plugin* versions
+  # are pinned through dprint.json, not pre-commit.
   # git push may strip PATH, so this hook is pre-commit only — the format
   # has already been applied by commit time, no need to re-run on push.
   - repo: local
@@ -126,7 +127,7 @@ repos:
   # Uses the node variant; swap to `markdownlint-cli2-docker` if your
   # CI doesn't have node available.
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.22.1
+    rev: v0.23.2
     hooks:
       - id: markdownlint-cli2
         additional_dependencies: ['markdownlint-rule-relative-links']
