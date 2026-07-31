@@ -43,6 +43,12 @@
             # Provider for the python template's `language: system` dprint hook.
             # Every `language: system` hook must have a named provider here —
             # such hooks get no environment of their own and resolve off PATH.
+            #
+            # PRECONDITION: a tool provided here whose hook is `language: system`
+            # must not also appear in pyproject's dev group. .envrc layers the
+            # Poetry venv ahead of this shell on PATH, so a venv copy shadows the
+            # store build — and a PyPI binary wheel is an ELF hard-coded to
+            # /lib64/ld-linux-x86-64.so.2, which cannot exec on a Nix host.
             pkgs.dprint
             # Runtimes pre-commit needs ON PATH to select `system` for its own
             # managed hook envs: nodejs -> markdownlint-cli2; go -> gitleaks,

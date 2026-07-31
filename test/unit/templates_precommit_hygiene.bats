@@ -96,9 +96,7 @@ _precommit_configs() {
   }
 }
 
-# Evaluate the python .envrc against a stubbed direnv stdlib. `log_error` is
-# stubbed to print and return 0 — exactly what direnv's real implementation
-# does — so a guard that merely logs cannot pass these tests.
+# Evaluate the python .envrc against a stubbed direnv stdlib.
 _eval_python_envrc() {
   local venv_bin="$1"
   local stub="$BATS_TEST_TMPDIR/stdlib.sh"
@@ -114,20 +112,19 @@ STUB
   run bash -c ". '$stub'; . '$NIX_TEMPLATES/python/.envrc'"
 }
 
-@test "python .envrc fails the environment when the venv shadows a devShell tool" {
-  # PATH_add prepends, so a tool in both the venv and the devShell resolves to
-  # the venv copy — fatal when that copy is a PyPI binary wheel on a Nix host.
+@test "python .envrc layers the venv without gating on its contents" {
+  # The shadow invariant is held in flake.nix's PRECONDITION note and the
+  # pyproject dev group, and surfaces as a hook failure — not as a fatal .envrc
+  # that aborts before `use flake` puts poetry on PATH.
   local bin="$BATS_TEST_TMPDIR/shadowed/bin"
   mkdir -p "$bin"
   printf '#!/bin/sh\nexit 0\n' >"$bin/dprint"
   chmod +x "$bin/dprint"
   _eval_python_envrc "$bin"
-  assert_failure
-  assert_output --partial 'shadows devShell-owned tools'
-  assert_output --partial 'dprint'
+  assert_success
 }
 
-@test "python .envrc loads cleanly when the venv shadows nothing" {
+@test "python .envrc loads cleanly when the venv is bare" {
   _eval_python_envrc "$BATS_TEST_TMPDIR/clean/bin"
   assert_success
 }
