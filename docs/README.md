@@ -96,6 +96,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0089: Gates delivered as skill-refs references; stamp+lint retired](decisions/0089-gates-as-skill-refs-references.md)
 - [ADR-0090: Markdown pre-commit layer (universal overlay)](decisions/0090-markdown-precommit-layer.md)
 - [ADR-0091: Purge external-local references and enforce it in skill-lint](decisions/0091-purge-external-local-references.md)
+- [ADR-0092: Lean deploy-payload templates](decisions/0092-lean-deploy-payload-templates.md)
 
 ## Guides
 

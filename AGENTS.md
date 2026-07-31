@@ -36,6 +36,8 @@ The plan-mode gate lives on the executor-_/runner-_ orchestrator layer, not on p
 
 Skill prose is lean, objective, and positively framed: describe what the skill IS and MUST DO. Drop preemptive negative guardrails that never had an empirical reason; keep negative or exclusion statements only when explicitly requested or when correcting a recurrent drift. Runtime skill files carry no source-repo meta — no `skills/.../SKILL.md` twin/canon cross-references; that meta belongs in `docs/`, not in a runtime skill file. The source-path part is enforced by `cog skill-lint`'s `skill-source-path-reference` rule. See `docs/decisions/0019-lean-positive-skill-prose.md` and `docs/reference/skill-contract.md` ("Lean positive prose").
 
+Deploy-payload templates under `skill-refs/templates/**` are lean too: a template ships the minimum that makes its domain work, and an invariant is recorded where it is actionable — a comment beside the thing it constrains — rather than re-implemented as runtime checking code. A defensive guard earns its place only when the failure it catches is otherwise silent or misattributed, and a guard that is warranted must print a remedy runnable from the state it fails into. Cross-file template invariants are asserted in `test/unit/templates_*.bats`, never as a list a maintainer hand-mirrors across files. See `docs/decisions/0092-lean-deploy-payload-templates.md`.
+
 Top-level `data/` is the source of truth for structured reference data consumed by the `cog` CLI itself. CLI data is YAML split one file per top-level table, except append-only streams such as `data/research-shelf/index.jsonl`, and resolves through `cog::fn::data_root` so installs use `$XDG_DATA_HOME/cog/data`.
 
 ## Reference Self-Containment
