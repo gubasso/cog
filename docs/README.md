@@ -97,6 +97,7 @@ This directory is organized using Diataxis zones.
 - [ADR-0090: Markdown pre-commit layer (universal overlay)](decisions/0090-markdown-precommit-layer.md)
 - [ADR-0091: Purge external-local references and enforce it in skill-lint](decisions/0091-purge-external-local-references.md)
 - [ADR-0092: Lean deploy-payload templates](decisions/0092-lean-deploy-payload-templates.md)
+- [ADR-0093: skill-refs is the single runtime-injection mechanism; runtime-YAML-render retired](decisions/0093-skill-refs-single-runtime-injection-mechanism.md)
 
 ## Guides
 

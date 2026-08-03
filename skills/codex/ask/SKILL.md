@@ -22,11 +22,11 @@ By default the skill answers inline in the current session using the active Code
 
 ## Flags
 
-| Flag           | Short | Effect                                                                                                                                                                                                                                                             |
-| -------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                          |
-| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the answer in the latest official docs/specs from reliable sources.                                    |
-| `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
+| Flag           | Short | Effect                                                                                                                                                                                                                                                                      |
+| -------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                                   |
+| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the answer in the latest official docs/specs from reliable sources.                                             |
+| `--real-world` | `-r`  | Inject the shared real-world exemplars directive — read at runtime from `$(cog skill-refs path research/real-world-exemplars.md)` — so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
 
 Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`), and must appear before the question text.
 
@@ -43,7 +43,7 @@ Flags are order-independent, combinable as a single short-flag cluster (e.g. `-f
 
 2. **Honor flags.**
    - If `WEB_SEARCH = true`, read `$(cog skill-refs path research/primary-source-verification.md)` and follow it when researching and answering. (When `FAST = true`, this is forwarded to the nested call via the `-w` flag in its prompt rather than executed here.)
-   - If `REAL_WORLD = true`, run `cog ask-flag render --flag real-world` and follow the rendered instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
+   - If `REAL_WORLD = true`, read `$(cog skill-refs path research/real-world-exemplars.md)` and follow it when researching and answering. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
    - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering inline.
 
 3. **Answer.**

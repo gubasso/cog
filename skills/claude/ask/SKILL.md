@@ -29,7 +29,7 @@ Answer a question about the project. **Do not modify any files in the repo.**
 | `--fast`       | `-f`  | Run the dispatched Explore agent at reduced reasoning effort (`effort: "medium"`). **Claude-side only** — never forwarded to Codex; the `-c` Codex call always runs at `--effort low`.                                                                                                                                                                                         |
 | `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — into the Explore agent prompt, grounding the answer in the latest official docs/specs from reliable sources. When combined with `-c`, also echoed into the Codex prompt so the Codex `ask` skill injects the same directive. |
 | `--codex`      | `-c`  | Also run the Codex `ask` skill in parallel via `cog codex-runner run-exec` and synthesize a single final answer using Codex's output as cross-validation. Compatible with `-f`, `-w`, and `-r`.                                                                                                                                                                                |
-| `--real-world` | `-r`  | Inject the canonical `real-world` research instruction — rendered at runtime via `cog ask-flag render --flag real-world` — into the Explore agent prompt, so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. When combined with `-c`, also echoed into the Codex prompt.                  |
+| `--real-world` | `-r`  | Inject the shared real-world exemplars directive — read at runtime from `$(cog skill-refs path research/real-world-exemplars.md)` — into the Explore agent prompt, so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. When combined with `-c`, also echoed into the Codex prompt.         |
 
 Flags are order-independent and combinable either as separate tokens (`-f -w -c -r`, `-c -w`) or fused into a single short-flag cluster (`-fwc`, `-wc`, `-wr`, `-fwcr`, etc.). Flags must appear before the question text.
 
@@ -63,7 +63,7 @@ Make one Agent call:
 - `subagent_type`: `"Explore"`.
 - `prompt` must always include: the question, instruction to be read-only, instruction to cite file paths and line numbers, and instruction to give a concise direct answer.
 - **If `WEB_SEARCH = true`**, read `$(cog skill-refs path research/primary-source-verification.md)` and append its content to the prompt verbatim as an additional instruction.
-- **If `REAL_WORLD = true`**, run `cog ask-flag render --flag real-world` and append its stdout to the prompt verbatim as an additional instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; append both rendered paragraphs.
+- **If `REAL_WORLD = true`**, read `$(cog skill-refs path research/real-world-exemplars.md)` and append its content to the prompt verbatim as an additional instruction. `WEB_SEARCH` and `REAL_WORLD` may both fire; append both directives.
 
 **Relay** the agent's answer to the user verbatim (do not summarize or re-research).
 
@@ -75,7 +75,7 @@ Four phases: Prep → Parallel dispatch → Collect → Synthesize.
 
 Three steps: create RUN_DIR with `cog rundir`, run the Codex gate, then write the Codex prompt file. The prompt file must land on disk before Phase B starts.
 
-The prompt body opens with the explicit `$ask` skill mention so the Codex `ask` skill is loaded deterministically. Echo `-w` if `WEB_SEARCH = true` and `-r` if `REAL_WORLD = true` (the nested Codex `ask` renders its own paragraphs from those flags). **Never** echo `-f` (Claude-side only — the `-c` Codex call always runs at `--effort low`). **Never** echo `-c` (Claude-side only).
+The prompt body opens with the explicit `$ask` skill mention so the Codex `ask` skill is loaded deterministically. Echo `-w` if `WEB_SEARCH = true` and `-r` if `REAL_WORLD = true` (the nested Codex `ask` reads its own directives from those flags). **Never** echo `-f` (Claude-side only — the `-c` Codex call always runs at `--effort low`). **Never** echo `-c` (Claude-side only).
 
 ##### Step A.1 — Create RUN_DIR (Bash)
 
@@ -119,7 +119,7 @@ When substituting the heredoc body, replace `<-w if WEB_SEARCH else nothing>`, `
 
 In a single assistant message, issue **both** tool calls so they run concurrently:
 
-1. **Agent** call — same shape as Step 2a (Explore subagent, effort from `EFFORT` if set; otherwise omit the parameter, with the `web-search` and/or `real-world` rendered instructions appended when `WEB_SEARCH`/`REAL_WORLD` are set).
+1. **Agent** call — same shape as Step 2a (Explore subagent, effort from `EFFORT` if set; otherwise omit the parameter, with the `web-search` and/or `real-world` directives appended when `WEB_SEARCH`/`REAL_WORLD` are set).
 2. **Bash** call — `cog codex-runner run-exec`, native or fallback per `SANDBOX_MODE`, with the literal `RUN_DIR` path substituted in place of `$RUN_DIR`. The runner owns the exact `codex-session exec` construction, `< /dev/null`, JSONL redirection, direct stderr capture, and non-zero/empty/SIGTERM classification.
 
 ```bash

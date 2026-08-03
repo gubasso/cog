@@ -1,6 +1,8 @@
 # ADR-0087: Runtime-Rendered `ask` Flag Instructions
 
-> **Amended by [ADR-0088](./0088-primary-source-verification-shared-reference.md).** The `web-search` directive graduated out of `data/ask-flags` into the shared `skill-refs/research/primary-source-verification.md`; `cog ask-flag` now serves only `real-world`. The runtime-render mechanism for `-r/real-world` is unchanged.
+> **Superseded by [ADR-0093](./0093-skill-refs-single-runtime-injection-mechanism.md).** Runtime YAML render is retired; `skill-refs/**/*.md` is the single mechanism for prose a model reads at runtime, and flag-conditionality lives in the skill's `if`. `cog ask-flag` and `data/ask-flags/` are removed; the `real-world` directive lives at `skill-refs/research/real-world-exemplars.md`.
+>
+> **Previously amended by [ADR-0088](./0088-primary-source-verification-shared-reference.md).** The `web-search` directive graduated out of `data/ask-flags` into the shared `skill-refs/research/primary-source-verification.md`, leaving `real-world` as the table's only row.
 
 ## Context and Problem Statement
 
