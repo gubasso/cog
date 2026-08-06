@@ -20,7 +20,7 @@ source-files:
   - template-docs-rules.md
   - template-plan-zone.md
   - template-slice.md
-token-estimate: 31045
+token-estimate: 33018
 ---
 
 # AGENTS
@@ -55,6 +55,7 @@ Load this file, find the owning chapter in the routing table below, then read th
 | A fact that will be wrong in a month                                    | `08-tracking-and-revalidation.md` |
 | A bug in an external system under test                                  | `09-known-issues.md`              |
 | May I use bold here?                                                    | `10-lean-markdown.md`             |
+| How do I stop a fixed-shape document's headings from drifting?          | `10-lean-markdown.md`             |
 | What do I check before merging a docs change?                           | `99-checklist.md`                 |
 | What does this shelf mean by `<term>`?                                  | `glossary.md`                     |
 
@@ -66,6 +67,7 @@ Load this file, find the owning chapter in the routing table below, then read th
 - Drafts stay out of `docs/`; a binding plan is project state, not a draft.
 - No bold and no italics, anywhere.
 - Every fenced block declares a language.
+- A fixed-shape document carries its own `MD043` heading array; free-form documents carry none.
 - Never paste a tree of a directory that already exists.
 
 ## Maintenance

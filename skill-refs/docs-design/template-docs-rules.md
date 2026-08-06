@@ -12,6 +12,7 @@ Copy this block into `<project>/CLAUDE.md` or the local author-instructions file
 - Never delete an accepted decision. Supersede it, deprecate it, or reject it; a partial change keeps the status and adds an `Amended by ADR-NNNN` line.
 - Give every unit of work a fixed appetite and a declared non-negotiable core, and change the appetite only by a committed edit citing the condition met.
 - Give every unit of work one directory under `<project>/docs/plan/slices/`, entered through its `README.md`, with no sibling file that has not met its gate.
+- Pin every fixed-shape document's headings with an `MD043` array in a `markdownlint-configure-file` comment under its H1 — the slice `README.md` and `milestones.md` at minimum — and add a section by amending that array, never by deleting the comment.
 - Until the current slice is implemented, do not add a specification page and do not open an ADR outside it. A question that arises goes to `<project>/docs/plan/open-questions.md`.
 - Work from the current slice and the sources its `Governed by` section names, and nothing else.
 - Write each durable fact once at its owning home and cross-link from everywhere else.

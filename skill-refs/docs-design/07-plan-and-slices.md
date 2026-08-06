@@ -62,6 +62,8 @@ Which is the failure this format postpones rather than solves. `## closed` grows
 
 The slice document carries no status of its own, deliberately. Two status surfaces disagree, and the one a reader did not open is the one that is wrong. A reader holding a slice finds its status one grep away in `milestones.md`.
 
+Its two sections are a fixed shape and the project MUST pin them the same way, with the exact list `# Milestones`, `## in flight`, `## closed`. The pin is what stops the third section — a `## backlog`, a `## someday`, a per-status split — from arriving as a small helpful edit and turning the single status surface back into a plan. See [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape) for the mechanism; the [plan-zone template](./template-plan-zone.md) ships it. A project that has moved `## closed` out to `milestones-closed.md` drops that heading from its own array.
+
 ### `open-questions.md`
 
 One block per question, with a stable id so a slice or a commit can reference it:
@@ -124,7 +126,7 @@ The `Acceptance` lines expanded to a table mapping each assertion to the tests t
 
 ## The slice document
 
-`README.md` has a fixed heading list, which a project SHOULD pin with markdownlint's `MD043 required-heading-structure` so it cannot drift into a second charter:
+`README.md` has a fixed heading list, and the project MUST pin it so it cannot drift into a second charter. The pin is an `MD043` heading array carried inside the document, opening with `*` because the H1 varies per slice; the mechanism is in [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape), and the [slice template](./template-slice.md) ships the comment already filled in. The headings:
 
 ```text
 Goal          One sentence naming the observable outcome. Not the mechanism.

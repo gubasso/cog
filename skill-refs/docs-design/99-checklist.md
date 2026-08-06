@@ -57,6 +57,7 @@ Owners: [06 — Appetite and Scope](./06-appetite-and-scope.md) and [07 — Plan
 - [ ] No unit of work was brought inside its appetite by dropping tests, review, or a security control.
 - [ ] Status lives only in `milestones.md`, using the closed vocabulary, and open-questions entries name what they block.
 - [ ] `milestones.md` puts live work first: every terminal status sits under `## closed`, every slice appears in exactly one section, and `## closed` is still short enough to scroll.
+- [ ] The slice `README.md` and `milestones.md` each carry their `MD043` heading array, and a new section was added by amending that array rather than by deleting the pin.
 
 ## Agent readiness
 
@@ -85,6 +86,9 @@ Owner: [10 — Lean Markdown](./10-lean-markdown.md).
 - [ ] Every fenced code block declares a language; use `text` when none applies.
 - [ ] No paragraph is doing a heading's job.
 - [ ] Any exception carries an `<!-- allow-emphasis: <reason> -->` comment.
+- [ ] Every fixed-shape document carries its heading array in a `markdownlint-configure-file` comment under the H1, and no free-form document carries one.
+- [ ] The markdownlint hook actually runs on the changed files; an `MD043` array in a document no hook reads is decoration.
+- [ ] Any document that quotes a `markdownlint-configure-file` comment as an example carries `<!-- markdownlint-disable-file MD043 -->`, and no document carries two configure comments.
 
 ## Verification
 

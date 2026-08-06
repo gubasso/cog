@@ -1,8 +1,10 @@
 <!-- markdownlint-disable-file MD041 -->
 
-Copy this file into `<project>/docs/plan/slices/<id>-<slug>/README.md`. Commit it before the work starts. Keep the heading list exactly as it is so `MD043` can pin it. Do not add `tasks.md`, `requirements.md`, or any other sibling file unless the gate in [07 — Plan and Slices](./07-plan-and-slices.md) is met.
+Copy this file into `<project>/docs/plan/slices/<id>-<slug>/README.md`, from the H1 down. Commit it before the work starts. Keep the heading list exactly as it is, and keep the `markdownlint-configure-file` comment that pins it — the leading `*` matches whatever H1 the slice carries, and every heading after it is fixed. The comment needs no project config beyond a markdownlint hook; see [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape). Do not add `tasks.md`, `requirements.md`, or any other sibling file unless the gate in [07 — Plan and Slices](./07-plan-and-slices.md) is met.
 
 # <id> — {Short Title}
+
+<!-- markdownlint-configure-file { "MD043": { "headings": ["*","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
 
 ## Goal
 
