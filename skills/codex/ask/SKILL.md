@@ -17,16 +17,16 @@ By default the skill answers inline in the current session using the active Code
 
 - **Read-only**: do not use any tool that creates, modifies, or deletes files inside the repository. No `apply_patch`, no shell redirection that writes to tracked paths, no `mv`, `rm`, `sed -i`, etc.
 - Read-only shell is allowed (`git log`, `git blame`, `git show`, `rg`, `cat`, `ls`, etc.).
-- Scratch writes under `$RUN_DIR` (created by `cog rundir`) are allowed **only** on the `-f` orchestration path, to stage the nested prompt and capture its output.
-- Give a concise, direct answer. Cite file paths and line numbers where relevant.
+- Scratch writes under `$RUN_DIR` (created by `cog rundir`) are allowed on every path. The directory sits under `$XDG_STATE_HOME/cog/runs/`, outside the repository, so these writes preserve the read-only guarantee. It holds the research dossier (`dossier.md`) and, on the `-f` path, the nested prompt and its captured output.
+- Shape the answer per `$(cog skill-refs path research/pedagogical-answer.md)`: lead with the conclusion, teach the mechanism, show one worked example, and keep the full research record in the dossier. Cite file paths and line numbers where relevant.
 
 ## Flags
 
-| Flag           | Short | Effect                                                                                                                                                                                                                                                                      |
-| -------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                                   |
-| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the answer in the latest official docs/specs from reliable sources.                                             |
-| `--real-world` | `-r`  | Inject the shared real-world exemplars directive — read at runtime from `$(cog skill-refs path research/real-world-exemplars.md)` — so the answer surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
+| Flag           | Short | Effect                                                                                                                                                                                                                                                                        |
+| -------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                                     |
+| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the research in the latest official docs/specs from reliable sources.                                             |
+| `--real-world` | `-r`  | Inject the shared real-world exemplars directive — read at runtime from `$(cog skill-refs path research/real-world-exemplars.md)` — so the research surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
 
 Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`), and must appear before the question text.
 
@@ -42,13 +42,14 @@ Flags are order-independent, combinable as a single short-flag cluster (e.g. `-f
    Defaults: `FAST = false`, `WEB_SEARCH = false`, `REAL_WORLD = false`.
 
 2. **Honor flags.**
+   - Always read `$(cog skill-refs path research/pedagogical-answer.md)` and follow it when composing the answer. (When `FAST = true`, the nested `$ask` call loads the same contract in its own context.)
    - If `WEB_SEARCH = true`, read `$(cog skill-refs path research/primary-source-verification.md)` and follow it when researching and answering. (When `FAST = true`, this is forwarded to the nested call via the `-w` flag in its prompt rather than executed here.)
    - If `REAL_WORLD = true`, read `$(cog skill-refs path research/real-world-exemplars.md)` and follow it when researching and answering. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
    - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering inline.
 
 3. **Answer.**
-   - **If `FAST = false`**: read whatever code, git history, or external sources are needed (subject to the rules above), then give a concise, direct answer with file-path/line-number citations and — if web search was used — source URLs.
-   - **If `FAST = true`**: perform the orchestration below, then **relay** the nested call's `--output-last-message` content verbatim. Do not re-research or rewrite on top of the relayed answer.
+   - **If `FAST = false`**: read whatever code, git history, or external sources are needed (subject to the rules above). Then create the run directory with `cog rundir ask` and write the complete research record — every source consulted, every finding, every exemplar, every URL — to `$RUN_DIR/dossier.md` at full fidelity. Compose the answer from that record per the pedagogical contract, with file-path/line-number citations, and close with the one-line dossier path.
+   - **If `FAST = true`**: perform the orchestration below, then **relay** the nested call's `--output-last-message` content verbatim — the nested `$ask` already applied the contract. Do not re-research or rewrite on top of the relayed answer. Close with one line naming `$RUN_DIR`, where the nested run's full artifacts sit.
 
 ## Fast-flag orchestration (`-f` path)
 
@@ -70,8 +71,7 @@ if [ "$FAST_DEGRADED" -eq 0 ]; then
 \$ask <-w if WEB_SEARCH else nothing> <-r if REAL_WORLD else nothing> <verbatim question text>
 
 You are running at `low` Codex effort to answer this
-question read-only. Cite file paths and line numbers. Give a concise,
-direct answer.
+question read-only. Cite file paths and line numbers.
 EOF
 
   cog codex-runner run-exec \
