@@ -330,33 +330,58 @@ cog::fn::docs_lint::acceptance_targets() {
 }
 
 cog::fn::docs_lint::milestones() {
-  local root="$1" file="$2" rel line id slug status _appetite note slice_file successor dir link_target
+  local root="$1" file="$2" rel line body head id slug status appetite note extra
+  local section="" slice_file successor dir link_target
   local failed=0
   local slice_link_re='^\[([^]]+)\]\(([^)]+)\)$'
   local -A seen=() seen_dir=()
+  # The fixed grammar is `<id> <slug> — <status> — <appetite>[ — <note>]`, so the
+  # em-dash separator is the only field boundary. Swapping it for a byte that
+  # cannot appear in prose lets one `read` split the line.
+  local sep=$' \xe2\x80\x94 '
   rel="$(cog::fn::docs_lint::relative "$root" "$file")"
   while IFS= read -r line; do
-    # Table rows only; the header and its separator carry no slice.
-    [[ $line == \|* ]] || continue
-    IFS='|' read -r _ id slug status _appetite note _ <<<"$line"
-    id="$(cog::fn::docs_lint::trim "$id")"
-    [[ $id == id || $id =~ ^-+$ ]] && continue
-    if [[ ! $id =~ ^[0-9]{3}$ ]] || ((10#$id == 0)); then
-      printf '%s\n' "${rel}: milestone row has a non-canonical slice id: ${id}" >&2
+    # Live work first, terminal statuses below: the section a line sits in is
+    # part of its meaning, so it is tracked rather than skipped.
+    case "$line" in
+      '## in flight') section="in flight" && continue ;;
+      '## closed') section="closed" && continue ;;
+      '## '*)
+        section=""
+        continue
+        ;;
+    esac
+    [[ $line == "- "* ]] || continue
+    if [[ -z $section ]]; then
+      printf '%s\n' "${rel}: milestone line outside a status section: ${line}" >&2
       failed=1
       continue
     fi
-    # One row per slice: ids are never reused, so a repeat is two status surfaces.
+    body="${line#- }"
+    IFS=$'\x01' read -r head status appetite note extra <<<"${body//"$sep"/$'\x01'}"
+    if [[ $head != *" "* || -z $status || -z $appetite || -n $extra ]]; then
+      printf '%s\n' "${rel}: milestone line does not match the fixed grammar: ${line}" >&2
+      failed=1
+      continue
+    fi
+    id="${head%% *}"
+    slug="${head#* }"
+    if [[ ! $id =~ ^[0-9]{3}$ ]] || ((10#$id == 0)); then
+      printf '%s\n' "${rel}: milestone line has a non-canonical slice id: ${id}" >&2
+      failed=1
+      continue
+    fi
+    # One line per slice: ids are never reused, so a repeat is two status
+    # surfaces, and a slice listed in both sections is the same fault.
     if [[ -n ${seen[$id]:-} ]]; then
       printf '%s\n' "${rel}: milestone id appears more than once: ${id}" >&2
       failed=1
       continue
     fi
     seen[$id]=1
-    slug="$(cog::fn::docs_lint::trim "$slug")"
-    # The slice cell may be a bare slug or a link to its entry document; the
-    # shared contract's own example table uses bare slugs, so the link stays
-    # optional. When it is a link, its destination is checked against the row's
+    # The slice field may be a bare slug or a link to its entry document; the
+    # shared contract's own example list uses bare slugs, so the link stays
+    # optional. When it is a link, its destination is checked against the line's
     # own id and slug: a link that merely resolves is not enough, because a
     # destination naming a *different* existing slice satisfies the generic
     # relative-link rule while still sending the reader from the single status
@@ -380,6 +405,19 @@ cog::fn::docs_lint::milestones() {
         failed=1
         continue
         ;;
+    esac
+    # `done`, `cut`, and `reshaped` need no further action, so they belong below
+    # the split; anything still needing action belongs above it. A status flipped
+    # in place without the move leaves the live section reading as work in hand.
+    case "$status" in
+      done | cut | reshaped) [[ $section == closed ]] || {
+        printf '%s\n' "${rel}: terminal slice ${id} is listed under '## ${section}', expected '## closed'" >&2
+        failed=1
+      } ;;
+      *) [[ $section == "in flight" ]] || {
+        printf '%s\n' "${rel}: live slice ${id} is listed under '## ${section}', expected '## in flight'" >&2
+        failed=1
+      } ;;
     esac
     if [[ $status == reshaped ]]; then
       successor=""
@@ -410,15 +448,15 @@ cog::fn::docs_lint::milestones() {
     fi
   done <"$file"
 
-  # The milestone table is the single status surface, so a slice directory with no
-  # row is a unit of work no reader can find.
+  # The milestone list is the single status surface, so a slice directory with no
+  # line is a unit of work no reader can find.
   for dir in "$root"/docs/plan/slices/*/; do
     [[ -d $dir ]] || continue
     id="$(basename "$dir")"
     # The whole basename is compared, not just the id, so a second directory under a
-    # reused id is still reported rather than absorbed by its sibling's row.
+    # reused id is still reported rather than absorbed by its sibling's line.
     [[ -n ${seen_dir[$id]:-} ]] && continue
-    printf '%s\n' "${rel}: slice has no milestone row: docs/plan/slices/${id}" >&2
+    printf '%s\n' "${rel}: slice has no milestone line: docs/plan/slices/${id}" >&2
     failed=1
   done
   return "$failed"

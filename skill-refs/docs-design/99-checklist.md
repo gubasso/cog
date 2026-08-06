@@ -56,6 +56,7 @@ Owners: [06 — Appetite and Scope](./06-appetite-and-scope.md) and [07 — Plan
 - [ ] Any change to `Goal`, `Core`, `Appetite`, or `Acceptance` after the work started is a committed edit with a `Revisions` line saying what was learned; any appetite change also cites the condition met and what was cut first.
 - [ ] No unit of work was brought inside its appetite by dropping tests, review, or a security control.
 - [ ] Status lives only in `milestones.md`, using the closed vocabulary, and open-questions entries name what they block.
+- [ ] `milestones.md` puts live work first: every terminal status sits under `## closed`, every slice appears in exactly one section, and `## closed` is still short enough to scroll.
 
 ## Agent readiness
 

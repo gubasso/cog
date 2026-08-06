@@ -35,14 +35,21 @@ Two pages at most. Revised per release, never per slice.
 
 The single status surface. A reader consults this and nothing else to know where the work stands.
 
-| id  | slice  | status | appetite | note |
-| --- | ------ | ------ | -------- | ---- |
-| 001 | <slug> | done   | <n>      |      |
-| 002 | <slug> | active | <n>      |      |
-| 003 | <slug> | shaped | <n>      |      |
+One line per slice, ordered by id inside its section: `<id> <slug> — <status> — <appetite>[ — <note>]`.
 
-Status is one of `shaped`, `active`, `done`, `cut`, or `reshaped`. A `reshaped` row names its successor id in the note. A `cut` row names what was cut.
+Two sections, live work first. A slice moves to `## closed` when its status becomes terminal — `done`, `cut`, or `reshaped` — and never moves back.
+
+## in flight
+
+- 002 <slug> — active — <n>
+- 003 <slug> — shaped — <n>
+
+## closed
+
+- 001 <slug> — done — <n>
 ```
+
+Status is one of `shaped`, `active`, `done`, `cut`, or `reshaped`. A `reshaped` line names its successor id in the note. A `cut` line names what was cut. When `## closed` outgrows scrolling, move it wholesale to `milestones-closed.md` and leave one link; that file is history, not a status surface.
 
 Derive whatever can be derived from the slices themselves so this cannot silently disagree with them.
 

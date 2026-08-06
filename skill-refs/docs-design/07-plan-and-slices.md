@@ -10,7 +10,7 @@ The shape is deliberately small. Every artifact has to survive one question: wha
 <project>/docs/plan/
   charter.md         What the project is for, its pillars, and its no-gos. Two pages at most.
                      Written once, revised per release, never per slice.
-  milestones.md      The ordered slices, one row each, with a status. The single status surface:
+  milestones.md      The ordered slices, one line each, with a status. The single status surface:
                      a reader consults this and nothing else to know where the work stands.
   open-questions.md  Questions that could change a decision, and what each one blocks.
   slices/            One directory per unit of work.
@@ -20,23 +20,43 @@ The shape is deliberately small. Every artifact has to survive one question: wha
 
 ### `milestones.md`
 
-One row per slice, ordered, with a closed status vocabulary:
+Two sections, live work first. One line per slice, ordered by id inside its section, in a fixed grammar:
 
 ```text
-| id  | slice                  | status | appetite | note                          |
-| --- | ---------------------- | ------ | -------- | ----------------------------- |
-| 006 | password-reset-email   | done   | 2 passes |                               |
-| 007 | rate-limit-login       | active | 3 passes |                               |
-| 008 | audit-log-export       | shaped | 2 passes |                               |
-| 005 | bulk-import            | cut    | 2 passes | remainder cut, core shipped   |
-| 004 | session-store          | reshaped | 1 pass | re-shaped as 009              |
+<id> <slug> — <status> — <appetite>[ — <note>]
 ```
+
+```text
+## in flight
+
+- 007 rate-limit-login — active — 3 passes
+- 008 audit-log-export — shaped — 2 passes
+- 009 session-store-v2 — shaped — 1 pass
+
+## closed
+
+- 004 session-store — reshaped — 1 pass — re-shaped as 009
+- 005 bulk-import — cut — 2 passes — remainder cut, core shipped
+- 006 password-reset-email — done — 2 passes
+```
+
+A list rather than a table, because the maintenance falls on the wrong person. A table's columns must be re-aligned by hand every time a slug or a note changes width, and a note long enough to be useful pushes the row past any sane line length. The raw file is what an agent session and a `git diff` actually read, and a table gets harder to read there the more slices the project has. The list costs nothing to maintain, diffs one line per change, and greps cleanly by id or by status. A table is still the right instrument for a comparison or an exact mapping; see [10 — Lean Markdown](./10-lean-markdown.md). A growing status surface is neither.
+
+The grammar is fixed so it can still be parsed: em dash separators, fields in that order, the note optional and last. Nothing else goes on the line.
 
 - `shaped` — the slice document is committed and the work has not started.
 - `active` — implementation is in progress.
 - `done` — the named tests pass unskipped.
 - `cut` — the slice shipped its core and its remainder was cut. This is a success, not a failure.
 - `reshaped` — the work was stopped uphill and re-shaped; the note names the successor id.
+
+The section split is the same distinction Emacs Org-mode draws with the vertical bar in its `#+TODO:` sequences, which separates the states that need action from the states that need none; see <https://orgmode.org/manual/Workflow-states.html>. `shaped` and `active` need action. `done`, `cut`, and `reshaped` do not. A slice moves to `## closed` when its status becomes terminal, and never moves back.
+
+Split there rather than per status because the split has to pay for itself. Two sections keep ids ascending within each run, keep a status flip a one-line edit, and make only the one-way transition a move — which is the transition that already has a ceremony in this chapter. Five sections, one per status, would fragment the id order five ways and turn every status change into a move for no further gain.
+
+Order the sections live work first because that is the order the reader's question is asked in. A reader opens this file to learn what is happening now, and the answer has to be at the top. The part that grows without bound is the part nobody opens the file for.
+
+Which is the failure this format postpones rather than solves. `## closed` grows monotonically and `## in flight` does not, so on a long-lived project the status surface eventually violates the rule that it be read rather than skimmed — by arithmetic, not by bad writing. When it does, move `## closed` wholesale to `<project>/docs/plan/milestones-closed.md` and leave one link behind. That file is history, not a second status surface: a slice that leaves `milestones.md` is no longer part of what a reader consults to know where the work stands. It is the same one-way door [09 — Known Issues](./09-known-issues.md) opens when a resolved case collapses out of its hot directory.
 
 `milestones.md` SHOULD derive whatever it can from the slices themselves so it cannot silently disagree with them. A status surface maintained by hand goes stale between the moment the work changes and the moment someone remembers.
 
@@ -71,7 +91,7 @@ A slice is one directory, always, whatever its size:
 
 `<id>` is a zero-padded sequential number, `001` onward, matching the `ADR-NNNN` and `KI-NNNN` schemes so ids read cleanly in commit messages and grep alike. Ids are never reused and never renumbered: a re-shaped slice takes the next free id rather than the old one, so the two remain separately addressable.
 
-The directory is the default rather than an escalation because escalation has a cost of its own. A slice that starts as `slices/<id>-<slug>.md` and later needs a second file must be renamed, and the rename breaks every reference already pointing at it — the milestone row, the open questions, the commit messages. That happens exactly when the work is already in trouble, which is when a restructuring step is least likely to be taken. A directory that grows a file costs nothing and breaks nothing.
+The directory is the default rather than an escalation because escalation has a cost of its own. A slice that starts as `slices/<id>-<slug>.md` and later needs a second file must be renamed, and the rename breaks every reference already pointing at it — the milestone line, the open questions, the commit messages. That happens exactly when the work is already in trouble, which is when a restructuring step is least likely to be taken. A directory that grows a file costs nothing and breaks nothing.
 
 `README.md` is the entry document. The name is deliberate: forges render it when a reader opens the directory, so the human entry point and the agent entry point are the same file.
 
@@ -184,9 +204,11 @@ That keeps both properties at once. The plan can move, so it stays true; every m
 
 The directory stays where it is. It is the artifact later commits were read against, and deleting it removes the only record of what was promised before the work started.
 
-- Finished: the milestone row flips to `done`, `tasks.md` is deleted if it existed, and the durable results migrate to the zones that own them — the design to a subsystem page, the choices to ADRs, exact values to reference. The plan keeps only the pointer.
-- Cut: the row reads `cut` and the note names what was cut. The `In scope` list is left as written; it is the record of what was traded, and editing it after the fact erases that.
-- Re-shaped: the row reads `reshaped` and names the successor id. The successor is a new directory with a new appetite; the old slice's `Revisions` carries one line saying the work was stopped uphill.
+Every ending moves the milestone line from `## in flight` to `## closed`, in the same commit that ends the work. What differs is the status it carries there.
+
+- Finished: the line reads `done`, `tasks.md` is deleted if it existed, and the durable results migrate to the zones that own them — the design to a subsystem page, the choices to ADRs, exact values to reference. The plan keeps only the pointer.
+- Cut: the line reads `cut` and the note names what was cut. The `In scope` list is left as written; it is the record of what was traded, and editing it after the fact erases that.
+- Re-shaped: the line reads `reshaped` and names the successor id. The successor is a new directory with a new appetite; the old slice's `Revisions` carries one line saying the work was stopped uphill.
 
 ## Anti-patterns
 
@@ -199,14 +221,17 @@ The directory stays where it is. It is the artifact later commits were read agai
 - Acceptance lines with no test named, or naming tests no hook verifies.
 - Rabbit holes listed without escapes, which records a risk without doing anything about it.
 - Silent revision: `Goal` or `Core` changes and `Revisions` does not.
-- Status in two places: a `Status` heading in the slice competing with the milestone row.
+- Status in two places: a `Status` heading in the slice competing with the milestone line.
 - Open questions as an archive: entries that name nothing they block and never exit.
 - Milestones maintained by hand until they disagree with the slices they summarize.
+- A terminal status left in `## in flight`, or a slice listed in both sections.
+- `## closed` grown past the point anyone scrolls it, so the live work is no longer what the file shows.
 
 ## Sources
 
 - Shape Up, Write the Pitch (problem, appetite, solution, rabbit holes, no-gos): <https://basecamp.com/shapeup/1.5-chapter-06>
 - EARS, official notation reference: <https://alistairmavin.com/ears/>
+- Org-mode workflow states (the bar between states that need action and states that do not): <https://orgmode.org/manual/Workflow-states.html>
 - Design docs at Google (write before code; update while unshipped): <https://www.industrialempathy.com/posts/design-docs-at-google/>
 - Effective context engineering for AI agents (just-in-time context): <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
 - Amazon, working backwards (write the launch document first): <https://www.allthingsdistributed.com/2006/11/working_backwards.html>

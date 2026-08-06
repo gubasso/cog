@@ -45,7 +45,7 @@ Copy this file into `<project>/docs/plan/slices/<id>-<slug>/README.md`. Commit i
 
 ## Done when
 
-{The objective completion condition: the named tests above pass unskipped, and the `milestones.md` row flips.}
+{The objective completion condition: the named tests above pass unskipped, and the `milestones.md` line flips.}
 
 ## Revisions
 

@@ -46,15 +46,37 @@ write_slice() {
   } >"$dir/README.md"
 }
 
-write_milestones() {
-  local status="$1" slug="$2" note="${3:-}"
+# One milestone line in the fixed grammar: `<id> <slug> — <status> — <appetite>`
+# plus the optional trailing note.
+milestone_line() {
+  local id="$1" slug="$2" status="$3" note="${4:-}" line
+  line="- ${id} ${slug} — ${status} — 1 session"
+  [[ -n $note ]] && line+=" — ${note}"
+  printf '%s\n' "$line"
+}
+
+# The two-section surface, with every argument line already placed by its caller.
+# `$1` is the `## in flight` body and `$2` the `## closed` body.
+write_milestone_sections() {
   mkdir -p "$FIXTURE/docs/plan"
   {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '| 001 | %s | %s | 1 session | %s |\n' "$slug" "$status" "$note"
+    printf '%s\n\n' '# Milestones'
+    printf '%s\n\n' '## in flight'
+    [[ -n $1 ]] && printf '%s\n\n' "$1"
+    printf '%s\n\n' '## closed'
+    [[ -n ${2:-} ]] && printf '%s\n' "$2"
   } >"$FIXTURE/docs/plan/milestones.md"
+  return 0
+}
+
+# A single slice at id 001, filed into the section its status belongs to.
+write_milestones() {
+  local status="$1" slug="$2" note="${3:-}" line
+  line="$(milestone_line 001 "$slug" "$status" "$note")"
+  case "$status" in
+    done | cut | reshaped) write_milestone_sections '' "$line" ;;
+    *) write_milestone_sections "$line" '' ;;
+  esac
 }
 
 @test "docs-lint accepts plain documentation and keeps diagnostics off stdout" {
@@ -374,13 +396,7 @@ write_milestones() {
 
 @test "docs-lint rejects a non-canonical milestone slice id" {
   write_slice 001 sample test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 1 | sample | shaped | 1 session | |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections "$(milestone_line 1 sample shaped)" ''
 
   run_lint
 
@@ -390,14 +406,8 @@ write_milestones() {
 
 @test "docs-lint rejects a duplicated milestone id" {
   write_slice 001 sample test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 001 | sample | shaped | 1 session | |'
-    printf '%s\n' '| 001 | sample | shaped | 1 session | |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections \
+    "$(milestone_line 001 sample shaped)"$'\n'"$(milestone_line 001 sample shaped)" ''
 
   run_lint
 
@@ -405,7 +415,7 @@ write_milestones() {
   [[ $stderr == *'milestone id appears more than once: 001'* ]]
 }
 
-@test "docs-lint rejects a slice directory with no milestone row" {
+@test "docs-lint rejects a slice directory with no milestone line" {
   write_slice 001 sample test/unit/future.bats
   write_slice 002 orphan test/unit/future.bats
   write_milestones shaped sample
@@ -413,20 +423,14 @@ write_milestones() {
   run_lint
 
   assert_failure 65
-  [[ $stderr == *'slice has no milestone row: docs/plan/slices/002-orphan'* ]]
+  [[ $stderr == *'slice has no milestone line: docs/plan/slices/002-orphan'* ]]
 }
 
 @test "docs-lint rejects a milestone slice link pointing at another existing slice" {
   write_slice 001 sample test/unit/future.bats
   write_slice 002 other test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 001 | [sample](./slices/002-other/README.md) | shaped | 1 session | |'
-    printf '%s\n' '| 002 | [other](./slices/002-other/README.md) | shaped | 1 session | |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections \
+    "$(milestone_line 001 '[sample](./slices/002-other/README.md)' shaped)"$'\n'"$(milestone_line 002 '[other](./slices/002-other/README.md)' shaped)" ''
 
   run_lint
 
@@ -434,15 +438,9 @@ write_milestones() {
   [[ $stderr == *'milestone slice 001 links to ./slices/002-other/README.md, expected ./slices/001-sample/README.md'* ]]
 }
 
-@test "docs-lint accepts a milestone slice link matching its own row" {
+@test "docs-lint accepts a milestone slice link matching its own line" {
   write_slice 001 sample test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 001 | [sample](./slices/001-sample/README.md) | shaped | 1 session | |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections "$(milestone_line 001 '[sample](./slices/001-sample/README.md)' shaped)" ''
 
   run_lint
 
@@ -466,13 +464,7 @@ write_milestones() {
 
 @test "docs-lint rejects the zero milestone id" {
   write_slice 000 sample test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 000 | sample | shaped | 1 session | |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections "$(milestone_line 000 sample shaped)" ''
 
   run_lint
 
@@ -483,14 +475,9 @@ write_milestones() {
 @test "docs-lint rejects a reshaped successor that points backward" {
   write_slice 001 first test/unit/future.bats
   write_slice 002 second test/unit/future.bats
-  mkdir -p "$FIXTURE/docs/plan"
-  {
-    printf '%s\n' '# Milestones' ''
-    printf '%s\n' '| id | slice | status | appetite | note |'
-    printf '%s\n' '| --- | --- | --- | --- | --- |'
-    printf '%s\n' '| 001 | first | shaped | 1 session | |'
-    printf '%s\n' '| 002 | second | reshaped | 1 session | re-shaped as 001 |'
-  } >"$FIXTURE/docs/plan/milestones.md"
+  write_milestone_sections \
+    "$(milestone_line 001 first shaped)" \
+    "$(milestone_line 002 second reshaped 're-shaped as 001')"
 
   run_lint
 
@@ -498,7 +485,7 @@ write_milestones() {
   [[ $stderr == *'must name a later successor id'* ]]
 }
 
-@test "docs-lint reports a second directory reusing a rowed slice id" {
+@test "docs-lint reports a second directory reusing a listed slice id" {
   write_slice 001 sample test/unit/future.bats
   write_slice 001 alternate test/unit/future.bats
   write_milestones shaped sample
@@ -506,7 +493,7 @@ write_milestones() {
   run_lint
 
   assert_failure 65
-  [[ $stderr == *'slice has no milestone row: docs/plan/slices/001-alternate'* ]]
+  [[ $stderr == *'slice has no milestone line: docs/plan/slices/001-alternate'* ]]
 }
 
 @test "docs-lint requires active slice acceptance targets to exist" {
@@ -553,6 +540,60 @@ write_milestones() {
   run_lint
   assert_failure 65
   [[ $stderr == *'note must name what was cut'* ]]
+}
+
+@test "docs-lint rejects a terminal status left in the live section" {
+  write_slice 001 sample test/unit/future.bats
+  write_milestone_sections "$(milestone_line 001 sample 'done')" ''
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *"terminal slice 001 is listed under '## in flight', expected '## closed'"* ]]
+}
+
+@test "docs-lint rejects live work filed under the closed section" {
+  write_slice 001 sample test/unit/future.bats
+  write_milestone_sections '' "$(milestone_line 001 sample shaped)"
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *"live slice 001 is listed under '## closed', expected '## in flight'"* ]]
+}
+
+@test "docs-lint rejects a milestone line outside both status sections" {
+  write_slice 001 sample test/unit/future.bats
+  mkdir -p "$FIXTURE/docs/plan"
+  {
+    printf '%s\n\n' '# Milestones'
+    milestone_line 001 sample shaped
+  } >"$FIXTURE/docs/plan/milestones.md"
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *'milestone line outside a status section'* ]]
+}
+
+@test "docs-lint rejects a milestone line that breaks the fixed grammar" {
+  write_slice 001 sample test/unit/future.bats
+  write_milestone_sections '- 001 sample shaped 1 session' ''
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *'does not match the fixed grammar'* ]]
+}
+
+@test "docs-lint rejects a milestone line carrying a field past the note" {
+  write_slice 001 sample test/unit/future.bats
+  write_milestone_sections '- 001 sample — shaped — 1 session — a note — a fifth field' ''
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *'does not match the fixed grammar'* ]]
 }
 
 @test "docs-lint catches emphasis in the active draft workspace" {

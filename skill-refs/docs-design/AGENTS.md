@@ -1,6 +1,6 @@
 ---
 digest-of: ../../skill-refs/docs-design
-last-synced: 2026-08-05
+last-synced: 2026-08-06
 source-files:
   - README.md
   - 00-foundations.md
@@ -20,7 +20,7 @@ source-files:
   - template-docs-rules.md
   - template-plan-zone.md
   - template-slice.md
-token-estimate: 30193
+token-estimate: 31045
 ---
 
 # AGENTS
@@ -51,7 +51,7 @@ Load this file, find the owning chapter in the routing table below, then read th
 | Where do scratch notes live, and how do they ship?                      | `05-drafts-and-promotion.md`      |
 | How big is this unit of work, and may that change?                      | `06-appetite-and-scope.md`        |
 | What files may a unit of work have, and what headings?                  | `07-plan-and-slices.md`           |
-| What shape does a plan, a milestone row, or a task list take?           | `07-plan-and-slices.md`           |
+| What shape does a plan, a milestone line, or a task list take?          | `07-plan-and-slices.md`           |
 | A fact that will be wrong in a month                                    | `08-tracking-and-revalidation.md` |
 | A bug in an external system under test                                  | `09-known-issues.md`              |
 | May I use bold here?                                                    | `10-lean-markdown.md`             |
