@@ -83,7 +83,7 @@ __cog_plan_store_init_cmd() {
       --git)
         cog::fn::error_raise "InvalidInput" \
           "the --git flag was removed" "option: --git" \
-          "the global plan vault is git-by-default (ADR-0057)" \
+          "the global plan vault is git-by-default (ADR-0011)" \
           "drop --git, or pass --no-git to skip git initialization"
         ;;
       --project-root)
@@ -383,7 +383,7 @@ __cog_plan_item_parse_common() {
       --git)
         cog::fn::error_raise "InvalidInput" \
           "the --git flag was removed" "option: --git" \
-          "the global plan vault is git-by-default (ADR-0057)" \
+          "the global plan vault is git-by-default (ADR-0011)" \
           "drop --git, or pass --no-git to skip git initialization"
         ;;
       --store)

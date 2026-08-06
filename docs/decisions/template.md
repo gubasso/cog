@@ -1,28 +1,29 @@
-<!-- Copy this file to `docs/decisions/NNNN-short-title.md` and fill it in. Keep filled ADRs at or below 350 words; keep each field brief, and split separate decisions into separate ADRs. -->
+# ADR-NNNN: <short title naming the choice, not the task>
 
-# ADR-NNNN: {Short Title}
+<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-NNNN: <short title naming the choice, not the task>", "## Context and Problem Statement", "## Considered Options", "## Decision Outcome", "## Consequences", "## Status"] } } -->
+
+Filled ADRs MUST stay at or below 350 words. Keep each field brief and split separate decisions.
 
 ## Context and Problem Statement
 
-{2-3 sentences. What problem? Why does it matter?}
+<What problem matters, in two or three sentences?>
 
 ## Considered Options
 
-- {Option 1}
-- {Option 2}
-- {Option 3}
+- <option one>
+- <option two>
 
 ## Decision Outcome
 
-Chosen option: **{Option 1}** — {one sentence: why}.
+Chosen option: `<option one>` — <the shortest honest reason>.
 
 ## Consequences
 
-- Good: {positive trade-off}
-- Bad: {negative trade-off}
+- Good: <positive trade-off>
+- Bad: <negative trade-off>
 
 ## Status
 
-{Proposed | Accepted | Implemented | Superseded | Rejected}
+<Ideation | Proposed | Accepted | Implemented | Deprecated | Superseded | Rejected>
 
-{If Implemented: link to the code that enacts it. If Superseded: link to the successor.}
+For `Implemented`, link the enactment target. For `Superseded`, link the successor. For `Deprecated`, state why it stopped applying. A partial change keeps its status and adds `Amended by ADR-NNNN — <what changed>`.

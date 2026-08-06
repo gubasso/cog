@@ -96,6 +96,9 @@ The command list and short descriptions are sourced from command modules under
 *digest-stamp*
 	Stamp digest frontmatter from source files.
 
+*docs-lint*
+	Validate documentation structure and lean Markdown rules.
+
 *doctor*
 	Check cog runtime health and installation prerequisites.
 

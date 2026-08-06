@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 #
-# Recursive round right-sizing loop — deterministic control flow (ADR-0050,
-# refined by ADR-0069). `cog` owns the work queue and every control decision:
+# Recursive round right-sizing loop — deterministic control flow (ADR-0013,
+# refined by ADR-0013). `cog` owns the work queue and every control decision:
 # the single-parent seed, the over-ceiling compare, the coverage-gated binary
 # enqueue of split children, termination, and the baseline conservation assert.
 # Judgment (grade, where-to-split) stays in the worker skills the caller runs;

@@ -1,8 +1,8 @@
 # Plan Lifecycle & Executor Routing
 
-Shared specification for skills that produce implementation plans. Every plan is a directory of self-contained round files, and each round is sized for one **single execution session**. Complexity is executor-independent (`complexity-rubric.md`); the executor that runs a round is chosen downstream and stamped into the round's queue `prompt:` ([ADR-0056](../../docs/decisions/0056-plan-round-executor-routing-contract.md)), never baked into sizing.
+Shared specification for skills that produce implementation plans. Every plan is a directory of self-contained round files, and each round is sized for one **single execution session**. Complexity is executor-independent (`complexity-rubric.md`); the executor that runs a round is chosen downstream and stamped into the round's queue `prompt:` ([ADR-0015](../../docs/decisions/0015-executor-capability-and-telemetry.md)), never baked into sizing.
 
-Producers resolve the plan store through `cog plan project resolve` / `cog plan new` / `cog plan path` and never hardcode `.implementation-plans/` ([ADR-0057](../../docs/decisions/0057-plan-vault-producer-retarget-and-global-git.md)). The vault tree is **flat and queue-driven**: a plan's status, order, dependencies, and execution command live in YAML queue files — never in directory or file names. There are no kanban state-directories and no numeric prefixes.
+Producers resolve the plan store through `cog plan project resolve` / `cog plan new` / `cog plan path` and never hardcode `.implementation-plans/` ([ADR-0011](../../docs/decisions/0011-plan-vault-storage-and-resolution.md)). The vault tree is **flat and queue-driven**: a plan's status, order, dependencies, and execution command live in YAML queue files — never in directory or file names. There are no kanban state-directories and no numeric prefixes.
 
 ## Directory structure
 
@@ -21,11 +21,11 @@ The plan root is whatever `cog plan project resolve` returns (`plan_root`); the 
             └── <topic>.md       a round — self-contained task description (no number prefix)
 ```
 
-Every plan is a directory (`plans/<slug>/`); round files live under its `rounds/` subdir ([ADR-0048](../../docs/decisions/0048-plan-vault-storage-and-resolution.md)). The complexity grade is descriptive; it does not select a format or cap round count.
+Every plan is a directory (`plans/<slug>/`); round files live under its `rounds/` subdir ([ADR-0011](../../docs/decisions/0011-plan-vault-storage-and-resolution.md)). The complexity grade is descriptive; it does not select a format or cap round count.
 
 **Plan directories are always direct children of `plans/` and are never nested.** There is exactly one level under `plans/` — `plans/<slug>/`. Never place a plan directory inside another plan directory. All relationships and ordering between plans are expressed **only** through the `depends_on` field in `queue-plans.yaml`, never through the filesystem; a shared slug prefix is a naming convention, not a parent directory.
 
-Right-sizing uses the recursive loop in `round-splitting-contract.md` and [ADR-0050](../../docs/decisions/0050-recursive-round-right-sizing.md): grade against `complexity-rubric.md`, and split any over-ceiling round into information-preserving children until every round fits the single-session ceiling.
+Right-sizing uses the recursive loop in `round-splitting-contract.md` and [ADR-0013](../../docs/decisions/0013-complexity-driven-round-sizing.md): grade against `complexity-rubric.md`, and split any over-ceiling round into information-preserving children until every round fits the single-session ceiling.
 
 The root `README.md` and `queue-plans.yaml` are bootstrapped by the generating skill the first time it runs against a store: `README.md` from its template (never overwritten afterwards), `queue-plans.yaml` with an empty `plans:` list.
 
@@ -61,11 +61,11 @@ Self-containment rules:
 
 ## Single-session sizing
 
-Rounds are sized to the rubric's executor-independent **single-session ceiling** — one cohesive unit of work completable in a single execution session — not to any executor's capacity. Targeting an executor would re-entangle complexity with capability, the conflation [ADR-0049](../../docs/decisions/0049-plan-complexity-rubric.md) removed.
+Rounds are sized to the rubric's executor-independent **single-session ceiling** — one cohesive unit of work completable in a single execution session — not to any executor's capacity. Targeting an executor would re-entangle complexity with capability, the conflation [ADR-0013](../../docs/decisions/0013-complexity-driven-round-sizing.md) removed.
 
 - **One cohesive unit**: each round addresses one feature, one module refactor, or one layer of the stack. Quality degrades when a single session handles multiple loosely-related changes.
 - **Mechanically-coupled changes belong together**: file count is incidental — co-changing edits stay in one round regardless of count. A round description usually fits under ~300 lines of plan text.
-- **Executor routing is downstream**: after sizing, each final round's rubric score is matched to an executor (`cog power-grade match`) and stamped into its prompt; a reserved (`> 30`) round is never queued and is split further (ADR-0056).
+- **Executor routing is downstream**: after sizing, each final round's rubric score is matched to an executor (`cog power-grade match`) and stamped into its prompt; a reserved (`> 30`) round is never queued and is split further (ADR-0015).
 
 ## Lifecycle rules
 

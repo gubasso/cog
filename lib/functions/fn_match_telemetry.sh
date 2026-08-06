@@ -4,7 +4,7 @@
 # it as binary and it is excluded from that hook in .pre-commit-config.yaml.
 # shfmt still owns this file's formatting.
 
-# Match-outcome telemetry (ADR-0058). One cross-project, append-only JSONL stream
+# Match-outcome telemetry (ADR-0015). One cross-project, append-only JSONL stream
 # at the ALWAYS-GLOBAL cog data root, independent of plan-store mode, so every cog
 # instance on the machine shares one calibration corpus. Two record kinds —
 # prediction (plan-build time) and outcome (run terminus) — joined by
@@ -237,7 +237,7 @@ cog::fn::match_telemetry::validate_json() {
 
 # Deterministically join prediction↔outcome and label each joined round
 # well-matched | over-powered | under-powered, flagging ambiguous rows
-# needs_review. Aggregates and surfaces only — never edits grades (ADR-0008).
+# needs_review. Aggregates and surfaces only — never edits grades (ADR-0007).
 cog::fn::match_telemetry::report_json() {
   local file="${1:-}" project_key="${2:-}" since="${3:-}" records report
   cog::fn::match_telemetry::require_jq
@@ -328,7 +328,7 @@ cog::fn::match_telemetry::executor_roster() {
 }
 
 # Per-executor rollup plus saturation flags over collapsed logical rounds. Holds
-# the score→executor bands steady (ADR-0077): it surfaces where the calibration
+# the score→executor bands steady (ADR-0015): it surfaces where the calibration
 # corpus is thin or lopsided, it never reweights.
 cog::fn::match_telemetry::recalibrate_json() {
   local file="${1:-}" project_key="${2:-}" since="${3:-}" report roster_json
@@ -355,6 +355,6 @@ cog::fn::match_telemetry::recalibrate_json() {
     | {schema: "cog.match-telemetry.recalibrate.v1", ok: true,
       filters: {project_key: $project_key, since: $since},
       logical_rounds: $total, by_executor: $by, saturation_flags: $flags,
-      note: "bands held; enrich and gather spread before any reweight (ADR-0077)"}
+      note: "bands held; enrich and gather spread before any reweight (ADR-0015)"}
   '
 }

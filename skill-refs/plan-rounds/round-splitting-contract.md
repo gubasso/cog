@@ -2,7 +2,7 @@
 
 The contract for turning an a-priori complexity grade into a right-sized set of rounds: the _largest_ rounds that each grade at or below the single-session ceiling. Work is consolidated into one round, then split only when forced, recursively, until every round fits. This file is the single source of truth for the split loop; skills that implement the roles point here and do not restate the schemas, the dispatch table, or the ceiling policy.
 
-Grading itself is defined in `complexity-rubric.md` (this directory); resolve both with `cog skill-refs path plan-rounds/<file>`. The decision and its rationale are [ADR-0050](../../docs/decisions/0050-recursive-round-right-sizing.md).
+Grading itself is defined in `complexity-rubric.md` (this directory); resolve both with `cog skill-refs path plan-rounds/<file>`. The decision and its rationale are [ADR-0013](../../docs/decisions/0013-complexity-driven-round-sizing.md).
 
 ## The three roles
 
@@ -16,10 +16,10 @@ The evaluator is blind to whether its input is a whole plan, one round, or a pos
 
 ## The serialized-judgment boundary
 
-The split decision is _not_ split into "whether (deterministic) vs. how (judgment)." Every analytic call — the grade, is-it-splittable, where-to-cut, did-the-split-reduce — is made by a worker and rendered into structured fields. The orchestrator's decision is then a pure dispatch over those fields plus one constant compare. Judgment never leaves the workers; it arrives at the orchestrator as data. This is the skill/script boundary ([ADR-0008]) over the machine-output contract ([ADR-0009]).
+The split decision is _not_ split into "whether (deterministic) vs. how (judgment)." Every analytic call — the grade, is-it-splittable, where-to-cut, did-the-split-reduce — is made by a worker and rendered into structured fields. The orchestrator's decision is then a pure dispatch over those fields plus one constant compare. Judgment never leaves the workers; it arrives at the orchestrator as data. This is the skill/script boundary ([ADR-0007]) over the machine-output contract ([ADR-0003]).
 
-[ADR-0008]: ../../docs/decisions/0008-skill-script-boundary.md
-[ADR-0009]: ../../docs/decisions/0009-machine-facing-output-contract.md
+[ADR-0007]: ../../docs/decisions/0007-skill-and-cli-responsibility-boundary.md
+[ADR-0003]: ../../docs/decisions/0003-machine-facing-output-contract.md
 
 ## Contracts
 
@@ -55,7 +55,7 @@ The evaluator is pure: same input, same report. It names seams; it never makes t
 
 Input: one round whose grade exceeds the ceiling, plus that round's `seam_hints`.
 
-Output: a verdict. It cuts at the lowest-connascence seam, preserves every requirement on both sides, and names each child for its cohesive content — never an ordinal, per [ADR-0040]:
+Output: a verdict. It cuts at the lowest-connascence seam, preserves every requirement on both sides, and names each child for its cohesive content — never an ordinal, per [ADR-0017]:
 
 ```yaml
 split_performed: true            # false => the splitter judged the round irreducible
@@ -75,7 +75,7 @@ coverage:
   duplicated: [R3]               # informational; a shared foundation may intentionally recur
 ```
 
-[ADR-0040]: ../../docs/decisions/0040-stage-agnostic-identifiers.md
+[ADR-0017]: ../../docs/decisions/0017-skill-authoring-and-lint.md
 
 ### Requirement identity
 
@@ -136,17 +136,15 @@ return final                                                # every round graded
 
 Each pass grades all un-evaluated rounds in parallel, keeps the ones that fit, and replaces each over-ceiling round with its two children. The recursion bottoms out when every round is at or below the ceiling or flagged irreducible. Because every child is re-graded, an unbalanced intermediate self-corrects and a natural three-way split is reached over two passes.
 
-This loop is implemented by the `cog round-rightsize` state machine ([ADR-0069]): `init` seeds the single parent round; `pending` drains a pass into its two parallel buckets; `record-grade` runs the ceiling compare; `record-split` runs coverage and enqueues the two children; `finalize` asserts the baseline conservation. The orchestrating skill advances it step by step and supplies only worker judgment; it never mutates the queue.
+This loop is implemented by the `cog round-rightsize` state machine ([ADR-0013]): `init` seeds the single parent round; `pending` drains a pass into its two parallel buckets; `record-grade` runs the ceiling compare; `record-split` runs coverage and enqueues the two children; `finalize` asserts the baseline conservation. The orchestrating skill advances it step by step and supplies only worker judgment; it never mutates the queue.
 
-[ADR-0069]: ../../docs/decisions/0069-rightsize-loop-cog-state-machine.md
+[ADR-0013]: ../../docs/decisions/0013-complexity-driven-round-sizing.md
 
 ## Ceiling policy
 
-The ceiling is the rubric bin above which a round must split: the largest grade a single execution session reliably holds. It is **executor-independent** — a property of "one cohesive unit of work," not of any executor's capacity. Coupling it to an executor would re-entangle complexity with capability, the conflation [ADR-0049] removed.
+The ceiling is the rubric bin above which a round must split: the largest grade a single execution session reliably holds. It is **executor-independent** — a property of "one cohesive unit of work," not of any executor's capacity. Coupling it to an executor would re-entangle complexity with capability, the conflation [ADR-0013] removed.
 
-[ADR-0049]: ../../docs/decisions/0049-plan-complexity-rubric.md
-
-It is a single calibratable constant resolved by `cog plan-complexity ceiling`, defaulting to **Very High** and optionally overridden for a process with the `COG_PLAN_COMPLEXITY_CEILING` environment variable. It is intentionally env-only in this round; cog config files do not accept that key. Only rounds grading **Extreme** must split under the default. This is the conservative, size-maximizing default: a **Very High** round is deliberately kept as one large unit (the rubric's "unless a large round is deliberate" clause). The [ADR-0049] calibration loop tunes it against repo outcomes; nothing else hard-codes a bin.
+It is a single calibratable constant resolved by `cog plan-complexity ceiling`, defaulting to **Very High** and optionally overridden for a process with the `COG_PLAN_COMPLEXITY_CEILING` environment variable. It is intentionally env-only in this round; cog config files do not accept that key. Only rounds grading **Extreme** must split under the default. This is the conservative, size-maximizing default: a **Very High** round is deliberately kept as one large unit (the rubric's "unless a large round is deliberate" clause). The [ADR-0013] calibration loop tunes it against repo outcomes; nothing else hard-codes a bin.
 
 ## Invariants
 
@@ -154,12 +152,10 @@ It is a single calibratable constant resolved by `cog plan-complexity ceiling`, 
 - **Coupling and context reduction.** A split lowers each child's coupling (axis C) and context load (axis G) by cutting at the lowest-connascence seam. That reduction — not any change in total scope — is what pulls the grade under the ceiling, and it is the splitter's objective function.
 - **Information preservation.** Both children are complete, standalone rounds. Detail is moved, never trimmed to fit a document boundary; a shared foundation (types, interfaces, config) may recur in both children and is reported in `coverage.duplicated`, not treated as loss.
 - **Idempotent grading.** The evaluator is a pure function of its input prose, so re-grading a round — or the whole set as one — is free and repeatable.
-- **Content-named children.** Child round identifiers are cohesive-content slugs, never split ordinals ([ADR-0040]).
-- **Producer-blind dispatch.** The orchestrator depends on the report and verdict _schemas_, not on which skill produced them ([ADR-0026]).
+- **Content-named children.** Child round identifiers are cohesive-content slugs, never split ordinals ([ADR-0017]).
+- **Producer-blind dispatch.** The orchestrator depends on the report and verdict _schemas_, not on which skill produced them ([ADR-0017]).
 - **Queue-blind splitting.** The splitter writes child rounds and a verdict only. The caller owns `queue-rounds.yaml` reconciliation, either after each loop or at the end.
-- **Queue-mutation closure.** Only `cog round-rightsize record-split` appends rounds, and only after `round-split coverage` passes; the seed is always exactly one parent round. No verb accepts a list of rounds, and `init` rejects a baseline that already carries authored `### Round N` sections, so a caller cannot materialize many rounds up front ([ADR-0069]).
-
-[ADR-0026]: ../../docs/decisions/0026-consumer-skill-producer-blindness.md
+- **Queue-mutation closure.** Only `cog round-rightsize record-split` appends rounds, and only after `round-split coverage` passes; the seed is always exactly one parent round. No verb accepts a list of rounds, and `init` rejects a baseline that already carries authored `### Round N` sections, so a caller cannot materialize many rounds up front ([ADR-0013]).
 
 ## Deterministic mechanics (cog surface)
 
@@ -179,7 +175,7 @@ The work queue is a durable JSON state file owned by `cog round-rightsize`, not 
 
 - **Evaluators** are read-only and fan out freely — one per un-evaluated round, no worktree, no contention.
 - **Splitters** within a pass each operate on a _disjoint_ over-ceiling round and write to disjoint content-slug paths the orchestrator assigns, so they parallelize without a worktree.
-- Role `model`/`effort` tiers follow `docs/reference/model-effort-policy.md` and are registered per [ADR-0047](../../docs/decisions/0047-enforce-prefix-tier-policy.md) when the skills are built.
+- Role `model`/`effort` tiers follow `docs/reference/model-effort-policy.md` and are registered per [ADR-0014](../../docs/decisions/0014-model-effort-and-power-grade.md) when the skills are built.
 
 ## Handoff to executor matching
 

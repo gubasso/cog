@@ -1,6 +1,6 @@
 # Skill-class contracts
 
-The core skill taxonomy (ADR-0016) has six governed classes. Each carries a positive membership contract — the markers, tier, and input/output obligations a skill of that class MUST satisfy. The data source of truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show --class <c>
+The core skill taxonomy (ADR-0006) has six governed classes. Each carries a positive membership contract — the markers, tier, and input/output obligations a skill of that class MUST satisfy. The data source of truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show --class <c>
 --json` and verify a draft with `cog skill-class check --skill <path> --json`. `cog skill-lint`'s `skill-class-contract` rule enforces the union.
 
 | Class         | Prefix          | Tier (prefix default)                     | Input → output                                                 |

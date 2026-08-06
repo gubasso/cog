@@ -45,7 +45,7 @@ cog::fn::plan_store_init_global() {
 
 cog::fn::plan_project_init_global() {
   local root="${1:-}" with_git="${2:-true}" project_dir
-  # Git-init the global store on first use (ADR-0057 D2), so `cog plan new --global`
+  # Git-init the global store on first use (ADR-0011 D2), so `cog plan new --global`
   # and resolve-time creation produce a tracked vault, not only `cog plan store init`.
   # `--no-git` threads through as with_git=false to skip git initialization.
   cog::fn::plan_store_init_global "$with_git"

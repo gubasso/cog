@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # Deterministic mechanics for the bootstrap template-refresh review routine
-# (ADR-0062): freshness selection over the research shelf plus template-SoT
+# (ADR-0019): freshness selection over the research shelf plus template-SoT
 # origin/writability surfacing. Judgment — which hooks, what to change, how to
 # merge — stays in the bootstrap worker prose; this file owns the freshness,
 # record, and resolution mechanics the bootstrap workers share so no freshness

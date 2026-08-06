@@ -130,7 +130,7 @@ cog::fn::review_queue_rounds_inventory_json() {
   printf '%s\n' "${queue_jsons[@]}" | jq -s '{queues: .}'
 }
 
-# Cross-round idempotency scan (ADR-0075). A round declares the artifacts it
+# Cross-round idempotency scan (ADR-0012). A round declares the artifacts it
 # deploys (artifacts:) and/or the artifacts it expects already present
 # (idempotency_check:). This scans every EARLIER round in the same rounds queue
 # for a matching declared artifact (by type+path); a match means the target

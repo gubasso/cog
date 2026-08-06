@@ -79,7 +79,7 @@ EOS
   git -C "$proj" remote add origin https://example.com/resolveproj.git
   run bash -c "cd '$proj' && '$COG_BIN' plan project resolve --json"
   assert_success
-  # ADR-0057 D2: a read-only resolve must not create the global tree without git.
+  # ADR-0011 D2: a read-only resolve must not create the global tree without git.
   # Either the global tree is absent, or if present it carries .git.
   if [[ -d $STORE_ROOT ]]; then
     assert_dir_exists "${STORE_ROOT}/.git"

@@ -1,64 +1,33 @@
 # Install cog
 
-## Prerequisites
+This runbook installs, verifies, upgrades, or uninstalls cog. Exact destinations and manifest fields live in [install layout](../reference/install-layout.md).
 
-`cog` is a Bash CLI. Runtime checks in the installed command expect these core tools:
+## Start state
 
-- `bash`
-- `jq`
-- `git`
-- `find`
-- `sed`
-- `mktemp`
+Run from the repository root with `bash`, `jq`, `git`, `find`, `sed`, and `mktemp` available. Queue helpers require `yq`; man-page generation can use `scdoc`.
 
-Queue helpers also require `yq`. Man-page installation can use `scdoc`; when `scdoc` is missing and no prebuilt `man/cog.1` exists, the installer skips the man page with a warning.
+Choose `PREFIX`, `XDG_DATA_HOME`, and `XDG_STATE_HOME` before installation. Defaults are `$HOME/.local`, `$HOME/.local/share`, and `$HOME/.local/state`.
 
-## Default Install
+## Install
 
-```bash
-./install.sh
-```
+1. Inspect the target locations with `printf '%s\n' "${PREFIX:-$HOME/.local}" "${XDG_DATA_HOME:-$HOME/.local/share}" "${XDG_STATE_HOME:-$HOME/.local/state}"`.
+2. Run `./install.sh`, optionally with the three location variables set.
+3. Verify with `cog --version`, `cog doctor`, and `cog --help`.
+4. Inspect `$XDG_STATE_HOME/cog/install-manifest` when confirming ownership.
 
-By default, `PREFIX` is `$HOME/.local`, `XDG_DATA_HOME` is `$HOME/.local/share`, and `XDG_STATE_HOME` is `$HOME/.local/state`.
+The installer copies the app, data, skill references, runtime skills, agents, completion, and the available man page. Logs normally go to `$XDG_STATE_HOME/cog/cog.log`.
 
-## Logging Behavior
+## Upgrade
 
-`cog` writes logs to XDG state by default, normally `$XDG_STATE_HOME/cog/cog.log` with `XDG_STATE_HOME` defaulting to `$HOME/.local/state`. Stderr log mirroring is opt-in through CLI verbosity or logging options. Log levels include at least `info`, `warn`, `error`, and `debug`.
-
-## Custom Prefix
-
-```bash
-PREFIX="$HOME/.local" ./install.sh
-```
-
-Set `PREFIX`, `XDG_DATA_HOME`, or `XDG_STATE_HOME` before running the installer when you need a custom app, data, or state location.
-
-## Installed Files
-
-The installer copies the app payload into `$PREFIX/lib/cog`, creates a PATH symlink at `$PREFIX/bin/cog`, installs Bash completion under `$XDG_DATA_HOME/bash-completion/completions`, and installs the man page under `$XDG_DATA_HOME/man/man1` when available.
-
-It also copies shipped runtime content into:
-
-- `$XDG_DATA_HOME/cog/skill-refs`
-- `$HOME/.claude/skills`
-- `$HOME/.claude/agents`
-- `$HOME/.agents/skills`
-
-Owned files are recorded in `$XDG_STATE_HOME/cog/install-manifest`.
-
-## Smoke Check
-
-```bash
-cog doctor
-cog --help
-```
-
-`cog doctor` checks required dependencies, XDG paths, the installed command, libraries, and eager modules.
+Run the same install command. Stop if preflight fails or if the reported prefix differs from the intended location. The installer refreshes owned files and preserves user-authored runtime skill and agent files.
 
 ## Uninstall
 
-```bash
-./uninstall.sh
-```
+Uninstall is destructive for manifest-owned files.
 
-Uninstall removes only paths listed in `$XDG_STATE_HOME/cog/install-manifest` and prunes known cog-owned directories with empty-only `rmdir`. User-authored files under the Claude and Codex skill/agent roots are preserved.
+1. Inspect first: `sed -n '1,240p' "$XDG_STATE_HOME/cog/install-manifest"`.
+2. Confirm every listed path is inside the intended prefix, data, state, or runtime-skill roots.
+3. At the confirmation point, run `./uninstall.sh`.
+4. Verify that `$PREFIX/bin/cog` and the manifest are absent and that user-authored skill or agent files remain.
+
+Stop before step 3 if the manifest is missing, names an unexpected root, or includes a user-authored path. Reinstall to reconstruct an owned payload; restore user-authored files from their own backup if they were removed outside this workflow.

@@ -1,4 +1,4 @@
-# Calibration review log for the plan->executor match loop (ADR-0058).
+# Calibration review log for the plan->executor match loop (ADR-0015).
 # One entry per human review cycle: what corpus was reviewed, the report rollup,
 # the refit decision, and why. The raw evidence lives in the append-only
 # telemetry stream (cog match-telemetry path); this file is the human-decision
@@ -7,7 +7,7 @@
 schema_version: 1
 reviews:
   - date: 2026-07-07
-    reviewer: human-gated (grade unchanged; ADR-0008/0058)
+    reviewer: human-gated (grade unchanged; ADR-0007 and ADR-0015)
     scope:
       project_key: podbox-746b98779154d4c8
       plan_slug: podbox-greenfield-implementation-from-spec
@@ -31,7 +31,7 @@ reviews:
     report_snapshot: data/power-grade/executor-capability/calibration-reports/2026-07-07-podbox.json
     source_stream: "$XDG_DATA_HOME/cog/telemetry/match-outcomes.jsonl (machine-global, not in repo)"
   - date: 2026-07-09
-    reviewer: human-gated (grade unchanged; ADR-0008/0058/0077)
+    reviewer: human-gated (grade unchanged; ADR-0007 and ADR-0015)
     scope:
       project_key: bebash-xdg-migration
       plan_slug: bebash-xdg-fhs-migration
@@ -39,7 +39,7 @@ reviews:
     rollup: { well-matched: 17, over-powered: 0, under-powered: 1, needs_review: 0 }
     decision: no-refit
     rationale: >-
-      Not enough spread to refit; enrich and hold (ADR-0077). Of 18 outcomes, 17 ran
+      Not enough spread to refit; enrich and hold (ADR-0015). Of 18 outcomes, 17 ran
       executor-prex, 1 ran executor-oneshot, and 0 ran executor-vetted, so there is no
       vetted-rung evidence to weigh a band against. Real rounds scored 22-30 and all routed
       to prex; prex almost always surfaces >=1 finding, so the old marginal==0 rule never

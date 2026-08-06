@@ -90,7 +90,7 @@ cog codex-runner finalize --state "$RUN_DIR/review.longrun.json" --max-wall 300 
 
 Apply the review annotations (`APPROVED/MODIFIED/REMOVED/ADDED`) in this context to finalize the full plan, then take one convergence `AskUserQuestion` confirmation before proceeding. **Fail closed** if the Codex review cannot run — do not silently fall back to a Claude-only review.
 
-## Phase 4-5 — Recursive right-sizing (ADR-0050, cog-owned loop)
+## Phase 4-5 — Recursive right-sizing (ADR-0013, cog-owned loop)
 
 `cog round-rightsize` owns the queue and every control decision — the single-parent seed, the over-ceiling compare, the coverage-gated enqueue of split children, termination, and the baseline conservation assertion. This skill runs only the grader and splitter workers on the exact round cog hands back and feeds their structured verdicts in. Rounds enter the queue only through a coverage-passing binary split cog performs.
 

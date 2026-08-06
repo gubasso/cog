@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-# Forge-resistant operator approval gate (ADR-0074). A human writes a hash-bound
+# Forge-resistant operator approval gate (ADR-0022). A human writes a hash-bound
 # approval file with `cog gate approve`; a gate executor reads it directly with
 # `cog gate check-approval`. Because approval lives in a file the coordinator
 # cannot forge and the check re-hashes the round as it stands now, a

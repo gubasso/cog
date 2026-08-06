@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 
 cog::fn::plan_store_root() {
-  # Pure path resolver: never create the global tree as a side effect (ADR-0057
+  # Pure path resolver: never create the global tree as a side effect (ADR-0011
   # D2). Creation + git-init belong to plan_store_init_global and the init-tree
   # paths, so a read-only `cog plan project resolve`/`store path`/`doctor` can
   # never leave a non-git global vault behind. Canonicalize an existing root via
@@ -125,7 +125,7 @@ cog::fn::plan_project_identity_json() {
   # to one vault entry; the per-checkout realpath is surfaced only in COG_PLAN_ROOTS.
   hash_input_sha256="$(printf '%s' "$git_identity" | sha256sum | awk '{print $1}')"
   hash16="${hash_input_sha256:0:16}"
-  # Collision-extend (ADR-0057 D3): start at the 16-hex prefix and extend two hex
+  # Collision-extend (ADR-0011 D3): start at the 16-hex prefix and extend two hex
   # at a time (18, 20, ... 64) until the key is unused or already persisted for
   # this exact git identity, so two repos whose SHA-256 prefixes collide get
   # distinct, stable keys. Same identity resolves to the same key idempotently.

@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-# Skill-class contract surface (ADR-0016 / DP11). The data SoT lives at
+# Skill-class contract surface (ADR-0006 / DP11). The data SoT lives at
 # data/skill-class/contracts.yaml and declares, per governed class, the required
 # and forbidden markers and the tier basis. This helper composes the existing
 # cog::fn::skill::* facet predicates into one positive class-membership assertion;

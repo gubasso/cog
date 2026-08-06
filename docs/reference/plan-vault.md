@@ -1,10 +1,10 @@
 # Plan Vault
 
-The plan vault is resolved through `cog plan project resolve`. Consumers should call that seam and then read the returned `queue_path` and `plans_dir` — producers never hardcode `.implementation-plans/` ([ADR-0057](../decisions/0057-plan-vault-producer-retarget-and-global-git.md)).
+The plan vault is resolved through `cog plan project resolve`. Consumers should call that seam and then read the returned `queue_path` and `plans_dir` — producers never hardcode `.implementation-plans/` ([ADR-0011](../decisions/0011-plan-vault-storage-and-resolution.md)).
 
-The global vault is **git-by-default**: `cog plan store init` and any command that creates the global tree (e.g. `cog plan new --global`) git-init the global store on first use, so plans are trackable without an extra step. Pass `--no-git` to opt out. Project-local `.cog/plans` stores stay non-git (they live inside the project's own repo).
+The global vault is git-by-default: `cog plan store init` and any command that creates the global tree (e.g. `cog plan new --global`) git-init the global store on first use, so plans are trackable without an extra step. Pass `--no-git` to opt out. Project-local `.cog/plans` stores stay non-git (they live inside the project's own repo).
 
-Project keys are `<slug>-<hash16>` over the SHA-256 of the git identity. When two repos' 16-hex prefixes collide but their git identities differ, the prefix **collision-extends** (18, 20, … up to 64 hex) until the key is unique, and the chosen key + identity are persisted in `project.sh` so re-resolution is idempotent.
+Project keys are `<slug>-<hash16>` over the SHA-256 of the git identity. When two repos' 16-hex prefixes collide but their git identities differ, the prefix collision-extends (18, 20, … up to 64 hex) until the key is unique, and the chosen key + identity are persisted in `project.sh` so re-resolution is idempotent.
 
 ## Storage Layout
 

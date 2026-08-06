@@ -1,8 +1,8 @@
 # shellcheck shell=bash
 : 'desc: Drive the recursive round right-sizing queue.'
 
-# Deterministic control flow for the ADR-0050 recursive round right-sizing loop
-# (refined by ADR-0069). cog owns the queue and every control decision; the
+# Deterministic control flow for the ADR-0013 recursive round right-sizing loop
+# (refined by ADR-0013). cog owns the queue and every control decision; the
 # caller supplies only worker judgment (grade, split verdict) through the verbs.
 
 __cog_round_rightsize_pending_check='(.schema=="cog.round-rightsize.pending.v1") and (.ok|type=="boolean") and (.terminal|type=="boolean") and (.awaiting_grade|type=="array") and (.awaiting_split|type=="array")'

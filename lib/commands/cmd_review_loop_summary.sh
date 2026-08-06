@@ -304,9 +304,9 @@ __cog_review_loop_summary_emit() {
 # finalize --run-dir <dir> [--out <path>|--json]: the single mechanical terminal step. The
 # worker records the narrative body (summary-body.md) and reason (termination-reason.txt) as
 # durable artifacts during the loop, so finalize takes no reason/body literals -- keeping model
-# text off the critical path (ADR-0046) and shrinking the "skip window" to one command. It is
+# text off the critical path (ADR-0010) and shrinking the "skip window" to one command. It is
 # idempotent: an already-valid summary.md re-emits its own line, so the worker fast-path and the
-# caller-owned boundary fallback never double-write. See ADR-0080.
+# caller-owned boundary fallback never double-write. See ADR-0010.
 __cog_review_loop_summary_finalize_cmd() {
   local run_dir="" out="" body_file="" json="${COG_UI_JSON:-false}"
 

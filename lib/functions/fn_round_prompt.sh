@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-# Executor-stamped round-prompt assembly and validation (ADR-0056). The set of
+# Executor-stamped round-prompt assembly and validation (ADR-0015). The set of
 # stampable executors is derived from the executor-capability SoT, never a
 # duplicated list, so a stamp can only name an executor the matcher can return.
 
@@ -22,11 +22,11 @@ cog::fn::round_prompt::build_json() {
   [[ -n $executor ]] || cog::fn::error_raise "MissingArgument" \
     "missing executor name" "option: --executor" \
     "a reserved (>30) round has no executor and is never queued" \
-    "route a reserved round back through plan-split (ADR-0056)"
+    "route a reserved round back through plan-split (ADR-0015)"
   [[ $executor != null ]] || cog::fn::error_raise "InvalidInput" \
     "reserved round cannot be stamped" "executor: null" \
     "a reserved (>30) round is never queued" \
-    "route the round back through plan-split (ADR-0056)"
+    "route the round back through plan-split (ADR-0015)"
   [[ -n $round_path ]] || cog::fn::error_raise "MissingArgument" \
     "missing round path" "option: --round-path" "" "pass the round file path"
   cog::fn::round_prompt::is_known_executor "$executor" || cog::fn::error_raise "InvalidInput" \
@@ -116,7 +116,7 @@ cog::fn::round_prompt::validate_queue_json() {
         fi
       fi
     else
-      # ADR-0056: the top-level ledger prompt must be the exact
+      # ADR-0015: the top-level ledger prompt must be the exact
       # `/runner-plan -ar @<plan-dir>/` dispatch. Tokenize and require the
       # /runner-plan head, an -ar flag, and a non-empty @<plan-dir> target, so a
       # malformed prompt (wrong flag, missing -ar, or a bare `@`) fails closed

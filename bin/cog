@@ -47,6 +47,8 @@ source "${LIB_DIR}/functions/fn_review.sh"
 source "${LIB_DIR}/functions/fn_refactor.sh"
 # shellcheck source=../lib/functions/fn_digest.sh
 source "${LIB_DIR}/functions/fn_digest.sh"
+# shellcheck source=../lib/functions/fn_docs_lint.sh
+source "${LIB_DIR}/functions/fn_docs_lint.sh"
 # shellcheck source=../lib/functions/fn_rundir.sh
 source "${LIB_DIR}/functions/fn_rundir.sh"
 # shellcheck source=../lib/functions/fn_longrun.sh

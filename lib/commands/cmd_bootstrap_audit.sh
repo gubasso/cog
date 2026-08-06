@@ -27,7 +27,7 @@ __cog_bootstrap_audit_artifacts() {
 # requirements is a (possibly empty) JSON array of content-level {name, satisfied}
 # checks a present domain must still pass — cross-domain fragments a bare
 # file-existence check cannot see (nix ignore lines, the editorconfig-checker hook).
-# The scope model is machine-explicit (ADR-0062): every domain is in scope by
+# The scope model is machine-explicit (ADR-0019): every domain is in scope by
 # default (opt-out is an orchestrator decision), a present domain reconciles while
 # an absent one installs, and requirements_satisfied folds the content checks into
 # one boolean so the orchestrator reads the action instead of re-deriving it.

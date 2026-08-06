@@ -27,7 +27,7 @@ A skill author may override the default for a specific case when the task justif
 
 ## Tiers
 
-The canonical tier vocabulary is a five-rung named ladder — `XHIGH`, `HIGH`, `MEDIUM`, `LOW`, `CHEAP` — adopted in ADR-0041. It supersedes the former `exploration`/`procedural`/`routine` tier names and the `exploration`/`single-pass-escalation`/`routine` power-grade pairings. Each rung maps to one Claude cell and one Codex cell:
+The canonical tier vocabulary is a five-rung named ladder — `XHIGH`, `HIGH`, `MEDIUM`, `LOW`, `CHEAP` — adopted in ADR-0014. It supersedes the former `exploration`/`procedural`/`routine` tier names and the `exploration`/`single-pass-escalation`/`routine` power-grade pairings. Each rung maps to one Claude cell and one Codex cell:
 
 | Tier   | Claude cell       | Codex cell          | Use when                                                                                                                           | Authoring action                                                        |
 | ------ | ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -46,10 +46,10 @@ The skill-prefix taxonomy maps to default rungs (override per skill only with re
 - `plan-*` → HIGH.
 - `executor-*` → MEDIUM by default; a reasoning executor that judges, re-evaluates, directs, or fixes (e.g. `executor-prex`) may ride HIGH.
 - `review-plan-*` → HIGH (reviewing an already-distilled plan/spec).
-- `review-oneshot-*` → XHIGH by default (fresh-context full review); `review-oneshot` itself rides HIGH as a deliberate cost/latency exception (ADR-0070), recorded via its `high` registry membership.
+- `review-oneshot-*` → XHIGH by default (fresh-context full review); `review-oneshot` itself rides HIGH as a deliberate cost/latency exception (ADR-0010), recorded via its `high` registry membership.
 - `runner-*` → LOW for verbatim prompt-opaque dispatch; higher only when it does routing policy, triage, or retry decisions.
 
-These defaults are enforced for Claude skills by the `model-effort-tier` `cog skill-lint` rule. The per-tier `skills` lists in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml) are the authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the prefix default (the recorded justification) live. Verify a skill with `cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with `cog power-grade tier --name <name>`. See [ADR-0047](../decisions/0047-enforce-prefix-tier-policy.md).
+These defaults are enforced for Claude skills by the `model-effort-tier` `cog skill-lint` rule. The per-tier `skills` lists in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml) are the authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the prefix default (the recorded justification) live. Verify a skill with `cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with `cog power-grade tier --name <name>`. See [ADR-0014](../decisions/0014-model-effort-and-power-grade.md).
 
 ## How To Classify Work
 
@@ -75,13 +75,13 @@ Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one
 
 ## Review And Verification Work
 
-Review effort tracks how much context the reviewer must reconstruct (ADR-0041, refining ADR-0027):
+Review effort tracks how much context the reviewer must reconstruct (ADR-0014):
 
-- `review-plan-*` → **HIGH**. Reviewing an already-distilled plan/spec rides the session default. Generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of correctness judging, so HIGH is the right floor.
-- `review-oneshot-*` → **XHIGH** by default. A fresh-context full review must rebuild the entire codebase, plan, and diff before it can judge; that reconstruction cost erodes the asymmetry discount, so the family floor is XHIGH. `review-oneshot` itself rides **HIGH** as a deliberate exception (ADR-0070), trading some reviewer budget for lower latency and token burn.
-- `review-loop` → **round 1 HIGH, rounds 2+ MEDIUM**. Round 1 is a fresh from-scratch review with full input. Rounds 2+ resume the prior reviewer context (warm, not cold) and both re-check prior findings and re-review for new regressions; the retained context earns one rung of discount (to MEDIUM), not two (LOW would be unsafe while new fix-code regressions remain in scope).
+- `review-plan-*` → HIGH. Reviewing an already-distilled plan/spec rides the session default. Generator-verifier asymmetry makes critique cheaper than generation, tempered by the difficulty of correctness judging, so HIGH is the right floor.
+- `review-oneshot-*` → XHIGH by default. A fresh-context full review must rebuild the entire codebase, plan, and diff before it can judge; that reconstruction cost erodes the asymmetry discount, so the family floor is XHIGH. `review-oneshot` itself rides HIGH as a deliberate exception (ADR-0010), trading some reviewer budget for lower latency and token burn.
+- `review-loop` → round 1 HIGH, rounds 2+ MEDIUM. Round 1 is a fresh from-scratch review with full input. Rounds 2+ resume the prior reviewer context (warm, not cold) and both re-check prior findings and re-review for new regressions; the retained context earns one rung of discount (to MEDIUM), not two (LOW would be unsafe while new fix-code regressions remain in scope).
 
-See ADR-0041 and ADR-0027, and the research-shelf entry tagged `verifier-asymmetry`.
+See ADR-0014 and the research-shelf entry tagged `verifier-asymmetry`.
 
 ## Evidence And Revalidation
 
@@ -100,4 +100,4 @@ The following are intentionally out of scope for this round:
 - Changing `cog codex-runner` wiring.
 - Re-grading existing skill frontmatter.
 
-The tier-lookup follow-up is now provided by `cog power-grade tier` and `cog power-grade skill-tier` (ADR-0047); a broader `cog model-policy` surface remains out of scope.
+The tier-lookup follow-up is now provided by `cog power-grade tier` and `cog power-grade skill-tier` (ADR-0014); a broader `cog model-policy` surface remains out of scope.

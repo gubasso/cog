@@ -78,7 +78,7 @@ Status rules:
 
 ## Match-outcome telemetry
 
-When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0058](../../../docs/decisions/0058-match-outcome-telemetry-and-calibration-loop.md)). Resolve the join key from the round path — it stays producer-blind. The `executor-vetted` marginal-value checkpoint is the **cross-engine delta count**: the distinct corrections or additions the second engine contributed to the dual-engine synthesis (zero deltas means the vetting earned nothing — over-powered by one rung):
+When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0015](../../../docs/decisions/0015-executor-capability-and-telemetry.md)). Resolve the join key from the round path — it stays producer-blind. The `executor-vetted` marginal-value checkpoint is the **cross-engine delta count**: the distinct corrections or additions the second engine contributed to the dual-engine synthesis (zero deltas means the vetting earned nothing — over-powered by one rung):
 
 ```bash
 cog match-telemetry round-key --round-path <input-round-path> --json   # -> project_key, plan_slug, round_id

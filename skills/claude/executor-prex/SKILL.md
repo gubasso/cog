@@ -202,7 +202,7 @@ End with a concise summary covering:
 
 ## Match-outcome telemetry
 
-When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0058](../../../docs/decisions/0058-match-outcome-telemetry-and-calibration-loop.md)). Resolve the join key from the round path — it stays producer-blind. The `executor-prex` marginal-value checkpoint is the **relevant review-loop findings count**: the real findings the review loop surfaced across its rounds (from the `REVIEW_LOOP_OK … rounds=<n>` line and `round-*-findings.json`). Zero relevant findings means the loop earned nothing — over-powered by one rung:
+When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0015](../../../docs/decisions/0015-executor-capability-and-telemetry.md)). Resolve the join key from the round path — it stays producer-blind. The `executor-prex` marginal-value checkpoint is the **relevant review-loop findings count**: the real findings the review loop surfaced across its rounds (from the `REVIEW_LOOP_OK … rounds=<n>` line and `round-*-findings.json`). Zero relevant findings means the loop earned nothing — over-powered by one rung:
 
 At terminus read the actual changeset with `cog review-scope --json` and record it as scope: pass the changed-file count as `--files` and the added+deleted line total as `--loc-changed`. When the round declared a `scope`, pass its limits as `--round-scope-max-files`/`--round-scope-max-lines` so the report can see a tiny change under a high grade. Pass `--override-approval-gate` when a WS1 operator approval gated this round.
 

@@ -73,7 +73,7 @@ Its output is byte-compatible with the single-plan reviewer contract: `APPROVED`
 
 Apply annotations to correct and complete the plan, never to shrink it for brevity. `REMOVED` applies only to genuinely wrong or redundant content; size reduction is the split phase's job alone. If `review-plan-multi`'s Codex reviewer is unavailable, it proceeds Claude-only with a degradation note and this build continues.
 
-## Phase 4-5 — Recursive right-sizing (ADR-0050, cog-owned loop)
+## Phase 4-5 — Recursive right-sizing (ADR-0013, cog-owned loop)
 
 `cog round-rightsize` owns the queue and every control decision — the single-parent seed, the over-ceiling compare, the coverage-gated enqueue of split children, termination, and the baseline conservation assertion. This skill runs only the grader and splitter workers on the exact round cog hands back and feeds their structured verdicts in. Rounds enter the queue only through a coverage-passing binary split cog performs.
 

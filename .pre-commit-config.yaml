@@ -48,6 +48,21 @@ repos:
 
   - repo: local
     hooks:
+      # The command self-globs, so its scope reaches the gitignored draft
+      # workspace that no `files` pattern can match. `always_run` rather than
+      # `files` because the gate must also fire on a commit that only *deletes* a
+      # file: pre-commit lists staged files with --diff-filter=ACMRTUXB, which
+      # excludes deletions, so a `files`-gated hook would skip the very commit
+      # that drops a .bats file an active slice names as an Acceptance target.
+      # The full run costs ~1s, so running it unconditionally is the cheap fix.
+      - id: docs-lint
+        name: documentation architecture lint
+        entry: bin/cog docs-lint
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages: [pre-commit]
+
       # JSON/JSONC formatter: dprint (comment-safe autofix). Config + pinned
       # plugin in ./dprint.json; template payloads and vendored libs excluded
       # there. External dependency: dprint on PATH (provided by the nix devShell).

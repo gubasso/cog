@@ -1,4 +1,4 @@
-# Per-class membership contracts for the core skill taxonomy (ADR-0016, DP11).
+# Per-class membership contracts for the core skill taxonomy (ADR-0006, DP11).
 # `cog skill-class check` composes the scattered facet checks (skill-prefix-taxonomy,
 # model-effort-tier, producer-blindness, input-fidelity, stage-agnostic) into ONE
 # positive class-membership assertion: a governed

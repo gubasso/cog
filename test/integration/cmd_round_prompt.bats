@@ -106,7 +106,7 @@ EOF
   [[ "$(jq -r '.ok' <<<"$output")" == "true" ]]
 }
 
-# ADR-0056: the plans ledger prompt must be the exact `/runner-plan -ar @<plan-dir>/`
+# ADR-0015: the plans ledger prompt must be the exact `/runner-plan -ar @<plan-dir>/`
 # dispatch; malformed variants must fail the producer-side gate closed.
 _write_plans_queue() {
   cat >"${BATS_TEST_TMPDIR}/queue-plans-bad.yaml" <<EOF

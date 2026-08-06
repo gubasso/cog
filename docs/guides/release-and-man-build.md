@@ -1,34 +1,21 @@
 # Release and man-page build
 
-## Version
+This runbook prepares the versioned CLI and its generated man page for release.
 
-The release version source is `VERSION`. The current version is:
+## Start state
 
-```text
-0.1.0
-```
+Run from the repository root with the intended release version known. `VERSION` is the version source, `man/cog.1.scd` is the man source, and `scdoc` is required to prove regeneration.
 
-Update that file as part of a release when the shipped CLI version changes.
+## Build and verify
 
-## Man Page
+1. Inspect `VERSION` and update it only when the shipped CLI version changes.
+2. Run `just man`.
+3. Verify `man/cog.1` contains every command listed by `cog --help`.
+4. Run `just lint`, `just test`, and `just test-e2e`.
+5. Re-run any rewriting hook until the second lint run is clean.
 
-The man-page source is `man/cog.1.scd`. Build the generated man page with:
+## Stop conditions
 
-```bash
-just man
-```
+Stop if `scdoc` is unavailable: the recipe's skip is useful for ordinary development but does not prove the tracked man page is current for release. Stop on any quality-gate failure and keep the last known generated man page until the source can be regenerated successfully.
 
-This target runs `scdoc < man/cog.1.scd > man/cog.1` when `scdoc` is available. If `scdoc` is not installed, the target prints a skip message and exits successfully.
-
-## Quality Gates
-
-Run the standard gates before release:
-
-```bash
-just lint
-just test
-```
-
-`just lint` delegates to `pre-commit run --all-files`. `just test` delegates to the pre-commit unit hook and the pre-push integration hook. Live and e2e hooks are manual-stage checks exposed through `just test-live`, `just test-e2e`, and `just test-manual`.
-
-Implementers do not run git commands in this documentation round; the orchestrator owns git state.
+No repository-history operation is part of this runbook. Release coordination owns any later version-control action.

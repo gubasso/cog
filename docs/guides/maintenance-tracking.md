@@ -1,33 +1,24 @@
-# Maintenance Tracking
+# Maintenance tracking
 
-`data/maintenance-tracking.yaml` is the registry of repository artifacts that contain perishable facts. It records which files need periodic revalidation, why they can drift, how to refresh them, and what downstream files depend on them.
+This runbook revalidates perishable repository facts registered in `data/maintenance-tracking.yaml`. Registry field definitions, the overdue calculation, and the admission test for a new entry are owned by [documentation mechanics](../explanation/documentation.md).
 
-## Registry Format
+## Start state
 
-The registry has a top-level `schema_version` and an `entries` list. Each entry uses these fields:
+Run from the repository root with network access to the authoritative sources named by the selected entry. Inspect the entry's `path`, `references`, `why`, and `revalidate_how` before editing.
 
-- `id`: stable machine-readable identifier.
-- `path`: tracked artifact path, relative to the repository root.
-- `last_checked`: date the artifact was last researched or revalidated.
-- `cadence_days`: number of days before the entry should be considered stale.
-- `owner`: maintenance area responsible for the entry.
-- `why`: reason the artifact is perishable.
-- `revalidate_how`: concrete refresh procedure.
-- `references`: downstream files that depend on the tracked artifact.
+## Revalidate
 
-## Cadence
+1. Run `cog tracking-scan --registry "$PWD/data/maintenance-tracking.yaml" --json`.
+2. Choose one overdue entry.
+3. Follow its `revalidate_how` procedure using primary sources.
+4. Update the tracked artifact and every existing target under `references`.
+5. Update `last_checked` only for facts actually revalidated.
+6. Run the artifact's focused checks, `cog tracking-scan --registry "$PWD/data/maintenance-tracking.yaml" --json`, and the registry existence sweep in [documentation mechanics](../explanation/documentation.md), because `cog tracking-scan` never resolves a `path` or a `references` target.
 
-An entry is overdue when `last_checked + cadence_days` is earlier than today. The future `cog tracking-scan` command reports that calculation from this registry.
+## Verification
 
-## Revalidation Workflow
+The selected entry is no longer overdue, every `path` and `references` target exists, and the changed artifact's tests or lint gates pass.
 
-1. Run `cog tracking-scan`.
-2. Pick an overdue entry.
-3. Follow the entry's `revalidate_how` instructions.
-4. Update the tracked artifact, including its `Data collected` metadata where present.
-5. Update any dependent files listed in `references`.
-6. Bump the registry entry's `last_checked` date to the revalidation date.
+## Stop conditions
 
-## Adding an Artifact
-
-Add an entry when a repository artifact depends on facts that can drift, such as model rosters, pricing, benchmarks, external API behavior, release channels, or security guidance. Prefer authoritative sources in `revalidate_how`, and list the downstream policy or data files in `references`.
+Stop without changing `last_checked` when an authoritative source is unavailable, ambiguous, or contradicted. Record the uncertainty in the owning plan or review instead of guessing. Roll back only the incomplete documentation edit; do not erase prior research history.

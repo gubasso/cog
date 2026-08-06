@@ -125,7 +125,7 @@ Status rules:
 
 ## Match-outcome telemetry
 
-When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0058](../../../docs/decisions/0058-match-outcome-telemetry-and-calibration-loop.md)). Resolve the join key from the round path — it stays producer-blind — then record the outcome. `executor-oneshot` is the floor rung and carries no marginal-value field. At terminus read the actual changeset with `cog review-scope --json` and record it as scope (`--files` = changed-file count, `--loc-changed` = added+deleted lines); when the round declared a `scope`, pass its limits as `--round-scope-max-files`/`--round-scope-max-lines`; pass `--override-approval-gate` when a WS1 operator approval gated this round:
+When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0015](../../../docs/decisions/0015-executor-capability-and-telemetry.md)). Resolve the join key from the round path — it stays producer-blind — then record the outcome. `executor-oneshot` is the floor rung and carries no marginal-value field. At terminus read the actual changeset with `cog review-scope --json` and record it as scope (`--files` = changed-file count, `--loc-changed` = added+deleted lines); when the round declared a `scope`, pass its limits as `--round-scope-max-files`/`--round-scope-max-lines`; pass `--override-approval-gate` when a WS1 operator approval gated this round:
 
 ```bash
 cog match-telemetry round-key --round-path <input-round-path> --json   # -> project_key, plan_slug, round_id

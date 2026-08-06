@@ -186,7 +186,7 @@ __cog_skill_lint_check_source_paths() {
   # with a literal <name>) and runtime-installed delegation paths
   # ($HOME/.claude/skills/... or project-local .claude/skills/...) are not
   # matched: the regex anchors to a concrete claude/codex source segment and a
-  # real skill name. See docs/decisions/0019-lean-positive-skill-prose.md.
+  # real skill name. See docs/decisions/0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
   local fence_re='^[[:space:]]*```+'
@@ -228,7 +228,7 @@ __cog_skill_lint_check_source_paths() {
 
 # A shipped runtime skill or skill-ref must be self-contained: it may cite public
 # URLs, but it must never point at an external/local/personalized knowledge repo
-# as a load-bearing source (ADR-0071, ADR-0091). Match the known personal shelves
+# as a load-bearing source (ADR-0008). Match the known personal shelves
 # by name, case-insensitively. Echoes the offending token when found; the
 # templates/ deploy payload is out of scanned scope, so example placeholders there
 # never reach this check.
@@ -315,7 +315,7 @@ __cog_skill_lint_check_scratch_in_project() {
   # skips only frontmatter. An inline
   # <!-- cog-skill-lint: allow-scratch-in-project <reason> --> on the preceding
   # nonblank line suppresses the next content line. See
-  # docs/decisions/0061-rundir-scratch-artifact-convention.md.
+  # docs/decisions/0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-scratch-in-project[[:space:]]+.+-->'
@@ -414,7 +414,7 @@ __cog_skill_lint_check_codex_output_collision() {
   # <!-- cog-skill-lint: allow-codex-runner-output-collision <reason> --> on the
   # preceding nonblank line. The runtime guard in cog codex-runner catches the
   # resolved-path case; this rule catches the authored/unexpanded-variable case.
-  # See docs/decisions/0079-codex-runner-output-collision-guard.md.
+  # See docs/decisions/0010-executor-preparation-and-artifacts.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false cmd_suppressed=false tok
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-output-collision[[:space:]]+.+-->'
@@ -497,7 +497,7 @@ __cog_skill_lint_check_codex_abs_artifact() {
   # skips frontmatter, and honors an inline
   # <!-- cog-skill-lint: allow-codex-runner-abs-artifact-path <reason> --> on the
   # preceding nonblank line. See
-  # docs/decisions/0061-rundir-scratch-artifact-convention.md.
+  # docs/decisions/0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-abs-artifact-path[[:space:]]+.+-->'
@@ -1018,7 +1018,7 @@ __cog_skill_lint_line_has_producer_token() {
 # Producer-blindness: a mapped consumer skill must not name the producer of its
 # structural input. The scan covers frontmatter description text and body prose
 # (the review-findings leaks live partly in the folded description:), and only
-# fenced code blocks are skipped. See docs/decisions/0026-consumer-skill-producer-blindness.md.
+# fenced code blocks are skipped. See docs/decisions/0017-skill-authoring-and-lint.md.
 __cog_skill_lint_check_producer_blind() {
   local file="$1"
   local name producers
@@ -1055,7 +1055,7 @@ __cog_skill_lint_check_producer_blind() {
 # Caller skill name -> space-separated disable-model-invocation target skill names
 # it chains inline. Chaining a DMI skill through the harness `Skill` tool fails at
 # runtime (the tool refuses a model-initiated call to a DMI skill), so these callers
-# must read the target's SKILL.md and execute it inline instead. See ADR-0063.
+# must read the target's SKILL.md and execute it inline instead. See ADR-0009.
 __cog_skill_lint_inline_skill_tool_dmi_targets() {
   case "$1" in
     plan-vetted) printf '%s' "plan-multi review-plan-multi" ;;
@@ -1084,7 +1084,7 @@ __cog_skill_lint_line_invokes_skill_tool() {
 # must read the target's SKILL.md and execute it inline, never invoke it through the
 # harness `Skill` tool (which refuses a model-initiated call to a DMI skill). Scans a
 # curated caller set for a Skill-tool-invocation instruction that names one of the
-# caller's DMI targets; fenced code blocks are skipped. See ADR-0063 and
+# caller's DMI targets; fenced code blocks are skipped. See ADR-0009 and
 # docs/reference/skill-contract.md.
 __cog_skill_lint_check_inline_skill_tool_dmi() {
   local file="$1"
@@ -1125,7 +1125,7 @@ __cog_skill_lint_check_inline_skill_tool_dmi() {
 # type a non-canonical filename. cog owns that write (`cog executor adopt`), so
 # the skill prose must not instruct a direct write to the canonical execution
 # artifact. The prepare artifact is always delegated through a worker's `--output`
-# and is not guarded here. See docs/decisions/0046-cog-owned-stage-artifact-writes.md.
+# and is not guarded here. See docs/decisions/0010-executor-preparation-and-artifacts.md.
 __cog_skill_lint_artifact_write_owned_skills() {
   case "$1" in
     executor-oneshot | executor-vetted) return 0 ;;
@@ -1175,7 +1175,7 @@ __cog_skill_lint_check_artifact_write_ownership() {
 # `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
 # Absent model+effort rides the session default (HIGH). The known exceptions
 # (executor-prex high; codex launchers, review-findings, review-queue-rounds
-# low) live in the registry, not here. See docs/decisions/0047-enforce-prefix-tier-policy.md.
+# low) live in the registry, not here. See docs/decisions/0014-model-effort-and-power-grade.md.
 __cog_skill_lint_check_model_effort_tier() {
   local file="$1" runtime name expected model effort actual
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -1198,12 +1198,12 @@ __cog_skill_lint_check_model_effort_tier() {
 
 # model-effort-prose-label: a prose reference to a model/effort/power-grade cell
 # must name its kind correctly — a cell is a (model, effort) row (named by model@effort
-# or its slug); a tier is a named rung (named "the <TIER> tier") — per ADR-0053. Using
+# or its slug); a tier is a named rung (named "the <TIER> tier") — per ADR-0014. Using
 # a tier word as the noun "cell" (e.g. "the Codex HIGH cell") conflates the two. Scans
 # runtime SKILL.md bodies, skipping frontmatter (governed by model-effort-tier) and
 # fenced code blocks (where an explicit `--effort <val>` is already unambiguous). An
 # inline `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line
-# records a deliberate exception. See docs/decisions/0055-explicit-model-reference-labeling.md.
+# records a deliberate exception. See docs/decisions/0017-skill-authoring-and-lint.md.
 __cog_skill_lint_check_model_effort_prose_label() {
   local file="$1" runtime
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -1252,7 +1252,7 @@ __cog_skill_lint_check_model_effort_prose_label() {
       fi
       __cog_skill_lint_finding "$file" "$line_no" "model-effort-prose-label" \
         "names a power-grade tier as a cell ('${tier} cell'); a cell is a (model, effort) row, a tier is a named rung" \
-        "name the tier ('the ${tier^^} tier') or the explicit cell (model@effort or its slug), per ADR-0053"
+        "name the tier ('the ${tier^^} tier') or the explicit cell (model@effort or its slug), per ADR-0014"
       failed=1
     fi
 
@@ -1267,7 +1267,7 @@ __cog_skill_lint_check_model_effort_prose_label() {
 # producer-blindness, input-fidelity, stage-agnostic) per the data
 # SoT in data/skill-class/contracts.yaml. The facet rules stay authoritative for
 # their facet; this rule asserts the per-class union is satisfied for the declared
-# class. An ungoverned (other-class) skill passes. See ADR-0016 / DP11.
+# class. An ungoverned (other-class) skill passes. See ADR-0006 / DP11.
 __cog_skill_lint_check_skill_class() {
   local file="$1" runtime report class failed=0 item
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -1317,7 +1317,7 @@ __cog_skill_lint_check_bootstrap_template_review() {
 # terminal-contract: a curated worker whose run ends with a canonical cog-emitted result line
 # must declare that line with a `<!-- cog-terminal-contract: <TOKEN> -->` marker and name the
 # token in its prose. The declaration keeps the class visible and blocks reintroducing a
-# type-2 "model must remember to emit" ceremony (ADR-0080). The token per worker:
+# type-2 "model must remember to emit" ceremony (ADR-0010). The token per worker:
 __cog_skill_lint_terminal_contract_token() {
   case "$1" in
     review-loop) printf 'REVIEW_LOOP_OK' ;;
@@ -1330,7 +1330,7 @@ __cog_skill_lint_terminal_contract_token() {
 # The executor-prex -> review-loop boundary is the sole type-2 boundary: its worker's terminal
 # step is cog-owned and boundary-finalized. The sibling boundary reference must finalize the
 # summary deterministically (`cog review-loop-summary finalize`) and must never fall back to
-# re-dispatching an agent (`SendMessage`) to run the terminal step. See ADR-0080.
+# re-dispatching an agent (`SendMessage`) to run the terminal step. See ADR-0010.
 __cog_skill_lint_check_terminal_contract_boundary() {
   local skill_file="$1" ref failed=0
   ref="$(dirname "$skill_file")/references/review-loop.md"

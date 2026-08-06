@@ -39,6 +39,7 @@ _cog() {
     context-brief
     digest-check
     digest-stamp
+    docs-lint
     doctor
     editorconfig-apply
     editorconfig-detect

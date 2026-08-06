@@ -53,6 +53,7 @@ Commands:
   context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
+  docs-lint      Validate documentation structure and lean Markdown rules.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.
@@ -188,6 +189,7 @@ Commands:
   context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
+  docs-lint      Validate documentation structure and lean Markdown rules.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.

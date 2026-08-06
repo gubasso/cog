@@ -9,7 +9,7 @@
 # a command inside it. Unlike cog::fn::cargo::runner (bare-first, because cargo is
 # the driver tool), this runner is devShell-first: the driver here (git,
 # pre-commit, make) is already on PATH, but the hook *payload* tools are not, so a
-# bare-first check would still fail. Preference order, per ADR-0085 and
+# bare-first check would still fail. Preference order, per ADR-0020 and
 # skill-refs/nix/non-interactive-direnv.md: an allowed direnv .envrc (fast, cached
 # with nix-direnv), then a flake.nix via `nix develop --command`, else bare.
 #

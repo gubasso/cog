@@ -72,6 +72,7 @@
     "MD013": false, // line length — dprint unwraps prose to one physical line
     "MD024": { "siblings_only": true }, // dup headings OK across sections, not within
     "MD033": false, // inline HTML — needed for badges, <details>, <kbd>
+    "MD043": false, // fixed-shape cog docs enable exact heading arrays inline
     "MD046": { "style": "fenced" } // require fenced code blocks
   },
   "customRules": ["markdownlint-rule-relative-links"],
