@@ -5,7 +5,7 @@ __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
   cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--thread first|last] [--print-command]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--print-command]"
   cog::fn::ui_data "Usage: cog codex-runner status --state <file>"
   cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>] [--poll <secs>]"
   cog::fn::ui_data "Usage: cog codex-runner cancel --state <file> [--signal TERM|KILL]"
@@ -217,10 +217,15 @@ __cog_codex_runner_run_exec() {
 
 __cog_codex_runner_run_resume() {
   local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" cwd="" print_command=false
+  local access="read-only"
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
     case "$1" in
+      --access)
+        access="${2:-}"
+        shift 2
+        ;;
       --account)
         account="${2:-}"
         shift 2
@@ -265,9 +270,16 @@ __cog_codex_runner_run_resume() {
     esac
   done
   [[ -n $account && -n $thread_id && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
+    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog codex-runner --help'"
-  command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events")"
+  # A resume inherits nothing from the cold round's sandbox, so access is
+  # declared per call and defaults closed: a warm round of a read-only review
+  # stays read-only unless the caller asks for write.
+  case "$access" in
+    read-only | write) ;;
+    *) cog::fn::error_raise "InvalidInput" "invalid run-resume access" "access: ${access}" "expected read-only or write" "" ;;
+  esac
+  command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$access")"
   if [[ $print_command == true ]]; then
     cog::fn::ui_data "$command"
     return 0
@@ -288,12 +300,12 @@ __cog_codex_runner_run_resume() {
 
   __cog_codex_runner_guard_output_collision "$output" "$prompt"
 
-  cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv
+  cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv "$access"
   engine_meta="$(jq -cn \
     --arg engine_action run-resume --arg account "$account" --arg thread_id "$thread_id" \
-    --arg effort "$effort" --arg command "$command" \
+    --arg effort "$effort" --arg access "$access" --arg command "$command" \
     '{engine_action: $engine_action, account: $account, thread_id: $thread_id,
-      effort: $effort, command: $command}')"
+      effort: $effort, access: $access, command: $command}')"
 
   cog::fn::longrun::start --state "$state" --label "$label" --cwd "$cwd" \
     --stdout "$events" --stderr "$stderr" --output "$output" \
@@ -437,11 +449,11 @@ __cog_codex_runner_finalize() {
     json="$(jq -n \
       --arg action run-resume --argjson ok "$ok" --argjson exit_code "$exit_code" \
       --arg status "$status" --arg resume_signal "$resume_signal" --arg effort "$effort" \
-      --arg account "$account" --arg thread_id "$thread_id" \
+      --arg access "$access" --arg account "$account" --arg thread_id "$thread_id" \
       --arg output_file "$output" --arg events_file "$events" --arg stderr_file "$stderr" \
       --arg reset_eta "$reset_eta" --arg command "$command" \
       '{action: $action, ok: $ok, exit_code: $exit_code, status: $status,
-        resume_signal: $resume_signal, effort: $effort, account: $account, thread_id: $thread_id,
+        resume_signal: $resume_signal, effort: $effort, access: $access, account: $account, thread_id: $thread_id,
         output_file: $output_file, events_file: $events_file, stderr_file: $stderr_file,
         reset_eta: $reset_eta, command: $command}')"
     cog::fn::json_emit "$__cog_codex_runner_self_check and .resume_signal != null and .effort != null" "$json"

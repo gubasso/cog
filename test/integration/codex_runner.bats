@@ -156,6 +156,35 @@ EOF
   printf '%s\n' "$output" | jq -e '.action == "run-resume" and .resume_signal == "recovered-owner" and .effort == "medium" and .thread_id == "thread-a"' >/dev/null
 }
 
+@test "cog codex-runner run-resume defaults to read-only and records the access it ran under" {
+  local st="${BATS_TEST_TMPDIR}/resume-ro.longrun.json"
+  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume-ro.md" --events "${BATS_TEST_TMPDIR}/resume-ro.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume-ro.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.access == "read-only" and (.engine_meta.command | contains("sandbox_mode=read-only")) and (.engine_meta.command | contains("dangerously-bypass") | not)' "$st" >/dev/null
+
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  printf '%s\n' "$output" | jq -e '.access == "read-only"' >/dev/null
+}
+
+@test "cog codex-runner run-resume bypasses the sandbox only on explicit write access" {
+  local st="${BATS_TEST_TMPDIR}/resume-rw.longrun.json"
+  run cog codex-runner run-resume --account acct --thread-id thread-a --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume-rw.md" --events "${BATS_TEST_TMPDIR}/resume-rw.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume-rw.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.access == "write" and (.engine_meta.command | contains("--dangerously-bypass-approvals-and-sandbox"))' "$st" >/dev/null
+
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  printf '%s\n' "$output" | jq -e '.access == "write"' >/dev/null
+}
+
+@test "cog codex-runner run-resume rejects invalid access" {
+  run --separate-stderr cog codex-runner run-resume --account acct --thread-id thread-a --access bogus --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume-bogus.md" --events "${BATS_TEST_TMPDIR}/resume-bogus.jsonl" --state "${BATS_TEST_TMPDIR}/resume-bogus.longrun.json"
+
+  assert_failure
+  [[ $stderr == *"invalid run-resume access"* ]]
+}
+
 @test "cog codex-runner run-exec requires --state" {
   run --separate-stderr cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/ns.out" --events "${BATS_TEST_TMPDIR}/ns.jsonl"
   assert_failure

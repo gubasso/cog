@@ -42,6 +42,31 @@ __cog_codex_validate_mode() {
   esac
 }
 
+__cog_codex_validate_access() {
+  case "${1:-}" in
+    read-only | write)
+      return 0
+      ;;
+    *)
+      cog::helpers::die "$EX_USAGE" "InvalidInput" \
+        "invalid codex access" "access: ${1:-}" \
+        "expected read-only or write" ""
+      ;;
+  esac
+}
+
+# Emit the sandbox flags for a resume invocation. `codex exec resume` accepts no
+# --sandbox flag (only --dangerously-bypass-approvals-and-sandbox), so a
+# read-only resume is expressed through the sandbox_mode config override the
+# exec-level flag itself sets. Without this a resumed run would silently escape
+# the sandbox its cold round ran under.
+__cog_codex_resume_sandbox_args() {
+  case "$1" in
+    write) printf '%s\n' --dangerously-bypass-approvals-and-sandbox ;;
+    *) printf '%s\n' -c sandbox_mode=read-only ;;
+  esac
+}
+
 cog::fn::codex_mode_is_write_capable() {
   case "${1:-}" in
     danger)
@@ -192,8 +217,12 @@ cog::fn::codex_resume_argv() {
   local prompt_file="${4:-}"
   local output_file="${5:-}"
   local outvar="${6:-}"
+  local access="${7:-read-only}"
   local codex_effort prompt
+  local -a sandbox_args=()
 
+  __cog_codex_validate_access "$access"
+  mapfile -t sandbox_args < <(__cog_codex_resume_sandbox_args "$access")
   __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_argv"
   __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_argv"
   __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_argv"
@@ -206,7 +235,7 @@ cog::fn::codex_resume_argv() {
   # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
   local -n __argv="$outvar"
   __argv=(codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id"
-    --dangerously-bypass-approvals-and-sandbox --json
+    "${sandbox_args[@]}" --json
     --output-last-message "$output_file" "$prompt")
 }
 
@@ -217,8 +246,12 @@ cog::fn::codex_resume_command() {
   local prompt_file="${4:-}"
   local output_file="${5:-}"
   local events_file="${6:-}"
-  local codex_effort
+  local access="${7:-read-only}"
+  local codex_effort sandbox_args
 
+  __cog_codex_validate_access "$access"
+  sandbox_args="$(__cog_codex_resume_sandbox_args "$access" | tr '\n' ' ')"
+  sandbox_args="${sandbox_args% }"
   __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_command"
@@ -229,7 +262,7 @@ cog::fn::codex_resume_command() {
 
   cat <<EOF
 codex-session --account "$account" exec -c model_reasoning_effort=$codex_effort resume "$thread_id" \\
-  --dangerously-bypass-approvals-and-sandbox --json \\
+  $sandbox_args --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
   < /dev/null > "$events_file"
@@ -320,10 +353,14 @@ cog::fn::codex_resume_run() {
   local output_file="${5:-}"
   local events_file="${6:-}"
   local stderr_file="${7:-}"
+  local access="${8:-read-only}"
   local codex_effort
   local prompt
+  local -a sandbox_args=()
 
   __cog_codex_require_cmd codex-session
+  __cog_codex_validate_access "$access"
+  mapfile -t sandbox_args < <(__cog_codex_resume_sandbox_args "$access")
   __cog_codex_require_arg "$account" "account" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$effort" "effort" "cog::fn::codex_resume_run"
   __cog_codex_require_arg "$thread_id" "thread_id" "cog::fn::codex_resume_run"
@@ -335,13 +372,13 @@ cog::fn::codex_resume_run() {
 
   if [[ -n $stderr_file ]]; then
     codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id" \
-      --dangerously-bypass-approvals-and-sandbox --json \
+      "${sandbox_args[@]}" --json \
       --output-last-message "$output_file" \
       "$prompt" \
       </dev/null >"$events_file" 2>"$stderr_file"
   else
     codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id" \
-      --dangerously-bypass-approvals-and-sandbox --json \
+      "${sandbox_args[@]}" --json \
       --output-last-message "$output_file" \
       "$prompt" \
       </dev/null >"$events_file"

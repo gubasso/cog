@@ -17,6 +17,8 @@ Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]`
 
 ## Phase 0: Mechanical Setup
 
+This phase writes, so it belongs to a direct, write-capable invocation. Skip it in orchestrator mode and read the artifacts the orchestrator supplies instead — see Orchestrator Invocation Contract.
+
 ```bash
 RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^RUN_DIR=//p')"
 . "$RUN_DIR/paths.env"
@@ -104,6 +106,8 @@ Normalize and validate before returning JSON:
 cog review-normalize-findings --findings "$FINDINGS_JSON" --severity "$SEVERITY" --out "$FINDINGS_JSON"
 ```
 
+This writes, so in orchestrator mode the orchestrator runs it on the captured document instead.
+
 If `--comment` is passed and a PR number is known, run:
 
 ```bash
@@ -117,7 +121,9 @@ When the prompt opens with two absolute paths, run in orchestrator mode:
 1. `<context-path>`: read task, prior review context, and any reviewed plan.
 2. `<output-path>`: the orchestrator's capture target for the normalized JSON findings.
 
-Force JSON output, skip prompts, run Phases 0-2, and emit the normalized JSON document as the final message; the orchestrator persists it to `<output-path>`.
+Orchestrator mode is read-only, so the run owns no writes at all. The orchestrator runs Phase 0 itself and names the resulting `scope.json` and `tech-scope.json` in the prompt; read those paths rather than running `cog review-init`, `cog review-scope`, or `cog review-tech-scope`, and leave `cog review-normalize-findings` to the orchestrator. A reviewer that attempts any of them fails on a read-only filesystem.
+
+Force JSON output, skip prompts, run Phases 1-2 against the supplied scope, and emit the JSON findings document as the final message; the orchestrator captures it to `<output-path>` and normalizes it there.
 
 ## Markdown Output
 

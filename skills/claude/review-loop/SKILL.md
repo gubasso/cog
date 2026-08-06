@@ -19,7 +19,9 @@ Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the
 
 **Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists — assembled and asserted by `cog review-loop-summary finalize --run-dir "$RUN_DIR"`, whose printed `REVIEW_LOOP_OK` line is the run's trailing result line (see Terminate and Result Line Contract). `summary.md` is the single exit artifact for every termination reason, including when the work looks finished after a round's fixes. Reaching a clean or fixed state is not the end of the run; running `finalize` is. Its two inputs — the narrative body (`summary-body.md`) and the termination reason (`termination-reason.txt`) — are maintained as durable run-dir artifacts during the loop, so termination is a single mechanical command with no narrative authored in the moment of stopping. Triage narrative belongs in `summary.md`, never as a freeform reply.
 
-Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`, `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only` to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume` against the round-1 reviewer thread.
+Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`, `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only` to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume` against the round-1 reviewer thread. Every round runs `--access read-only`, cold and warm alike — a resume inherits nothing from the cold round's sandbox, so the flag is passed explicitly on both.
+
+**The reviewer owns no writes.** Every Codex round is sandboxed read-only, so this orchestrator performs each write the review needs: the `review-oneshot` Phase 0 setup before the round, and findings normalization after it. The reviewer reads the artifacts, reasons, and returns its findings as its final message, which the Codex CLI writes to `--output-last-message` from outside the sandbox. A prompt that asks the reviewer to run `cog review-init`, `cog review-scope`, `cog review-tech-scope`, or `cog review-normalize-findings` fails on a read-only filesystem.
 
 **Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
@@ -80,7 +82,18 @@ Rounds 2+ resume the round-1 reviewer thread, so the reviewer already retains th
 
 ## Review Round
 
-Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>` and a read-only orientation. Launch through `cog codex-runner run-exec` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
+Reviewer setup (every round, before launching): run the `review-oneshot` Phase 0 commands here, in this orchestrator, and name the resulting artifacts in the round prompt so the sandboxed reviewer only reads them.
+
+```bash
+REVIEW_DIR="$(cog review-init review-loop-round-N | sed -n 's/^RUN_DIR=//p')"
+. "$REVIEW_DIR/paths.env"
+cog review-scope "$SCOPE_JSON"
+cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
+```
+
+Re-run it per round: the scope changes as each round's fixes land. If the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`.
+
+Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$SCOPE_JSON` and `$TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
 
 ```bash
 cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
@@ -88,12 +101,18 @@ cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
 
 `round-1-runner.json` also surfaces `.thread_id` and `.account`; persist both for later rounds.
 
-Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation and the resumed dual instruction above. Launch through `cog codex-runner run-resume --account <account>
+Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation, the round's fresh scope paths, and the resumed dual instruction above. Launch through `cog codex-runner run-resume --access read-only --account <account>
 --thread-id <thread-id>` with `low` effort — the MEDIUM tier's Codex cell (`gpt-5.5@low`).
 
 For every round use `finalize --max-wall <secs>` until it exits 0, 1, or 75; exit 75 means still running and should be polled again.
 
-Validate the runner result and ensure `$RUN_DIR/round-N-findings.json` is non-empty JSON with a `findings` array.
+Capture the reviewer's final message as `$RUN_DIR/round-N-findings.json`, then normalize it here — the write the reviewer could not perform:
+
+```bash
+cog review-normalize-findings --findings "$RUN_DIR/round-N-findings.json" --severity praise --out "$RUN_DIR/round-N-findings.json"
+```
+
+Validate the runner result, confirm `finalize` reported `.access == "read-only"`, and ensure `$RUN_DIR/round-N-findings.json` is non-empty JSON with a `findings` array.
 
 Terminate immediately when `.findings == []` or `.decision == "approve"`.
 
@@ -164,7 +183,8 @@ This line is the run's machine-readable handshake: a caller reads it to confirm 
 
 ## Guardrails
 
-- Codex never edits code; it reviews in read-only mode.
+- Codex never edits code; every round, cold and warm, launches with `--access read-only`, and the guardrail is machine-enforced by the sandbox rather than by prompt wording.
+- The orchestrator owns every write the review needs, so the reviewer never has a reason to ask for one.
 - Claude applies only triaged `FIXED` changes.
 - Never mutate git state from this skill.
 - Keep deterministic mechanics in `cog`; keep triage and stall judgment in skill prose.

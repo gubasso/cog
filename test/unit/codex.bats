@@ -96,6 +96,29 @@ EOF
   [[ $output == *'codex-session --account "acct" exec -c model_reasoning_effort=medium resume "thread-1"'* ]]
 }
 
+@test "codex_resume_command defaults to a read-only sandbox" {
+  run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl
+
+  assert_success
+  [[ $output == *'-c sandbox_mode=read-only'* ]]
+  [[ $output != *"dangerously-bypass"* ]]
+}
+
+@test "codex_resume_command bypasses the sandbox only for write access" {
+  run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl write
+
+  assert_success
+  [[ $output == *"--dangerously-bypass-approvals-and-sandbox"* ]]
+  [[ $output != *"sandbox_mode=read-only"* ]]
+}
+
+@test "codex_resume_command rejects an invalid access" {
+  run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl bogus
+
+  assert_failure
+  [[ $output == *"invalid codex access"* ]]
+}
+
 @test "codex_exec_run calls fake codex-session with prompt content" {
   local prompt="${BATS_TEST_TMPDIR}/prompt.md"
   local out="${BATS_TEST_TMPDIR}/out.md"
@@ -292,6 +315,20 @@ EOF
   printf '%s\n' "${argv[*]}" | grep -q -- "--account acct"
   printf '%s\n' "${argv[*]}" | grep -q -- "resume thr-1"
   [[ ${argv[-1]} == "go" ]]
+}
+
+@test "codex_resume_argv keeps a warm round inside the sandbox unless asked otherwise" {
+  local prompt="${BATS_TEST_TMPDIR}/p.md"
+  printf 'go\n' >"$prompt"
+  local -a argv=()
+  cog::fn::codex_resume_argv acct medium thr-1 "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+
+  printf '%s\n' "${argv[*]}" | grep -q -- "-c sandbox_mode=read-only"
+  run ! grep -q -- "--dangerously-bypass-approvals-and-sandbox" <<<"${argv[*]}"
+
+  argv=()
+  cog::fn::codex_resume_argv acct medium thr-1 "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv write
+  printf '%s\n' "${argv[*]}" | grep -q -- "--dangerously-bypass-approvals-and-sandbox"
 }
 
 @test "codex_reconstruct_status reads the durable events tail and output presence" {
