@@ -12,23 +12,15 @@ The project records one explicit accepted or rejected workflow-engine decision a
 
 ## Core
 
-An ADR accepts or rejects the workflow engine, fixes its grammar and invocation boundary, and leaves no workflow-engine code written before that decision. [ADR-0023](../../../decisions/0023-select-workflow-engines-at-definition-or-call-site.md) already settled how a step chooses its engine; the accept-or-reject record follows once Q-002 through Q-004 close. The remainder funds evidence review and contract cleanup.
+An ADR accepts or rejects the workflow engine, fixes its grammar and invocation boundary, and leaves no workflow-engine code written before that decision. [ADR-0027](../../../decisions/0027-accept-the-workflow-engine.md) is that record: it accepts the narrowed contract, and the four records it rests on settled engine selection, artifact passing, step exclusion, and loop convergence. The remainder funded evidence review and contract cleanup.
 
 ## In scope
 
 This is the ordered negotiable remainder, cut last-first from the bottom of the list.
 
-- Choose the legal `plan-split` shape, the declaration home for `sync:`, and the required-input launch grammar.
-- Carry the proposed grammar this decision accepts, rejects, or revises. A workflow is a DAG of steps; a step is exactly one of three call forms, discriminated by its kind key. `step:` is a leaf that runs a skill and takes `id`, `as`, `engine`, `needs`, `inputs`. `workflow:` is a composite by reference and takes `id`, `as`, `needs`, `inputs`. `loop:` is a composite inline and takes `as`, `needs`, `inputs`, `until`, `max_rounds`, `steps`. Exactly one kind key per entry, and `needs:` is the only edge key: it points at siblings, never crosses a scope boundary, and is never a call.
-- Carry the two disjoint name spaces. `id:` names the definition, is unique within its directory, and resolves to a file. `as:` names this instantiation, is unique within this DAG, and is what `needs:` targets. `as:` defaults to `id:`, so only fan-out pays for the distinction.
-- Carry the per-step key contract: `engine:` is required on a step definition and optional on a call site, where it overrides the definition for that call only; a `workflow:` or `loop:` node carries no engine key because it runs no agent; `context:` is `fresh` by default or `inherit`; `outputs:` is declared on the definition rather than the call site, so `${{ steps.<as>.outputs.<handle> }}` is checkable before anything runs, and it is the precedent the definition-owned `engine:` follows. A leaf declares each handle as either a bare filename, meaning a file in the step's run directory, or a typed object, meaning a scalar the step writes to `scalars.json`.
-- Carry the four shape rules that keep the DAG readable. Fan-out is the DAG itself: one engine per step, siblings with no edge between them, joined by a step that `needs:` them all, with no `matrix:` and no fold operator, and `combine:` reserved for power-grade. Repetition is `loop:`, with `until:` and `max_rounds:` both required, `until:` evaluated after each full pass in the loop's own scope, and the containing step's outputs being the last round's. A loop is a runtime scope, not a resolve-time expansion: composites flatten statically into dotted sibling handles, a loop resolves to one node of `kind: loop` carrying an unexpanded but fully validated template, and rounds materialize one at a time. There are no conditionals: no `if:` key, no predicate on a step, and no skip state, so every node that exists in the run graph runs and the join question never arises.
-- If accepted, carry the literal-engine contract: `engine:` values are file literals in both positions, never expressions; a call site overrides only the step it calls and never reaches into a referenced workflow's interior; with one possible overrider there is no precedence rule to state.
-- If accepted, carry the provider effort ladders: Claude `none`, `low`, `medium`, `high`, `xhigh`, `max`; Codex `minimal`, `low`, `medium`, `high`, `xhigh`.
-- If accepted, seed exactly eleven engines: `claude-haiku-4.5-none`; `claude-opus-4.8-{low,medium,high,xhigh,max}`; `codex-gpt-5.5-{minimal,low,medium,high,xhigh}`.
-- If accepted, preserve five validator invariants: derived ids, unique ids, exactly four fields, provider-valid efforts, and an existing provider runner.
-- Carry the whole expression dialect, one dialect for both `until:` and every `inputs:` value: paths `inputs.<name>` and `steps.<as>.outputs.<handle>`; literals that are integers, single-quoted strings, `true`, or `false`; comparison `==` and `!=`; boolean `&&`, `||`, and `!`; and `( )` for grouping. Nothing else — no arithmetic, no function calls, no string manipulation, no indexing — so the grammar stays fully testable and cannot drift into a scripting language. Evaluation is structural and never invokes a shell, and the spelling is `${{ }}` rather than `${ }` because these values reach command lines in a Bash CLI. This narrowed grammar is cut last because it prevents resurrecting removed join modes.
-- Carry the output-visibility rules. `outputs:` is optional and its absence is meaningful: a step declaring nothing produces the implicit handle `stdout`, the agent's final message captured verbatim, so `stdout` is reserved and a definition may not redeclare it. The implicit handle belongs to a leaf and only a leaf: a `workflow:` or `loop:` node runs no agent, so `stdout` is not a handle on a composite at all and referencing it is a validation error rather than an empty string. A composite exports what its own `outputs:` block re-exports and nothing else, which is what lets it be rewritten internally as long as its declared inputs and outputs still mean what they meant.
+- Record the accept-or-reject decision and every exit for Q-001 through Q-004.
+- Publish the accepted grammar, engine registry, and validator rules as [workflow contract](../../../reference/workflow-contract.md), which owns them from here on. This plan keeps only the pointer.
+- Register the eleven-engine seed for tracking so provider drift is re-checked rather than assumed.
 
 ## Out of scope
 
@@ -38,8 +30,11 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 
 ## Governed by
 
-- `docs/plan/open-questions.md` — the remaining blocking choices.
-- `docs/decisions/0023-select-workflow-engines-at-definition-or-call-site.md` — the settled engine-selection contract.
+- `docs/reference/workflow-contract.md` — the published contract this slice produced.
+- `docs/decisions/0023-select-workflow-engines-at-definition-or-call-site.md` — engine selection.
+- `docs/decisions/0024-pass-step-artifacts-by-directory.md` — artifact passing and the descriptive input and output rule.
+- `docs/decisions/0025-needs-is-the-only-edge-directive.md` — step exclusion.
+- `docs/decisions/0026-judge-loop-convergence-with-a-prose-criterion.md` — loop convergence.
 - `docs/decisions/0014-model-effort-and-power-grade.md` — the current tier concept that must remain intact unless a later decision changes only workflow use.
 - `skill-refs/docs-design/06-appetite-and-scope.md` — fixed budget and cut order.
 - `skill-refs/docs-design/07-plan-and-slices.md` — decision and successor-slice gate.
@@ -50,7 +45,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ```text
 When Q-001 through Q-004 close, the project shall record one accepted or rejected workflow decision. -> test/integration/cmd_workflow.bats
 If the proposal is rejected, then the milestone surface shall mark slices 003 through 009 `cut` and name the rejection. -> test/integration/cmd_workflow.bats
-If the proposal is accepted, then the contract shall enumerate all eleven engines and five invariants without creating runtime data in this slice. -> test/integration/cmd_workflow.bats
+If the proposal is accepted, then the published contract shall enumerate all eleven engines and five invariants without creating runtime data in this slice. -> test/integration/cmd_workflow.bats
 ```
 
 ## Rabbit holes
@@ -60,8 +55,10 @@ If the proposal is accepted, then the contract shall enumerate all eleven engine
 
 ## Done when
 
-The ADR and Q-001..Q-004 exits are recorded; Q-001 exited through ADR-0023, which dissolved it by removing `--tier`. On accept, durable contract facts migrate under that ADR to `docs/reference/` and `docs/explanation/`, and this plan keeps only pointers. On reject, the migration ledger records that those facts died with the proposal and names slice 002 as their last reader.
+The ADR and Q-001..Q-004 exits are recorded. Q-001 exited through ADR-0023, which dissolved it by removing `--tier`; Q-002 through ADR-0027, which showed the grammar already admitted one legal shape; Q-003 through ADR-0025, which deleted the marker the question was about; and Q-004 through ADR-0024, which removed declared inputs. The durable contract migrated to `docs/reference/workflow-contract.md` and this plan keeps only pointers. A subsystem page waits for slice 003, because there is no built subsystem to describe yet and an empty scaffold is worse than none.
 
 ## Revisions
 
 Engine-selection settlement: `Core`, `In scope`, and `Acceptance` changed when ADR-0023 removed `--tier`, renamed the per-step `cell:` to `engine:`, and cut the `cells:` override map. What changed them was evidence that `--tier` had no workable data source, since two of the five power-grade tiers name Codex cells the eleven-engine seed excludes as superseded, and that three writers for one value cost more than the one-off retune they bought.
+
+Contract narrowing and migration: `Core`, `In scope`, and `Acceptance` changed again when ADR-0024 through ADR-0027 replaced declared output handles with directory passing, deleted the `sync:` marker in favour of `needs:`, made `until:` a judged prose criterion, and accepted the result. What changed them was evidence that a contract enforced at run time cannot bind a probabilistic producer, that `sync:` was depended on by two slices and declared by none, and that cog evaluating `until:` while the driver also reported an outcome left two authorities for one verdict.

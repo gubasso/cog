@@ -4,7 +4,7 @@ Cog documentation is organized by reader need. Start with the zone that matches 
 
 - [Decisions](./decisions/README.md) answer why cross-cutting choices were made.
 - Guides lead a maintainer through one bounded task: [install cog](./guides/install.md), [revalidate a perishable fact](./guides/maintenance-tracking.md), [cut a release and rebuild the man page](./guides/release-and-man-build.md).
-- [Reference](./reference/cli-commands.md) supplies exact commands, fields, layouts, and migration history; [skills](./reference/skills.md) lists what each shipped skill does.
+- [Reference](./reference/cli-commands.md) supplies exact commands, fields, layouts, and migration history; [skills](./reference/skills.md) lists what each shipped skill does, and [workflow contract](./reference/workflow-contract.md) holds the accepted workflow grammar and engine registry.
 - [Explanation](./explanation/architecture.md) describes the current system and its subsystem boundaries.
 - [Plan](./plan/charter.md) states what cog builds next; [milestones](./plan/milestones.md) is the only slice-status surface and links every slice, and [open questions](./plan/open-questions.md) holds what could still change a decision.
 
