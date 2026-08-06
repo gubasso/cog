@@ -61,7 +61,7 @@ rg -o --no-filename '(\.\./)*(docs/)?decisions/[0-9]{4}-[a-z0-9-]+\.md' \
     done
 ```
 
-Bare `ADR-NNNN` citations must name a number in cog's live domain, currently `0001`..`0022`:
+Bare `ADR-NNNN` citations must name a number in cog's live domain, currently `0001`..`0023`:
 
 ```bash
 rg -n --no-heading -o 'ADR-[0-9]{4}' \
@@ -70,7 +70,7 @@ rg -n --no-heading -o 'ADR-[0-9]{4}' \
   --glob '!skill-refs/templates/**' \
   --glob '!skill-refs/languages/**' \
   --glob '!skill-refs/cli-design/**' \
-  | awk -F'ADR-' '{n=substr($2,1,4)+0; if (n<1 || n>22) print "out-of-domain ADR reference: " $0}'
+  | awk -F'ADR-' '{n=substr($2,1,4)+0; if (n<1 || n>23) print "out-of-domain ADR reference: " $0}'
 ```
 
 The exclusions are owners, independent namespaces, and constructed paths — not blind spots.

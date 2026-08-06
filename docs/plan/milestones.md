@@ -9,7 +9,7 @@ What bounds this work is in the [charter](./charter.md); what could still change
 | id  | slice                                                                                       | status | appetite   | note                                                     |
 | --- | ------------------------------------------------------------------------------------------- | ------ | ---------- | -------------------------------------------------------- |
 | 001 | [documentation-architecture-reset](./slices/001-documentation-architecture-reset/README.md) | done   | 3 sessions | Archive hashes and all documentation gates passed.       |
-| 002 | [workflow-engine-go-no-go](./slices/002-workflow-engine-go-no-go/README.md)                 | shaped | 2 sessions | Closes Q-001..Q-004 and accepts or rejects the proposal. |
+| 002 | [workflow-engine-go-no-go](./slices/002-workflow-engine-go-no-go/README.md)                 | active | 2 sessions | Closes Q-001..Q-004 and accepts or rejects the proposal. |
 | 003 | [linear-workflow-vertical](./slices/003-linear-workflow-vertical/README.md)                 | shaped | 3 sessions | Conditional on an accepted go decision in 002.           |
 | 004 | [composites-loops-and-recovery](./slices/004-composites-loops-and-recovery/README.md)       | shaped | 3 sessions | Conditional on an accepted go decision in 002.           |
 | 005 | [orchestrator-conformance](./slices/005-orchestrator-conformance/README.md)                 | shaped | 2 sessions | Conditional on an accepted go decision in 002.           |
