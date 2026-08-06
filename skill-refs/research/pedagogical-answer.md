@@ -1,6 +1,6 @@
 # Pedagogical answer
 
-Single source of truth for the answer-shaping directive of the `ask` twins. Injected into every `ask` answer path, resolved in their own context via `cog skill-refs path research/pedagogical-answer.md`. The research directives own how widely to search; this file owns what the reader receives.
+Single source of truth for the answer-shaping directive of the `ask` twins. Read into the answering context on the `ask` research paths — the ones that set `-w` or `-r` and so create a dossier — resolved in their own context via `cog skill-refs path research/pedagogical-answer.md`. The research directives own how widely to search; this file owns what the reader receives.
 
 ## Directive
 

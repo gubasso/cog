@@ -9,92 +9,106 @@ description: >
 
 # Ask
 
-Answer a question about the project. **Do not modify any files.**
+Answer the user's question about the project, read-only. Focus on the question as asked and answer it inline in the current session with the active Codex model and effort. The flags add research depth and a low-effort re-dispatch on top of that; with no flags, the answer comes straight from the session.
 
-By default the skill answers inline in the current session using the active Codex model/effort. The only exception is the `-f/--fast` path, which spawns a single nested `cog codex-runner run-exec --mode quick-auto --effort low` call to actually run the answer at low effort and relays its captured `--output-last-message` output.
+## Read-only guarantee
 
-## Rules
-
-- **Read-only**: do not use any tool that creates, modifies, or deletes files inside the repository. No `apply_patch`, no shell redirection that writes to tracked paths, no `mv`, `rm`, `sed -i`, etc.
+- **Read-only**: do not use any tool that creates, modifies, or deletes files inside the repository. No `apply_patch`, no shell redirection that writes to tracked paths, no `mv`, `rm`, `sed -i`.
 - Read-only shell is allowed (`git log`, `git blame`, `git show`, `rg`, `cat`, `ls`, etc.).
-- Scratch writes under `$RUN_DIR` (created by `cog rundir`) are allowed on every path. The directory sits under `$XDG_STATE_HOME/cog/runs/`, outside the repository, so these writes preserve the read-only guarantee. It holds the research dossier (`dossier.md`) and, on the `-f` path, the nested prompt and its captured output.
-- Shape the answer per `$(cog skill-refs path research/pedagogical-answer.md)`: lead with the conclusion, teach the mechanism, show one worked example, and keep the full research record in the dossier. Cite file paths and line numbers where relevant.
+- **Scratch under `$RUN_DIR` is the one writable place.** `cog rundir` returns a fresh directory under `$XDG_STATE_HOME/cog/runs/`, outside the repository, so these writes preserve the read-only guarantee. It exists only on the research and `-f` paths, and every scratch artifact stays below it.
 
 ## Flags
 
-| Flag           | Short | Effect                                                                                                                                                                                                                                                                        |
-| -------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline using the active model/effort. `-w` and `-r` are preserved into the nested call.                                     |
-| `--web-search` | `-w`  | Inject the shared primary-source verification directive — read at runtime from `$(cog skill-refs path research/primary-source-verification.md)` — grounding the research in the latest official docs/specs from reliable sources.                                             |
-| `--real-world` | `-r`  | Inject the shared real-world exemplars directive — read at runtime from `$(cog skill-refs path research/real-world-exemplars.md)` — so the research surfaces real-world reference implementations and the best patterns, practices, and architectures from exemplar projects. |
+| Flag           | Short | Effect                                                                                                                                                                                                                                       |
+| -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--fast`       | `-f`  | Re-dispatch the question through `cog codex-runner run-exec --mode quick-auto --effort low` and relay its answer. Without `-f`, the skill answers inline with the active model and effort. `-w` and `-r` are preserved into the nested call. |
+| `--web-search` | `-w`  | Research the question against primary sources — latest official docs, specs, and upstream repositories — under the directive read at runtime from `research/primary-source-verification.md`.                                                 |
+| `--real-world` | `-r`  | Research real-world reference implementations, architectures, code designs, and use cases, under the directive read at runtime from `research/real-world-exemplars.md`.                                                                      |
 
-Flags are order-independent, combinable as a single short-flag cluster (e.g. `-fw`, `-wr`, `-fwr`), and must appear before the question text.
+Flags are order-independent, combinable as a single short-flag cluster (`-fw`, `-wr`, `-fwr`), and must appear before the question text.
 
-## Execution
+## Parse
 
-1. **Parse flags.** Walk the leading whitespace-separated tokens of `$ARGUMENTS`. For each token:
-   - Long form `--fast` → set `FAST = true`.
-   - Long form `--web-search` → set `WEB_SEARCH = true`.
-   - Long form `--real-world` → set `REAL_WORLD = true`.
-   - Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character, apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`, `r` → `REAL_WORLD = true`. Accepts `-f`, `-w`, `-r`, `-fw`, `-wr`, `-fwr`. If any character in the cluster is not a known flag letter, **do not** partially apply — stop parsing and treat the whole token as the start of the question.
-   - Any other token → stop parsing; this token and the rest are the question.
+Walk the leading whitespace-separated tokens of `$ARGUMENTS`. For each token:
 
-   Defaults: `FAST = false`, `WEB_SEARCH = false`, `REAL_WORLD = false`.
+- Long form `--fast` → set `FAST = true`; `--web-search` → set `WEB_SEARCH = true`; `--real-world` → set `REAL_WORLD = true`.
+- Short-flag cluster `-<chars>` (one or more letters after a single `-`): for each character, apply `f` → `FAST = true`, `w` → `WEB_SEARCH = true`, `r` → `REAL_WORLD = true`. Accepts `-f`, `-w`, `-r`, `-fw`, `-wr`, `-fwr`. If any character in the cluster is not a known flag letter, **do not** partially apply — stop parsing and treat the whole token as the start of the question.
+- Any other token → stop parsing; this token and the rest are the question.
 
-2. **Honor flags.**
-   - Always read `$(cog skill-refs path research/pedagogical-answer.md)` and follow it when composing the answer. (When `FAST = true`, the nested `$ask` call loads the same contract in its own context.)
-   - If `WEB_SEARCH = true`, read `$(cog skill-refs path research/primary-source-verification.md)` and follow it when researching and answering. (When `FAST = true`, this is forwarded to the nested call via the `-w` flag in its prompt rather than executed here.)
-   - If `REAL_WORLD = true`, read `$(cog skill-refs path research/real-world-exemplars.md)` and follow it when researching and answering. `WEB_SEARCH` and `REAL_WORLD` may both fire; honor both. (When `FAST = true`, this is forwarded to the nested call via the `-r` flag in its prompt rather than executed here.)
-   - If `FAST = true`, follow the "Fast-flag orchestration" section below instead of answering inline.
+Defaults if a flag is absent: `FAST = false`, `WEB_SEARCH = false`, `REAL_WORLD = false`. If `$ARGUMENTS` contains no flags, the full string is the question.
 
-3. **Answer.**
-   - **If `FAST = false`**: read whatever code, git history, or external sources are needed (subject to the rules above). Then create the run directory with `cog rundir ask` and write the complete research record — every source consulted, every finding, every exemplar, every URL — to `$RUN_DIR/dossier.md` at full fidelity. Compose the answer from that record per the pedagogical contract, with file-path/line-number citations, and close with the one-line dossier path.
-   - **If `FAST = true`**: perform the orchestration below, then **relay** the nested call's `--output-last-message` content verbatim — the nested `$ask` already applied the contract. Do not re-research or rewrite on top of the relayed answer. Close with one line naming `$RUN_DIR`, where the nested run's full artifacts sit.
+## Answer
 
-## Fast-flag orchestration (`-f` path)
+- **`FAST = true`** → follow **Fast path**; the nested `$ask` call loads whatever refs its own flags select, so read none here.
+- **No flags** → answer now, inline, from whatever repo reads and read-only shell the question needs. Cite file paths and line numbers where they carry the claim. No run directory, no dossier, no runtime refs.
+- **`WEB_SEARCH` or `REAL_WORLD` set** → follow **Research path**.
 
-Single nested call, no synthesis. Mirrors the Claude `ask -c` orchestration shape.
+## Research path (`-w` / `-r`)
 
-`cog rundir` creates the scratch dir; `cog codex-runner gate
-sandbox` is the degrade signal — it self-resolves the preflight and exits non-zero (with a legible message) when codex-session is unavailable/unhealthy. The degrade DECISION (run nested vs. answer inline) stays here, in prose.
+1. Bind the run directory:
+
+   ```bash
+   RUN_DIR="$(cog rundir ask | sed -n 's/^RUN_DIR=//p')"
+   [ -n "$RUN_DIR" ] || { echo "ERROR: cog rundir did not emit RUN_DIR" >&2; exit 1; }
+   ```
+
+2. Read only the refs the set flags select, and follow each as a research directive:
+   - `WEB_SEARCH = true` → `$(cog skill-refs path research/primary-source-verification.md)`.
+   - `REAL_WORLD = true` → `$(cog skill-refs path research/real-world-exemplars.md)`.
+   - Either flag set → `$(cog skill-refs path research/pedagogical-answer.md)` for the answer shape.
+
+   Both research directives load when both flags fire.
+
+3. Research inline in this session, using web search alongside repo reads, as widely as the directives call for.
+
+4. **Write the dossier before composing.** `$RUN_DIR/dossier.md` carries the complete research record — every source consulted, every URL, every finding, every exemplar — at full fidelity. Nothing the research collected is dropped in the summarizing.
+
+5. Compose the answer from that record per the pedagogical directive: lead with the conclusion, teach the mechanism, show one worked example, cite in the flow. Close with the one-line dossier path.
+
+## Fast path (`-f`)
+
+A single nested call, no synthesis. `cog rundir` creates the scratch dir, which holds the nested prompt and its captured output. `cog codex-runner gate sandbox` is the degrade signal — it self-resolves the preflight and exits non-zero, with a legible message, when codex-session is unavailable or unhealthy. The degrade decision — run nested or answer inline — stays here.
 
 ```bash
 RUN_DIR="$(cog rundir ask-fast | sed -n 's/^RUN_DIR=//p')"
 FAST_DEGRADED=0
 cog codex-runner gate sandbox "$RUN_DIR/preflight.json" >/dev/null 2>&1 \
   || { echo "(account health check failed — answering inline with active model/effort)"; FAST_DEGRADED=1; }
-
-if [ "$FAST_DEGRADED" -eq 0 ]; then
-  # Build the nested prompt. CRITICAL: never echo `-f` back into the
-  # inner invocation — that would recurse. Preserve `-w` and `-r` only.
-  cat > "$RUN_DIR/prompt.txt" <<EOF
-\$ask <-w if WEB_SEARCH else nothing> <-r if REAL_WORLD else nothing> <verbatim question text>
-
-You are running at `low` Codex effort to answer this
-question read-only. Cite file paths and line numbers.
-EOF
-
-  cog codex-runner run-exec \
-    --mode quick-auto \
-    --effort low \
-    --prompt "$RUN_DIR/prompt.txt" \
-    --output "$RUN_DIR/answer.txt" \
-    --events "$RUN_DIR/events.jsonl" \
-    --state "$RUN_DIR/ask.longrun.json"
-  # Re-run while it exits 75 (still running); the exit code is the signal
-  # (0 = ok, 1 = failed, 75 = still running). Duration is never judged.
-  cog codex-runner finalize --state "$RUN_DIR/ask.longrun.json" --max-wall 300 > "$RUN_DIR/runner.json"
-fi
 ```
 
-The nested Codex run is a cog-owned durable job. Poll-and-classify with one verb, `cog codex-runner finalize --max-wall <secs>`, which reconstructs the answer from the durable artifacts: the exit code is the signal (0 ok · 1 failed · 75 still running). Re-run finalize while it exits 75; duration is never judged.
+When the gate passed, build the nested prompt and launch the durable job. Echo `-w` when `WEB_SEARCH = true` and `-r` when `REAL_WORLD = true`.
 
-**Recursion guard.** The inner prompt must never contain `-f` / `--fast`; the orchestration strips it unconditionally. `-w` and `-r` are forwarded as-is when set.
+```bash
+cat > "$RUN_DIR/prompt.txt" <<'EOF'
+$ask <-w if WEB_SEARCH else nothing> <-r if REAL_WORLD else nothing> <verbatim question text>
 
-**Failure handling.** If `$RUN_DIR/runner.json` has a non-`ok` status or `$RUN_DIR/answer.txt` is empty, **degrade gracefully**: answer inline with the active model/effort and prepend a single line:
+You are running at low Codex effort to answer this question
+read-only. Cite file paths and line numbers.
+EOF
+
+cog codex-runner run-exec \
+  --mode quick-auto \
+  --effort low \
+  --prompt "$RUN_DIR/prompt.txt" \
+  --output "$RUN_DIR/answer.txt" \
+  --events "$RUN_DIR/events.jsonl" \
+  --state "$RUN_DIR/ask.longrun.json"
+```
+
+The nested Codex run is a cog-owned durable job. Poll and classify with one verb, which reconstructs the answer from the durable artifacts. The exit code is the signal: 0 ok, 1 failed, 75 still running. Re-run finalize while it exits 75; duration is never judged.
+
+```bash
+cog codex-runner finalize --state "$RUN_DIR/ask.longrun.json" --max-wall 300 > "$RUN_DIR/runner.json"
+```
+
+Then **relay** the nested call's captured output verbatim — the nested `$ask` already applied its own answer contract. Do not re-research or rewrite on top of the relayed answer. Close with one line naming `$RUN_DIR`, where the nested run's full artifacts sit.
+
+**Recursion guard.** The nested prompt must never contain `-f` or `--fast`; strip it unconditionally. `-w` and `-r` are forwarded as-is when set.
+
+**Degrade.** If the gate failed, `$RUN_DIR/runner.json` reports a non-`ok` status, or `$RUN_DIR/answer.txt` is empty, answer inline with the active model and effort and prepend a single line:
 
 ```text
 (fast-flag fallback: <short reason>)
 ```
 
-Do not hard-fail — the user still gets an answer.
+Never hard-fail — the user still gets an answer.

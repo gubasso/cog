@@ -1,6 +1,6 @@
 # Real-world exemplars
 
-Single source of truth for the real-world reference-implementation research directive. Injected into the `ask -r` research sub-prompt by both `ask` twins, resolved in their own context via `cog skill-refs path research/real-world-exemplars.md`.
+Single source of truth for the real-world reference-implementation research directive. Read into the answering context by both `ask` twins when `-r` is set, resolved in their own context via `cog skill-refs path research/real-world-exemplars.md`.
 
 ## Directive
 

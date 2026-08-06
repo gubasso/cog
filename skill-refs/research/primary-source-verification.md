@@ -1,6 +1,6 @@
 # Primary-source verification
 
-Single source of truth for the primary-source verification directive. Consumed by the review, implementation-review, review-plan, and test-review skill families (resolved in their own context via `cog skill-refs path research/primary-source-verification.md`) and injected into the `ask -w` research sub-prompt. Each consuming skill keeps its own role-specific wiring (research targets, phases, examples); this file owns the canonical directive.
+Single source of truth for the primary-source verification directive. Consumed by the review, implementation-review, review-plan, and test-review skill families (resolved in their own context via `cog skill-refs path research/primary-source-verification.md`) and read into the answering context by the `ask` twins when `-w` is set. Each consuming skill keeps its own role-specific wiring (research targets, phases, examples); this file owns the canonical directive.
 
 ## Directive
 
