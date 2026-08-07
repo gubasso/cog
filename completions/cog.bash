@@ -140,6 +140,7 @@ _cog() {
     test-review-lint
     test-review-manifest
     tracking-scan
+    workflow
   )
 
   COMPREPLY=()

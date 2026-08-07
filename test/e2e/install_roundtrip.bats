@@ -33,6 +33,9 @@ teardown() {
   assert_file_exists "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml"
   assert_file_exists "$XDG_DATA_HOME/cog/data/model-effort/claude/tiers.yaml"
   assert_file_exists "$XDG_DATA_HOME/cog/data/maintenance-tracking.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/workflow/meta.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml"
 
   run cog --version
   assert_success
@@ -165,6 +168,8 @@ teardown() {
   grep -Fqx "$PREFIX/lib/cog/lib/helpers.sh" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/skill-refs/docs-design/AGENTS.md" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/bash-completion/completions/cog" "$manifest"
   grep -Fqx "$HOME/.claude/agents/claude-delegate.md" "$manifest"
@@ -200,4 +205,20 @@ teardown() {
   assert_failure
   [[ $stderr == *"outside the current PREFIX/XDG roots"* ]]
   assert_file_exists "$manifest"
+}
+
+@test "the installed workflow layer resolves and validates the shipped linear stub" {
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  # After install, the installed layer is the one that answers — no
+  # COG_WORKFLOW_PROJECT_ROOT and no repo checkout in play.
+  # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
+  run "$BASH" -c 'cd "$1" && cog workflow validate linear-stub --json | jq -e ".findings == []" >/dev/null' bash "$BATS_TEST_TMPDIR"
+  assert_success
+
+  # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
+  run "$BASH" -c 'cd "$1" && cog workflow show linear-stub --json | jq -er ".files[0].source"' bash "$BATS_TEST_TMPDIR"
+  assert_success
+  assert_output "installed"
 }

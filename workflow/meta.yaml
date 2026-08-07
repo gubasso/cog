@@ -1,0 +1,6 @@
+# Workspace defaults for the cog workflow engine.
+# Exactly three keys, closed. There is deliberately no default engine: every
+# step definition pins its own (docs/reference/workflow-contract.md).
+context: fresh
+max_rounds: 5
+max_workflow_depth: 3

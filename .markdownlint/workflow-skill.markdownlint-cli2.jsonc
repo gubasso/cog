@@ -1,0 +1,21 @@
+// Heading shape for a workflow step skill. The `md-workflow-skill` hook in
+// ../.pre-commit-config.yaml owns which documents this applies to.
+//
+// These files are the prose an agent reads when it runs a step, not SKILL.md
+// files, so `cog skill-lint` does not apply to them. The shape is deliberately
+// minimal: one H1 naming the step and nothing else. A step skill that needs
+// sections is a step doing too much.
+//
+// This is an overlay: every other rule still comes from ../.markdownlint-cli2.jsonc,
+// which the tool discovers for the working directory and merges over this file. That
+// merge is why the project config must never mention MD043 at any value.
+{
+  "config": {
+    "MD043": {
+      "headings": [
+        // The H1 varies per step: `# Workflow stub: <step>`.
+        "*"
+      ]
+    }
+  }
+}

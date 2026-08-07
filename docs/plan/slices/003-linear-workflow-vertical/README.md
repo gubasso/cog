@@ -77,4 +77,6 @@ The named integration file passes unskipped, the accepted contract has current r
 
 ## Revisions
 
-None.
+Engine-registry growth: `In scope` said "install the accepted eleven-engine registry". The shipped registry carries the seed plus the current subscription-available provider models, because membership in the registry is the permission to dispatch and a seed that names only superseded models grants permission to nothing useful. What changed it was the provider surface moving after ADR-0027: the effort ladders are unchanged and the five invariants still gate every row, so the accepted grammar is untouched. Two rows the ladders imply are deliberately absent, on the same membership rule — a rung a provider rejects is a row that does not exist.
+
+Nothing was cut. The pre-commit `workflow validate --all` wiring landed, and so did a subsystem page under `docs/explanation/` now that there is code for it to own. The registry invariants run on every `validate` call rather than behind a separate sub-mode, because a breadth surface that has to be asked for is a gate that gets skipped.

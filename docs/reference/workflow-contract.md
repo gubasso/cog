@@ -2,7 +2,7 @@
 
 The accepted grammar, engine registry, and validator rules for the cog workflow engine. [ADR-0027](../decisions/ADR-0027-accept-the-workflow-engine.md) accepted this contract; [ADR-0023](../decisions/ADR-0023-select-workflow-engines-at-definition-or-call-site.md), [ADR-0024](../decisions/ADR-0024-pass-step-artifacts-by-directory.md), [ADR-0025](../decisions/ADR-0025-needs-is-the-only-edge-directive.md), and [ADR-0026](../decisions/ADR-0026-judge-loop-convergence-with-a-prose-criterion.md) own the choices behind it.
 
-Nothing here is implemented yet. The first code lands in slice 003; the verb grammar and exit-code protocol stay in that slice until [CLI commands](./cli-commands.md) owns them.
+The engine ships in `lib/commands/cmd_workflow.sh` and `lib/functions/fn_workflow*.sh`. The verb grammar and the exit-code protocol are owned by [CLI commands](./cli-commands.md); this page owns the grammar, the engine registry, and the validator rules.
 
 ## Workspace layout
 
@@ -54,6 +54,8 @@ Effort ladders differ by provider, and ordering is meaningful within a provider 
 
 The accepted seed is eleven engines: `claude-haiku-4.5-none`; `claude-opus-4.8-low`, `-medium`, `-high`, `-xhigh`, `-max`; and `codex-gpt-5.5-minimal`, `-low`, `-medium`, `-high`, `-xhigh`. Membership in the registry is the permission; an engine that cannot be run is a row that does not exist rather than a row with a false flag.
 
+The seed is a floor, not a ceiling. The registry lives in `data/workflow-engines/` and gains rows as providers ship subscription-available models; the five invariants below gate every row, and the effort ladders above are fixed. Two consequences of membership-is-permission show up in the shipped rows: a model whose provider rejects a rung never gets that row, and a provider whose runner does not exist yet still declares one, because the invariant is a declared runner rather than a live binary.
+
 Five registry invariants hold: derived ids, unique ids, exactly four fields, provider-valid efforts, and an existing provider runner.
 
 ## Artifacts
@@ -96,6 +98,7 @@ Validation runs once at load, before any agent is spawned, so a failure does not
 
 - Exactly one kind key per entry.
 - `as:` unique within a DAG, and every `needs:` target present in it.
+- `as:` a single safe path segment, matching `[A-Za-z0-9][A-Za-z0-9._-]*`, because it names the node directory under the run directory.
 - No cycle among `needs:` edges, and none across file references.
 - `engine:` a literal present in the registry, required on every step definition, optional on a call site.
 - `loop:` carrying both `until:` and `max_rounds:`.
@@ -103,3 +106,5 @@ Validation runs once at load, before any agent is spawned, so a failure does not
 - `max_rounds:` a positive integer.
 - Reference nesting within `max_workflow_depth`.
 - No `skill:` key anywhere under `workflows/`.
+
+A `loop:` template is validated with the rest of the definition rather than deferred to the round that materializes it, so the kind, engine, and scalar rules above apply to the entries inside it. A definition whose containers are the wrong shape — `steps:` that is not a list, a definition that is not a mapping — is reported as a finding rather than aborting the validator.

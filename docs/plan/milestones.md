@@ -8,7 +8,6 @@ What bounds this work is in the [charter](./charter.md); what could still change
 
 ## in flight
 
-- 003 [linear-workflow-vertical](./slices/003-linear-workflow-vertical/README.md) — active — 3 sessions — first implementation slice; installs the workspace, the verb surface, and the validator
 - 004 [composites-loops-and-recovery](./slices/004-composites-loops-and-recovery/README.md) — shaped — 3 sessions — adds composites, lazy loop rounds, and crash recovery
 - 005 [orchestrator-conformance](./slices/005-orchestrator-conformance/README.md) — shaped — 2 sessions — vendor-neutral fixture and the orchestrator reference page
 - 006 [provider-runners](./slices/006-provider-runners/README.md) — shaped — 3 sessions — adds `claude-runner` beside the existing `codex-runner` contract
@@ -20,3 +19,4 @@ What bounds this work is in the [charter](./charter.md); what could still change
 
 - 001 [documentation-architecture-reset](./slices/001-documentation-architecture-reset/README.md) — done — 3 sessions — archive hashes and all documentation gates passed
 - 002 [workflow-engine-go-no-go](./slices/002-workflow-engine-go-no-go/README.md) — done — 2 sessions — accepted the engine in ADR-0027, closed Q-001..Q-004, and published the contract
+- 003 [linear-workflow-vertical](./slices/003-linear-workflow-vertical/README.md) — done — 3 sessions — landed the workspace, twelve verbs, the validator, per-file layer resolution, and the receipt contract; the registry grew past the accepted seed

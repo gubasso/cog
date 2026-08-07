@@ -1,0 +1,7 @@
+id: "plan"
+engine: "codex-gpt-5.6-terra-medium"
+skill: "workflow-stub-plan"
+inputs:
+  - "the task file handed to the run"
+artifacts:
+  - "plan.md"

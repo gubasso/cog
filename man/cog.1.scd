@@ -404,6 +404,9 @@ The command list and short descriptions are sourced from command modules under
 *tracking-scan*
 	Report tracked artifacts whose revalidation cadence is overdue.
 
+*workflow*
+	Resolve, validate, and drive workflow runs.
+
 # FILES
 
 *$PREFIX/lib/cog/*

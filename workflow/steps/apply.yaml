@@ -1,0 +1,7 @@
+id: "apply"
+engine: "codex-gpt-5.6-sol-high"
+skill: "workflow-stub-apply"
+inputs:
+  - "the upstream node directories handed in by needs:"
+artifacts:
+  - "apply.md"
