@@ -12,30 +12,25 @@ setup() {
   source "${LIB_DIR}/commands/cmd_gc_stage.sh"
 }
 
-@test "gc-stage session parser dedupes valid paths" {
-  local file="${BATS_TEST_TMPDIR}/session.txt"
-  printf '%s\n' a.txt a.txt dir/b.txt >"$file"
-  local -a paths=()
-
-  __cog_gc_stage_read_session_files paths "$file"
-
-  [ "${#paths[@]}" -eq 2 ]
-  [ "${paths[1]}" = "dir/b.txt" ]
-}
-
-@test "gc-stage parser rejects parent traversal" {
-  local file="${BATS_TEST_TMPDIR}/session.txt"
-  printf '%s\n' dir/../bad >"$file"
-
-  run --separate-stderr __cog_gc_stage_read_session_files paths "$file"
-
-  assert_failure 65
-  [[ $stderr == *"must not contain .."* ]]
-}
+# The session-files parser and the membership/JSON helpers are shared and live
+# in fn_git.sh; test/unit/git.bats owns their cases.
 
 @test "gc-stage command object is structured" {
   run __cog_gc_stage_command_object stage a.txt
-
   assert_success
   assert_output '{"action":"stage","path":"a.txt"}'
+
+  run __cog_gc_stage_command_object restage a.txt
+  assert_success
+  assert_output '{"action":"restage","path":"a.txt"}'
+}
+
+@test "gc-stage append_unique dedupes and drops blanks" {
+  local -a acc=()
+
+  __cog_gc_stage_append_unique acc a.txt "" b.txt a.txt
+
+  [ "${#acc[@]}" -eq 2 ]
+  [ "${acc[0]}" = "a.txt" ]
+  [ "${acc[1]}" = "b.txt" ]
 }

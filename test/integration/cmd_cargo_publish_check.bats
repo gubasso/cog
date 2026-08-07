@@ -51,17 +51,36 @@ FAKE
   printf '%s\n' "$output" | jq -e '.ok == false and .dry_run.ok == false' >/dev/null
 }
 
-@test "cog cargo-publish-check reports absent cargo when unreachable" {
-  # Drop only cargo's directory from PATH so cog/jq/coreutils stay reachable.
-  local cargo_bin cargo_dir jq_dir newpath
-  cargo_bin="$(command -v cargo || true)"
-  [ -n "$cargo_bin" ] || skip "no cargo on PATH; absent branch is already the default"
-  cargo_dir="$(dirname "$cargo_bin")"
-  jq_dir="$(dirname "$(command -v jq)")"
-  [ "$cargo_dir" != "$jq_dir" ] || skip "cargo and jq share a directory"
-  newpath="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$cargo_dir" | paste -sd: -)"
+# Build a PATH holding only the tools cog itself needs, so cargo, direnv, and
+# nix are provably unreachable. Subtracting cargo's directory from the ambient
+# PATH is not enough: under Nix a rustup shim and ~/.cargo/bin can both be on
+# PATH, aliased profile directories are not caught by a literal match, and the
+# assertion then fails for a reason nothing reports.
+_hermetic_path() {
+  local bin="${BATS_TEST_TMPDIR}/minbin" tool resolved
+  mkdir -p "$bin"
+  for tool in bash env jq dirname find grep head mktemp sed tail od; do
+    resolved="$(command -v "$tool")" || {
+      printf 'missing required tool for hermetic PATH: %s\n' "$tool" >&2
+      return 1
+    }
+    ln -sf "$resolved" "$bin/$tool"
+  done
+  printf '%s\n' "${BATS_TEST_DIRNAME}/../../bin:${bin}"
+}
 
-  run env PATH="$newpath" cog cargo-publish-check --project-root "${BATS_TEST_TMPDIR}/repo" --json
+@test "cog cargo-publish-check reports absent cargo when unreachable" {
+  local hermetic tool
+  hermetic="$(_hermetic_path)"
+  # Fail, never skip: a vacuous pass here is how the absent branch stopped being
+  # covered in the first place.
+  for tool in cargo direnv nix; do
+    run env PATH="$hermetic" bash -c "command -v $tool"
+    assert_failure
+    assert_output ""
+  done
+
+  run env PATH="$hermetic" cog cargo-publish-check --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .cargo_runner == "absent"' >/dev/null

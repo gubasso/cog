@@ -10,7 +10,7 @@ __cog_git_require_jq() {
     "required command not found" "command: jq" "" "install jq and retry"
 }
 
-__cog_git_json_array_from_lines() {
+cog::fn::git_json_array_from_lines() {
   __cog_git_require_jq
   if [[ $# -eq 0 ]]; then
     jq -cn '[]'
@@ -19,7 +19,7 @@ __cog_git_json_array_from_lines() {
   printf '%s\n' "$@" | jq -R . | jq -s .
 }
 
-__cog_git_json_object_array_from_lines() {
+cog::fn::git_json_object_array_from_lines() {
   __cog_git_require_jq
   if [[ $# -eq 0 ]]; then
     jq -cn '[]'
@@ -38,6 +38,66 @@ __cog_git_bool() {
         "invalid boolean" "value: ${1}" "" "report this cog bug"
       ;;
   esac
+}
+
+# Membership test over an argument list.
+cog::fn::git_str_in_args() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [[ $item == "$needle" ]] && return 0
+  done
+  return 1
+}
+
+# Membership test over a newline-delimited string, for callers that carry path
+# sets as text (an associative array's value, say) rather than as an array.
+cog::fn::git_str_in_lines() {
+  case $'\n'"$2"$'\n' in
+    *$'\n'"$1"$'\n'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Read a newline-delimited session-files list into the named array, deduped and
+# order-preserving. Blank lines are ignored; an unreadable file, a file holding
+# NUL bytes, and an empty result each fail closed. Pass mode `relative` to also
+# reject absolute paths and `..` segments, which is what the per-repo commands
+# require; multi-repo callers pass `any` and resolve ownership themselves.
+cog::fn::git_read_session_files() {
+  local out_name="$1"
+  local file="$2"
+  local mode="${3:-any}"
+  local -n __cog_git_session_out="$out_name"
+  local line segment
+  local -a segments=()
+  __cog_git_session_out=()
+
+  [[ -r $file ]] || cog::fn::error_raise "InputUnreadable" \
+    "session files file is not readable" "path: ${file}" "" "check the file path"
+  if od -An -tx1 "$file" | grep -q ' 00'; then
+    cog::fn::error_raise "InvalidInput" \
+      "session files file contains NUL bytes" "path: ${file}" "" "write newline-delimited paths"
+  fi
+
+  while IFS= read -r line || [[ -n $line ]]; do
+    [[ -n $line ]] || continue
+    if [[ $mode == relative ]]; then
+      [[ $line != /* ]] || cog::fn::error_raise "InvalidInput" \
+        "session path must be repo-relative" "path: ${line}" "" "remove the leading slash"
+      IFS='/' read -ra segments <<<"$line"
+      for segment in "${segments[@]}"; do
+        [[ $segment != ".." ]] || cog::fn::error_raise "InvalidInput" \
+          "session path must not contain .." "path: ${line}" "" "pass repo-relative paths only"
+      done
+    fi
+    cog::fn::git_str_in_args "$line" "${__cog_git_session_out[@]}" \
+      || __cog_git_session_out+=("$line")
+  done <"$file"
+
+  ((${#__cog_git_session_out[@]} > 0)) || cog::fn::error_raise "InvalidInput" \
+    "session files list is empty" "path: ${file}" "" "write at least one path"
 }
 
 cog::fn::git_root() {
@@ -114,7 +174,7 @@ cog::fn::git_identity_json() {
     --arg name_source "$name_source" \
     --arg email_source "$email_source" \
     --arg reason "$reason" \
-    --argjson missing "$(__cog_git_json_array_from_lines "${missing[@]}")" \
+    --argjson missing "$(cog::fn::git_json_array_from_lines "${missing[@]}")" \
     '{ok: $ok, project_root: $project_root,
       name: (if $name == "" then null else $name end),
       email: (if $email == "" then null else $email end),
@@ -184,7 +244,7 @@ cog::fn::git_status_json() {
   json="$(jq -n \
     --arg root "$root" \
     --arg branch "$branch" \
-    --argjson files "$(__cog_git_json_object_array_from_lines "${files[@]}")" \
+    --argjson files "$(cog::fn::git_json_object_array_from_lines "${files[@]}")" \
     '{root: $root, branch: $branch, files: $files}')"
   cog::fn::json_validate 'has("root") and has("branch") and (.files | type == "array")' "$json" \
     || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
@@ -196,14 +256,14 @@ cog::fn::git_staged_files_json() {
   __cog_git_require_git
   local -a files=()
   mapfile -t files < <(git diff --staged --name-only)
-  __cog_git_json_array_from_lines "${files[@]}"
+  cog::fn::git_json_array_from_lines "${files[@]}"
 }
 
 cog::fn::git_unstaged_files_json() {
   __cog_git_require_git
   local -a files=()
   mapfile -t files < <(git diff --name-only)
-  __cog_git_json_array_from_lines "${files[@]}"
+  cog::fn::git_json_array_from_lines "${files[@]}"
 }
 
 cog::fn::git_diff_stat_json() {
@@ -242,7 +302,7 @@ cog::fn::git_diff_stat_json() {
 
   json="$(jq -n \
     --arg mode "$mode" \
-    --argjson files "$(__cog_git_json_object_array_from_lines "${files[@]}")" \
+    --argjson files "$(cog::fn::git_json_object_array_from_lines "${files[@]}")" \
     '{mode: $mode, files: $files}')"
   cog::fn::json_validate '(.mode == "staged" or .mode == "unstaged") and (.files | type == "array")' "$json" \
     || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
@@ -268,7 +328,7 @@ cog::fn::git_recent_log_json() {
       '{sha: $sha, subject: $subject}')")
   done < <(git log -n "$limit" --pretty=format:'%h%x09%s')
 
-  __cog_git_json_object_array_from_lines "${commits[@]}"
+  cog::fn::git_json_object_array_from_lines "${commits[@]}"
 }
 
 # Emit a JSON array of commits for the given ranges and/or explicit SHAs, each
@@ -354,7 +414,7 @@ cog::fn::git_log_range_json() {
     objs+=("$obj")
   done
 
-  __cog_git_json_object_array_from_lines "${objs[@]}" \
+  cog::fn::git_json_object_array_from_lines "${objs[@]}" \
     | jq -c 'reduce .[] as $c ([]; if any(.[]; .sha == $c.sha) then . else . + [$c] end)'
 }
 
@@ -439,7 +499,7 @@ cog::fn::git_classify_failure_log() {
     --arg class "$class" \
     --arg reason "$reason" \
     --arg log "$log_file" \
-    --argjson matched "$(__cog_git_json_array_from_lines "${matched[@]}")" \
+    --argjson matched "$(cog::fn::git_json_array_from_lines "${matched[@]}")" \
     --argjson retryable "$retryable" \
     --argjson requires_judgment "$requires_judgment" \
     --arg recommended_action "$recommended_action" \
@@ -484,7 +544,7 @@ cog::fn::git_loop_signatures() {
     [[ $class == unknown ]] || sigs+=("class:$class")
   fi
 
-  __cog_git_json_array_from_lines "${sigs[@]}"
+  cog::fn::git_json_array_from_lines "${sigs[@]}"
 }
 
 cog::fn::git_loop_progress() {
@@ -798,7 +858,7 @@ cog::fn::git_commit_msg_lint() {
   ((${#CC_VIOLATIONS[@]} == 0)) || ok=false
   jq -n \
     --argjson ok "$ok" \
-    --argjson violations "$(__cog_git_json_object_array_from_lines "${CC_VIOLATIONS[@]}")" \
+    --argjson violations "$(cog::fn::git_json_object_array_from_lines "${CC_VIOLATIONS[@]}")" \
     '{ok: $ok, deferred: false, linter: null, config: null, violations: $violations}'
 }
 

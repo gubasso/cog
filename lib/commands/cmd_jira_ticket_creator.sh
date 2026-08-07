@@ -58,7 +58,7 @@ __cog_jira_ticket_creator_setup_build_json() {
   for s in "${_shas[@]}"; do args+=(--sha "$s"); done
   commits="$(cog::fn::git_log_range_json "${args[@]}")"
 
-  paths_json="$(__cog_git_json_array_from_lines "${_paths[@]}")"
+  paths_json="$(cog::fn::git_json_array_from_lines "${_paths[@]}")"
 
   jq -n \
     --arg root "$root" \

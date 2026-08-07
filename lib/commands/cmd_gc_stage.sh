@@ -1,66 +1,52 @@
 # shellcheck shell=bash
 : 'desc: Reconcile and stage explicit session files.'
 
-__cog_gc_stage_self_check='.ok != null and (.session_files | type == "array") and (.final_staged | type == "array")'
+__cog_gc_stage_self_check='.ok != null and (.session_files | type == "array") and (.final_staged | type == "array") and (.restaged | type == "array")'
 
 __cog_gc_stage_usage() {
   cog::fn::ui_data "Usage: cog gc-stage --session-files <file> [--repo-root <dir>] (<out.json>|--json)"
 }
 
-__cog_gc_stage_json_array() {
-  if (($# == 0)); then
-    jq -cn '[]'
-  else
-    printf '%s\n' "$@" | jq -R . | jq -s .
-  fi
-}
-
-__cog_gc_stage_json_objects() {
-  if (($# == 0)); then
-    jq -cn '[]'
-  else
-    printf '%s\n' "$@" | jq -s .
-  fi
-}
-
-__cog_gc_stage_contains() {
-  local needle="$1"
+__cog_gc_stage_append_unique() {
+  local out_name="$1"
   shift
+  local -n __append_ref="$out_name"
   local item
   for item in "$@"; do
-    [[ $item == "$needle" ]] && return 0
+    [[ -n $item ]] || continue
+    cog::fn::git_str_in_args "$item" "${__append_ref[@]}" || __append_ref+=("$item")
   done
-  return 1
 }
 
-__cog_gc_stage_read_session_files() {
+# Expand session paths into the literal file paths git can carry in its index.
+# A bare directory never appears in `git diff --staged --name-only`, so leaving
+# it unexpanded makes the equality check below report a permanent false
+# mismatch. Expansion resolves a directory to the paths under it that are
+# already staged, dirty in the worktree, or untracked; a directory with no such
+# content contributes nothing and simply drops out.
+__cog_gc_stage_expand_session_files() {
   local out_name="$1"
-  local file="$2"
-  local -n __out_ref="$out_name"
-  local line segment
-  __out_ref=()
+  local root="$2"
+  shift 2
+  local -n __expand_ref="$out_name"
+  local -a git_c=("$@")
+  local path
+  local -a expanded=()
 
-  [[ -r $file ]] || cog::fn::error_raise "InputUnreadable" \
-    "session files file is not readable" "path: ${file}" "" "check the file path"
-  if od -An -tx1 "$file" | grep -q ' 00'; then
-    cog::fn::error_raise "InvalidInput" \
-      "session files file contains NUL bytes" "path: ${file}" "" "write newline-delimited paths"
-  fi
-
-  while IFS= read -r line || [[ -n $line ]]; do
-    [[ -n $line ]] || continue
-    [[ $line != /* ]] || cog::fn::error_raise "InvalidInput" \
-      "session path must be repo-relative" "path: ${line}" "" "remove the leading slash"
-    IFS='/' read -ra segments <<<"$line"
-    for segment in "${segments[@]}"; do
-      [[ $segment != ".." ]] || cog::fn::error_raise "InvalidInput" \
-        "session path must not contain .." "path: ${line}" "" "pass repo-relative paths only"
-    done
-    __cog_gc_stage_contains "$line" "${__out_ref[@]}" || __out_ref+=("$line")
-  done <"$file"
-
-  ((${#__out_ref[@]} > 0)) || cog::fn::error_raise "InvalidInput" \
-    "session files list is empty" "path: ${file}" "" "write at least one path"
+  for path in "${__expand_ref[@]}"; do
+    if [[ -d ${root}/${path} ]]; then
+      local -a from_dir=()
+      mapfile -t from_dir < <(
+        git "${git_c[@]}" diff --staged --no-renames --name-only -- "$path"
+        git "${git_c[@]}" diff --no-renames --name-only -- "$path"
+        git "${git_c[@]}" ls-files --others --exclude-standard -- "$path"
+      )
+      __cog_gc_stage_append_unique expanded "${from_dir[@]}"
+    else
+      __cog_gc_stage_append_unique expanded "$path"
+    fi
+  done
+  __expand_ref=("${expanded[@]}")
 }
 
 __cog_gc_stage_command_object() {
@@ -74,7 +60,8 @@ __cog_gc_stage_build_json() {
   local repo_root_flag="${2:-}"
   local root staged_path session_path final_path ok=true reason=""
   local -a git_c=()
-  local -a session_files=() initial_staged=() final_staged=() unstaged=() staged=() mismatch=() commands=()
+  local -a requested=() session_files=() initial_staged=() final_staged=() dirty=()
+  local -a unstaged=() staged=() restaged=() mismatch=() commands=()
 
   if [[ -n $repo_root_flag ]]; then
     root="$(cog::fn::git_root_for "$repo_root_flag")" || cog::fn::error_raise "InvalidInput" \
@@ -83,7 +70,18 @@ __cog_gc_stage_build_json() {
   else
     root="$(cog::fn::git_root)"
   fi
-  __cog_gc_stage_read_session_files session_files "$session_file"
+  cog::fn::git_read_session_files requested "$session_file" relative
+  session_files=("${requested[@]}")
+  __cog_gc_stage_expand_session_files session_files "$root" "${git_c[@]}"
+  # The worktree-dirty set: tracked paths with unstaged edits or deletions, plus
+  # untracked files. A path in this set must be re-added even when it already
+  # appears in the staged set, or its later worktree edits silently miss the
+  # commit. A staged rename is the canonical case: both raw paths are already
+  # staged, so an index-only check would skip the edits made after the rename.
+  mapfile -t dirty < <(
+    git "${git_c[@]}" diff --no-renames --name-only
+    git "${git_c[@]}" ls-files --others --exclude-standard
+  )
   # --no-renames: report a staged rename as its raw delete+add path pair, not a
   # single rename-detected destination. The session-files contract lists every
   # literal path touched (old and new), so the staged set must be the raw path
@@ -92,7 +90,7 @@ __cog_gc_stage_build_json() {
   mapfile -t initial_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
 
   for staged_path in "${initial_staged[@]}"; do
-    if ! __cog_gc_stage_contains "$staged_path" "${session_files[@]}"; then
+    if ! cog::fn::git_str_in_args "$staged_path" "${session_files[@]}"; then
       if git "${git_c[@]}" reset HEAD -- "$staged_path" >/dev/null; then
         unstaged+=("$staged_path")
         commands+=("$(__cog_gc_stage_command_object unstage "$staged_path")")
@@ -101,24 +99,36 @@ __cog_gc_stage_build_json() {
   done
 
   mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
+  # Stage a session path when it is missing from the index, and re-stage it when
+  # it still carries worktree changes. Never blanket-add: a staged rename's old
+  # path is gone from both the worktree and the index, and `git add` on it fails
+  # with "pathspec did not match any files".
   for session_path in "${session_files[@]}"; do
-    if ! __cog_gc_stage_contains "$session_path" "${final_staged[@]}"; then
+    if ! cog::fn::git_str_in_args "$session_path" "${final_staged[@]}"; then
       if git "${git_c[@]}" add -- "$session_path"; then
         staged+=("$session_path")
         commands+=("$(__cog_gc_stage_command_object stage "$session_path")")
+      fi
+    elif cog::fn::git_str_in_args "$session_path" "${dirty[@]}"; then
+      if git "${git_c[@]}" add -- "$session_path"; then
+        restaged+=("$session_path")
+        commands+=("$(__cog_gc_stage_command_object restage "$session_path")")
       fi
     fi
   done
 
   mapfile -t final_staged < <(git "${git_c[@]}" diff --staged --no-renames --name-only)
   for final_path in "${final_staged[@]}"; do
-    __cog_gc_stage_contains "$final_path" "${session_files[@]}" || mismatch+=("$final_path")
+    cog::fn::git_str_in_args "$final_path" "${session_files[@]}" || mismatch+=("$final_path")
   done
   for session_path in "${session_files[@]}"; do
-    __cog_gc_stage_contains "$session_path" "${final_staged[@]}" || mismatch+=("$session_path")
+    cog::fn::git_str_in_args "$session_path" "${final_staged[@]}" || mismatch+=("$session_path")
   done
 
-  if ((${#mismatch[@]} > 0 || ${#final_staged[@]} != ${#session_files[@]})); then
+  if ((${#session_files[@]} == 0)); then
+    ok=false
+    reason="no session path resolved to stageable content"
+  elif ((${#mismatch[@]} > 0 || ${#final_staged[@]} != ${#session_files[@]})); then
     ok=false
     reason="final staged set differs from session files"
   fi
@@ -126,21 +136,25 @@ __cog_gc_stage_build_json() {
   jq -n \
     --argjson ok "$ok" \
     --arg repo_root "$root" \
-    --argjson session_files "$(__cog_gc_stage_json_array "${session_files[@]}")" \
-    --argjson initial_staged "$(__cog_gc_stage_json_array "${initial_staged[@]}")" \
-    --argjson unstaged "$(__cog_gc_stage_json_array "${unstaged[@]}")" \
-    --argjson staged "$(__cog_gc_stage_json_array "${staged[@]}")" \
-    --argjson final_staged "$(__cog_gc_stage_json_array "${final_staged[@]}")" \
-    --argjson mismatch "$(__cog_gc_stage_json_array "${mismatch[@]}")" \
-    --argjson commands "$(__cog_gc_stage_json_objects "${commands[@]}")" \
+    --argjson requested "$(cog::fn::git_json_array_from_lines "${requested[@]}")" \
+    --argjson session_files "$(cog::fn::git_json_array_from_lines "${session_files[@]}")" \
+    --argjson initial_staged "$(cog::fn::git_json_array_from_lines "${initial_staged[@]}")" \
+    --argjson unstaged "$(cog::fn::git_json_array_from_lines "${unstaged[@]}")" \
+    --argjson staged "$(cog::fn::git_json_array_from_lines "${staged[@]}")" \
+    --argjson restaged "$(cog::fn::git_json_array_from_lines "${restaged[@]}")" \
+    --argjson final_staged "$(cog::fn::git_json_array_from_lines "${final_staged[@]}")" \
+    --argjson mismatch "$(cog::fn::git_json_array_from_lines "${mismatch[@]}")" \
+    --argjson commands "$(cog::fn::git_json_object_array_from_lines "${commands[@]}")" \
     --arg reason "$reason" \
     '{
       ok: $ok,
       repo_root: $repo_root,
+      requested: $requested,
       session_files: $session_files,
       initial_staged: $initial_staged,
       unstaged: $unstaged,
       staged: $staged,
+      restaged: $restaged,
       final_staged: $final_staged,
       mismatch: $mismatch,
       commands: $commands

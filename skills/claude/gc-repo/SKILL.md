@@ -36,7 +36,7 @@ The values you were invoked with are the literal paths the commands below use as
 - Never run `git commit` directly; commits go only through `cog gc-commit`.
 - Never run history- or worktree-destroying git: no `git reset --hard`, no `git restore`/`git
   checkout` on worktree files, no `git clean`, and no hand-rolled content merges. If staging or commit reaches a tree state you cannot explain, STOP and emit `COMMIT_FAILED` — never surgery your way out.
-- `cog gc-stage` is path-granular and stages whole files; it cannot isolate hunks in a file that mixes session and non-session changes.
+- `cog gc-stage` is path-granular and stages whole files; it cannot isolate hunks in a file that mixes session and non-session changes. It reconciles against the worktree, not just the index: a directory in `$PATHS_FILE` expands to the dirty paths under it (reported in `.session_files`, with the literal input in `.requested`), and a file that was already staged but still carries worktree edits is re-added and reported in `.restaged`. Trust `.session_files`, never `.requested`, when reasoning about what got staged.
 - This worker never asks the user. On any unresolved condition it fails closed with `COMMIT_FAILED` (or `COMMIT_PUSH_FAILED`) and stops.
 
 ## Commit message format

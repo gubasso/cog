@@ -157,3 +157,75 @@ EOF
   assert_failure 66
   [[ $stderr == *"err.kind: InputUnreadable"* ]]
 }
+
+@test "git_read_session_files dedupes and preserves order" {
+  local file="${BATS_TEST_TMPDIR}/session.txt"
+  printf '%s\n\n%s\n%s\n' a.txt a.txt dir/b.txt >"$file"
+  local -a paths=()
+
+  cog::fn::git_read_session_files paths "$file"
+
+  [ "${#paths[@]}" -eq 2 ]
+  [ "${paths[0]}" = "a.txt" ]
+  [ "${paths[1]}" = "dir/b.txt" ]
+}
+
+@test "git_read_session_files rejects parent traversal in relative mode" {
+  local file="${BATS_TEST_TMPDIR}/session.txt"
+  printf '%s\n' dir/../bad >"$file"
+
+  run --separate-stderr cog::fn::git_read_session_files paths "$file" relative
+
+  assert_failure 65
+  [[ $stderr == *"must not contain .."* ]]
+}
+
+@test "git_read_session_files rejects absolute paths in relative mode" {
+  local file="${BATS_TEST_TMPDIR}/session.txt"
+  printf '%s\n' /abs/path >"$file"
+
+  run --separate-stderr cog::fn::git_read_session_files paths "$file" relative
+
+  assert_failure 65
+  [[ $stderr == *"must be repo-relative"* ]]
+}
+
+@test "git_read_session_files accepts absolute paths in the default mode" {
+  local file="${BATS_TEST_TMPDIR}/session.txt"
+  printf '%s\n' /abs/one /abs/two >"$file"
+  local -a paths=()
+
+  cog::fn::git_read_session_files paths "$file"
+
+  [ "${#paths[@]}" -eq 2 ]
+  [ "${paths[0]}" = "/abs/one" ]
+}
+
+@test "git_read_session_files rejects NUL bytes and empty lists" {
+  local file="${BATS_TEST_TMPDIR}/session.txt"
+  printf 'a.txt\0b.txt\n' >"$file"
+  run --separate-stderr cog::fn::git_read_session_files paths "$file"
+  assert_failure 65
+  [[ $stderr == *"NUL bytes"* ]]
+
+  printf '\n\n' >"$file"
+  run --separate-stderr cog::fn::git_read_session_files paths "$file"
+  assert_failure 65
+  [[ $stderr == *"list is empty"* ]]
+}
+
+@test "git_read_session_files rejects an unreadable file" {
+  run --separate-stderr cog::fn::git_read_session_files paths "${BATS_TEST_TMPDIR}/missing.txt"
+
+  assert_failure 66
+  [[ $stderr == *"err.kind: InputUnreadable"* ]]
+}
+
+@test "git_str_in_args and git_str_in_lines agree on membership" {
+  cog::fn::git_str_in_args "b" a b c
+  run ! cog::fn::git_str_in_args "d" a b c
+  cog::fn::git_str_in_lines "b" "$(printf 'a\nb\nc')"
+  run ! cog::fn::git_str_in_lines "d" "$(printf 'a\nb\nc')"
+  # a substring of a listed entry is not a member
+  run ! cog::fn::git_str_in_lines "b" "$(printf 'abc\n')"
+}

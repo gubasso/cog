@@ -7,44 +7,6 @@ __cog_gc_plan_usage() {
   cog::fn::ui_data "Usage: cog gc-plan --session-files <file> [--repo <dir>]... [--repo-set <file>] (<out.json>|--json)"
 }
 
-__cog_gc_plan_json_array() {
-  if (($# == 0)); then
-    jq -cn '[]'
-    return 0
-  fi
-  printf '%s\n' "$@" | jq -R . | jq -s .
-}
-
-__cog_gc_plan_json_objects() {
-  if (($# == 0)); then
-    jq -cn '[]'
-    return 0
-  fi
-  printf '%s\n' "$@" | jq -s .
-}
-
-__cog_gc_plan_read_session_paths() {
-  local out_name="$1"
-  local file="$2"
-  local -n __out_ref="$out_name"
-  local line
-  __out_ref=()
-
-  [[ -r $file ]] || cog::fn::error_raise "InputUnreadable" \
-    "session files file is not readable" "path: ${file}" "" "check the file path"
-  if od -An -tx1 "$file" | grep -q ' 00'; then
-    cog::fn::error_raise "InvalidInput" \
-      "session files file contains NUL bytes" "path: ${file}" "" "write newline-delimited paths"
-  fi
-  while IFS= read -r line || [[ -n $line ]]; do
-    [[ -n $line ]] || continue
-    __out_ref+=("$line")
-  done <"$file"
-  ((${#__out_ref[@]} > 0)) || cog::fn::error_raise "InvalidInput" \
-    "session files list is empty" "path: ${file}" "" "write at least one path"
-  return 0
-}
-
 __cog_gc_plan_nearest_existing_dir() {
   local d="$1"
   while [[ -n $d && $d != "/" && ! -d $d ]]; do
@@ -70,20 +32,13 @@ __cog_gc_plan_repo_changed_paths() {
   done
 }
 
-__cog_gc_plan_in_list() {
-  case $'\n'"$2"$'\n' in
-    *$'\n'"$1"$'\n'*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 __cog_gc_plan_build_json() {
   local session_file="$1" repo_set_file="$2"
   shift 2
   local -a repo_flags=("$@")
 
   local -a session=()
-  __cog_gc_plan_read_session_paths session "$session_file"
+  cog::fn::git_read_session_files session "$session_file"
 
   local cwd_root explicit_allowlist=0
   cwd_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
@@ -147,7 +102,7 @@ __cog_gc_plan_build_json() {
     if [[ -z ${root_paths[$root]:-} ]]; then
       owning_order+=("$root")
       root_paths["$root"]="$rel"
-    elif ! __cog_gc_plan_in_list "$rel" "${root_paths[$root]}"; then
+    elif ! cog::fn::git_str_in_lines "$rel" "${root_paths[$root]}"; then
       root_paths["$root"]+=$'\n'"$rel"
     fi
   done
@@ -180,18 +135,18 @@ __cog_gc_plan_build_json() {
     changed_str="$(printf '%s\n' "${changed[@]}")"
     for c in "${changed[@]}"; do
       [[ -n $c ]] || continue
-      __cog_gc_plan_in_list "$c" "${root_paths[$root]}" || extra+=("$c")
+      cog::fn::git_str_in_lines "$c" "${root_paths[$root]}" || extra+=("$c")
     done
     # Committable = a declared session path that is actually dirty in git. When no
     # accepted repo has any, the changeset is empty and gc has nothing to commit.
     for rel in "${rels[@]}"; do
       [[ -n $rel ]] || continue
-      __cog_gc_plan_in_list "$rel" "$changed_str" && committable_total=$((committable_total + 1))
+      cog::fn::git_str_in_lines "$rel" "$changed_str" && committable_total=$((committable_total + 1))
     done
     [[ ${#extra[@]} -gt 0 ]] && foreign_roots+=("$root")
     repo_objs+=("$(jq -cn --arg root "$root" \
-      --argjson paths "$(__cog_gc_plan_json_array "${rels[@]}")" \
-      --argjson extra_dirty "$(__cog_gc_plan_json_array "${extra[@]}")" \
+      --argjson paths "$(cog::fn::git_json_array_from_lines "${rels[@]}")" \
+      --argjson extra_dirty "$(cog::fn::git_json_array_from_lines "${extra[@]}")" \
       '{root: $root, paths: $paths, extra_dirty: $extra_dirty}')")
   done
 
@@ -199,7 +154,7 @@ __cog_gc_plan_build_json() {
   for root in "${undeclared[@]}"; do
     mapfile -t rels <<<"${root_paths[$root]}"
     undeclared_objs+=("$(jq -cn --arg root "$root" \
-      --argjson paths "$(__cog_gc_plan_json_array "${rels[@]}")" \
+      --argjson paths "$(cog::fn::git_json_array_from_lines "${rels[@]}")" \
       '{root: $root, paths: $paths}')")
   done
 
@@ -223,12 +178,12 @@ __cog_gc_plan_build_json() {
   jq -n \
     --argjson ok "$ok" \
     --argjson empty "$empty" \
-    --argjson repos "$(__cog_gc_plan_json_objects "${repo_objs[@]}")" \
-    --argjson undeclared_dirty "$(__cog_gc_plan_json_objects "${undeclared_objs[@]}")" \
-    --argjson declared_no_change "$(__cog_gc_plan_json_array "${no_change[@]}")" \
-    --argjson escapes "$(__cog_gc_plan_json_array "${escapes[@]}")" \
-    --argjson invalid_repos "$(__cog_gc_plan_json_array "${invalid_repos[@]}")" \
-    --argjson surprises "$(__cog_gc_plan_json_array "${surprises[@]}")" \
+    --argjson repos "$(cog::fn::git_json_object_array_from_lines "${repo_objs[@]}")" \
+    --argjson undeclared_dirty "$(cog::fn::git_json_object_array_from_lines "${undeclared_objs[@]}")" \
+    --argjson declared_no_change "$(cog::fn::git_json_array_from_lines "${no_change[@]}")" \
+    --argjson escapes "$(cog::fn::git_json_array_from_lines "${escapes[@]}")" \
+    --argjson invalid_repos "$(cog::fn::git_json_array_from_lines "${invalid_repos[@]}")" \
+    --argjson surprises "$(cog::fn::git_json_array_from_lines "${surprises[@]}")" \
     '{
       ok: $ok,
       empty: $empty,
