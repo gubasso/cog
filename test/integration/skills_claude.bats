@@ -144,19 +144,35 @@ forbidden_scan_codex() {
 }
 
 @test "gc skills document the change-provenance and destructive-recovery guards" {
-  # Provenance/safety gates stay in the coordinator; the diffstat materiality and
-  # whole-file staging guards move into the per-repo worker.
+  # Provenance/safety gates stay in the coordinator; the diffstat materiality,
+  # whole-file staging, and destructive-git guards live in the shared commit
+  # routine both the inline path and the per-repo worker follow.
   local coordinator="$repo_root/skills/claude/gc/SKILL.md"
   assert_file_contains "$coordinator" "foreign-dirty"
   assert_file_contains "$coordinator" "git reset --hard"
   assert_file_contains "$coordinator" "git stash list"
 
-  local worker="$repo_root/skills/claude/gc-repo/SKILL.md"
-  assert_file_contains "$worker" "git reset --hard"
-  assert_file_contains "$worker" "git diff --cached --stat"
-  assert_file_contains "$worker" "path-granular"
+  local routine="$repo_root/skill-refs/gc/commit-routine.md"
+  assert_file_exists "$routine"
+  assert_file_contains "$routine" "git reset --hard"
+  assert_file_contains "$routine" "git diff --cached --stat"
+  assert_file_contains "$routine" "path-granular"
+}
 
-  assert_file_contains "$repo_root/skills/claude/gc-hook-fix/SKILL.md" "git reset --hard"
+@test "gc commits a single repo inline and shares one commit routine" {
+  # The default path runs in the caller's own context: no fan-out, no worker.
+  # Every commit path resolves the same routine, so the prose cannot drift.
+  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  assert_file_contains "$coordinator" "gc/commit-routine.md"
+  assert_file_contains "$coordinator" "in this context"
+  assert_file_not_contains "$coordinator" "never stage or commit inline"
+
+  local file
+  for file in \
+    "$repo_root/skills/claude/gc-repo/SKILL.md" \
+    "$repo_root/skills/claude/gc-hook-fix/SKILL.md"; do
+    assert_file_contains "$file" "gc/commit-routine.md"
+  done
 }
 
 @test "runner skills document delegate multi-repo commit flow" {

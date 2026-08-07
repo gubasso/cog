@@ -28,30 +28,22 @@ The `--repo-root` and `--session-files` values you were invoked with are the lit
 
 ## Non-negotiable rules
 
-- Fix every issue the report names in a single pass; address all failing hooks together rather than one per invocation.
-- Stay within the session file scope. When a fix requires a file outside that scope, a semantic decision, or a content change the report does not pin down, record it as an out-of-scope item for the user instead of guessing.
-- Never run `git commit`; the orchestrator owns the commit retry.
-- Never bypass hooks: no `--no-verify`, no `-n`, no `SKIP=...`, no hook removal, and no git config edits.
-- Never run history- or worktree-destroying git: no `git reset --hard`, no `git restore`/`git checkout` on worktree files, no `git clean`, and no hand-rolled content merges. If the tree reaches a state you cannot explain, STOP and record it as out-of-scope for the user — never surgery your way out.
+The remediation itself — read the whole report, resolve every issue in one pass grouped by file, auto-fixers need only re-staging, stay inside the session file scope, then re-stage through `cog gc-stage` — is the **Fixing a hook report** step of the shared routine at `$(cog skill-refs path gc/commit-routine.md)`. Follow it there; that file is the source of truth. Its surrounding rules bind here too: no hook bypass, no raw `git commit`, and no `git reset --hard` or other history- or worktree-destroying git. On top of them:
+
+- Never run `git commit`; the orchestrator owns the commit retry. This worker fixes and re-stages, nothing else.
+- An out-of-scope item is recorded for the user, never guessed. If the tree reaches a state you cannot explain, STOP and record that as out-of-scope too.
 
 ## Workflow
 
-1. Read the entire `--report` file. Enumerate each failing hook and every concrete issue it reports (hook ids, file/line references, linter messages, auto-fixer notices). This list is the full scope of work.
-
-2. Implement all fixes across the session files:
-   - For auto-fixer hooks (formatters that already rewrote files), no edit is needed beyond re-staging.
-   - For content hooks (shellcheck, mypy, eslint, ruff, markdownlint, tests, and the like), apply the minimal edit that resolves each reported issue.
-   - Group the work by file so every issue in a file is resolved together.
-
-3. Re-stage the session files so the fixes enter the next commit attempt:
+1. Perform the routine's **Fixing a hook report** step against `--report`, with `$PATHS_FILE` bound to the `--session-files` path you were invoked with:
 
    ```bash
    cog gc-stage --session-files "$SESSION_FILES_FILE" --repo-root "$REPO_ROOT" --json
    ```
 
-   If `ok` is not `true`, report the mismatch and stop.
+   If the re-stage does not report `ok`, report the mismatch and stop.
 
-4. Return a structured summary as the trailing block of the reply:
+2. Return a structured summary as the trailing block of the reply:
    - **Fixed**: the hooks and files addressed.
    - **Out of scope**: any reported issue left for the user, with the reason.
 

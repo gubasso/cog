@@ -2,7 +2,7 @@
 name: claude-delegate
 description: >
   Run ONE delegated Claude execution to completion in an isolated context and return a structured
-  result. The task is a slash-command/skill invocation (e.g. `/executor-prex -ar <plan>.md`, `/gc -y -a`), a
+  result. The task is a slash-command/skill invocation (e.g. `/executor-prex -ar <plan>.md`, `/gc -a`), a
   skill name plus arguments, or a freeform instruction. Use this whenever an orchestrator needs a
   fresh, full Claude run — especially one that must itself spawn subagents — instead of shelling out
   to a headless `claude -p` process. Foreground, blocking, runs to the task's own completion.
