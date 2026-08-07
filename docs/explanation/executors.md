@@ -1,6 +1,6 @@
 # Executors
 
-Executors prepare one prompt or plan and run it through a bounded implementation contract. [ADR-0010](../decisions/0010-executor-preparation-and-artifacts.md), [ADR-0013](../decisions/0013-complexity-driven-round-sizing.md), and [ADR-0015](../decisions/0015-executor-capability-and-telemetry.md) own the principal choices.
+Executors prepare one prompt or plan and run it through a bounded implementation contract. [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md), [ADR-0013](../decisions/ADR-0013-complexity-driven-round-sizing.md), and [ADR-0015](../decisions/ADR-0015-executor-capability-and-telemetry.md) own the principal choices.
 
 ## Components and boundaries
 

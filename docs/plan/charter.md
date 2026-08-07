@@ -1,7 +1,5 @@
 # Cog — Charter
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# Cog — Charter", "## What this is for", "## Pillars", "## No-gos", "## Appetite unit"] } } -->
-
 ## What this is for
 
 Cog provides deterministic mechanics for agent-oriented development workflows while leaving sequencing and judgment to runtime skills and agents. The reviewed roadmap lives here; generated execution queues remain in `.implementation-plans/` and resolved plan-vault stores.

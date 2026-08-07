@@ -1,7 +1,5 @@
 # ADR-0005: Use pre-commit as the quality-gate source of truth
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0005: Use pre-commit as the quality-gate source of truth","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Lint and test entry points drift when each task runner invents its own command set. The repository needs one configured inventory of automated gates.

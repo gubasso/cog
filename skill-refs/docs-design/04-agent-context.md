@@ -57,7 +57,7 @@ A large documentation corpus cannot be loaded, and an agent told to "read the do
      │                                      │
      │  Governed by:                        ├─► docs/guides/**
      ├─► docs/explanation/auth.md           ├─► docs/reference/**
-     └─► ADR-<number>                       ├─► docs/decisions/**
+     └─► ADR-0031                           ├─► docs/decisions/**
                                             └─► docs/explanation/**
      3 files loaded
                                             truncate, or drown
@@ -67,7 +67,7 @@ That is the whole argument, and it is why the filter MUST name its sources rathe
 
 ## Maintenance instructions
 
-Every project that expects agent help should carry a `## Documentation Maintenance` section in its author-instructions file. Copy [template-docs-rules.md](./template-docs-rules.md) rather than restating this shelf, then state local exceptions such as a different filename or ADR numbering convention. The section is project-specific by design; a pasted copy of a generic shelf is another always-loaded cost with no local information in it.
+Every project that expects agent help should carry a `## Documentation Maintenance` section in its author-instructions file. Copy [template-docs-rules.md](./template-docs-rules.md) rather than restating this shelf, then state local exceptions such as a different author-instructions filename or ADR numbering width. The `ADR-` filename prefix is not a local choice; see [02 — Lean ADRs](./02-lean-adrs.md). The section is project-specific by design; a pasted copy of a generic shelf is another always-loaded cost with no local information in it.
 
 Agents should update docs only when the change affects durable behavior, operations, or decisions, not for every implementation detail. Small local rationale belongs in a load-bearing comment.
 

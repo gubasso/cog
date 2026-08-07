@@ -1,6 +1,6 @@
 # Match-outcome telemetry
 
-`cog match-telemetry` is the collector + analyzer for the plan→executor calibration loop ([ADR-0015](../decisions/0015-executor-capability-and-telemetry.md)). It records whether each round's complexity→executor match was right in practice, so the rubric weights and executor bands can be refit against real outcomes — by a human, in the cog repo.
+`cog match-telemetry` is the collector + analyzer for the plan→executor calibration loop ([ADR-0015](../decisions/ADR-0015-executor-capability-and-telemetry.md)). It records whether each round's complexity→executor match was right in practice, so the rubric weights and executor bands can be refit against real outcomes — by a human, in the cog repo.
 
 ## Store
 

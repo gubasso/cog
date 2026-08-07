@@ -1,7 +1,5 @@
 # 001 — Documentation architecture reset
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 001 — Documentation architecture reset","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 A fresh maintainer can find current design, rationale, exact contracts, and ordered work without consulting the draft workspace.
@@ -33,7 +31,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 - `skill-refs/docs-design/02-lean-adrs.md` — decision lifecycle and word cap.
 - `skill-refs/docs-design/07-plan-and-slices.md` — plan and slice contracts.
 - `skill-refs/docs-design/10-lean-markdown.md` — structural Markdown rules.
-- `docs/decisions/0001-adopt-documentation-architecture.md` — local adoption and reset exception.
+- `docs/decisions/ADR-0001-adopt-documentation-architecture.md` — local adoption and reset exception.
 - `docs/reference/documentation-migration.md` — exact migration ownership.
 
 ## Acceptance

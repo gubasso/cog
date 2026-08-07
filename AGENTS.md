@@ -58,9 +58,9 @@ The precedence ladder is local and strict: ADRs beat explanation pages for why a
 
 Local exceptions:
 
-- Decision filenames use `NNNN-slug.md`.
 - Tracking uses `cadence_days`, `revalidate_how`, and `references`.
-- [ADR-0001](./docs/decisions/0001-adopt-documentation-architecture.md) records the one-time reset; the never-delete lifecycle resumes from `Proposed` onward.
+- Heading shapes live in `.markdownlint/`, one `MD043` array per shape, each applied by its own `md-*` entry in `.pre-commit-config.yaml`. Never name `MD043` in a `.markdownlint-cli2.jsonc`, which merges over the shape and would switch it off silently. `test/unit/markdownlint_shapes.bats` enforces both halves.
+- [ADR-0001](./docs/decisions/ADR-0001-adopt-documentation-architecture.md) records the one-time reset; the never-delete lifecycle resumes from `Proposed` onward.
 - `.draft/` is the gitignored workspace. `.draft/safe-to-delete/` is only the manual-deletion hand-off buffer.
 - `.implementation-plans/` is a machine queue and is not mirrored into the plan zone.
 - Known external-system cases will live under `docs/reference/known-issues/` when the first real case exists.

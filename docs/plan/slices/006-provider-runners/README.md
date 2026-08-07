@@ -1,7 +1,5 @@
 # 006 — Provider runners
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 006 — Provider runners","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 Claude and Codex fresh-context steps satisfy one runner contract and preserve durable artifacts.
@@ -31,7 +29,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Governed by
 
 - `docs/plan/slices/005-orchestrator-conformance/README.md` — vendor-neutral runner contract.
-- `docs/decisions/0009-orchestration-and-durable-jobs.md` — durable job rules.
+- `docs/decisions/ADR-0009-orchestration-and-durable-jobs.md` — durable job rules.
 - `docs/explanation/orchestration.md` — current provider boundary.
 - `docs/reference/orchestration-contract.md` — exact runner receipts.
 

@@ -1,6 +1,6 @@
 # Bootstrap
 
-Bootstrap reconciles one project domain at a time from reviewed in-repo templates. [ADR-0019](../decisions/0019-bootstrap-domain-architecture.md) and [ADR-0020](../decisions/0020-project-classification-and-precommit-overlays.md) own the domain and classification architecture.
+Bootstrap reconciles one project domain at a time from reviewed in-repo templates. [ADR-0019](../decisions/ADR-0019-bootstrap-domain-architecture.md) and [ADR-0020](../decisions/ADR-0020-project-classification-and-precommit-overlays.md) own the domain and classification architecture.
 
 ## Components and boundaries
 

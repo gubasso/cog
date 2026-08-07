@@ -1,6 +1,6 @@
 # Orchestration
 
-Cog uses same-context chaining until a true isolation boundary requires a fresh worker. [ADR-0009](../decisions/0009-orchestration-and-durable-jobs.md), [ADR-0016](../decisions/0016-context-briefs-and-input-fidelity.md), and [ADR-0022](../decisions/0022-forge-resistant-approval.md) own the governing choices.
+Cog uses same-context chaining until a true isolation boundary requires a fresh worker. [ADR-0009](../decisions/ADR-0009-orchestration-and-durable-jobs.md), [ADR-0016](../decisions/ADR-0016-context-briefs-and-input-fidelity.md), and [ADR-0022](../decisions/ADR-0022-forge-resistant-approval.md) own the governing choices.
 
 ## Components and boundaries
 

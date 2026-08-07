@@ -1,7 +1,5 @@
 # ADR-0018: Use safe multi-repository commit orchestration
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0018: Use safe multi-repository commit orchestration","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Commit workflows must preserve change provenance, validate messages, fan out per repository, and stop when undeclared dirty state appears. An empty change set must be a valid outcome.

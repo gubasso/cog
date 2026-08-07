@@ -1,8 +1,7 @@
 ---
 digest-of: ../../skill-refs/docs-design
-last-synced: 2026-08-06
+last-synced: 2026-08-07
 source-files:
-  - README.md
   - 00-foundations.md
   - 01-diataxis-zones.md
   - 02-lean-adrs.md
@@ -15,12 +14,14 @@ source-files:
   - 09-known-issues.md
   - 10-lean-markdown.md
   - 99-checklist.md
+  - README.md
   - glossary.md
   - template-adr.md
   - template-docs-rules.md
+  - template-heading-shapes.md
   - template-plan-zone.md
   - template-slice.md
-token-estimate: 33018
+token-estimate: 35195
 ---
 
 # AGENTS
@@ -56,6 +57,7 @@ Load this file, find the owning chapter in the routing table below, then read th
 | A bug in an external system under test                                  | `09-known-issues.md`              |
 | May I use bold here?                                                    | `10-lean-markdown.md`             |
 | How do I stop a fixed-shape document's headings from drifting?          | `10-lean-markdown.md`             |
+| Where does the heading array live, and what applies it?                 | `10-lean-markdown.md`             |
 | What do I check before merging a docs change?                           | `99-checklist.md`                 |
 | What does this shelf mean by `<term>`?                                  | `glossary.md`                     |
 
@@ -67,7 +69,7 @@ Load this file, find the owning chapter in the routing table below, then read th
 - Drafts stay out of `docs/`; a binding plan is project state, not a draft.
 - No bold and no italics, anywhere.
 - Every fenced block declares a language.
-- A fixed-shape document carries its own `MD043` heading array; free-form documents carry none.
+- A fixed shape has one `MD043` heading array in one file, applied by one hook entry; documents carry no lint configuration and free-form documents are not gated.
 - Never paste a tree of a directory that already exists.
 
 ## Maintenance

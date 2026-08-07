@@ -23,6 +23,7 @@ A chapter defines a term inline only when the term is that chapter's subject. A 
 - `draft` — provisional material that is not yet project state, held outside shipped docs. Rules: [05 — Drafts and Promotion](./05-drafts-and-promotion.md).
 - `EARS` — the Easy Approach to Requirements Syntax, a constrained template for phrasing an assertion. Rules: [07 — Plan and Slices](./07-plan-and-slices.md).
 - `entry document` — the single document a session reads first for one unit of work or one subsystem. Rules: [04 — Agent Context](./04-agent-context.md).
+- `fixed-shape document` — a document whose heading list is a contract other documents, tools, and sessions rely on, so it is gated rather than allowed to grow. Rules: [10 — Lean Markdown](./10-lean-markdown.md).
 - `Governed by` — the slice heading that names, individually, every source a session must load. Rules: [07 — Plan and Slices](./07-plan-and-slices.md).
 - `honest-fail` — a test left failing so it does not hide a bug in an external system. Rules: [09 — Known Issues](./09-known-issues.md).
 - `knowledge base` — a project whose product is its content tree of directories and markdown files rather than a codebase. Rules: [01 — Diataxis Zones](./01-diataxis-zones.md).
@@ -39,6 +40,7 @@ A chapter defines a term inline only when the term is that chapter's subject. A 
 - `remainder` — the negotiable scope beyond the core, ordered so the least valuable is cut first. Rules: [06 — Appetite and Scope](./06-appetite-and-scope.md).
 - `revision` — a committed edit to a slice's `Goal`, `Core`, `Appetite`, or `Acceptance` after the work started. Rules: [07 — Plan and Slices](./07-plan-and-slices.md).
 - `scope hammering` — forcefully questioning a design or use case in order to cut scope and finish inside the budget. Rules: [06 — Appetite and Scope](./06-appetite-and-scope.md).
+- `shape config` — the one file holding a fixed shape's `MD043` heading array, applied to that shape's documents by one hook entry. Rules: [10 — Lean Markdown](./10-lean-markdown.md).
 - `shelf` — one topic directory of numbered chapters in this knowledge base. Rules: [README](./README.md).
 - `slice` — one vertical unit of work: end to end, bounded by an appetite, demonstrable when done. Rules: [06 — Appetite and Scope](./06-appetite-and-scope.md).
 - `structural markdown` — formatting that carries shape a reader and a parser can both use: headings, lists, tables, fences, inline code, links. Rules: [10 — Lean Markdown](./10-lean-markdown.md).

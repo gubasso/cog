@@ -33,7 +33,7 @@ The exit code is the signal. `finalize` exits `0` (done, ok), `1` (done, failed)
 
 Access is declared per launch and defaults closed. `run-exec --access write` is admitted only by `--mode danger`; every other mode is read-only. `run-resume` takes the same `--access` flag and also defaults to `read-only`, because a resume inherits no sandbox from the thread it resumes: `codex exec resume` accepts no `--sandbox` flag, so cog expresses read-only through the `sandbox_mode` config override and reserves `--dangerously-bypass-approvals-and-sandbox` for `--access write`. `finalize` reports the access the round actually ran under, so a caller can prove a read-only reviewer stayed read-only rather than trusting prompt wording.
 
-This is the only sanctioned form of non-blocking execution. cog detaching its own child is not the model backgrounding its own tool call; ad-hoc shell backgrounding (`&`, `run_in_background: true`) on Codex or orchestration work stays prohibited, and `cog skill-lint` enforces the distinction. Every `codex-session` run is a durable job. See [ADR-0009](../decisions/0009-orchestration-and-durable-jobs.md).
+This is the only sanctioned form of non-blocking execution. cog detaching its own child is not the model backgrounding its own tool call; ad-hoc shell backgrounding (`&`, `run_in_background: true`) on Codex or orchestration work stays prohibited, and `cog skill-lint` enforces the distinction. Every `codex-session` run is a durable job. See [ADR-0009](../decisions/ADR-0009-orchestration-and-durable-jobs.md).
 
 ## Delegate And Verify
 

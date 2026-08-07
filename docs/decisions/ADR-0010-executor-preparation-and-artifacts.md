@@ -1,7 +1,5 @@
 # ADR-0010: Use gated executor preparation and cog-owned artifacts
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0010: Use gated executor preparation and cog-owned artifacts","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Executors receive prompts of varying quality and produce artifacts that later stages must trust. Preparation, terminalization, and collision handling need one deterministic contract.

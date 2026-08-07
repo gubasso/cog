@@ -1,6 +1,6 @@
 # Skills and resources
 
-Runtime skills coordinate judgment around deterministic cog operations. [ADR-0006](../decisions/0006-runtime-skill-trees-and-taxonomy.md), [ADR-0007](../decisions/0007-skill-and-cli-responsibility-boundary.md), [ADR-0008](../decisions/0008-self-contained-resource-homes.md), [ADR-0017](../decisions/0017-skill-authoring-and-lint.md), and [ADR-0021](../decisions/0021-lean-deploy-payloads.md) own the durable choices.
+Runtime skills coordinate judgment around deterministic cog operations. [ADR-0006](../decisions/ADR-0006-runtime-skill-trees-and-taxonomy.md), [ADR-0007](../decisions/ADR-0007-skill-and-cli-responsibility-boundary.md), [ADR-0008](../decisions/ADR-0008-self-contained-resource-homes.md), [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md), and [ADR-0021](../decisions/ADR-0021-lean-deploy-payloads.md) own the durable choices.
 
 ## Components and boundaries
 

@@ -82,6 +82,11 @@
     "MD036": false,  // emphasis-as-heading — used for callouts
     "MD041": false,  // first-line H1 — some files start with frontmatter
     "MD042": false,  // empty links — placeholder links common in WIP notes
+    // MD043 (required-headings) is deliberately absent, not set to false. A project
+    // that gates fixed heading shapes puts one array per shape in .markdownlint/ and
+    // applies it with a filtered hook entry; this file is merged OVER that config,
+    // so any value here — `false` included — overrides every shape while the hooks
+    // keep reporting success. The rule is inert without a `headings` array.
     "MD046": { "style": "fenced" },  // require fenced code blocks
     "MD052": false,  // reference labels — many notes use ad-hoc footnote refs
     "MD060": false   // table column style — too strict for hand-edited tables

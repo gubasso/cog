@@ -1,7 +1,5 @@
 # ADR-0001: Adopt the documentation architecture
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0001: Adopt the documentation architecture","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Documentation had overlapping owners, oversized records, and forward-looking state outside the shipped corpus. Maintainers need one durable placement and lifecycle contract.

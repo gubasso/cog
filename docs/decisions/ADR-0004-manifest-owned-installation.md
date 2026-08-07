@@ -1,7 +1,5 @@
 # ADR-0004: Use manifest-owned installation
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0004: Use manifest-owned installation","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 The installer writes to several user locations and must remove only paths it owns. Upgrades also need predictable refresh and pruning behavior.

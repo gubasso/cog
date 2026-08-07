@@ -27,6 +27,7 @@ Owner: [01 — Diataxis Zones](./01-diataxis-zones.md).
 Owner: [02 — Lean ADRs](./02-lean-adrs.md).
 
 - [ ] The decision cleared the threshold: cross-cutting, hard to reverse, constraining, or rejecting a plausible alternative. A run of ADRs on one area means a subsystem page is missing.
+- [ ] The filename carries the `ADR-` prefix and a slug: `ADR-<number>-<decision>.md`. Templates and index files in the decisions directory carry no prefix.
 - [ ] The filled body is at or below 350 words and uses the five template sections.
 - [ ] Exactly one `Status`, from `Ideation`, `Proposed`, `Accepted`, `Implemented`, `Deprecated`, `Superseded`, `Rejected`.
 - [ ] Implemented records link what enacts them; superseded link the successor; deprecated say why they stopped applying; rejected explain enough to prevent repeated debate.
@@ -57,7 +58,7 @@ Owners: [06 — Appetite and Scope](./06-appetite-and-scope.md) and [07 — Plan
 - [ ] No unit of work was brought inside its appetite by dropping tests, review, or a security control.
 - [ ] Status lives only in `milestones.md`, using the closed vocabulary, and open-questions entries name what they block.
 - [ ] `milestones.md` puts live work first: every terminal status sits under `## closed`, every slice appears in exactly one section, and `## closed` is still short enough to scroll.
-- [ ] The slice `README.md` and `milestones.md` each carry their `MD043` heading array, and a new section was added by amending that array rather than by deleting the pin.
+- [ ] The slice `README.md` and `milestones.md` each have a heading shape under `.markdownlint/`, and a new section was added by amending that array rather than by removing the shape from the hook.
 
 ## Agent readiness
 
@@ -86,9 +87,11 @@ Owner: [10 — Lean Markdown](./10-lean-markdown.md).
 - [ ] Every fenced code block declares a language; use `text` when none applies.
 - [ ] No paragraph is doing a heading's job.
 - [ ] Any exception carries an `<!-- allow-emphasis: <reason> -->` comment.
-- [ ] Every fixed-shape document carries its heading array in a `markdownlint-configure-file` comment under the H1, and no free-form document carries one.
-- [ ] The markdownlint hook actually runs on the changed files; an `MD043` array in a document no hook reads is decoration.
-- [ ] Any document that quotes a `markdownlint-configure-file` comment as an example carries `<!-- markdownlint-disable-file MD043 -->`, and no document carries two configure comments.
+- [ ] Every fixed shape has exactly one `MD043` array, in its own file under `.markdownlint/`, and no free-form document is gated by one.
+- [ ] One hook entry names that file and selects the documents it applies to; an array no hook reads is decoration, so the shape was proven to fail before it was trusted.
+- [ ] The project config does not mention `MD043` at any value, including `false`, which would override every shape while the hooks stay green.
+- [ ] A project with repository-invariant tests gates that absence and the hook-to-shape wiring there, rather than trusting a checklist for two failures the linter reports as success.
+- [ ] No document carries a `markdownlint-configure-file` comment.
 
 ## Verification
 

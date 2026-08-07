@@ -1,7 +1,5 @@
 # ADR-0002: Use a standalone loader-based CLI
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0002: Use a standalone loader-based CLI","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 The CLI needs to run from source and installed layouts while keeping command logic discoverable. A stable loader boundary must map public dash-form names to Bash modules.

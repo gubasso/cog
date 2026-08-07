@@ -1,0 +1,12 @@
+// Heading shape for the open-questions register. The `md-open-questions` hook in
+// ../.pre-commit-config.yaml owns which documents this applies to.
+//
+// One H1 and nothing else. The register's per-question headings are dynamic, so the
+// shape gates the top level only; `cog docs-lint` owns the per-question fields.
+{
+  "config": {
+    "MD043": {
+      "headings": ["*"]
+    }
+  }
+}

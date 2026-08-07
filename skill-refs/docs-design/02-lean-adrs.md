@@ -29,7 +29,7 @@ Use the drop-in [ADR template](./template-adr.md). A filled ADR has five section
 
 This is a MADR-minimal shape: enough structure to compare decisions consistently, not enough to invite filler. Do not add project-specific sections without an active, repeated need; if a field is consistently empty, remove it from the local template or stop creating ADRs for that class of choice.
 
-Name files `ADR-<number>-<decision>.md` or the local equivalent. The number gives stable references in comments, reviews, and follow-up ADRs; the slug gives humans and agents enough context from filenames alone. Avoid status or date-only names. The title names the choice, not the implementation task: "Use `<system>` for artifact storage" records a decision, "Implement storage support" sounds like a ticket.
+Every ADR filename MUST carry the `ADR-` prefix: `ADR-<number>-<decision>.md`. The prefix makes a decision record identifiable from the path alone, so a glob, a grep, or an agent reading a directory listing separates decisions from everything else without opening a file. A project MAY fix the number width and the slug style; it MUST NOT drop the prefix or replace it with a local equivalent. The number gives stable references in comments, reviews, and follow-up ADRs; the slug gives humans and agents enough context from filenames alone. Avoid status or date-only names. Index and template files in the decisions directory are not filled records and are exempt — a template is `template.md`, not `ADR-0000-template.md`, so it never reads as a decision the project made. The title names the choice, not the implementation task: "Use `<system>` for artifact storage" records a decision, "Implement storage support" sounds like a ticket.
 
 ## Word cap
 

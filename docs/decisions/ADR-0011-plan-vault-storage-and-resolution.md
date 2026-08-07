@@ -1,7 +1,5 @@
 # ADR-0011: Use a trust-gated plan vault
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0011: Use a trust-gated plan vault","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Generated plans need global and project-local storage without ambiguous resolution or unsafe local adoption. Moving repositories and identity collisions must remain recoverable.

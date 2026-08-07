@@ -5,7 +5,7 @@ setup() {
 
   REPO_ROOT="${BATS_TEST_DIRNAME}/../.."
   DECISIONS="${REPO_ROOT}/docs/decisions"
-  ACCEPT_ADR="${DECISIONS}/0027-accept-the-workflow-engine.md"
+  ACCEPT_ADR="${DECISIONS}/ADR-0027-accept-the-workflow-engine.md"
   CONTRACT="${REPO_ROOT}/docs/reference/workflow-contract.md"
   SLICE_002="${REPO_ROOT}/docs/plan/slices/002-workflow-engine-go-no-go/README.md"
   SLICE_003="${REPO_ROOT}/docs/plan/slices/003-linear-workflow-vertical/README.md"
@@ -32,11 +32,11 @@ setup() {
 @test "every workflow decision is indexed in the decision register" {
   local record
   for record in \
-    0023-select-workflow-engines-at-definition-or-call-site.md \
-    0024-pass-step-artifacts-by-directory.md \
-    0025-needs-is-the-only-edge-directive.md \
-    0026-judge-loop-convergence-with-a-prose-criterion.md \
-    0027-accept-the-workflow-engine.md; do
+    ADR-0023-select-workflow-engines-at-definition-or-call-site.md \
+    ADR-0024-pass-step-artifacts-by-directory.md \
+    ADR-0025-needs-is-the-only-edge-directive.md \
+    ADR-0026-judge-loop-convergence-with-a-prose-criterion.md \
+    ADR-0027-accept-the-workflow-engine.md; do
     assert_file_exists "${DECISIONS}/${record}"
 
     run grep -F "$record" "${DECISIONS}/README.md"

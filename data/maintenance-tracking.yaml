@@ -33,7 +33,7 @@ entries:
     revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date. The downstream data/power-grade/executor-capability powers and routing thresholds re-derive from these grades; re-run cog power-grade executor-validate after any grade change."
     references:
       - docs/reference/model-effort-policy.md
-      - docs/decisions/0014-model-effort-and-power-grade.md
+      - docs/decisions/ADR-0014-model-effort-and-power-grade.md
       - data/power-grade/executor-capability
   - id: power-grade-source-allowlist
     path: data/power-grade/source-allowlist
@@ -43,7 +43,7 @@ entries:
     why: "Trusted-source URLs, tiers, and leaderboard domains drift; the matrix sourcing policy rests on them."
     revalidate_how: "Re-check each source URL is live and canonical, re-confirm tier and clears_needs_verification, then update last_checked. Tier 3 entries stay recorded as excluded."
     references:
-      - docs/decisions/0014-model-effort-and-power-grade.md
+      - docs/decisions/ADR-0014-model-effort-and-power-grade.md
       - data/power-grade/matrix
   - id: executor-capability
     path: data/power-grade/executor-capability
@@ -53,7 +53,7 @@ entries:
     why: "Executor pass composition and capability calibration derive from the executor-* skill flows, the model-cells matrix, and the complexity rubric's max score, all of which can drift."
     revalidate_how: "Re-confirm each native executor-* skill's pass list and declared/driven model-effort against passes.yaml, re-check calibration.yaml's complexity max_score against the rubric, then run cog power-grade executor-validate and update last_checked."
     references:
-      - docs/decisions/0015-executor-capability-and-telemetry.md
+      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
       - data/power-grade/matrix
       - skill-refs/plan-rounds/complexity-rubric.md
       - skills/claude/executor-oneshot/SKILL.md
@@ -67,7 +67,7 @@ entries:
     why: "The multi-engine plan-writer-multi (Claude) and plan-writer (Codex) authoring surfaces were deleted outright (ADR-0015 / DP6), to be re-created from scratch at the proper time; plan-builder-to-queue-vetted-multi now partially fulfills the rebuilt multi-engine authoring surface for the Claude plan-vault path."
     revalidate_how: "Review plan-builder-to-queue-vetted-multi against the desired multi-engine / Codex plan-authoring surface; decide whether the remaining Codex-native surface is still wanted, then author it fresh against the current plan-vault + executor-routing contracts or extend the cadence."
     references:
-      - docs/decisions/0015-executor-capability-and-telemetry.md
+      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
       - skills/claude/plan-builder-to-queue/SKILL.md
       - skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md
   - id: match-telemetry-calibration
@@ -78,7 +78,7 @@ entries:
     why: "Plan→executor match-outcome telemetry accumulates cross-project; periodically review whether the executor-capability powers / complexity-rubric weights should be refit against observed over/under-powered rounds. Grades are never auto-mutated (ADR-0007)."
     revalidate_how: "Run cog match-telemetry report; review the over-powered / under-powered / needs-review rows; decide whether to refit executor-capability powers or complexity-rubric weights; append a review entry to calibration-reviews.yaml recording the corpus, rollup, decision, and rationale (freeze the report JSON under calibration-reports/); apply a refit by hand only if warranted; then update last_checked. Never auto-applied."
     references:
-      - docs/decisions/0015-executor-capability-and-telemetry.md
+      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
       - data/power-grade/executor-capability/passes.yaml
       - data/power-grade/executor-capability/calibration.yaml
       - data/power-grade/executor-capability/calibration-reviews.yaml
@@ -91,7 +91,7 @@ entries:
     why: "The accepted eleven-engine seed names current provider families and effort ladders; model rosters and supported efforts drift, and a superseded family left in the seed would still be dispatched."
     revalidate_how: "Re-check the eleven seeded engines and both effort ladders against data/power-grade/matrix/model-cells.yaml, drop or replace any superseded family, confirm every provider named still has a cog <provider>-runner, then update last_checked."
     references:
-      - docs/decisions/0027-accept-the-workflow-engine.md
+      - docs/decisions/ADR-0027-accept-the-workflow-engine.md
       - data/power-grade/matrix/model-cells.yaml
   - id: research-shelf
     path: data/research-shelf/index.jsonl

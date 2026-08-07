@@ -1,6 +1,6 @@
 # Architecture
 
-Cog is a standalone Bash CLI plus runtime skills, agent definitions, structured policy data, and model-readable references. This page owns the current component map; [ADR-0002](../decisions/0002-standalone-loader-based-cli.md) records why the loader boundary was chosen.
+Cog is a standalone Bash CLI plus runtime skills, agent definitions, structured policy data, and model-readable references. This page owns the current component map; [ADR-0002](../decisions/ADR-0002-standalone-loader-based-cli.md) records why the loader boundary was chosen.
 
 ## Components and boundaries
 

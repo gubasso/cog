@@ -1,7 +1,5 @@
 # Milestones
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# Milestones","## in flight","## closed"] } } -->
-
 The single status surface. One line per slice, ordered by id inside its section: `<id> <slug> — <status> — <appetite>[ — <note>]`.
 
 Two sections, live work first. Status is one of `shaped`, `active`, `done`, `cut`, or `reshaped`. A slice moves to `## closed` when its status becomes terminal — `done`, `cut`, or `reshaped` — and never moves back. A `reshaped` line names its successor id in the note; a `cut` line names what was cut.

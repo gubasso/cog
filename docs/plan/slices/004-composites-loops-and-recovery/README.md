@@ -1,7 +1,5 @@
 # 004 — Composites, loops, and recovery
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 004 — Composites, loops, and recovery","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 Composite calls and one loop execute without double dispatch and recover after a driver restart.
@@ -32,9 +30,9 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Governed by
 
 - `docs/reference/workflow-contract.md` — accepted grammar and loop rules.
-- `docs/decisions/0026-judge-loop-convergence-with-a-prose-criterion.md` — who judges convergence and what cog still enforces.
+- `docs/decisions/ADR-0026-judge-loop-convergence-with-a-prose-criterion.md` — who judges convergence and what cog still enforces.
 - `docs/plan/slices/003-linear-workflow-vertical/README.md` — receipt and lifecycle foundation.
-- `docs/decisions/0009-orchestration-and-durable-jobs.md` — durable recovery constraints.
+- `docs/decisions/ADR-0009-orchestration-and-durable-jobs.md` — durable recovery constraints.
 - `docs/reference/orchestration-contract.md` — claim and runner boundary.
 
 ## Acceptance

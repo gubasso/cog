@@ -1,7 +1,5 @@
 # 002 — Workflow engine go or no-go
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 002 — Workflow engine go or no-go","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 The project records one explicit accepted or rejected workflow-engine decision after Q-001 through Q-004 close.
@@ -12,7 +10,7 @@ The project records one explicit accepted or rejected workflow-engine decision a
 
 ## Core
 
-An ADR accepts or rejects the workflow engine, fixes its grammar and invocation boundary, and leaves no workflow-engine code written before that decision. [ADR-0027](../../../decisions/0027-accept-the-workflow-engine.md) is that record: it accepts the narrowed contract, and the four records it rests on settled engine selection, artifact passing, step exclusion, and loop convergence. The remainder funded evidence review and contract cleanup.
+An ADR accepts or rejects the workflow engine, fixes its grammar and invocation boundary, and leaves no workflow-engine code written before that decision. [ADR-0027](../../../decisions/ADR-0027-accept-the-workflow-engine.md) is that record: it accepts the narrowed contract, and the four records it rests on settled engine selection, artifact passing, step exclusion, and loop convergence. The remainder funded evidence review and contract cleanup.
 
 ## In scope
 
@@ -31,11 +29,11 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Governed by
 
 - `docs/reference/workflow-contract.md` — the published contract this slice produced.
-- `docs/decisions/0023-select-workflow-engines-at-definition-or-call-site.md` — engine selection.
-- `docs/decisions/0024-pass-step-artifacts-by-directory.md` — artifact passing and the descriptive input and output rule.
-- `docs/decisions/0025-needs-is-the-only-edge-directive.md` — step exclusion.
-- `docs/decisions/0026-judge-loop-convergence-with-a-prose-criterion.md` — loop convergence.
-- `docs/decisions/0014-model-effort-and-power-grade.md` — the current tier concept that must remain intact unless a later decision changes only workflow use.
+- `docs/decisions/ADR-0023-select-workflow-engines-at-definition-or-call-site.md` — engine selection.
+- `docs/decisions/ADR-0024-pass-step-artifacts-by-directory.md` — artifact passing and the descriptive input and output rule.
+- `docs/decisions/ADR-0025-needs-is-the-only-edge-directive.md` — step exclusion.
+- `docs/decisions/ADR-0026-judge-loop-convergence-with-a-prose-criterion.md` — loop convergence.
+- `docs/decisions/ADR-0014-model-effort-and-power-grade.md` — the current tier concept that must remain intact unless a later decision changes only workflow use.
 - `skill-refs/docs-design/06-appetite-and-scope.md` — fixed budget and cut order.
 - `skill-refs/docs-design/07-plan-and-slices.md` — decision and successor-slice gate.
 - `docs/reference/documentation-migration.md` — durable draft-fact ownership.

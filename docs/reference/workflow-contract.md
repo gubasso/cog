@@ -1,6 +1,6 @@
 # Workflow contract
 
-The accepted grammar, engine registry, and validator rules for the cog workflow engine. [ADR-0027](../decisions/0027-accept-the-workflow-engine.md) accepted this contract; [ADR-0023](../decisions/0023-select-workflow-engines-at-definition-or-call-site.md), [ADR-0024](../decisions/0024-pass-step-artifacts-by-directory.md), [ADR-0025](../decisions/0025-needs-is-the-only-edge-directive.md), and [ADR-0026](../decisions/0026-judge-loop-convergence-with-a-prose-criterion.md) own the choices behind it.
+The accepted grammar, engine registry, and validator rules for the cog workflow engine. [ADR-0027](../decisions/ADR-0027-accept-the-workflow-engine.md) accepted this contract; [ADR-0023](../decisions/ADR-0023-select-workflow-engines-at-definition-or-call-site.md), [ADR-0024](../decisions/ADR-0024-pass-step-artifacts-by-directory.md), [ADR-0025](../decisions/ADR-0025-needs-is-the-only-edge-directive.md), and [ADR-0026](../decisions/ADR-0026-judge-loop-convergence-with-a-prose-criterion.md) own the choices behind it.
 
 Nothing here is implemented yet. The first code lands in slice 003; the verb grammar and exit-code protocol stay in that slice until [CLI commands](./cli-commands.md) owns them.
 

@@ -1,7 +1,5 @@
 # ADR-0013: Use complexity-driven recursive round sizing
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0013: Use complexity-driven recursive round sizing","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Large implementation plans need reviewable execution rounds without arbitrary line limits. Splits must preserve every requirement identity and terminate deterministically.

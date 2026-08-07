@@ -1,7 +1,5 @@
 # ADR-0026: Judge loop convergence with a prose criterion
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0026: Judge loop convergence with a prose criterion","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 A loop declared `until:` as an expression cog evaluated after each round, while the driver separately reported an outcome through `advance` — two authorities for one verdict. With declared handles removed, `until:` was the expression dialect's last consumer and the scalars it compared no longer exist. Every framework whose steps are run by a model states its stopping criterion in prose and bounds it with a hard ceiling.

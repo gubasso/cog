@@ -1,7 +1,5 @@
 # ADR-0019: Use reconciled bootstrap domains
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0019: Use reconciled bootstrap domains","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Project bootstrap spans independent domains, language-specific tooling, publishing, identity-bearing fields, and knowledge-base routing. Re-running bootstrap should reconcile reviewed templates rather than assume an empty project.

@@ -1,7 +1,5 @@
 # ADR-0008: Use self-contained resource homes
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0008: Use self-contained resource homes","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Shipped workflows must be understandable from a fresh clone and installed payload. Prose read by models and structured data computed by the CLI require distinct owners.

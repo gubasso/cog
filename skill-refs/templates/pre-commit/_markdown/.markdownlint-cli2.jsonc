@@ -73,6 +73,11 @@
     "MD013": false,  // line length — dprint unwraps prose to one physical line
     "MD024": { "siblings_only": true },  // dup headings OK across sections, not within
     "MD033": false,  // inline HTML — needed for badges, <details>, <kbd>
+    // MD043 (required-headings) is deliberately absent, not set to false. A project
+    // that gates fixed heading shapes puts one array per shape in .markdownlint/ and
+    // applies it with a filtered hook entry; this file is merged OVER that config,
+    // so any value here — `false` included — overrides every shape while the hooks
+    // keep reporting success. The rule is inert without a `headings` array.
     "MD046": { "style": "fenced" }  // require fenced code blocks
   },
   "customRules": ["markdownlint-rule-relative-links"],

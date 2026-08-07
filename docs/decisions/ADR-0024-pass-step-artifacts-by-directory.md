@@ -1,7 +1,5 @@
 # ADR-0024: Pass step artifacts by directory
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0024: Pass step artifacts by directory","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 A step declared its outputs as typed handles: a bare filename for a file, a typed object for a scalar the agent wrote to `scalars.json`. Callers referenced them as `${{ steps.<as>.outputs.<handle> }}`, and a receipt failed the step when a declared artifact was missing or mistyped. That made cog a runtime judge of content produced by a probabilistic agent, and bought static checkability the producer cannot honour.

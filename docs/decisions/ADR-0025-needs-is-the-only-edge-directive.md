@@ -1,7 +1,5 @@
 # ADR-0025: Express step exclusion with needs rather than a sync marker
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0025: Express step exclusion with needs rather than a sync marker","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 The proposal marked a step that must not be parallelized with `sync:`, enforced through claim scope. Two shaped slices depended on that marker and no slice declared it: it appeared in no call-form key list and in no validator rule. Its exclusion scope was also undecided, between a boolean that serializes the whole run and a named lock that, under the no-TTL rule, is held forever by a crashed owner.

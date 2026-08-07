@@ -24,7 +24,7 @@ write_adr() {
     printf '%s\n' '## Consequences' '- Good: deterministic.' '- Bad: narrow.'
     printf '%s\n' '## Status' "$status"
     printf '%s\n' '[Enactment](../../lib/example.sh)'
-  } >"$FIXTURE/docs/decisions/0001-test-choice.md"
+  } >"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 }
 
 write_slice() {
@@ -277,7 +277,7 @@ write_milestones() {
 
 @test "docs-lint rejects ADR heading and status drift" {
   write_adr Done
-  sed -i 's/## Consequences/## Results/' "$FIXTURE/docs/decisions/0001-test-choice.md"
+  sed -i 's/## Consequences/## Results/' "$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 
   run_lint
 
@@ -302,7 +302,7 @@ write_milestones() {
 
 @test "docs-lint rejects a second lifecycle value in the Status section" {
   write_adr Implemented
-  printf '%s\n' 'Accepted' >>"$FIXTURE/docs/decisions/0001-test-choice.md"
+  printf '%s\n' 'Accepted' >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 
   run_lint
 
@@ -312,7 +312,7 @@ write_milestones() {
 
 @test "docs-lint requires a Superseded status to link its successor" {
   write_adr Superseded
-  printf '%s\n' 'Superseded by ADR-0002.' >>"$FIXTURE/docs/decisions/0001-test-choice.md"
+  printf '%s\n' 'Superseded by ADR-0002.' >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 
   run_lint
 
@@ -323,7 +323,7 @@ write_milestones() {
 @test "docs-lint rejects a Superseded link whose destination is not the successor" {
   write_adr Superseded
   printf '%s\n' 'Superseded by [ADR-0002](https://example.invalid/not-the-successor).' \
-    >>"$FIXTURE/docs/decisions/0001-test-choice.md"
+    >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 
   run_lint
 
@@ -333,32 +333,43 @@ write_milestones() {
 
 @test "docs-lint accepts a Superseded link resolving to the successor record" {
   write_adr Superseded
-  printf '%s\n' 'Superseded by [ADR-0002](./0002-next-choice.md).' \
-    >>"$FIXTURE/docs/decisions/0001-test-choice.md"
-  printf '%s\n' '# ADR-0002' >"$FIXTURE/docs/decisions/0002-next-choice.md"
+  printf '%s\n' 'Superseded by [ADR-0002](./ADR-0002-next-choice.md).' \
+    >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
+  printf '%s\n' '# ADR-0002' >"$FIXTURE/docs/decisions/ADR-0002-next-choice.md"
 
   run_lint
 
   # 0002 is a bare fixture and fails its own heading contract; the point is that
   # 0001's successor pointer is accepted.
   assert_failure 65
-  [[ $stderr != *'0001-test-choice.md: Superseded status must link'* ]]
+  [[ $stderr != *'ADR-0001-test-choice.md: Superseded status must link'* ]]
 }
 
 @test "docs-lint rejects an ADR that names itself as its successor" {
   write_adr Superseded
-  printf '%s\n' 'Superseded by [ADR-0001](./0001-test-choice.md).' \
-    >>"$FIXTURE/docs/decisions/0001-test-choice.md"
+  printf '%s\n' 'Superseded by [ADR-0001](./ADR-0001-test-choice.md).' \
+    >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"
 
   run_lint
 
   assert_failure 65
-  [[ $stderr == *'0001-test-choice.md: Superseded status must link its successor ADR record'* ]]
+  [[ $stderr == *'ADR-0001-test-choice.md: Superseded status must link its successor ADR record'* ]]
+}
+
+@test "docs-lint rejects a decision record without the ADR- filename prefix" {
+  write_adr Accepted
+  mv "$FIXTURE/docs/decisions/ADR-0001-test-choice.md" \
+    "$FIXTURE/docs/decisions/0001-test-choice.md"
+
+  run_lint
+
+  assert_failure 65
+  [[ $stderr == *'0001-test-choice.md: decision record must be named ADR-<number>-<decision>.md'* ]]
 }
 
 @test "docs-lint rejects an ADR above 350 words" {
   write_adr Implemented
-  for _ in $(seq 1 360); do printf 'word ' >>"$FIXTURE/docs/decisions/0001-test-choice.md"; done
+  for _ in $(seq 1 360); do printf 'word ' >>"$FIXTURE/docs/decisions/ADR-0001-test-choice.md"; done
 
   run_lint
 

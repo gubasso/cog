@@ -1,7 +1,5 @@
 # ADR-NNNN: <short title naming the choice, not the task>
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-NNNN: <short title naming the choice, not the task>", "## Context and Problem Statement", "## Considered Options", "## Decision Outcome", "## Consequences", "## Status"] } } -->
-
 Filled ADRs MUST stay at or below 350 words. Keep each field brief and split separate decisions.
 
 ## Context and Problem Statement

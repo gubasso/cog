@@ -1,7 +1,5 @@
 # ADR-0027: Accept the workflow engine
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0027: Accept the workflow engine","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Slice 002 held a moratorium on workflow-engine code until one record accepted or rejected the proposal and fixed its grammar and invocation boundary. Q-001 through Q-004 have now all exited, and the contract they blocked is materially narrower than the one first proposed: engines are literals set at a definition or its direct call site, artifacts pass by directory, exclusion is expressed with `needs:`, and loop convergence is judged rather than computed.

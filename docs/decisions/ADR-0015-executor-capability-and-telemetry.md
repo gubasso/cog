@@ -1,7 +1,5 @@
 # ADR-0015: Use capability routing with append-only telemetry
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0015: Use capability routing with append-only telemetry","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Executor selection needs an auditable capability model and evidence about whether assignments were well matched. Calibration must not rewrite historical outcomes automatically.

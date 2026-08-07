@@ -186,7 +186,7 @@ __cog_skill_lint_check_source_paths() {
   # with a literal <name>) and runtime-installed delegation paths
   # ($HOME/.claude/skills/... or project-local .claude/skills/...) are not
   # matched: the regex anchors to a concrete claude/codex source segment and a
-  # real skill name. See docs/decisions/0017-skill-authoring-and-lint.md.
+  # real skill name. See docs/decisions/ADR-0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
   local fence_re='^[[:space:]]*```+'
@@ -315,7 +315,7 @@ __cog_skill_lint_check_scratch_in_project() {
   # skips only frontmatter. An inline
   # <!-- cog-skill-lint: allow-scratch-in-project <reason> --> on the preceding
   # nonblank line suppresses the next content line. See
-  # docs/decisions/0017-skill-authoring-and-lint.md.
+  # docs/decisions/ADR-0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-scratch-in-project[[:space:]]+.+-->'
@@ -414,7 +414,7 @@ __cog_skill_lint_check_codex_output_collision() {
   # <!-- cog-skill-lint: allow-codex-runner-output-collision <reason> --> on the
   # preceding nonblank line. The runtime guard in cog codex-runner catches the
   # resolved-path case; this rule catches the authored/unexpanded-variable case.
-  # See docs/decisions/0010-executor-preparation-and-artifacts.md.
+  # See docs/decisions/ADR-0010-executor-preparation-and-artifacts.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false cmd_suppressed=false tok
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-output-collision[[:space:]]+.+-->'
@@ -497,7 +497,7 @@ __cog_skill_lint_check_codex_abs_artifact() {
   # skips frontmatter, and honors an inline
   # <!-- cog-skill-lint: allow-codex-runner-abs-artifact-path <reason> --> on the
   # preceding nonblank line. See
-  # docs/decisions/0017-skill-authoring-and-lint.md.
+  # docs/decisions/ADR-0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false suppress_next=false in_codex_cmd=false
   local allow_re='<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-codex-runner-abs-artifact-path[[:space:]]+.+-->'
@@ -1018,7 +1018,7 @@ __cog_skill_lint_line_has_producer_token() {
 # Producer-blindness: a mapped consumer skill must not name the producer of its
 # structural input. The scan covers frontmatter description text and body prose
 # (the review-findings leaks live partly in the folded description:), and only
-# fenced code blocks are skipped. See docs/decisions/0017-skill-authoring-and-lint.md.
+# fenced code blocks are skipped. See docs/decisions/ADR-0017-skill-authoring-and-lint.md.
 __cog_skill_lint_check_producer_blind() {
   local file="$1"
   local name producers
@@ -1125,7 +1125,7 @@ __cog_skill_lint_check_inline_skill_tool_dmi() {
 # type a non-canonical filename. cog owns that write (`cog executor adopt`), so
 # the skill prose must not instruct a direct write to the canonical execution
 # artifact. The prepare artifact is always delegated through a worker's `--output`
-# and is not guarded here. See docs/decisions/0010-executor-preparation-and-artifacts.md.
+# and is not guarded here. See docs/decisions/ADR-0010-executor-preparation-and-artifacts.md.
 __cog_skill_lint_artifact_write_owned_skills() {
   case "$1" in
     executor-oneshot | executor-vetted) return 0 ;;
@@ -1175,7 +1175,7 @@ __cog_skill_lint_check_artifact_write_ownership() {
 # `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
 # Absent model+effort rides the session default (HIGH). The known exceptions
 # (executor-prex high; codex launchers, review-findings, review-queue-rounds
-# low) live in the registry, not here. See docs/decisions/0014-model-effort-and-power-grade.md.
+# low) live in the registry, not here. See docs/decisions/ADR-0014-model-effort-and-power-grade.md.
 __cog_skill_lint_check_model_effort_tier() {
   local file="$1" runtime name expected model effort actual
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -1203,7 +1203,7 @@ __cog_skill_lint_check_model_effort_tier() {
 # runtime SKILL.md bodies, skipping frontmatter (governed by model-effort-tier) and
 # fenced code blocks (where an explicit `--effort <val>` is already unambiguous). An
 # inline `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line
-# records a deliberate exception. See docs/decisions/0017-skill-authoring-and-lint.md.
+# records a deliberate exception. See docs/decisions/ADR-0017-skill-authoring-and-lint.md.
 __cog_skill_lint_check_model_effort_prose_label() {
   local file="$1" runtime
   runtime="$(cog::fn::skill::runtime_for_path "$file")"

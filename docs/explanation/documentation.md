@@ -83,7 +83,7 @@ The exclusions are owners, independent namespaces, and constructed paths — not
 
 ## Current constraints
 
-[ADR-0001](../decisions/0001-adopt-documentation-architecture.md) records the architecture and one-time reset. Drafts remain in `.draft/` until promoted, and `.draft/safe-to-delete/` is only a manual-deletion hand-off buffer.
+[ADR-0001](../decisions/ADR-0001-adopt-documentation-architecture.md) records the architecture and one-time reset. Drafts remain in `.draft/` until promoted, and `.draft/safe-to-delete/` is only a manual-deletion hand-off buffer.
 
 ## Unresolved
 

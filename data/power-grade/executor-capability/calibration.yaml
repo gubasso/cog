@@ -17,7 +17,7 @@ calibration:
     max_score: 34
     normalization: score-over-max
     provenance: skill-refs/plan-rounds/complexity-rubric.md
-    provenance_adr: docs/decisions/0013-complexity-driven-round-sizing.md
+    provenance_adr: docs/decisions/ADR-0013-complexity-driven-round-sizing.md
   extreme_reserved:
     # Rounds above this complexity are non-executable as a single round; plan-builder-to-queue
     # routes each reserved round back through plan-split (ADR-0015), never queuing it.

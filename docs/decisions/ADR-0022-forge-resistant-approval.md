@@ -1,7 +1,5 @@
 # ADR-0022: Use hash-bound expiring approval
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0022: Use hash-bound expiring approval","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 A workflow must not accept an approval token that can be forged, replayed after the reviewed input changes, or retained indefinitely. The operator decision needs a deterministic verification record.

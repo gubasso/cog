@@ -1,10 +1,9 @@
-<!-- markdownlint-disable-file MD041 -->
+# Template — slice
 
-Copy this file into `<project>/docs/plan/slices/<id>-<slug>/README.md`, from the H1 down. Commit it before the work starts. Keep the heading list exactly as it is, and keep the `markdownlint-configure-file` comment that pins it — the leading `*` matches whatever H1 the slice carries, and every heading after it is fixed. The comment needs no project config beyond a markdownlint hook; see [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape). Do not add `tasks.md`, `requirements.md`, or any other sibling file unless the gate in [07 — Plan and Slices](./07-plan-and-slices.md) is met.
+Copy the block below into `<project>/docs/plan/slices/<id>-<slug>/README.md`. Commit it before the work starts. Keep the heading list exactly as it is: it is the shape the project's `slice-readme` heading gate checks, and the H1 varies per slice. The gate is one configuration file plus one hook entry, shipped in [the heading-shape template](./template-heading-shapes.md) and explained in [10 — Lean Markdown](./10-lean-markdown.md#gating-a-fixed-heading-shape). Do not add `tasks.md`, `requirements.md`, or any other sibling file unless the gate in [07 — Plan and Slices](./07-plan-and-slices.md) is met.
 
+````markdown
 # <id> — {Short Title}
-
-<!-- markdownlint-configure-file { "MD043": { "headings": ["*","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
 
 ## Goal
 
@@ -52,3 +51,4 @@ Copy this file into `<project>/docs/plan/slices/<id>-<slug>/README.md`, from the
 ## Revisions
 
 {One line per change to Goal, Core, Appetite, or Acceptance after the work started: what changed, and what was learned that changed it. Empty until the first revision.}
+````

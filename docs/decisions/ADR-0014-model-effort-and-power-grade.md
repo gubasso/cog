@@ -1,7 +1,5 @@
 # ADR-0014: Use a governed model-effort power grade
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0014: Use a governed model-effort power grade","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Orchestrators need a stable vocabulary for model capability, effort, and skill policy. The tier ladder must remain explicit and grounded in registered evidence.

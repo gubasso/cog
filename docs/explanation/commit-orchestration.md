@@ -1,6 +1,6 @@
 # Commit orchestration
 
-Commit orchestration partitions explicit session changes by repository and applies safety checks before any mutation. [ADR-0018](../decisions/0018-safe-commit-orchestration.md) owns the workflow.
+Commit orchestration partitions explicit session changes by repository and applies safety checks before any mutation. [ADR-0018](../decisions/ADR-0018-safe-commit-orchestration.md) owns the workflow.
 
 ## Components and boundaries
 

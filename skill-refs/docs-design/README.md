@@ -10,25 +10,26 @@ The cure is not more ceremony. It is a small set of homes with clear ownership: 
 
 ## Chapters
 
-| #        | Chapter                                                        | One-line hook                                                       |
-| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 0        | [Foundations](./00-foundations.md)                             | Which artifact owns a fact, and what wins when two disagree.        |
-| 1        | [Diataxis Zones](./01-diataxis-zones.md)                       | The docs root, the five homes by reader need, and operational docs. |
-| 2        | [Lean ADRs](./02-lean-adrs.md)                                 | MADR-minimal records, a 350-word cap, and a never-delete lifecycle. |
-| 3        | [Subsystem Pages](./03-subsystem-pages.md)                     | The living design page: records freeze, descriptions stay live.     |
-| 4        | [Agent Context](./04-agent-context.md)                         | Context pollution, semantic names, and one entry document per job.  |
-| 5        | [Drafts and Promotion](./05-drafts-and-promotion.md)           | Keep drafts out of shipped docs and promote by reader need.         |
-| 6        | [Appetite and Scope](./06-appetite-and-scope.md)               | Fix the budget, vary the scope, and gate every change to it.        |
-| 7        | [Plan and Slices](./07-plan-and-slices.md)                     | The plan zone's documents and one directory per unit of work.       |
-| 8        | [Tracking and Revalidation](./08-tracking-and-revalidation.md) | Track perishable facts and revalidate their sources on a cadence.   |
-| 9        | [Known Issues](./09-known-issues.md)                           | Track bugs in external systems under test; expand then collapse.    |
-| 10       | [Lean Markdown](./10-lean-markdown.md)                         | Spend markdown on structure; drop bold, italics, and decoration.    |
-| 99       | [Checklist](./99-checklist.md)                                 | The pre-merge review gate for a documentation diff.                 |
-|          | [Glossary](./glossary.md)                                      | One sentence per term, each naming the chapter that owns it.        |
-| Template | [ADR](./template-adr.md)                                       | Drop-in lean ADR.                                                   |
-| Template | [Slice](./template-slice.md)                                   | Drop-in entry document for one unit of work.                        |
-| Template | [Plan zone](./template-plan-zone.md)                           | Drop-in charter, milestones, and open-questions skeletons.          |
-| Template | [Docs rules](./template-docs-rules.md)                         | Drop-in maintenance block for a project's author-instructions.      |
+| #        | Chapter                                                        | One-line hook                                                        |
+| -------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 0        | [Foundations](./00-foundations.md)                             | Which artifact owns a fact, and what wins when two disagree.         |
+| 1        | [Diataxis Zones](./01-diataxis-zones.md)                       | The docs root, the five homes by reader need, and operational docs.  |
+| 2        | [Lean ADRs](./02-lean-adrs.md)                                 | MADR-minimal records, a 350-word cap, and a never-delete lifecycle.  |
+| 3        | [Subsystem Pages](./03-subsystem-pages.md)                     | The living design page: records freeze, descriptions stay live.      |
+| 4        | [Agent Context](./04-agent-context.md)                         | Context pollution, semantic names, and one entry document per job.   |
+| 5        | [Drafts and Promotion](./05-drafts-and-promotion.md)           | Keep drafts out of shipped docs and promote by reader need.          |
+| 6        | [Appetite and Scope](./06-appetite-and-scope.md)               | Fix the budget, vary the scope, and gate every change to it.         |
+| 7        | [Plan and Slices](./07-plan-and-slices.md)                     | The plan zone's documents and one directory per unit of work.        |
+| 8        | [Tracking and Revalidation](./08-tracking-and-revalidation.md) | Track perishable facts and revalidate their sources on a cadence.    |
+| 9        | [Known Issues](./09-known-issues.md)                           | Track bugs in external systems under test; expand then collapse.     |
+| 10       | [Lean Markdown](./10-lean-markdown.md)                         | Spend markdown on structure, and gate the shapes that are contracts. |
+| 99       | [Checklist](./99-checklist.md)                                 | The pre-merge review gate for a documentation diff.                  |
+|          | [Glossary](./glossary.md)                                      | One sentence per term, each naming the chapter that owns it.         |
+| Template | [ADR](./template-adr.md)                                       | Drop-in lean ADR.                                                    |
+| Template | [Slice](./template-slice.md)                                   | Drop-in entry document for one unit of work.                         |
+| Template | [Plan zone](./template-plan-zone.md)                           | Drop-in charter, milestones, and open-questions skeletons.           |
+| Template | [Docs rules](./template-docs-rules.md)                         | Drop-in maintenance block for a project's author-instructions.       |
+| Template | [Heading shapes](./template-heading-shapes.md)                 | Drop-in `MD043` arrays and the hook entries that apply them.         |
 
 ## Reading
 

@@ -1,6 +1,6 @@
 # Round Plan Templates
 
-Templates for the files generated under the resolved plan store (`cog plan project resolve` → `plan_root`; `cog plan new` → `plan_dir`). Use `{{PLACEHOLDER}}` markers — the generating skill substitutes them with actual values and never hardcodes `.implementation-plans/` ([ADR-0011](../../docs/decisions/0011-plan-vault-storage-and-resolution.md)).
+Templates for the files generated under the resolved plan store (`cog plan project resolve` → `plan_root`; `cog plan new` → `plan_dir`). Use `{{PLACEHOLDER}}` markers — the generating skill substitutes them with actual values and never hardcodes `.implementation-plans/` ([ADR-0011](../../docs/decisions/ADR-0011-plan-vault-storage-and-resolution.md)).
 
 Every plan is a directory `plans/<slug>/` containing: `README.md` (Template B), a `rounds/` subdir with one round file per round (Template A, **no number prefix**), an inner `queue-rounds.yaml` (Template D), and — for very large plans only — `STRATEGY.md` (Template C). The plan is also registered in the store-wide `<plan-root>/queue-plans.yaml` (Template D). Plan directories are flat siblings, a single level under `plans/` — **never nested**; ordering lives only in `depends_on`.
 

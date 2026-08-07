@@ -1,6 +1,6 @@
 # Power grade
 
-Power grade is the current model, effort, tier, and executor-capability subsystem. [ADR-0014](../decisions/0014-model-effort-and-power-grade.md) owns the tier ladder and evidence model.
+Power grade is the current model, effort, tier, and executor-capability subsystem. [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md) owns the tier ladder and evidence model.
 
 ## Components and boundaries
 

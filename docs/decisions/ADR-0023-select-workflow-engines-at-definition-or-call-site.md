@@ -1,7 +1,5 @@
 # ADR-0023: Select a workflow step engine at its definition or its direct call site
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0023: Select a workflow step engine at its definition or its direct call site","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 The workflow engine must choose one execution target per step. The proposal let three writers set it: a leaf `cell:`, a caller `cells:` map reaching into a referenced workflow, and a `--tier` flag above both, ordered by an outermost-wins precedence rule. That flag also had no usable data source, because two of the five power-grade tiers name Codex cells the workflow registry excludes as superseded. The noun `cell` already means one model and effort pairing in power-grade, a matrix the workflow registry deliberately does not read.

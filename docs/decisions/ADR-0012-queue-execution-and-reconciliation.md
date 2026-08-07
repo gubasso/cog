@@ -1,7 +1,5 @@
 # ADR-0012: Use prompt-opaque queues with reconciled completion
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0012: Use prompt-opaque queues with reconciled completion","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Queue mechanics must select runnable work without interpreting prompt prose, and completion must be owned by the plan rather than inferred from a worker. Revisions need a clear mutable boundary.

@@ -193,6 +193,7 @@ cog::fn::docs_lint::headings_equal() {
 cog::fn::docs_lint::successor_link() {
   local file="$1" tail="$2" dir number target self
   self="$(basename "$file")"
+  self="${self#ADR-}"
   self="${self%%-*}"
   # The pattern lives in a variable: an inline [[ =~ ]] regex loses its backslashes
   # to quote removal, which silently turns this into an unmatched-paren error.
@@ -204,7 +205,7 @@ cog::fn::docs_lint::successor_link() {
     tail="${tail#*"${BASH_REMATCH[0]}"}"
     target="${target%%#*}"
     target="${target#./}"
-    [[ $target == "$number"-*.md ]] || continue
+    [[ $target == "ADR-$number"-*.md ]] || continue
     [[ -f $dir/$target ]] || continue
     ((10#$number > 10#$self)) && return 0
   done
@@ -474,15 +475,22 @@ cog::fn::docs_lint::run() {
     if ! cog::fn::docs_lint::emphasis "$root" "$file"; then failures=$((failures + 1)); fi
     rel="$(cog::fn::docs_lint::relative "$root" "$file")"
     case "$rel" in
-      docs/decisions/[0-9][0-9][0-9][0-9]-*.md)
+      docs/decisions/ADR-[0-9][0-9][0-9][0-9]-*.md)
         if ! cog::fn::docs_lint::adr "$root" "$file"; then failures=$((failures + 1)); fi
         ;;
+      docs/decisions/README.md) ;;
       docs/decisions/template.md)
         # The seed for every new record: hold it to the heading contract so drift
         # surfaces at the template rather than in the record copied from it.
         if ! cog::fn::docs_lint::headings_equal "$root" "$file" "the ADR contract" \
           "## Context and Problem Statement" "## Considered Options" \
           "## Decision Outcome" "## Consequences" "## Status"; then failures=$((failures + 1)); fi
+        ;;
+      docs/decisions/*.md)
+        # Without the prefix a record is invisible to the dispatch above, so its
+        # contract would silently stop applying. Name the file rather than skip it.
+        printf '%s\n' "${rel}: decision record must be named ADR-<number>-<decision>.md" >&2
+        failures=$((failures + 1))
         ;;
       docs/plan/charter.md)
         if ! cog::fn::docs_lint::headings_equal "$root" "$file" "the charter contract" \

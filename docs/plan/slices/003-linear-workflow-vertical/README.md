@@ -1,7 +1,5 @@
 # 003 — Linear workflow vertical
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 003 — Linear workflow vertical","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 One installed linear stub workflow can be listed, validated, resolved, claimed, recorded, and summarized end to end.
@@ -56,8 +54,8 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 
 ## Governed by
 
-- `docs/decisions/0003-machine-facing-output-contract.md` — receipt stream behavior.
-- `docs/decisions/0007-skill-and-cli-responsibility-boundary.md` — deterministic command mechanics.
+- `docs/decisions/ADR-0003-machine-facing-output-contract.md` — receipt stream behavior.
+- `docs/decisions/ADR-0007-skill-and-cli-responsibility-boundary.md` — deterministic command mechanics.
 - `docs/reference/workflow-contract.md` — accepted grammar, engine registry, and validator rules.
 - `docs/reference/cli-commands.md` — public CLI grammar owner.
 

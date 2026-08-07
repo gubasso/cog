@@ -1,7 +1,5 @@
 # ADR-0020: Use reliable classification and composable pre-commit overlays
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0020: Use reliable classification and composable pre-commit overlays","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Bootstrap choices depend on project shape, execution environment, and cross-language quality layers. Prose signals and replacement-style hook options create false classifications and broken overlays.

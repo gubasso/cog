@@ -1,7 +1,5 @@
 # ADR-0017: Govern skill authoring with deterministic lint
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0017: Govern skill authoring with deterministic lint","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Runtime skills need lean positive prose, producer-blind consumers, stage-agnostic identifiers, scratch conventions, gate references, and terminal contracts. Manual review alone cannot keep these rules aligned.

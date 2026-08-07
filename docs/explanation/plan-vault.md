@@ -1,6 +1,6 @@
 # Plan vault
 
-The plan vault stores machine-oriented plan and round queues outside the reviewed roadmap. [ADR-0011](../decisions/0011-plan-vault-storage-and-resolution.md), [ADR-0012](../decisions/0012-queue-execution-and-reconciliation.md), and [ADR-0015](../decisions/0015-executor-capability-and-telemetry.md) own its storage, queue, and routing choices.
+The plan vault stores machine-oriented plan and round queues outside the reviewed roadmap. [ADR-0011](../decisions/ADR-0011-plan-vault-storage-and-resolution.md), [ADR-0012](../decisions/ADR-0012-queue-execution-and-reconciliation.md), and [ADR-0015](../decisions/ADR-0015-executor-capability-and-telemetry.md) own its storage, queue, and routing choices.
 
 ## Components and boundaries
 

@@ -1,4 +1,4 @@
-<!-- markdownlint-disable-file MD041 MD043 -->
+# Template — plan zone
 
 Copy each block below into the named file under `<project>/docs/plan/`. Create only the documents the project actually maintains; an empty charter is worse than no charter. The slice entry document has its own template — see [template-slice.md](./template-slice.md). Rules for all three are in [07 — Plan and Slices](./07-plan-and-slices.md).
 
@@ -33,8 +33,6 @@ Two pages at most. Revised per release, never per slice.
 ```markdown
 # Milestones
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# Milestones","## in flight","## closed"] } } -->
-
 The single status surface. A reader consults this and nothing else to know where the work stands.
 
 One line per slice, ordered by id inside its section: `<id> <slug> — <status> — <appetite>[ — <note>]`.
@@ -51,9 +49,9 @@ Two sections, live work first. A slice moves to `## closed` when its status beco
 - 001 <slug> — done — <n>
 ```
 
-Status is one of `shaped`, `active`, `done`, `cut`, or `reshaped`. A `reshaped` line names its successor id in the note. A `cut` line names what was cut. When `## closed` outgrows scrolling, move it wholesale to `milestones-closed.md`, leave one link, and drop `## closed` from the heading array above; that file is history, not a status surface.
+Status is one of `shaped`, `active`, `done`, `cut`, or `reshaped`. A `reshaped` line names its successor id in the note. A `cut` line names what was cut. When `## closed` outgrows scrolling, move it wholesale to `milestones-closed.md`, leave one link, and drop `## closed` from the milestones heading shape; that file is history, not a status surface.
 
-Keep the `markdownlint-configure-file` comment: it pins these three headings so no fourth section arrives, and it works with no project config beyond a markdownlint hook. See [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape).
+These three headings are a fixed shape, and the project gates them so no fourth section arrives. The gate is one configuration file plus one hook entry, shipped in [the heading-shape template](./template-heading-shapes.md) and explained in [10 — Lean Markdown](./10-lean-markdown.md#gating-a-fixed-heading-shape).
 
 Derive whatever can be derived from the slices themselves so this cannot silently disagree with them.
 

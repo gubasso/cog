@@ -2,7 +2,7 @@
 
 The contract for turning an a-priori complexity grade into a right-sized set of rounds: the _largest_ rounds that each grade at or below the single-session ceiling. Work is consolidated into one round, then split only when forced, recursively, until every round fits. This file is the single source of truth for the split loop; skills that implement the roles point here and do not restate the schemas, the dispatch table, or the ceiling policy.
 
-Grading itself is defined in `complexity-rubric.md` (this directory); resolve both with `cog skill-refs path plan-rounds/<file>`. The decision and its rationale are [ADR-0013](../../docs/decisions/0013-complexity-driven-round-sizing.md).
+Grading itself is defined in `complexity-rubric.md` (this directory); resolve both with `cog skill-refs path plan-rounds/<file>`. The decision and its rationale are [ADR-0013](../../docs/decisions/ADR-0013-complexity-driven-round-sizing.md).
 
 ## The three roles
 
@@ -18,8 +18,8 @@ The evaluator is blind to whether its input is a whole plan, one round, or a pos
 
 The split decision is _not_ split into "whether (deterministic) vs. how (judgment)." Every analytic call — the grade, is-it-splittable, where-to-cut, did-the-split-reduce — is made by a worker and rendered into structured fields. The orchestrator's decision is then a pure dispatch over those fields plus one constant compare. Judgment never leaves the workers; it arrives at the orchestrator as data. This is the skill/script boundary ([ADR-0007]) over the machine-output contract ([ADR-0003]).
 
-[ADR-0007]: ../../docs/decisions/0007-skill-and-cli-responsibility-boundary.md
-[ADR-0003]: ../../docs/decisions/0003-machine-facing-output-contract.md
+[ADR-0007]: ../../docs/decisions/ADR-0007-skill-and-cli-responsibility-boundary.md
+[ADR-0003]: ../../docs/decisions/ADR-0003-machine-facing-output-contract.md
 
 ## Contracts
 
@@ -75,7 +75,7 @@ coverage:
   duplicated: [R3]               # informational; a shared foundation may intentionally recur
 ```
 
-[ADR-0017]: ../../docs/decisions/0017-skill-authoring-and-lint.md
+[ADR-0017]: ../../docs/decisions/ADR-0017-skill-authoring-and-lint.md
 
 ### Requirement identity
 
@@ -138,7 +138,7 @@ Each pass grades all un-evaluated rounds in parallel, keeps the ones that fit, a
 
 This loop is implemented by the `cog round-rightsize` state machine ([ADR-0013]): `init` seeds the single parent round; `pending` drains a pass into its two parallel buckets; `record-grade` runs the ceiling compare; `record-split` runs coverage and enqueues the two children; `finalize` asserts the baseline conservation. The orchestrating skill advances it step by step and supplies only worker judgment; it never mutates the queue.
 
-[ADR-0013]: ../../docs/decisions/0013-complexity-driven-round-sizing.md
+[ADR-0013]: ../../docs/decisions/ADR-0013-complexity-driven-round-sizing.md
 
 ## Ceiling policy
 
@@ -175,7 +175,7 @@ The work queue is a durable JSON state file owned by `cog round-rightsize`, not 
 
 - **Evaluators** are read-only and fan out freely — one per un-evaluated round, no worktree, no contention.
 - **Splitters** within a pass each operate on a _disjoint_ over-ceiling round and write to disjoint content-slug paths the orchestrator assigns, so they parallelize without a worktree.
-- Role `model`/`effort` tiers follow `docs/reference/model-effort-policy.md` and are registered per [ADR-0014](../../docs/decisions/0014-model-effort-and-power-grade.md) when the skills are built.
+- Role `model`/`effort` tiers follow `docs/reference/model-effort-policy.md` and are registered per [ADR-0014](../../docs/decisions/ADR-0014-model-effort-and-power-grade.md) when the skills are built.
 
 ## Handoff to executor matching
 

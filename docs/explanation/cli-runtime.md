@@ -1,6 +1,6 @@
 # CLI runtime
 
-The CLI runtime maps one public command name to one module and one handler. [ADR-0002](../decisions/0002-standalone-loader-based-cli.md) owns the loader choice, and [ADR-0003](../decisions/0003-machine-facing-output-contract.md) owns stream and result behavior.
+The CLI runtime maps one public command name to one module and one handler. [ADR-0002](../decisions/ADR-0002-standalone-loader-based-cli.md) owns the loader choice, and [ADR-0003](../decisions/ADR-0003-machine-facing-output-contract.md) owns stream and result behavior.
 
 ## Components and boundaries
 

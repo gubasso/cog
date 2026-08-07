@@ -1,7 +1,5 @@
 # 007 — Executor workflow adoption
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 007 — Executor workflow adoption","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 `executor-workflow` drives one real workflow through the conformance contract while retaining its gates.
@@ -31,8 +29,8 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Governed by
 
 - `docs/plan/slices/006-provider-runners/README.md` — runner contract.
-- `docs/decisions/0010-executor-preparation-and-artifacts.md` — executor stages and artifacts.
-- `docs/decisions/0016-context-briefs-and-input-fidelity.md` — handoff contract.
+- `docs/decisions/ADR-0010-executor-preparation-and-artifacts.md` — executor stages and artifacts.
+- `docs/decisions/ADR-0016-context-briefs-and-input-fidelity.md` — handoff contract.
 - `docs/reference/skill-contract.md` — skill-class and gate rules.
 
 ## Acceptance

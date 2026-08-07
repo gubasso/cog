@@ -62,7 +62,7 @@ Which is the failure this format postpones rather than solves. `## closed` grows
 
 The slice document carries no status of its own, deliberately. Two status surfaces disagree, and the one a reader did not open is the one that is wrong. A reader holding a slice finds its status one grep away in `milestones.md`.
 
-Its two sections are a fixed shape and the project MUST pin them the same way, with the exact list `# Milestones`, `## in flight`, `## closed`. The pin is what stops the third section — a `## backlog`, a `## someday`, a per-status split — from arriving as a small helpful edit and turning the single status surface back into a plan. See [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape) for the mechanism; the [plan-zone template](./template-plan-zone.md) ships it. A project that has moved `## closed` out to `milestones-closed.md` drops that heading from its own array.
+Its two sections are a fixed shape and the project MUST gate them, with the exact list `# Milestones`, `## in flight`, `## closed`. The gate is what stops the third section — a `## backlog`, a `## someday`, a per-status split — from arriving as a small helpful edit and turning the single status surface back into a plan. See [10 — Lean Markdown](./10-lean-markdown.md#gating-a-fixed-heading-shape) for the mechanism; [the heading-shape template](./template-heading-shapes.md) ships the array and the hook entry. A project that has moved `## closed` out to `milestones-closed.md` drops that heading from its array.
 
 ### `open-questions.md`
 
@@ -126,7 +126,7 @@ The `Acceptance` lines expanded to a table mapping each assertion to the tests t
 
 ## The slice document
 
-`README.md` has a fixed heading list, and the project MUST pin it so it cannot drift into a second charter. The pin is an `MD043` heading array carried inside the document, opening with `*` because the H1 varies per slice; the mechanism is in [10 — Lean Markdown](./10-lean-markdown.md#pinning-a-fixed-heading-shape), and the [slice template](./template-slice.md) ships the comment already filled in. The headings:
+`README.md` has a fixed heading list, and the project MUST gate it so it cannot drift into a second charter. The gate is one `MD043` heading array, opening with `*` because the H1 varies per slice, held in one file and applied to every slice entry document by one hook entry; the mechanism is in [10 — Lean Markdown](./10-lean-markdown.md#gating-a-fixed-heading-shape), and [the heading-shape template](./template-heading-shapes.md) ships it filled in. The headings:
 
 ```text
 Goal          One sentence naming the observable outcome. Not the mechanism.

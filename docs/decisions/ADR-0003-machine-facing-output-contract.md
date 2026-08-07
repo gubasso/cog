@@ -1,7 +1,5 @@
 # ADR-0003: Make machine-facing output the default
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0003: Make machine-facing output the default","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Agent workflows need output that can be parsed without scraping decorative terminal prose. Diagnostics must remain separate from result data.

@@ -1,7 +1,5 @@
 # ADR-0006: Use native runtime skill trees and a prefix taxonomy
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0006: Use native runtime skill trees and a prefix taxonomy","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Claude and Codex need native skills without ambiguous naming or duplicated delegation semantics. Skill identifiers must expose their workflow role.

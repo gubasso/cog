@@ -1,6 +1,6 @@
 # Installation
 
-Installation copies the application and runtime assets into user-controlled XDG and prefix locations. [ADR-0004](../decisions/0004-manifest-owned-installation.md) owns manifest authority and pruning behavior.
+Installation copies the application and runtime assets into user-controlled XDG and prefix locations. [ADR-0004](../decisions/ADR-0004-manifest-owned-installation.md) owns manifest authority and pruning behavior.
 
 ## Components and boundaries
 

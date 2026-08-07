@@ -1,7 +1,5 @@
 # ADR-0016: Use best-constructed context briefs
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# ADR-0016: Use best-constructed context briefs","## Context and Problem Statement","## Considered Options","## Decision Outcome","## Consequences","## Status"] } } -->
-
 ## Context and Problem Statement
 
 Fresh-context workers need more than a compressed prompt: they need orientation, the raw request, and complete substantive artifacts without the coordinator's verdict. The handoff shape must be validated.

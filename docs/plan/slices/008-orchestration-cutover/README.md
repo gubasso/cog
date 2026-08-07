@@ -1,7 +1,5 @@
 # 008 — Orchestration cutover
 
-<!-- markdownlint-configure-file { "MD043": { "headings": ["# 008 — Orchestration cutover","## Goal","## Appetite","## Core","## In scope","## Out of scope","## Governed by","## Acceptance","## Rabbit holes","## Done when","## Revisions"] } } -->
-
 ## Goal
 
 Shipped `oneshot`, `vetted`, and `prex` behavior round-trips through workflows before old orchestrators are removed.
@@ -31,8 +29,8 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Governed by
 
 - `docs/plan/slices/007-executor-workflow-adoption/README.md` — first adopted executor path.
-- `docs/decisions/0010-executor-preparation-and-artifacts.md` — public behavior and artifacts.
-- `docs/decisions/0017-skill-authoring-and-lint.md` — curated lint tables.
+- `docs/decisions/ADR-0010-executor-preparation-and-artifacts.md` — public behavior and artifacts.
+- `docs/decisions/ADR-0017-skill-authoring-and-lint.md` — curated lint tables.
 - `docs/explanation/executors.md` — current executor design.
 
 ## Acceptance
