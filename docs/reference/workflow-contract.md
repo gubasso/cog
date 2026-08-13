@@ -22,7 +22,7 @@ A workflow's `steps:` is a list. Each entry carries exactly one kind key, and th
 
 | Kind key    | What it is             | Keys it takes                                 |
 | ----------- | ---------------------- | --------------------------------------------- |
-| `step:`     | leaf; runs a skill     | `id`, `as`, `engine`, `needs`                 |
+| `step:`     | leaf; runs a skill     | `id`, `as`, `engine`, `needs`, `context`      |
 | `workflow:` | composite by reference | `id`, `as`, `needs`                           |
 | `loop:`     | composite inline       | `as`, `needs`, `until`, `max_rounds`, `steps` |
 
@@ -56,7 +56,15 @@ The accepted seed is eleven engines: `claude-haiku-4.5-none`; `claude-opus-4.8-l
 
 The seed is a floor, not a ceiling. The registry lives in `data/workflow-engines/` and gains rows as providers ship subscription-available models; the five invariants below gate every row, and the effort ladders above are fixed. Two consequences of membership-is-permission show up in the shipped rows: a model whose provider rejects a rung never gets that row, and a provider whose runner does not exist yet still declares one, because the invariant is a declared runner rather than a live binary.
 
-Five registry invariants hold: derived ids, unique ids, exactly four fields, provider-valid efforts, and an existing provider runner.
+Five registry invariants hold: derived ids, unique ids, exactly four fields, provider-valid efforts, and an existing provider runner. What that declared runner must satisfy before its rows can actually be dispatched, and the `runner_status` field that records whether one does yet, are owned by [runner contract](./runner-contract.md).
+
+## Execution context
+
+`context:` is optional on a `step:` and takes the literal `fresh` or `inherit`. Absent, the step takes the workspace default in `meta.yaml`. `fresh` means the orchestrator must cross into a context that has not seen the run; `inherit` means it may run the step in its own. A `workflow:` or `loop:` node carries no context key, because it runs no agent — its steps each carry their own.
+
+The value is a file literal, never an expression, and there is no call-site override map: like `engine:`, one writer sets it. [ADR-0030](../decisions/ADR-0030-select-a-step-context-at-its-node.md) owns the choice, and [orchestrator contract](./orchestrator-contract.md) owns what an orchestrator must do with the value — the `inline` and `subprocess` capabilities are capabilities about exactly this key.
+
+The key is accepted grammar ahead of its enforcement: the validator does not yet check it, and no verb yet refuses a node whose context the orchestrator cannot honor.
 
 ## Artifacts
 
@@ -102,7 +110,8 @@ Validation runs once at load, before any agent is spawned, so a failure does not
 - No cycle among `needs:` edges, and none across file references.
 - `engine:` a literal present in the registry, required on every step definition, optional on a call site.
 - `loop:` carrying both `until:` and `max_rounds:`.
-- `id:`, `as:`, `engine:`, and `until:` parsed as strings, which closes the YAML scalar footguns; `until:` also non-empty.
+- `id:`, `as:`, `engine:`, `context:`, and `until:` parsed as strings, which closes the YAML scalar footguns; `until:` also non-empty.
+- `context:` a literal `fresh` or `inherit` where present, and present only on a `step:`. Accepted and not yet enforced, because the engine is landing no further code for now.
 - `max_rounds:` a positive integer.
 - Reference nesting within `max_workflow_depth`.
 - No `skill:` key anywhere under `workflows/`.

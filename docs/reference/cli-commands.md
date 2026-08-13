@@ -191,7 +191,7 @@ The line-2 `: 'desc: ...'` sentinel in each command module is the summary source
 
 `cog workflow` verbs share one exit-code protocol. It is protocol only and never workflow semantics: `0` a valid result or an applied transition, including the terminal states, which live in the JSON `state` field; `1` an internal failure reading or persisting state; `2` `InvalidInput` — a stale or missing token, an illegal transition, a digest mismatch, or malformed output; and `75` when the run cannot advance yet, matching `cog codex-runner finalize`. An `advance` that would exceed `max_rounds`, or that reports `continue` or `converged` on a round which produced no files, is an illegal transition. `--json` is the contract for every verb except `conformance`, which is the human and CI readout; the bare forms exist for a human reading a terminal.
 
-Workflow definitions resolve per file across the project, user, and installed layers, and the engine registry lives in `data/workflow-engines/` rather than the workspace, because registry membership is the permission to dispatch. The grammar, the registry shape, and the validator rules are owned by [workflow contract](./workflow-contract.md).
+Workflow definitions resolve per file across the project, user, and installed layers, and the engine registry lives in `data/workflow-engines/` rather than the workspace, because registry membership is the permission to dispatch. The grammar, the registry shape, and the validator rules are owned by [workflow contract](./workflow-contract.md); what a driver of these verbs must do with them is owned by [orchestrator contract](./orchestrator-contract.md).
 
 Root help is generated dynamically by `lib/functions/fn_help_generate.sh`. `completions/cog.bash` and `man/cog.1.scd` are machine self-documentation mirrors of the command surface and must be kept in sync with `lib/commands/cmd_*.sh`.
 
@@ -201,7 +201,7 @@ Root help is generated dynamically by `lib/functions/fn_help_generate.sh`. `comp
 
 `cog codex-runner orientation <read-only|write>` prints the canonical Codex prompt orientation block for the requested access mode.
 
-`cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner` classification.
+`cog codex-runner explain-status <status>` explains a status returned by `cog codex-runner` classification. Those statuses are provider diagnostics rather than a second classification; a caller branches on the exit code. What every provider runner must supply is owned by [runner contract](./runner-contract.md).
 
 `cog executor init` creates a shared executor run directory for one prompt or plan. Its identity flags are split by responsibility:
 

@@ -9,8 +9,8 @@ What bounds this work is in the [charter](./charter.md); what could still change
 ## in flight
 
 - 004 [composites-loops-and-recovery](./slices/004-composites-loops-and-recovery/README.md) — shaped — 3 sessions — adds composites, lazy loop rounds, and crash recovery
-- 005 [orchestrator-conformance](./slices/005-orchestrator-conformance/README.md) — shaped — 2 sessions — vendor-neutral fixture and the orchestrator reference page
-- 006 [provider-runners](./slices/006-provider-runners/README.md) — shaped — 3 sessions — adds `claude-runner` beside the existing `codex-runner` contract
+- 005 [orchestrator-conformance](./slices/005-orchestrator-conformance/README.md) — shaped — 2 sessions — reference page published early; the vendor-neutral fixture is the remaining work
+- 006 [provider-runners](./slices/006-provider-runners/README.md) — shaped — 3 sessions — runner contract published early; adds `claude-runner` and retrofits `codex-runner` to it
 - 007 [executor-workflow-adoption](./slices/007-executor-workflow-adoption/README.md) — shaped — 3 sessions — routes one real executor workflow through the accepted contract
 - 008 [orchestration-cutover](./slices/008-orchestration-cutover/README.md) — shaped — 3 sessions — moves `oneshot`, `vetted`, and `prex` one at a time with rollback retained
 - 009 [installation-and-retirement](./slices/009-installation-and-retirement/README.md) — shaped — 2 sessions — install and uninstall completeness plus the stale-reference sweep

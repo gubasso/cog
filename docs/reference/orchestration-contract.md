@@ -11,6 +11,8 @@ This reference defines how `cog` skills and agents compose Claude, Codex, queues
 | Workflow                             | Background parallel fan-out                              | Not synchronous recursion | Use for independent parallel work, not call-stack style orchestration.                              |
 | Headless `claude -p`                 | Separate process without the live interactive event loop | Avoid                     | Abandoned for recursive orchestration because backgrounded work can be reaped after the final turn. |
 
+The `Workflow` row above means background parallel fan-out, and not the `cog workflow` engine. What a driver of that engine owes it is a separate contract with a separate reader: see [orchestrator contract](./orchestrator-contract.md), which requires none of the primitives on this page.
+
 ## Environment Requirements
 
 The primary no-backgrounding lever is:
@@ -32,6 +34,8 @@ A coding agent runs for as long as it needs; duration is never a failure or qual
 The exit code is the signal. `finalize` exits `0` (done, ok), `1` (done, failed), or `75` (`EX_TEMPFAIL` — still running) — the caller branches on `$?` and reads the JSON body only for details. A still-`running` job is never classified and never an error; finalize emits its snapshot and exits `75`. Because the ~600s ceiling forbids one blocking call, the orchestrator owns the repetition: it re-issues the bounded `finalize --max-wall` tool call while it sees `75`. That is a trivial `$?`-based retry across tool calls, never a shell `while` inside one >600s invocation. The contract is identical for `cog longrun` and `cog codex-runner`.
 
 Access is declared per launch and defaults closed. `run-exec --access write` is admitted only by `--mode danger`; every other mode is read-only. `run-resume` takes the same `--access` flag and also defaults to `read-only`, because a resume inherits no sandbox from the thread it resumes: `codex exec resume` accepts no `--sandbox` flag, so cog expresses read-only through the `sandbox_mode` config override and reserves `--dangerously-bypass-approvals-and-sandbox` for `--access write`. `finalize` reports the access the round actually ran under, so a caller can prove a read-only reviewer stayed read-only rather than trusting prompt wording.
+
+What a provider runner must supply on top of these rules — the conformance fields, the absolute artifact paths, the precondition report, and the two ways the Claude and Codex CLIs are not shaped alike — is owned by [runner contract](./runner-contract.md).
 
 This is the only sanctioned form of non-blocking execution. cog detaching its own child is not the model backgrounding its own tool call; ad-hoc shell backgrounding (`&`, `run_in_background: true`) on Codex or orchestration work stays prohibited, and `cog skill-lint` enforces the distinction. Every `codex-session` run is a durable job. See [ADR-0009](../decisions/ADR-0009-orchestration-and-durable-jobs.md).
 
