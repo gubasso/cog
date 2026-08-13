@@ -106,8 +106,6 @@ tiers:
       - gc-repo
       - runner-all
       - runner-plan
-      - executor-oneshot-codex
-      - plan-oneshot-codex
     use_when: |-
       Executes a well-structured, detailed procedure where the hard decisions are already
       made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains.

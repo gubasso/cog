@@ -28,6 +28,15 @@ cog codex-runner run-exec --mode danger --access write --effort high --prompt <f
 
 This three-absolute-path shape is the **Orchestrator Invocation Contract**. If `$ARGUMENTS` is not three absolute paths, fall back to conversational review only when the user supplied both a request or goal and a plan. If either input is missing or materially ambiguous, ask one focused clarification before continuing.
 
+**Plan-input gate.** Before any review work, confirm the plan input is a reviewable plan per `$(cog skill-refs path plan-rounds/plan-input-gate.md)`. In orchestrator mode gate the path directly; in the conversational fallback there is no plan path, so stage the inline plan text verbatim under a `cog rundir` scratch file first and gate that:
+
+```bash
+cog plan-gate check "$PLAN_PATH"                     # orchestrator mode
+cog plan-gate check --input-file <RUN_DIR>/raw-input.txt   # conversational fallback
+```
+
+On `insufficient`, stop and report that a plan must be built first.
+
 ## Phase 1: Parse And Scaffold
 
 Do not create or write the output path manually. Delegate artifact mechanics to `cog plan-review`. The skill body references the deployed command form, plain `cog plan-review`.

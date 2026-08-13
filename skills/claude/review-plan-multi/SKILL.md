@@ -64,6 +64,15 @@ The command parses `--solo`, classifies the input form, creates the run dir, res
 
 Shell state does not persist between Bash calls — substitute the literal path values into later commands.
 
+**Plan-input gate.** With the classified input in hand, confirm it is a reviewable plan per `$(cog skill-refs path plan-rounds/plan-input-gate.md)` before building anything or dispatching either worker. Pass the form the setup command reported:
+
+```bash
+cog plan-gate check <PLAN_PATH | PLAN_DIR>          # MODE=file | MODE=dir
+cog plan-gate check --input-file <RAW_INPUT_FILE>   # MODE=inline
+```
+
+On `insufficient`, stop and ask the user to build a plan first; do not run the dual review.
+
 ## Phase 2: Build the plan-under-review and the raw request brief
 
 Produce the **single, identical pair of inputs** both workers receive.

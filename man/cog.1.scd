@@ -222,6 +222,9 @@ The command list and short descriptions are sourced from command modules under
 *plan-doc*
 	Write and validate lean plan artifacts.
 
+*plan-gate*
+	Gate whether an input is a reviewable implementation plan.
+
 *plan-init*
 	Bootstrap implementation plan root files.
 

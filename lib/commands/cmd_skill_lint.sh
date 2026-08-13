@@ -123,6 +123,7 @@ __cog_skill_lint_input_fidelity_required() {
       claude:executor-vetted | \
       claude:executor-oneshot-codex | \
       claude:plan-oneshot-codex | \
+      claude:review-plan-oneshot-codex | \
       codex:executor-oneshot)
       return 0
       ;;

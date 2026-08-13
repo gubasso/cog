@@ -10,6 +10,11 @@ setup() {
   source "${LIB_DIR}/functions/fn_json_write.sh"
   source "${LIB_DIR}/functions/fn_rundir.sh"
   source "${LIB_DIR}/functions/fn_git.sh"
+  source "${LIB_DIR}/functions/fn_skill.sh"
+  source "${LIB_DIR}/functions/fn_plan_artifact.sh"
+  source "${LIB_DIR}/functions/fn_plan_doc.sh"
+  source "${LIB_DIR}/functions/fn_assess_input.sh"
+  source "${LIB_DIR}/functions/fn_plan_gate.sh"
   source "${LIB_DIR}/commands/cmd_review_plan_multi_setup.sh"
 }
 
@@ -40,20 +45,22 @@ setup() {
   [ "$input" = "-starts-with-dash" ]
 }
 
+# review-plan-multi-setup and cog plan-gate share one classifier, so the setup
+# surface and the plan gate can never disagree about what input form was passed.
 @test "review-plan-multi classifier detects file, dir, and inline" {
   local f="${BATS_TEST_TMPDIR}/plan.md" d="${BATS_TEST_TMPDIR}/plandir"
   printf '# Plan\n' >"$f"
   mkdir -p "$d"
 
-  run __cog_review_plan_multi_setup_classify "$f"
+  run cog::fn::plan_gate::classify_input "$f"
   assert_success
   [[ $output == file*"$f" ]]
 
-  run __cog_review_plan_multi_setup_classify "$d"
+  run cog::fn::plan_gate::classify_input "$d"
   assert_success
   [[ $output == dir*"$d" ]]
 
-  run __cog_review_plan_multi_setup_classify "some inline plan text"
+  run cog::fn::plan_gate::classify_input "some inline plan text"
   assert_success
   [[ $output == inline* ]]
 }

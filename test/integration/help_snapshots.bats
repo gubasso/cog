@@ -95,6 +95,7 @@ Commands:
   plan-builder-to-queue-setup Parse plan-builder-to-queue arguments and create plan-vault run state.
   plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
+  plan-gate      Gate whether an input is a reviewable implementation plan.
   plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
@@ -232,6 +233,7 @@ Commands:
   plan-builder-to-queue-setup Parse plan-builder-to-queue arguments and create plan-vault run state.
   plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
+  plan-gate      Gate whether an input is a reviewable implementation plan.
   plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.

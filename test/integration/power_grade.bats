@@ -156,6 +156,47 @@ setup() {
   ' >/dev/null
 }
 
+# A '-codex' launcher delegates the substantive turn to Codex, so the suffix is
+# matched ahead of the base prefix and rides LOW by rule, not by registry pin.
+@test "power-grade skill-tier defaults a codex launcher to low over its base prefix" {
+  # review-plan-oneshot-codex is pinned in no registry, so its low tier can only
+  # come from the suffix rule beating the review-plan-* high default.
+  run cog power-grade skill-tier --skill review-plan-oneshot-codex --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .ok == true and
+    .skill == "review-plan-oneshot-codex" and
+    .expected == "low" and
+    .actual == "low" and
+    .reason == "prefix-default"
+  ' >/dev/null
+
+  # The other launchers resolve low too. Their reason is not asserted: it reads
+  # "registry" against a stale installed tiers.yaml that still lists them, since
+  # cog::fn::data_root prefers the XDG install over the repo copy.
+  local skill
+  for skill in plan-oneshot-codex executor-oneshot-codex; do
+    run cog power-grade skill-tier --skill "$skill" --json
+
+    assert_success
+    printf '%s\n' "$output" | jq -e '.expected == "low" and .actual == "low"' >/dev/null
+  done
+}
+
+# The base prefixes still govern every non-launcher sibling.
+@test "power-grade skill-tier keeps base prefix defaults for non-launcher siblings" {
+  run cog power-grade skill-tier --skill review-plan-multi --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.expected == "high" and .actual == "high"' >/dev/null
+
+  run cog power-grade skill-tier --skill executor-oneshot --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.expected == "medium" and .actual == "medium"' >/dev/null
+}
+
 @test "power-grade skill-tier reports an ungoverned skill as exempt" {
   run cog power-grade skill-tier --skill context-builder --json
 

@@ -45,21 +45,8 @@ __cog_review_plan_multi_setup_parse() {
   printf -v "$out_input" '%s' "$rest"
 }
 
-# Classify the input form: an existing file, an existing directory, or inline text.
-# Emits "MODE\tABS" where ABS is the resolved absolute path for file/dir modes and
-# empty for inline mode.
-__cog_review_plan_multi_setup_classify() {
-  local input="$1" abs
-  if [[ -f $input ]]; then
-    abs="$(realpath -- "$input")"
-    printf 'file\t%s\n' "$abs"
-  elif [[ -d $input ]]; then
-    abs="$(realpath -- "$input")"
-    printf 'dir\t%s\n' "$abs"
-  else
-    printf 'inline\t\n'
-  fi
-}
+# Input-form classification (file | dir | inline) is shared with cog plan-gate so
+# the setup surface and the plan gate can never disagree about what was passed.
 
 __cog_review_plan_multi_setup_build_json() {
   local raw="$1"
@@ -68,7 +55,7 @@ __cog_review_plan_multi_setup_build_json() {
   local request_file plan_under_review claude_review codex_review final_review
 
   __cog_review_plan_multi_setup_parse "$raw" solo input
-  classified="$(__cog_review_plan_multi_setup_classify "$input")"
+  classified="$(cog::fn::plan_gate::classify_input "$input")"
   mode="${classified%%$'\t'*}"
   abs="${classified#*$'\t'}"
 

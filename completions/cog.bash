@@ -81,6 +81,7 @@ _cog() {
     plan-builder-to-queue-setup
     plan-complexity
     plan-doc
+    plan-gate
     plan-init
     plan-multi-setup
     plan-review

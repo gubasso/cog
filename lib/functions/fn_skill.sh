@@ -244,6 +244,10 @@ cog::fn::skill::registry_tier() {
 # Prefix-default tier for a governed skill name, or empty for ungoverned prefixes.
 cog::fn::skill::prefix_default_tier() {
   case "$1" in
+    # A '-codex' launcher delegates the whole substantive turn to Codex and keeps
+    # only argument handling, gating, dispatch, and reporting, so it rides LOW
+    # regardless of what its base prefix would otherwise demand.
+    *-codex) printf '%s\n' low ;;
     review-plan-*) printf '%s\n' high ;;
     review-oneshot*) printf '%s\n' xhigh ;;
     plan-*) printf '%s\n' high ;;

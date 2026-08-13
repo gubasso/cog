@@ -89,6 +89,8 @@ source "${LIB_DIR}/functions/fn_plan_artifact.sh"
 source "${LIB_DIR}/functions/fn_plan_doc.sh"
 # shellcheck source=../lib/functions/fn_plan_review.sh
 source "${LIB_DIR}/functions/fn_plan_review.sh"
+# shellcheck source=../lib/functions/fn_plan_gate.sh
+source "${LIB_DIR}/functions/fn_plan_gate.sh"
 # shellcheck source=../lib/functions/fn_plan_store.sh
 source "${LIB_DIR}/functions/fn_plan_store.sh"
 # shellcheck source=../lib/functions/fn_plan_config.sh
