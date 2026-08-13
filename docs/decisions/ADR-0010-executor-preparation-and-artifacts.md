@@ -24,3 +24,5 @@ Chosen option: `Gate input quality and make cog own durable artifacts` — it ma
 Implemented
 
 Enacted by [executors](../explanation/executors.md) and [`cmd_executor.sh`](../../lib/commands/cmd_executor.sh).
+
+Amended by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — executors no longer record match-outcome telemetry.

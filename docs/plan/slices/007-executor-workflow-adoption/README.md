@@ -24,7 +24,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Out of scope
 
 - Cutover of `oneshot`, `vetted`, or `prex`.
-- Removal of existing executor skills or calibration evidence.
+- Removal of existing executor skills.
 
 ## Governed by
 
@@ -51,4 +51,4 @@ The new executor path and both validation hooks pass, existing executors remain 
 
 ## Revisions
 
-None.
+- 2026-08-13 — Out of scope dropped its calibration-evidence clause. ADR-0032 removed the executor-capability evidence, so there is nothing left for this slice to hold out of scope. The executor half of the exclusion is unchanged.

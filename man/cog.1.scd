@@ -126,6 +126,9 @@ The command list and short descriptions are sourced from command modules under
 *gc-commit-lint*
 	Validate a commit message against Conventional Commits (or defer to the repo linter).
 
+*gc-commit-parse*
+	Parse gc commit result lines.
+
 *gc-loop-progress*
 	Compare commit failure reports across round-loop rounds.
 
@@ -189,9 +192,6 @@ The command list and short descriptions are sourced from command modules under
 *longrun*
 	Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
 
-*match-telemetry*
-	Record and report plan→executor match-outcome telemetry.
-
 *msg*
 	Emit uniform machine status lines.
 
@@ -210,23 +210,11 @@ The command list and short descriptions are sourced from command modules under
 *osc-probe-binary*
 	Resolve a binary RPM to an OBS source package.
 
-*plan*
-	Resolve and manage plan stores.
-
-*plan-builder-to-queue-setup*
-	Parse plan-builder-to-queue arguments and create plan-vault run state.
-
-*plan-complexity*
-	Extract and compare implementation plan complexity signals.
-
 *plan-doc*
 	Write and validate lean plan artifacts.
 
 *plan-gate*
 	Gate whether an input is a reviewable implementation plan.
-
-*plan-init*
-	Bootstrap implementation plan root files.
 
 *plan-multi-setup*
 	Parse plan-multi arguments and create run state.
@@ -255,37 +243,8 @@ The command list and short descriptions are sourced from command modules under
 *preflight*
 	Run centralized orchestrator preflight checks.
 
-	*cog preflight claude-env <out.json>* asserts
-	the Claude Code no-backgrounding session env. Strict mode requires
-	*CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1*; Bash timeout env vars are
-	recorded as diagnostics only.
-
 *print-config*
 	Print resolved configuration values and their sources.
-
-*queue-append*
-	Append one implementation plan queue entry.
-
-*queue-bootstrap*
-	Create and validate an implementation plan queue.
-
-*queue-deps-set*
-	Replace one mutable queue item dependency list with a guarded graph check.
-
-*queue-graph-check*
-	Validate queue dependency graph references and cycles.
-
-*queue-prompt-set*
-	Set one queue item prompt with an expected-current-prompt guard.
-
-*queue-reorder*
-	Reorder mutable queue items by stable dependency topological sort.
-
-*queue-select*
-	Select the next runnable implementation plan round.
-
-*queue-status-set*
-	Set one queue item status with an expected-current-status guard.
 
 *readme-apply*
 	Apply a README skeleton to a project.
@@ -326,15 +285,6 @@ The command list and short descriptions are sourced from command modules under
 *review-plan-multi-setup*
 	Parse review-plan-multi arguments and create run state.
 
-*review-queue-rounds-check-idempotency*
-	Flag a round whose declared artifacts an earlier round already deployed.
-
-*review-queue-rounds-scan*
-	Inventory all plan-vault queues and repo/plan fingerprints.
-
-*review-queue-rounds-verify*
-	Verify a review-queue-rounds run against a before/after scan.
-
 *review-scope*
 	Detect changed-file review scope.
 
@@ -344,29 +294,8 @@ The command list and short descriptions are sourced from command modules under
 *review-validate-findings*
 	Validate review findings JSON.
 
-*round-prompt*
-	Assemble and validate executor-stamped round prompts.
-
-*round-req*
-	Stamp and list round acceptance requirement IDs.
-
-*round-rightsize*
-	Drive the recursive round right-sizing queue.
-
-*round-split*
-	Check split-round requirement coverage.
-
 *rundir*
 	Create a workflow run directory and optionally acquire its lock.
-
-*runner-all-setup*
-	Parse runner-all arguments and create main queue run state.
-
-*runner-commit-parse*
-	Parse runner commit result lines.
-
-*runner-plan-setup*
-	Parse runner-plan arguments and create round queue run state.
 
 *skill-class*
 	Show and check core skill-class contracts and prerequisites.
@@ -376,9 +305,6 @@ The command list and short descriptions are sourced from command modules under
 
 *skill-refs*
 	Resolve in-repo/installed skill-source reference files.
-
-*spec-leakage-scan*
-	scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
 
 *suckless-apply*
 	Check, apply, and build a suckless patch.
@@ -409,7 +335,6 @@ The command list and short descriptions are sourced from command modules under
 
 *workflow*
 	Resolve, validate, and drive workflow runs.
-
 # FILES
 
 *$PREFIX/lib/cog/*

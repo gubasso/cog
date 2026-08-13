@@ -136,12 +136,12 @@ If validation fails, fix the generated plan headings and validate again before r
 
 ## Final Response
 
-Print the full plan to screen, then report the saved absolute path. Include any assumptions, remaining ambiguities, and shelf entries reused or refreshed. Do not display or create any `.implementation-plans/` directory, queue, or multi-round artifacts.
+Print the full plan to screen, then report the saved absolute path. Include any assumptions, remaining ambiguities, and shelf entries reused or refreshed. Report exactly one artifact path and nothing else.
 
 ## Guardrails
 
 - This skill writes only the one lean plan artifact returned by `cog plan-doc save`.
 - Do not run git commands.
 - Do not implement the plan.
-- Do not create `.implementation-plans/`, `queue-rounds.yaml`, `queue-plans.yaml`, or plan directories.
+- Write exactly one artifact, at the path `cog plan-doc save` returns or at the caller's `--output`, and nothing outside it.
 - Keep deterministic mechanics behind `cog` commands; prose owns sequencing, judgment, and interview decisions.

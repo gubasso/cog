@@ -47,6 +47,8 @@ setup() {
 
 # review-plan-multi-setup and cog plan-gate share one classifier, so the setup
 # surface and the plan gate can never disagree about what input form was passed.
+# The setup surface accepts only file and inline and rejects the directory form
+# the classifier still reports for cog plan-gate.
 @test "review-plan-multi classifier detects file, dir, and inline" {
   local f="${BATS_TEST_TMPDIR}/plan.md" d="${BATS_TEST_TMPDIR}/plandir"
   printf '# Plan\n' >"$f"

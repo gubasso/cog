@@ -119,7 +119,7 @@ One independent worker per repo, all in parallel, following the Homogeneous Para
 
    ```bash
    xargs -r -d '\n' cat < "$RUN_DIR/result-files.txt" > "$RUN_DIR/commit-results.txt"
-   cog runner-commit-parse "$RUN_DIR/commit-results.txt" --json
+   cog gc-commit-parse "$RUN_DIR/commit-results.txt" --json
    ```
 
    Emit the aggregated lines — `COMMIT_OK <sha> repo=<root>`, `COMMIT_PUSH_OK <sha> repo=<root>`, `COMMIT_FAILED <reason> repo=<root>`, `COMMIT_PUSH_FAILED <reason> repo=<root>` — as the trailing block of the reply, with nothing after it. A `*_FAILED` line is a hard fail; surface those repos to the user. A failure in one repo does not roll back commits already made in other repos.

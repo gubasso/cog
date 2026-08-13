@@ -34,24 +34,15 @@ EOF
   printf '%s\n' "$output" | jq -e --arg p "$plan" '.mode == "file" and .plan_path == $p and .solo == false' >/dev/null
 }
 
-@test "cog review-plan-multi-setup enumerates plan-directory markdown sources in order" {
+@test "cog review-plan-multi-setup rejects a directory argument" {
   local dir="${BATS_TEST_TMPDIR}/plandir"
   mkdir -p "$dir"
-  printf '# r2\n' >"$dir/round-2.md"
-  printf '# r1\n' >"$dir/round-1.md"
-  printf 'rounds: []\n' >"$dir/queue-rounds.yaml"
+  printf '# Plan\n' >"$dir/plan.md"
 
-  run cog review-plan-multi-setup --json "$dir"
+  run --separate-stderr cog review-plan-multi-setup --json "$dir"
 
-  assert_success
-  printf '%s\n' "$output" | jq -e '.mode == "dir"' >/dev/null
-  local sources
-  sources="$(printf '%s\n' "$output" | jq -r '.plan_sources')"
-  assert_file_contains "$sources" "round-1.md"
-  assert_file_contains "$sources" "round-2.md"
-  run cat "$sources"
-  [[ $output != *"queue-rounds.yaml"* ]]
-  [[ $(sed -n '1p' "$sources") == *round-1.md ]]
+  assert_failure 2
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
 }
 
 @test "cog review-plan-multi-setup rejects empty input and unknown flags" {

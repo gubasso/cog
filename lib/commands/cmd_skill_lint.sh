@@ -111,13 +111,11 @@ __cog_skill_lint_input_fidelity_required() {
   case "${runtime}:${name}" in
     claude:plan-multi | \
       claude:plan-vetted | \
-      claude:plan-builder-to-queue | \
       claude:review-plan-multi | \
       claude:review-loop | \
       claude:context-builder | \
       claude:ask | \
       claude:bootstrap | \
-      claude:executor-greenfield-from-spec | \
       claude:executor-prex | \
       claude:executor-oneshot | \
       claude:executor-vetted | \
@@ -988,11 +986,7 @@ __cog_skill_lint_scan_prose_file() {
 # Consumer skill name -> space-separated producer names it must not name in prose.
 __cog_skill_lint_producer_blind_producers() {
   case "$1" in
-    runner-all | runner-plan) printf '%s' "plan-builder-to-queue plan-builder-to-queue-vetted-multi" ;;
     review-findings) printf '%s' "review-code-deep review-oneshot review-loop" ;;
-    review-plan-capability-spec) printf '%s' "plan-capability-spec" ;;
-    plan-solution-spec) printf '%s' "plan-capability-spec" ;;
-    review-plan-solution-spec) printf '%s' "plan-solution-spec plan-capability-spec" ;;
     *) printf '%s' "" ;;
   esac
 }
@@ -1044,7 +1038,7 @@ __cog_skill_lint_check_producer_blind() {
       if __cog_skill_lint_line_has_producer_token "$line" "$producer"; then
         __cog_skill_lint_finding "$file" "$line_no" "producer-blindness" \
           "names producer skill '${producer}'; a consumer must be blind to its input's producer" \
-          "describe the structural input contract (e.g. .implementation-plans/ or the findings contract); do not name the producer skill"
+          "describe the structural input contract (e.g. the plan document shape or the findings contract); do not name the producer skill"
         failed=1
       fi
     done
@@ -1060,8 +1054,6 @@ __cog_skill_lint_check_producer_blind() {
 __cog_skill_lint_inline_skill_tool_dmi_targets() {
   case "$1" in
     plan-vetted) printf '%s' "plan-multi review-plan-multi" ;;
-    plan-builder-to-queue) printf '%s' "plan-oneshot review-plan-complexity plan-split" ;;
-    plan-builder-to-queue-vetted-multi) printf '%s' "plan-vetted review-plan-multi review-plan-complexity plan-split" ;;
     *) printf '%s' "" ;;
   esac
 }
@@ -1175,8 +1167,8 @@ __cog_skill_lint_check_artifact_write_ownership() {
 # authoritative registry in data/model-effort/claude (per-tier
 # `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
 # Absent model+effort rides the session default (HIGH). The known exceptions
-# (executor-prex high; codex launchers, review-findings, review-queue-rounds
-# low) live in the registry, not here. See docs/decisions/ADR-0014-model-effort-and-power-grade.md.
+# (executor-prex high; codex launchers and review-findings low) live in the
+# registry, not here. See docs/decisions/ADR-0014-model-effort-and-power-grade.md.
 __cog_skill_lint_check_model_effort_tier() {
   local file="$1" runtime name expected model effort actual
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
@@ -1328,7 +1320,6 @@ __cog_skill_lint_terminal_contract_token() {
   case "$1" in
     review-loop) printf 'REVIEW_LOOP_OK' ;;
     gc-repo) printf 'COMMIT_OK' ;;
-    review-queue-rounds) printf 'STATUS' ;;
     *) return 1 ;;
   esac
 }

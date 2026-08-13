@@ -142,7 +142,7 @@ Do not extract or do the following:
 - **Trivial single reads.** `jq -r '.thread_id'`, a single `git rev-parse`, `command -v X` — inline.
 - **Prompt heredocs / message bodies.** Content is model-authored; only the scaffolding extracts.
 - **Judgment tables.** A table that reads deterministic inputs but encodes a _decision_ (resume-fallback reaction, finding → status triage, plan-conformance) stays prose.
-- **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely multi-line parsers (executor-prex, plan-multi, runner-all, runner-plan) earn a subcommand.
+- **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely multi-line parsers (executor-prex, plan-multi) earn a subcommand.
 - **Micro-helper clouds.** Several subcommands stitched with `jq` between each call. Make it coarse: one subcommand, one JSON object.
 - **Hand-rolled `cog` resolve/fallback blocks.** Bare call + `require`; never a stale `_tmp` fallback.
 - **Silent truncation.** If a helper bounds coverage (top-N, sampling, no-retry), it must say so on stderr; a silent cap reads as "covered everything" when it did not.

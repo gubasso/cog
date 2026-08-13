@@ -47,7 +47,6 @@ The skill-prefix taxonomy maps to default rungs (override per skill only with re
 - `executor-*` → MEDIUM by default; a reasoning executor that judges, re-evaluates, directs, or fixes (e.g. `executor-prex`) may ride HIGH.
 - `review-plan-*` → HIGH (reviewing an already-distilled plan/spec).
 - `review-oneshot-*` → XHIGH by default (fresh-context full review); `review-oneshot` itself rides HIGH as a deliberate cost/latency exception (ADR-0010), recorded via its `high` registry membership.
-- `runner-*` → LOW for verbatim prompt-opaque dispatch; higher only when it does routing policy, triage, or retry decisions.
 - `*-codex` → LOW, and this suffix wins over the base prefix. A delegation launcher hands the whole substantive turn to Codex and keeps only argument handling, gating, dispatch, and reporting, so the base prefix's reasoning floor does not apply to the Claude side.
 
 These defaults are enforced for Claude skills by the `model-effort-tier` `cog skill-lint` rule. The per-tier `skills` lists in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml) are the authoritative registry: a skill listed under a tier is pinned to it, which is where deviations from the prefix default (the recorded justification) live. Verify a skill with `cog power-grade skill-tier --skill <name>` and resolve a tier to its Claude/Codex cells with `cog power-grade tier --name <name>`. See [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md).

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 : 'desc: Parse review-plan-multi arguments and create run state.'
 
-__cog_review_plan_multi_setup_self_check='(.run_dir|type=="string") and (.mode|type=="string") and (.solo|type=="boolean") and (.repo_root|type=="string") and (.request_file|type=="string") and (.plan_under_review|type=="string") and (.claude_review|type=="string") and (.codex_review|type=="string") and (.final_review|type=="string") and (.plan_path|type=="string") and (.plan_dir|type=="string") and (.plan_sources|type=="string") and (.raw_input_file|type=="string")'
+__cog_review_plan_multi_setup_self_check='(.run_dir|type=="string") and (.mode|type=="string") and (.solo|type=="boolean") and (.repo_root|type=="string") and (.request_file|type=="string") and (.plan_under_review|type=="string") and (.claude_review|type=="string") and (.codex_review|type=="string") and (.final_review|type=="string") and (.plan_path|type=="string") and (.raw_input_file|type=="string")'
 
 __cog_review_plan_multi_setup_usage() {
   cog::fn::ui_data "Usage: cog review-plan-multi-setup [--json] [arguments-string]"
@@ -40,24 +40,29 @@ __cog_review_plan_multi_setup_parse() {
   done
   [[ -n $rest ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
     "plan input is required" "usage: cog review-plan-multi-setup [--json] [arguments-string]" \
-    "expected a plan file, a plan directory, or inline plan+context text" ""
+    "expected a plan file or inline plan+context text" ""
   printf -v "$out_solo" '%s' "$parsed_solo"
   printf -v "$out_input" '%s' "$rest"
 }
 
-# Input-form classification (file | dir | inline) is shared with cog plan-gate so
-# the setup surface and the plan gate can never disagree about what was passed.
+# Input-form classification is shared with cog plan-gate so the setup surface and
+# the plan gate can never disagree about what was passed. This surface accepts
+# only the file and inline forms; a directory is rejected here rather than
+# enumerated, so one review always reads exactly one plan.
 
 __cog_review_plan_multi_setup_build_json() {
   local raw="$1"
   local solo input mode abs classified run_dir repo_root
-  local plan_path="" plan_dir="" plan_sources="" raw_input_file=""
+  local plan_path="" raw_input_file=""
   local request_file plan_under_review claude_review codex_review final_review
 
   __cog_review_plan_multi_setup_parse "$raw" solo input
   classified="$(cog::fn::plan_gate::classify_input "$input")"
   mode="${classified%%$'\t'*}"
   abs="${classified#*$'\t'}"
+  [[ $mode != dir ]] || cog::fn::error_raise_with_exit 2 "InvalidInput" \
+    "review-plan-multi does not review a directory" "path: ${abs}" "" \
+    "pass a single plan file or inline plan+context text"
 
   run_dir="$(cog::fn::rundir_create review-plan-multi)"
   repo_root="$(cog::fn::git_root)"
@@ -70,14 +75,6 @@ __cog_review_plan_multi_setup_build_json() {
   case "$mode" in
     file)
       plan_path="$abs"
-      ;;
-    dir)
-      plan_dir="$abs"
-      plan_sources="${run_dir}/plan-sources.txt"
-      find "$abs" -maxdepth 1 -type f -name '*.md' | sort >"$plan_sources" \
-        || cog::fn::error_raise "JsonWriteFailed" \
-          "could not enumerate plan sources" "path: ${plan_sources}" "" \
-          "check run directory permissions"
       ;;
     inline)
       raw_input_file="${run_dir}/raw-input.txt"
@@ -99,14 +96,12 @@ __cog_review_plan_multi_setup_build_json() {
     --arg codex_review "$codex_review" \
     --arg final_review "$final_review" \
     --arg plan_path "$plan_path" \
-    --arg plan_dir "$plan_dir" \
-    --arg plan_sources "$plan_sources" \
     --arg raw_input_file "$raw_input_file" \
     '{run_dir: $run_dir, mode: $mode, solo: $solo, repo_root: $repo_root,
       request_file: $request_file, plan_under_review: $plan_under_review,
       claude_review: $claude_review, codex_review: $codex_review,
-      final_review: $final_review, plan_path: $plan_path, plan_dir: $plan_dir,
-      plan_sources: $plan_sources, raw_input_file: $raw_input_file}'
+      final_review: $final_review, plan_path: $plan_path,
+      raw_input_file: $raw_input_file}'
 }
 
 cog::cmd::review_plan_multi_setup() {
@@ -136,8 +131,6 @@ cog::cmd::review_plan_multi_setup() {
     cog::fn::ui_data "CODEX_REVIEW=$(jq -r '.codex_review' <<<"$json")"
     cog::fn::ui_data "FINAL_REVIEW=$(jq -r '.final_review' <<<"$json")"
     cog::fn::ui_data "PLAN_PATH=$(jq -r '.plan_path' <<<"$json")"
-    cog::fn::ui_data "PLAN_DIR=$(jq -r '.plan_dir' <<<"$json")"
-    cog::fn::ui_data "PLAN_SOURCES=$(jq -r '.plan_sources' <<<"$json")"
     cog::fn::ui_data "RAW_INPUT_FILE=$(jq -r '.raw_input_file' <<<"$json")"
   fi
 }

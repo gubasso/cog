@@ -50,7 +50,6 @@ forbidden_scan_codex() {
     osc-obs
     plan-multi
     plan-vetted
-    plan-builder-to-queue
     bootstrap
     bootstrap-lint
     bootstrap-nix
@@ -65,9 +64,6 @@ forbidden_scan_codex() {
     review-findings
     review-loop
     review-plan-multi
-    review-queue-rounds
-    runner-all
-    runner-plan
     suckless-patcher
     test-review
   )
@@ -125,7 +121,7 @@ forbidden_scan_codex() {
   # The gc coordinator documents the aggregation view and result-line contract; the
   # gc-repo worker emits the per-repo status lines.
   local coordinator="$repo_root/skills/claude/gc/SKILL.md"
-  assert_file_contains "$coordinator" "cog runner-commit-parse"
+  assert_file_contains "$coordinator" "cog gc-commit-parse"
   assert_file_contains "$coordinator" "COMMIT_OK <sha>"
   assert_file_contains "$coordinator" "COMMIT_PUSH_OK <sha> repo=<root>"
   assert_file_contains "$coordinator" "COMMIT_FAILED"
@@ -177,43 +173,22 @@ forbidden_scan_codex() {
   done
 }
 
-@test "runner skills document delegate multi-repo commit flow" {
-  local file
-  for file in "$repo_root/skills/claude/runner-all/SKILL.md" "$repo_root/skills/claude/runner-plan/SKILL.md"; do
-    assert_file_contains "$file" "claude-delegate"
-    assert_file_contains "$file" "cog queue-select"
-    assert_file_contains "$file" "review-queue-rounds"
-    assert_file_contains "$file" "cog runner-commit-parse"
-    assert_file_contains "$file" "COMMIT_SHA=<sha> repo=<root>"
-    assert_file_contains "$file" "commits"
-    assert_file_contains "$file" "verbatim"
-  done
-}
-
-@test "review-queue-rounds is the shipped vault-aware revision boundary" {
-  local file="$repo_root/skills/claude/review-queue-rounds/SKILL.md"
-  assert_file_exists "$file"
-  assert_file_contains "$file" "cog plan runner-resolve"
-  assert_file_contains "$file" "cog review-queue-rounds-scan"
-  assert_file_contains "$file" "cog review-queue-rounds-verify"
-  assert_file_contains "$file" "/gc"
-  assert_file_contains "$file" "cog runner-commit-parse"
-  assert_file_contains "$file" "cog rundir review-queue-rounds"
-  # No plan-mode gate on a non-orchestrator boundary skill.
-  assert_file_not_contains "$file" "orchestration/plan-mode-gate.md"
-}
-
-@test "runner-all documents main reconcile and runner-plan documents round verify" {
-  assert_file_contains "$repo_root/skills/claude/runner-all/SKILL.md" "cog queue-status-set"
-  assert_file_contains "$repo_root/skills/claude/runner-all/SKILL.md" $'Main-plan `done`'
-  assert_file_contains "$repo_root/skills/claude/runner-plan/SKILL.md" "ROUND_STATUS"
-  assert_file_contains "$repo_root/skills/claude/runner-plan/SKILL.md" "repos:"
-}
-
 @test "plan multi documents satellite repos" {
   local file="$repo_root/skills/claude/plan-multi/SKILL.md"
 
   assert_file_contains "$file" "codex-runner"
+}
+
+@test "retired vault, queue, round, and spec-pipeline skills no longer exist" {
+  local skill
+  for skill in plan-builder-to-queue plan-builder-to-queue-vetted-multi runner-all runner-plan \
+    review-queue-rounds plan-split review-plan-complexity plan-capability-spec plan-solution-spec \
+    executor-greenfield-from-spec review-plan-capability-spec review-plan-solution-spec; do
+    [ ! -e "$repo_root/skills/claude/$skill" ]
+    [ ! -e "$repo_root/skills/codex/$skill" ]
+  done
+  run grep -qE 'runner-all|runner-plan|plan-builder-to-queue' "$repo_root/data/model-effort/claude/tiers.yaml"
+  assert_failure
 }
 
 @test "deleted authoring surfaces no longer exist (DP6 regression)" {
@@ -224,14 +199,5 @@ forbidden_scan_codex() {
   run grep -q "plan-writer-multi" "$repo_root/data/model-effort/claude/tiers.yaml"
   assert_failure
   run grep -q "plan-writer" "$repo_root/data/model-effort/codex/tiers.yaml"
-  assert_failure
-}
-
-@test "plan-builder-to-queue is the shipped plan-emitter coordinator" {
-  local file="$repo_root/skills/claude/plan-builder-to-queue/SKILL.md"
-  assert_file_exists "$file"
-  assert_file_contains "$file" "cog-skill: plan-emitter"
-  assert_file_contains "$file" "orchestration/context-brief-gate.md"
-  run grep -q "orchestration/plan-mode-gate.md" "$file"
   assert_failure
 }

@@ -2,7 +2,7 @@
 
 What a driver of `cog workflow` must be, must do, and must not do. An orchestrator here is any program that drives a workflow run to a terminal state — a Claude session, a Codex session, a CI job, or a shell script. This page is the conformance target slice 006's provider runners are written against.
 
-Two neighbours own what this page deliberately does not. [Workflow contract](./workflow-contract.md) owns the grammar, the engine registry, and the validator rules. [CLI commands](./cli-commands.md) owns the verb grammar and the `0`/`1`/`2`/`75` exit protocol. [Orchestration contract](./orchestration-contract.md) is a different document about a different thing: how cog's own skills and agents compose Claude, Codex, queues, and subagents. Nothing on this page requires that one.
+Two neighbours own what this page deliberately does not. [Workflow contract](./workflow-contract.md) owns the grammar, the engine registry, and the validator rules. [CLI commands](./cli-commands.md) owns the verb grammar and the `0`/`1`/`2`/`75` exit protocol. [Orchestration contract](./orchestration-contract.md) is a different document about a different thing: how cog's own skills and agents compose Claude, Codex, workflows, and subagents. Nothing on this page requires that one.
 
 Parts of this contract are specified ahead of the runtime. Each is marked where it appears.
 

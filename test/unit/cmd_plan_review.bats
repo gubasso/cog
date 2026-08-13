@@ -54,7 +54,7 @@ write_inputs() {
   assert_success
   local output_path
   output_path="$(printf '%s\n' "$output" | jq -r '.output_path')"
-  [[ $output_path == "$XDG_STATE_HOME"/cog/plan-artifacts/plan-review-input-plan-md-*"/input-plan-md.md" ]]
+  [[ $output_path == "$XDG_STATE_HOME"/cog/runs/plan-review-input-plan-md-*"/input-plan-md.md" ]]
   [ -f "$output_path" ]
 }
 

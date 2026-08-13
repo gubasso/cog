@@ -30,11 +30,10 @@ entries:
     cadence_days: 90
     owner: power-grade policy
     why: "The matrix grades model/effort capability from model benchmarks, pricing, effort support, and policy defaults that can drift."
-    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date. The downstream data/power-grade/executor-capability powers and routing thresholds re-derive from these grades; re-run cog power-grade executor-validate after any grade change."
+    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date."
     references:
       - docs/reference/model-effort-policy.md
       - docs/decisions/ADR-0014-model-effort-and-power-grade.md
-      - data/power-grade/executor-capability
   - id: power-grade-source-allowlist
     path: data/power-grade/source-allowlist
     last_checked: 2026-06-25
@@ -45,44 +44,6 @@ entries:
     references:
       - docs/decisions/ADR-0014-model-effort-and-power-grade.md
       - data/power-grade/matrix
-  - id: executor-capability
-    path: data/power-grade/executor-capability
-    last_checked: 2026-06-30
-    cadence_days: 90
-    owner: power-grade policy
-    why: "Executor pass composition and capability calibration derive from the executor-* skill flows, the model-cells matrix, and the complexity rubric's max score, all of which can drift."
-    revalidate_how: "Re-confirm each native executor-* skill's pass list and declared/driven model-effort against passes.yaml, re-check calibration.yaml's complexity max_score against the rubric, then run cog power-grade executor-validate and update last_checked."
-    references:
-      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
-      - data/power-grade/matrix
-      - skill-refs/plan-rounds/complexity-rubric.md
-      - skills/claude/executor-oneshot/SKILL.md
-      - skills/claude/executor-vetted/SKILL.md
-      - skills/claude/executor-prex/SKILL.md
-  - id: vacated-multi-codex-authoring-path
-    path: skills/claude/plan-builder-to-queue/SKILL.md
-    last_checked: 2026-06-30
-    cadence_days: 180
-    owner: plan authoring
-    why: "The multi-engine plan-writer-multi (Claude) and plan-writer (Codex) authoring surfaces were deleted outright (ADR-0015 / DP6), to be re-created from scratch at the proper time; plan-builder-to-queue-vetted-multi now partially fulfills the rebuilt multi-engine authoring surface for the Claude plan-vault path."
-    revalidate_how: "Review plan-builder-to-queue-vetted-multi against the desired multi-engine / Codex plan-authoring surface; decide whether the remaining Codex-native surface is still wanted, then author it fresh against the current plan-vault + executor-routing contracts or extend the cadence."
-    references:
-      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
-      - skills/claude/plan-builder-to-queue/SKILL.md
-      - skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md
-  - id: match-telemetry-calibration
-    path: data/power-grade/executor-capability
-    last_checked: 2026-07-07
-    cadence_days: 30
-    owner: power-grade policy
-    why: "Plan→executor match-outcome telemetry accumulates cross-project; periodically review whether the executor-capability powers / complexity-rubric weights should be refit against observed over/under-powered rounds. Grades are never auto-mutated (ADR-0007)."
-    revalidate_how: "Run cog match-telemetry report; review the over-powered / under-powered / needs-review rows; decide whether to refit executor-capability powers or complexity-rubric weights; append a review entry to calibration-reviews.yaml recording the corpus, rollup, decision, and rationale (freeze the report JSON under calibration-reports/); apply a refit by hand only if warranted; then update last_checked. Never auto-applied."
-    references:
-      - docs/decisions/ADR-0015-executor-capability-and-telemetry.md
-      - data/power-grade/executor-capability/passes.yaml
-      - data/power-grade/executor-capability/calibration.yaml
-      - data/power-grade/executor-capability/calibration-reviews.yaml
-      - skill-refs/plan-rounds/complexity-rubric.md
   - id: workflow-engine-seed
     path: docs/reference/workflow-contract.md
     last_checked: 2026-08-06

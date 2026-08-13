@@ -76,20 +76,6 @@ Status rules:
 - If Stage 1 fails, do not run Stage 2; emit the summary with failure statuses.
 - If Stage 2 fails, still emit the summary with `--execution failed`.
 
-## Match-outcome telemetry
-
-When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0015](../../../docs/decisions/ADR-0015-executor-capability-and-telemetry.md)). Resolve the join key from the round path — it stays producer-blind. The `executor-vetted` marginal-value checkpoint is the **cross-engine delta count**: the distinct corrections or additions the second engine contributed to the dual-engine synthesis (zero deltas means the vetting earned nothing — over-powered by one rung):
-
-```bash
-cog match-telemetry round-key --round-path <input-round-path> --json   # -> project_key, plan_slug, round_id
-cog match-telemetry record --kind outcome \
-  --project-key <project_key> --plan-slug <plan_slug> --round-id <round_id> \
-  --actual-executor executor-vetted --result <pass|fail> [--reverted] [--retries <n>] \
-  [--loc-changed <n>] [--files <n>] --cross-engine-deltas <n> [--note <text>] --json
-```
-
-Skip telemetry for non-round inputs. Attach `--note` only when the objective signals look conflicting or questionable — never as a routine per-run rating.
-
 ## Error Handling
 
 At every boundary, verify the durable postcondition before advancing:

@@ -28,7 +28,7 @@ cog codex-runner run-exec --mode danger --access write --effort high --prompt <f
 
 This three-absolute-path shape is the **Orchestrator Invocation Contract**. If `$ARGUMENTS` is not three absolute paths, fall back to conversational review only when the user supplied both a request or goal and a plan. If either input is missing or materially ambiguous, ask one focused clarification before continuing.
 
-**Plan-input gate.** Before any review work, confirm the plan input is a reviewable plan per `$(cog skill-refs path plan-rounds/plan-input-gate.md)`. In orchestrator mode gate the path directly; in the conversational fallback there is no plan path, so stage the inline plan text verbatim under a `cog rundir` scratch file first and gate that:
+**Plan-input gate.** Before any review work, confirm the plan input is a reviewable plan per `$(cog skill-refs path plan-quality/plan-input-gate.md)`. In orchestrator mode gate the path directly; in the conversational fallback there is no plan path, so stage the inline plan text verbatim under a `cog rundir` scratch file first and gate that:
 
 ```bash
 cog plan-gate check "$PLAN_PATH"                     # orchestrator mode
@@ -90,7 +90,7 @@ Evaluate all axes:
 4. **Currency** - Are external tools, libraries, APIs, model/runtime facts, and docs current enough for this task?
 5. **Security** - Does the plan avoid secrets leakage, unsafe defaults, excessive permissions, missing validation, and avoidable supply-chain risk?
 6. **Idiomatic-fit** - Does it fit the repo's architecture, language conventions, command patterns, and surrounding design?
-7. **Scope boundaries** - Does it stay inside the requested round and explicitly defer out-of-scope work?
+7. **Scope boundaries** - Does it stay inside the requested scope and explicitly defer out-of-scope work?
 8. **Missing dependencies** - Are prerequisite files, commands, configs, migrations, generated assets, or external services accounted for?
 9. **Testability** - Does the plan include focused, runnable validation that matches the risk and blast radius?
 10. **Deterministic/probabilistic-boundary compliance** - Are repeatable mechanics delegated to `cog` or deterministic tooling, while judgment remains in prose?

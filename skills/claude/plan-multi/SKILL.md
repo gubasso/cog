@@ -169,5 +169,5 @@ Scratch artifacts remain in `RUN_DIR`.
 - Use `cog codex-runner run-exec --state`; never use bare `codex exec`.
 - Use `--mode danger --access write --effort high` for the Codex plan worker.
 - Do not run git commands.
-- Do not create `.implementation-plans/`, queues, or plan directories.
+- Write exactly one artifact, at `OUTPUT` or at the caller's `--output`, and nothing outside it.
 - For single-engine lean planning, prefer `/plan-oneshot`; `--solo` exists for uniform degradation.

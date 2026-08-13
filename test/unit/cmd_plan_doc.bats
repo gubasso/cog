@@ -38,7 +38,7 @@ setup() {
   assert_success
   local output_path
   output_path="$(printf '%s\n' "$output" | jq -r '.output_path')"
-  [[ $output_path == "$XDG_STATE_HOME"/cog/plan-artifacts/plan-doc-lean-plan-artifact-*"/lean-plan-artifact.md" ]]
+  [[ $output_path == "$XDG_STATE_HOME"/cog/runs/plan-doc-lean-plan-artifact-*"/lean-plan-artifact.md" ]]
   [ -f "$output_path" ]
 }
 

@@ -21,6 +21,6 @@ Chosen option: `Use derived capability bands with append-only outcomes and human
 
 ## Status
 
-Implemented
+Superseded
 
-Enacted by [executors](../explanation/executors.md), [plan vault](../explanation/plan-vault.md), and [match telemetry](../reference/match-telemetry.md).
+Superseded by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — cog no longer stores, queues, splits, or calibrates plans. The surfaces this record enacted are removed; the record is kept for its history.

@@ -8,7 +8,7 @@ Skills are probabilistic orchestrators. They keep sequencing, judgment, escalati
 
 ## Responsibility Boundary
 
-Use a `cog` subcommand or shared helper for repeatable parsing, validation, filesystem work, git mechanics, queue updates, output shaping, and workflow preflight checks. A skill may call those commands and decide what to do with their results.
+Use a `cog` subcommand or shared helper for repeatable parsing, validation, filesystem work, git mechanics, output shaping, and workflow preflight checks. A skill may call those commands and decide what to do with their results.
 
 When a skill or command script is created or edited, check for duplicated deterministic mechanics. If two command modules need the same logic, move it to `lib/functions/` under `cog::fn::*`.
 
@@ -26,7 +26,7 @@ Shared judgment workflows use one canonical executor skill. Callers assemble con
 
 ## Orchestration Contract
 
-Skills that spawn Codex, delegate to agents, manage queues, or otherwise orchestrate nested work must read and follow [Orchestration contract](./orchestration-contract.md). Choose Skill-inline composition or Agent-delegate isolation deliberately. Include the env-preflight requirement where a workflow depends on foreground execution. Never reintroduce the removed foreground hook; runtime no-backgrounding is an env-first contract asserted by `cog`, not a `PreToolUse` hook.
+Skills that spawn Codex, delegate to agents, or otherwise orchestrate nested work must read and follow [Orchestration contract](./orchestration-contract.md). Choose Skill-inline composition or Agent-delegate isolation deliberately. Include the env-preflight requirement where a workflow depends on foreground execution. Never reintroduce the removed foreground hook; runtime no-backgrounding is an env-first contract asserted by `cog`, not a `PreToolUse` hook.
 
 ## Frontmatter Contract
 
@@ -73,12 +73,9 @@ Skill names must follow [ADR-0006](../decisions/ADR-0006-runtime-skill-trees-and
 - `review-*` reviews code against the codebase plus plan, and reviews plans before implementation.
 - `review-plan-*` is the `review-*` sub-namespace for plan-before-implementation review.
 - `executor-*` executes one plan/prompt at a time and may generate its own better internal plan before executing.
-- `runner-*` orchestrates executors over a queue whose elements carry the executor-selecting prompt.
 - `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog (the `bootstrap` orchestrator dispatches these workers).
 
 Governing rule: a skill's prefix must match what it does.
-
-Queue dispatch rule: a `runner-*` skill selects a queue item and dispatches that item's `prompt:` verbatim to a queue-blind subagent. The dispatched subagent may be an executor or another runner and does not read the parent queue.
 
 `cog skill-lint` enforces this mechanically with the `skill-prefix-taxonomy` rule.
 
@@ -86,7 +83,7 @@ This taxonomy is related accepted skill governance alongside [ADR-0014](../decis
 
 ## Skill class contracts
 
-Each governed class — `plan`, `review`, `review-plan`, `executor`, `runner`, `bootstrap` — carries one positive membership contract: the markers, expected tier, and input/output obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review obligation: a `bootstrap-*` worker that ships cog templates references the domain-worker routine (`cog bootstrap-template-review`) once per template-review domain it owns, enforced by the `bootstrap-template-review` rule against the skill-to-domain mapping. The source of truth is [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml); the tier expectation cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
+Each governed class — `plan`, `review`, `review-plan`, `executor`, `bootstrap` — carries one positive membership contract: the markers, expected tier, and input/output obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review obligation: a `bootstrap-*` worker that ships cog templates references the domain-worker routine (`cog bootstrap-template-review`) once per template-review domain it owns, enforced by the `bootstrap-template-review` rule against the skill-to-domain mapping. The source of truth is [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml); the tier expectation cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
 list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.
 
 `cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks (`skill-prefix-taxonomy`, `model-effort-tier`, `producer-blindness`, `input-fidelity`, `stage-agnostic-identifiers`) into a single class-membership assertion that fails closed on any missing prerequisite or present prohibition. The facet rules stay authoritative for their facet; the class rule asserts the per-class union. An ungoverned (`other`-class) skill is exempt. The full per-class table lives in [`skill-refs/skill-authoring/skill-class-contracts.md`](../../skill-refs/skill-authoring/skill-class-contracts.md).
@@ -95,8 +92,8 @@ list|show --class <c>` and verify a draft with `cog skill-class check --skill <p
 
 A governed Claude skill's `model:`/`effort:` frontmatter must resolve to the named power/capability tier policy expects for it (`xhigh|high|medium|low|cheap`). The expected tier is resolved deterministically, with explicit registry membership winning over the prefix default:
 
-1. Registry pin — the skill name appears in a per-tier `skills` list in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml). This is the authoritative registry and the single escape hatch: the known exceptions live here (`executor-prex` and `review-oneshot` ride high; `review-findings` and `review-queue-rounds` ride low).
-2. Prefix default — otherwise the [prefix taxonomy](#prefix-taxonomy) default applies: `*-codex` → low, then `plan-*` and `review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium, `runner-*` → low. The `-codex` suffix is matched first and wins over the base prefix, so a delegation launcher rides LOW by rule rather than by registry pin — it keeps only argument handling, gating, dispatch, and reporting while Codex does the substantive work.
+1. Registry pin — the skill name appears in a per-tier `skills` list in [`data/model-effort/claude/tiers.yaml`](../../data/model-effort/claude/tiers.yaml). This is the authoritative registry and the single escape hatch: the known exceptions live here (`executor-prex` and `review-oneshot` ride high; `review-findings` rides low).
+2. Prefix default — otherwise the [prefix taxonomy](#prefix-taxonomy) default applies: `*-codex` → low, then `plan-*` and `review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium. The `-codex` suffix is matched first and wins over the base prefix, so a delegation launcher rides LOW by rule rather than by registry pin — it keeps only argument handling, gating, dispatch, and reporting while Codex does the substantive work.
 3. Exempt — a skill matching neither is ungoverned and skipped.
 
 Absent `model:`/`effort:` rides the session default (HIGH); explicitly pinning the session-default cell (`opus`+`high`) is equivalent. The `model-effort-tier` lint rule (Claude skills only) compares the resolved actual tier against the expected tier and fails on mismatch. The registry is also the SoT for the author-facing `cog power-grade skill-tier --skill <name>` (expected-vs-actual verdict) and `cog power-grade tier --name <name>` (tier → Claude/Codex cells). See [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md), which owns the policy, the tier ladder, and the enforcement rule together.
@@ -151,17 +148,12 @@ Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), pro
 
 ## Producer-blind consumers
 
-A consumer skill depends only on its structural input contract and is blind to which skill produced that input. Describe the contract the skill reads — the `.implementation-plans/` directory structure, the shared structured-findings contract — never the identity of the producing skill. All input validation and parsing is delegated to `cog`. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
+A consumer skill depends only on its structural input contract and is blind to which skill produced that input. Describe the contract the skill reads — the plan document shape, the shared structured-findings contract — never the identity of the producing skill. All input validation and parsing is delegated to `cog`. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 
 Enforcement is the `producer-blindness` lint rule, keyed off a curated consumer-to-producer map held in `lib/commands/cmd_skill_lint.sh` (not an in-skill marker). The rule scans mapped consumer skills for a forbidden producer name as a whole skill-name token, in both the frontmatter `description:` text and body prose, while ignoring fenced code blocks. Current map entries:
 
 ```text
-runner-all                 -> plan-builder-to-queue
-runner-plan                -> plan-builder-to-queue
 review-findings            -> review-oneshot, review-loop
-review-plan-capability-spec -> plan-capability-spec
-plan-solution-spec          -> plan-capability-spec
-review-plan-solution-spec   -> plan-solution-spec, plan-capability-spec
 ```
 
 The executable map in `lib/commands/cmd_skill_lint.sh` also retains the legacy producer name `review-code-deep` for `review-findings` so frozen fixtures keep matching; that compatibility token is intentional and omitted from the table above.
@@ -174,7 +166,7 @@ Summarize narrative for clarity, but carry the full substance where it is necess
 
 In-scope runtime skills carry this marker near the frontmatter: `<!-- cog-skill: input-fidelity -->`.
 
-Enforcement is the `input-fidelity` lint rule, keyed off a curated runtime-aware delegator set in `lib/commands/cmd_skill_lint.sh` (which includes `context-builder`, `review-loop`, and `executor-greenfield-from-spec`). The marker name is retained for stability; its meaning is fidelity to intent and substance, not verbatim copying. The marker asserts the contract structurally; the best-constructed standard remains prose judgment in the skill body.
+Enforcement is the `input-fidelity` lint rule, keyed off a curated runtime-aware delegator set in `lib/commands/cmd_skill_lint.sh` (which includes `context-builder` and `review-loop`). The marker name is retained for stability; its meaning is fidelity to intent and substance, not verbatim copying. The marker asserts the contract structurally; the best-constructed standard remains prose judgment in the skill body.
 
 ## Context brief (general input convention)
 
@@ -184,9 +176,9 @@ The canonical `context-builder` skill assembles a brief inline in the caller's c
 
 ## Terminal contract
 
-A skill whose run ends with a canonical result line comes in two structural shapes. In a type-1 terminal contract the result line is owned by `cog`: it is emitted atomically by a command that is load-bearing to the work itself (`gc-repo`'s `cog msg ok commit`, a runner's `queue-status-set` flip) or by deterministic scans (`review-queue-rounds`'s `STATUS:`). In a type-2 terminal contract the result line is a separable final step the worker must remember to run — a skippable ceremony an LLM can stop short of. The repository's determinism principle (ADR-0003/ADR-0010) is that postconditions are cog-owned mechanics, so no type-2 ceremony may exist: `review-loop`'s terminal step is a cog-owned, boundary-finalized postcondition (`cog review-loop-summary finalize`), and the `executor-prex` boundary runs `finalize` itself when a worker returns without `summary.md` rather than re-dispatching an agent.
+A skill whose run ends with a canonical result line comes in two structural shapes. In a type-1 terminal contract the result line is owned by `cog`: it is emitted atomically by a command that is load-bearing to the work itself (`gc-repo`'s `cog msg ok commit`). In a type-2 terminal contract the result line is a separable final step the worker must remember to run — a skippable ceremony an LLM can stop short of. The repository's determinism principle (ADR-0003/ADR-0010) is that postconditions are cog-owned mechanics, so no type-2 ceremony may exist: `review-loop`'s terminal step is a cog-owned, boundary-finalized postcondition (`cog review-loop-summary finalize`), and the `executor-prex` boundary runs `finalize` itself when a worker returns without `summary.md` rather than re-dispatching an agent.
 
-Every curated terminal-contract worker declares its result line with a `<!-- cog-terminal-contract: <TOKEN> -->` marker (`REVIEW_LOOP_OK` for `review-loop`, `COMMIT_OK` for `gc-repo`, `STATUS` for `review-queue-rounds`) and documents that token in prose. The `terminal-contract` lint rule enforces the marker, the documentation, and — for the sole type-2 boundary (`executor-prex` → `review-loop`) — that the boundary reference finalizes deterministically and carries no `SendMessage` agent re-dispatch for the terminal step. See [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md).
+Every curated terminal-contract worker declares its result line with a `<!-- cog-terminal-contract: <TOKEN> -->` marker (`REVIEW_LOOP_OK` for `review-loop`, `COMMIT_OK` for `gc-repo`) and documents that token in prose. The `terminal-contract` lint rule enforces the marker, the documentation, and — for the sole type-2 boundary (`executor-prex` → `review-loop`) — that the boundary reference finalizes deterministically and carries no `SendMessage` agent re-dispatch for the terminal step. See [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md).
 
 ## Structural Lint Checks
 
@@ -207,13 +199,13 @@ Every curated terminal-contract worker declares its result line with a `<!-- cog
 - `scratch-in-project`: a runtime skill body assigns a run/scratch/temp/work directory from a working-tree root (`$(pwd)`, `${PWD}`, or a `./`-relative path) instead of `cog rundir <prefix>`. The scan skips frontmatter and honors an inline `<!-- cog-skill-lint: allow-scratch-in-project <reason> -->` suppression on the preceding line. See "Run directory (scratch artifact convention)" and [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 - `codex-runner-abs-artifact-path`: a runtime skill body passes a relative literal artifact path (`--state`/`--output`/`--events`/`--stderr`) inside a `cog codex-runner` invocation. A durable codex job launches from the project repo, so a relative path scatters artifacts into the project tree; absolute, `$variable`, `~`, and angle-bracket placeholder (`<file>`, `<RUN_DIR>/…`) paths pass. The scan skips frontmatter, tracks backslash-continued invocation lines, and honors an inline `<!-- cog-skill-lint: allow-codex-runner-abs-artifact-path <reason> -->` suppression on the preceding line. The `cog codex-runner` command also fails closed on a relative artifact path at runtime. See "Run directory (scratch artifact convention)" and [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 - `artifact-write-ownership`: a curated native-execution executor skill (`executor-oneshot`, `executor-vetted`) instructs a direct write to the canonical execution artifact (`execution-report.md`) instead of routing through `cog executor adopt`. The orchestrator produces that report in-session, so cog must own the canonical name and its non-empty gate. The scan skips fenced code blocks; lines that only name the artifact (a returns list, a postcondition) or route through `cog`/`--output` are not flagged. See [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md).
-- `model-effort-tier`: a governed Claude skill's `model:`/`effort:` frontmatter resolves to a tier other than the one policy expects for it. The expected tier comes from the authoritative per-tier `skills` lists in `data/model-effort/claude/tiers.yaml`, with a prefix-default fallback (`*-codex` → low, matched first; then `plan-*`/`review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium, `runner-*` → low); ungoverned skills are `exempt` and skipped. Absent `model:`/`effort:` rides the session default (HIGH); the known exceptions (`executor-prex` and `review-oneshot` → high, `review-findings` and `review-queue-rounds` → low) are registry pins, the single escape hatch. Authors verify a choice with `cog power-grade skill-tier --skill <name>` and resolve a tier to its cells with `cog power-grade tier --name <name>`. See [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md) and "Model/effort tier enforcement".
+- `model-effort-tier`: a governed Claude skill's `model:`/`effort:` frontmatter resolves to a tier other than the one policy expects for it. The expected tier comes from the authoritative per-tier `skills` lists in `data/model-effort/claude/tiers.yaml`, with a prefix-default fallback (`*-codex` → low, matched first; then `plan-*`/`review-plan-*` → high, `review-oneshot-*` → xhigh, `executor-*` → medium); ungoverned skills are `exempt` and skipped. Absent `model:`/`effort:` rides the session default (HIGH); the known exceptions (`executor-prex` and `review-oneshot` → high, `review-findings` → low) are registry pins, the single escape hatch. Authors verify a choice with `cog power-grade skill-tier --skill <name>` and resolve a tier to its cells with `cog power-grade tier --name <name>`. See [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md) and "Model/effort tier enforcement".
 - `model-effort-prose-label`: a runtime skill body (Claude or Codex) names a power-grade tier as the noun "cell" (e.g. "the Codex HIGH cell"), conflating a tier with the cell it resolves to. Correct tier prose ("the HIGH tier") and explicit `model@effort`/slug cell prose are allowed; frontmatter and fenced code blocks are skipped, and an inline `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line records a deliberate exception. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md) and "Explicit model/effort/power-grade references".
 - `skill-source-path-reference`: a runtime skill body references another skill's source-tree path (`skills/{claude,codex}/<name>/SKILL.md` or `codex-session/.agents/skills/<name>/SKILL.md`). The scan skips frontmatter and fenced code blocks and anchors to a real skill name, so authoring placeholders and runtime-installed `.claude/skills` paths are not flagged. See "Lean positive prose".
 - `skill-codex-conventions-reference`: a runtime skill body references the maintenance-only Codex conventions document instead of the `cog codex-runner` command surface. The scan skips frontmatter and applies only to `skills/**/SKILL.md` runtime skill files.
 - `skill-external-repo-dependency`: a runtime skill body takes a load-bearing dependency on an external or local docs repository (e.g. a `DOCS_NOTES_REPO`-style shelf) instead of a bundled `skill-refs/` resource. The scan skips frontmatter and applies only to runtime skill files.
 - `skill-refs-codex-conventions-reference` / `skill-refs-external-repo-dependency`: a runtime `skill-refs/**` reference (the docs skills load via `cog skill-refs path`) names the maintenance-only Codex conventions document or an external/local docs repository. The same golden rules bind the refs a skill loads, not just the `SKILL.md` body. The `skill-refs/templates/**` deploy payload is exempt.
-- `terminal-contract`: a curated terminal-contract worker (`review-loop`, `gc-repo`, `review-queue-rounds`) is missing its `<!-- cog-terminal-contract: <TOKEN> -->` marker or never documents the token in prose; or the `executor-prex` → `review-loop` boundary reference does not finalize the terminal summary deterministically (`cog review-loop-summary finalize`) or carries a `SendMessage` agent re-dispatch for the terminal step. See "Terminal contract" and [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md).
+- `terminal-contract`: a curated terminal-contract worker (`review-loop`, `gc-repo`) is missing its `<!-- cog-terminal-contract: <TOKEN> -->` marker or never documents the token in prose; or the `executor-prex` → `review-loop` boundary reference does not finalize the terminal summary deterministically (`cog review-loop-summary finalize`) or carries a `SendMessage` agent re-dispatch for the terminal step. See "Terminal contract" and [ADR-0010](../decisions/ADR-0010-executor-preparation-and-artifacts.md).
 
 Codex skills do not require `trigger-tests`.
 
@@ -237,11 +229,11 @@ The reason must be non-empty, and `<rule-id>` must be the exact orchestration ru
 
 ## Plan-mode gate
 
-Work that writes to disk (implementation, plan directories under `.implementation-plans/`, rewritten plans, queue mutations) must not run under Claude Code's native plan mode (`permission_mode = "plan"`, entered via `Shift+Tab` or `/plan`), which is read-only and blocks those writes. The gate lives on the executor-/runner- orchestrator layer: the caller a user launches gates once at entry, then delegates to gate-free plan/review workers. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
+Work that writes to disk (implementation, saved plan artifacts, rewritten plans) must not run under Claude Code's native plan mode (`permission_mode = "plan"`, entered via `Shift+Tab` or `/plan`), which is read-only and blocks those writes. The gate lives on the executor- orchestrator layer: the caller a user launches gates once at entry, then delegates to gate-free plan/review workers. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 
 Plan mode is a top-level-session property exposed only to the running model (and hooks), never to the Bash environment, so detection cannot be a `cog` subcommand; it stays probabilistic in skill prose. A worker delegated via the Agent tool runs in a fresh subagent that never sees plan mode, so the gate only ever matters at the entry-point orchestrator.
 
-Every Claude `executor-*`/`runner-*` skill carries a short Phase 0 pointer that keeps the STOP imperative in the always-loaded body and defers the full protocol to the shared source of truth, `skill-refs/orchestration/plan-mode-gate.md`:
+Every Claude `executor-*` skill carries a short Phase 0 pointer that keeps the STOP imperative in the always-loaded body and defers the full protocol to the shared source of truth, `skill-refs/orchestration/plan-mode-gate.md`:
 
 ```text
 **Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
@@ -262,7 +254,7 @@ brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build
 `cog context-brief build --request` and confirm it with `cog context-brief validate`.
 ```
 
-Read-only Q&A relays (`ask`), inline same-context chainers (`executor-vetted`, `context-builder`), and verbatim transport runners (`runner-*`, `gc`) do not cross a fresh-context boundary and carry no pointer; the human top-level operator orients the first skill directly and is exempt. `executor-greenfield-from-spec` carries it because it builds validated briefs for fresh-context pipeline workers. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza.
+Read-only Q&A relays (`ask`), inline same-context chainers (`executor-vetted`, `context-builder`), and verbatim transport relays (`gc`) do not cross a fresh-context boundary and carry no pointer; the human top-level operator orients the first skill directly and is exempt. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza.
 
 ## Premise Lint Checks
 
@@ -285,7 +277,7 @@ The suppression names `allow-inline-shell` and `allow-orchestration-history` mus
 - Does every deterministic routine live behind `cog` or an existing external tool contract?
 - Is repeated command logic shared through `cog::fn::*`?
 - Does orchestration prose follow `docs/reference/orchestration-contract.md`?
-- Does every `executor-*`/`runner-*` skill carry the Phase 0 plan-mode gate pointer (see Plan-mode gate)?
+- Does every `executor-*` skill carry the Phase 0 plan-mode gate pointer (see Plan-mode gate)?
 - Does every brief-building delegator carry the `input-fidelity` marker and enrichment-only prose?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?

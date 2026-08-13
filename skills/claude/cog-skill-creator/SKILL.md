@@ -52,7 +52,6 @@ A governed-intent skill's name must carry the prefix that matches what it does:
 - `review-*` reviews code against the codebase plus plan, or reviews plans before implementation;
 - `review-plan-*` is the `review-*` sub-namespace for plan-before-implementation review;
 - `executor-*` executes one plan/prompt at a time;
-- `runner-*` orchestrates executors over a queue;
 - `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog (a template-shipping worker also runs the domain-worker routine for each domain it owns).
 
 Classify the new skill's behavior during the interview and choose a name whose prefix matches. A skill that is none of these (an authoring or utility skill) takes a descriptive non-taxonomy name and is an ungoverned `other` class. For a governed class, read its full membership contract and scaffold against its exact prerequisites:
@@ -120,7 +119,7 @@ Fix every reported issue before presenting the draft.
    - include env-preflight requirements when foreground execution matters.
 
 8. Apply the class contract's markers and gates:
-   - `executor-*`/`runner-*` carry a Phase 0 plan-mode gate pointer (see Plan-mode gate).
+   - `executor-*` carries a Phase 0 plan-mode gate pointer (see Plan-mode gate).
    - A brief-building delegator at a fresh-context boundary carries the input-fidelity marker and a context-brief gate pointer to `$(cog skill-refs path orchestration/context-brief-gate.md)`.
    - A `plan-*` emitter carries the plan-emitter marker.
    - A consumer is producer-blind: it names only its structural input contract, never the producer.
@@ -152,7 +151,7 @@ Fix every reported issue before presenting the draft.
 
 ## Plan-mode gate
 
-The plan-mode gate lives on the executor-_/runner-_ orchestrator layer, not on plan/review workers. If the new skill is a Claude `executor-*` or `runner-*` skill, give it a short Phase 0 pointer that keeps the STOP imperative in the body and defers the full protocol to the shared source of truth:
+The plan-mode gate lives on the executor-\* orchestrator layer, not on plan/review workers. If the new skill is a Claude `executor-*` skill, give it a short Phase 0 pointer that keeps the STOP imperative in the body and defers the full protocol to the shared source of truth:
 
 ```text
 **Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and

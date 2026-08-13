@@ -20,13 +20,12 @@ setup() {
 write_skill() {
   local dir="$1" name="$2" runtime="${3:-claude}"
   mkdir -p "$dir"
-  # executor-*/runner-* names are governed by the model-effort-tier rule
-  # (executor → medium, runner → low); pin the matching cell so generic
+  # executor-*/bootstrap-* names are governed by the model-effort-tier rule
+  # (executor → medium, bootstrap → low); pin the matching cell so generic
   # orchestrator fixtures stay tier-compliant.
   local tier_fm=""
   case "$name" in
     executor-*) tier_fm=$'model: opus\neffort: medium\n' ;;
-    runner-*) tier_fm=$'model: opus\neffort: low\n' ;;
     bootstrap-*) tier_fm=$'model: opus\neffort: low\n' ;;
   esac
   if [[ $runtime == claude ]]; then
@@ -179,15 +178,6 @@ append_plan_emitter() {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/context-builder" context-builder claude
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/context-builder/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"input-fidelity"* ]]
-}
-
-@test "cog skill-lint maps executor-greenfield-from-spec into the input-fidelity set" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec claude
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
 
   assert_failure
   [[ $stderr == *"input-fidelity"* ]]
@@ -1034,7 +1024,7 @@ write_mapped_consumer() {
   mkdir -p "$dir"
   local tier_fm=""
   case "$name" in
-    runner-* | review-findings) tier_fm=$'model: opus\neffort: low\n' ;;
+    bootstrap-* | review-findings) tier_fm=$'model: opus\neffort: low\n' ;;
   esac
   cat >"$dir/SKILL.md" <<EOF
 ---
@@ -1055,20 +1045,10 @@ EOF
 }
 
 @test "cog skill-lint flags a mapped consumer naming a producer in body prose" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-all" runner-all
-  printf '%s\n' 'Drive a plan-builder-to-queue queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-findings" review-findings
+  printf '%s\n' 'Triage what review-oneshot produced.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"producer-blindness"* ]]
-}
-
-@test "cog skill-lint flags runner-plan naming a producer in body prose" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-plan" runner-plan
-  printf '%s\n' 'Drive a plan-builder-to-queue queue to completion.' >>"${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-plan/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
 
   assert_failure
   [[ $stderr == *"producer-blindness"* ]]
@@ -1097,15 +1077,15 @@ EOF
 }
 
 @test "cog skill-lint ignores a producer name inside a fenced block for a mapped consumer" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/runner-all" runner-all
-  cat >>"${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md" <<'EOF'
+  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-findings" review-findings
+  cat >>"${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md" <<'EOF'
 
 ```text
-plan-builder-to-queue
+review-oneshot
 ```
 EOF
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-all/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-findings/SKILL.md"
 
   assert_success
   [[ $stderr != *"producer-blindness"* ]]
@@ -1113,7 +1093,7 @@ EOF
 
 @test "cog skill-lint does not flag a producer name for an unmapped skill" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
-  printf '%s\n' 'This skill freely names plan-builder-to-queue and review-code-deep and review-loop.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  printf '%s\n' 'This skill freely names review-oneshot and review-code-deep and review-loop.' >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
@@ -1131,49 +1111,20 @@ EOF
   [[ $stderr != *"producer-blindness"* ]]
 }
 
-@test "cog skill-lint flags greenfield capability spec consumers naming producers" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec" review-plan-capability-spec
-  printf '%s\n' 'This reviewer names plan-capability-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec/SKILL.md"
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-plan-capability-spec/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"producer-blindness"* ]]
-}
-
-@test "cog skill-lint flags greenfield solution spec consumers naming producers" {
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec" plan-solution-spec
-  printf '%s\n' 'This planner names plan-capability-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec/SKILL.md"
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-solution-spec/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"producer-blindness"* ]]
-
-  write_mapped_consumer "${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec" review-plan-solution-spec
-  printf '%s\n' 'This reviewer names plan-solution-spec.' >>"${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec/SKILL.md"
-
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/review-plan-solution-spec/SKILL.md"
-
-  assert_failure
-  [[ $stderr == *"producer-blindness"* ]]
-}
-
-# --- model-effort-tier rule -------------------------------------------------
-
+# Writes a minimal governed fixture with an explicit (model, effort) frontmatter
+# pair so the model-effort-tier rule can be exercised in isolation. Empty model
+# and effort mean "ride the session default".
 write_tier_skill() {
-  # write_tier_skill <dir> <name> <model> <effort>
-  # Empty model/effort are omitted (rides the session default).
   local dir="$1" name="$2" model="$3" effort="$4"
   mkdir -p "$dir"
-  local tier_fm=""
-  [[ -n $model ]] && tier_fm+="model: ${model}"$'\n'
-  [[ -n $effort ]] && tier_fm+="effort: ${effort}"$'\n'
+  local fm=""
+  [[ -z $model ]] || fm+="model: ${model}"$'\n'
+  [[ -z $effort ]] || fm+="effort: ${effort}"$'\n'
   cat >"$dir/SKILL.md" <<EOF
 ---
 name: $name
 description: Demo.
-${tier_fm}---
+${fm}---
 
 <!-- trigger-tests: "demo" -->
 
@@ -1207,15 +1158,15 @@ EOF
   [[ $stderr != *"model-effort-tier"* ]]
 }
 
-@test "cog skill-lint does not flag a governed LOW runner pinned to opus+low" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo opus low
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
+@test "cog skill-lint does not flag a governed LOW bootstrap worker pinned to opus+low" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo" bootstrap-demo opus low
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo/SKILL.md"
   [[ $stderr != *"model-effort-tier"* ]]
 }
 
-@test "cog skill-lint flags a governed LOW runner pinned to the wrong tier" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/runner-demo" runner-demo opus xhigh
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/runner-demo/SKILL.md"
+@test "cog skill-lint flags a governed LOW bootstrap worker pinned to the wrong tier" {
+  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo" bootstrap-demo opus xhigh
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo/SKILL.md"
   assert_failure
   [[ $stderr == *"model-effort-tier"* ]]
   [[ $stderr == *"expects tier 'low'"* ]]
@@ -1282,12 +1233,6 @@ EOF
   # unrelated gate rules, so assert the tier rule specifically does not fire.)
   write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex "" ""
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
-  [[ $stderr != *"model-effort-tier"* ]]
-}
-
-@test "cog skill-lint honors the greenfield executor high registry exception" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec" executor-greenfield-from-spec "" ""
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-greenfield-from-spec/SKILL.md"
   [[ $stderr != *"model-effort-tier"* ]]
 }
 
@@ -1373,13 +1318,6 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint passes the shipped plan-builder-to-queue skill" {
-  local repo_root
-  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
-  run cog skill-lint "$repo_root/skills/claude/plan-builder-to-queue/SKILL.md"
-  assert_success
-}
-
 @test "cog skill-lint fails a cog-plan-builder-named plan-emitter (DP1 taxonomy regression)" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/cog-plan-builder" cog-plan-builder claude
   append_plan_emitter "${BATS_TEST_TMPDIR}/skills/claude/cog-plan-builder/SKILL.md"
@@ -1395,7 +1333,7 @@ EOF
   repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
   run grep -q "plan-writer-multi" "$repo_root/lib/commands/cmd_skill_lint.sh"
   assert_failure
-  run grep -q 'plan-builder-to-queue' "$repo_root/lib/commands/cmd_skill_lint.sh"
+  run grep -q 'review-findings' "$repo_root/lib/commands/cmd_skill_lint.sh"
   assert_success
 }
 
@@ -1439,29 +1377,29 @@ EOF
 }
 
 @test "cog skill-lint flags the Skill-tool arrow dispatch of a DMI splitter" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue" plan-builder-to-queue claude
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
   # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
-  printf '\n%s\n' 'If over ceiling: `Skill` → `plan-split <round>`.' \
-    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+  printf '\n%s\n' 'If input is thin: `Skill` → `plan-multi <goal>`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
 
   assert_failure
   [[ $stderr == *"inline-skill-tool-dmi"* ]]
-  [[ $stderr == *"plan-split"* ]]
+  [[ $stderr == *"plan-multi"* ]]
 }
 
 @test "cog skill-lint flags the ASCII Skill-tool arrow dispatch of a DMI splitter" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue" plan-builder-to-queue claude
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted" plan-vetted claude
   # shellcheck disable=SC2016  # literal markdown backticks written to a fixture file
-  printf '\n%s\n' 'If over ceiling: `Skill` -> `plan-split <round>`.' \
-    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+  printf '\n%s\n' 'If input is thin: `Skill` -> `plan-multi <goal>`.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
 
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-builder-to-queue/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-vetted/SKILL.md"
 
   assert_failure
   [[ $stderr == *"inline-skill-tool-dmi"* ]]
-  [[ $stderr == *"plan-split"* ]]
+  [[ $stderr == *"plan-multi"* ]]
 }
 
 @test "cog skill-lint does not flag a Skill-tool instruction for an unmapped caller" {
@@ -1494,13 +1432,6 @@ EOF
   local repo_root
   repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
   run cog skill-lint "$repo_root/skills/claude/plan-vetted/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint passes the shipped plan-builder-to-queue-vetted-multi skill" {
-  local repo_root
-  repo_root="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
-  run cog skill-lint "$repo_root/skills/claude/plan-builder-to-queue-vetted-multi/SKILL.md"
   assert_success
 }
 

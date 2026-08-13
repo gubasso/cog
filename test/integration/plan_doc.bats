@@ -20,7 +20,7 @@ setup() {
   assert_success
   assert_line --regexp '^PLAN_DOC_PATH=.*lean-plan-artifact\.md$'
   local output_path="${output#PLAN_DOC_PATH=}"
-  [[ $output_path == "$XDG_STATE_HOME"/cog/plan-artifacts/plan-doc-lean-plan-artifact-*"/lean-plan-artifact.md" ]]
+  [[ $output_path == "$XDG_STATE_HOME"/cog/runs/plan-doc-lean-plan-artifact-*"/lean-plan-artifact.md" ]]
   [ -f "$output_path" ]
 }
 

@@ -18,12 +18,12 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 
 - Move each behavior one at a time and retain rollback until its parity test passes.
 - Remove per-table `cmd_skill_lint.sh` entries for deleted skills, add workflow replacements, update producer-blind maps, and remove the dead type-2 review-loop boundary rule.
-- Sweep the four non-skill files named by the retirement draft and rewrite telemetry to workflow keys.
-- Keep executor-capability calibration as immutable historical evidence marked retired. Prose cleanup is cut first.
+- Sweep the four non-skill files named by the retirement draft.
+- Prose cleanup is cut first.
 
 ## Out of scope
 
-- Deleting historical calibration or claiming it measured workflows.
+- Claiming any retired evidence measured workflows.
 - Changing user-visible behavior without a parity test.
 
 ## Governed by
@@ -37,13 +37,13 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 
 ```text
 When each shipped executor behavior runs through workflows, the system shall match its existing artifacts and terminal outcome. -> test/integration/cmd_executor_workflow.bats
-When obsolete skills are removed, skill-lint tables, producer maps, telemetry keys, and four named non-skill references shall contain no stale identifier. -> test/integration/cmd_skill_lint.bats
+When obsolete skills are removed, skill-lint tables, producer maps, and four named non-skill references shall contain no stale identifier. -> test/integration/cmd_skill_lint.bats
 ```
 
 ## Rabbit holes
 
 - Big-bang deletion can erase a rollback path — escape: cut over one behavior only after its parity case passes.
-- Historical telemetry can be mistaken for workflow evidence — escape: mark it retired and immutable, never rewrite it.
+- A retired subsystem's evidence can be mistaken for workflow evidence — escape: never carry it forward as a workflow measurement.
 
 ## Done when
 
@@ -51,4 +51,4 @@ All three parity paths pass before old orchestrators are absent, cleanup asserti
 
 ## Revisions
 
-None.
+- 2026-08-13 — In scope, Out of scope, Acceptance, and Rabbit holes dropped their telemetry and executor-capability clauses. ADR-0032 removed that subsystem outright rather than re-keying it, so migrating telemetry to workflow keys and retaining calibration as immutable evidence were no longer available options.

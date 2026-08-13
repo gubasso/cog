@@ -607,18 +607,12 @@ write_milestones() {
   [[ $stderr == *'does not match the fixed grammar'* ]]
 }
 
-@test "docs-lint catches emphasis in the active draft workspace" {
-  mkdir -p "$FIXTURE/.draft"
-  printf '%s\n' '# Draft' 'This is **still active**.' >"$FIXTURE/.draft/work.md"
-
-  run_lint
-
-  assert_failure 65
-  [[ $stderr == *'.draft/work.md:2: decorative strong delimiter'* ]]
-}
-
-@test "docs-lint excludes the safe-to-delete hand-off buffer" {
+# `.draft/` is the gitignored scratch workspace. It is never published, and the
+# docs-lint hook is always_run, so linting it would let a half-written draft
+# block every commit in the repo.
+@test "docs-lint excludes the gitignored draft workspace" {
   mkdir -p "$FIXTURE/.draft/safe-to-delete"
+  printf '%s\n' '# Draft' 'This is **still active**.' >"$FIXTURE/.draft/work.md"
   printf '%s\n' '# Archived draft' 'This is **preserved verbatim**.' >"$FIXTURE/.draft/safe-to-delete/work.md"
 
   run_lint

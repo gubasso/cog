@@ -21,6 +21,6 @@ Chosen option: `Use a rubric-driven binary split loop with requirement identitie
 
 ## Status
 
-Implemented
+Superseded
 
-Enacted by [executors](../explanation/executors.md) and [`cmd_round_rightsize.sh`](../../lib/commands/cmd_round_rightsize.sh).
+Superseded by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — cog no longer stores, queues, splits, or calibrates plans. The surfaces this record enacted are removed; the record is kept for its history.

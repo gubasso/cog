@@ -1,6 +1,0 @@
-rounds:
-  - item: apply-fixes
-    status: done
-    depends_on: []
-    prompt: /executor-prex -ar .implementation-plans/plans/prex-artifacts-and-installer-leftover/apply-fixes.md
-    notes: Remove /prex prose artifacts, rename stale plan-queue-runner refs, delete deployed orphan, make install.sh self-cleaning

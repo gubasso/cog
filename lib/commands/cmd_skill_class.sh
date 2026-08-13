@@ -7,7 +7,7 @@ __cog_skill_class_check_self_check='(.schema=="cog.skill-class.check.v1") and (.
 
 __cog_skill_class_usage() {
   cog::fn::ui_data "Usage: cog skill-class list [--json]"
-  cog::fn::ui_data "Usage: cog skill-class show --class <plan|review|review-plan|executor|runner|bootstrap> [--json]"
+  cog::fn::ui_data "Usage: cog skill-class show --class <plan|review|review-plan|executor|bootstrap> [--json]"
   cog::fn::ui_data "Usage: cog skill-class check --skill <path> [--json]"
 }
 

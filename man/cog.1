@@ -201,6 +201,11 @@ Commit with a message file and explicit pathspec.\&
 Validate a commit message against Conventional Commits (or defer to the repo linter).\&
 .PP
 .RE
+\fBgc-commit-parse\fR
+.RS 4
+Parse gc commit result lines.\&
+.PP
+.RE
 \fBgc-loop-progress\fR
 .RS 4
 Compare commit failure reports across round-loop rounds.\&
@@ -306,11 +311,6 @@ Acquire or release a workflow run lock.\&
 Launch, poll, finalize, and cancel cog-owned durable long-running jobs.\&
 .PP
 .RE
-\fBmatch-telemetry\fR
-.RS 4
-Record and report plan→executor match-outcome telemetry.\&
-.PP
-.RE
 \fBmsg\fR
 .RS 4
 Emit uniform machine status lines.\&
@@ -341,21 +341,6 @@ Detect OBS/osc session prerequisites.\&
 Resolve a binary RPM to an OBS source package.\&
 .PP
 .RE
-\fBplan\fR
-.RS 4
-Resolve and manage plan stores.\&
-.PP
-.RE
-\fBplan-builder-to-queue-setup\fR
-.RS 4
-Parse plan-builder-to-queue arguments and create plan-vault run state.\&
-.PP
-.RE
-\fBplan-complexity\fR
-.RS 4
-Extract and compare implementation plan complexity signals.\&
-.PP
-.RE
 \fBplan-doc\fR
 .RS 4
 Write and validate lean plan artifacts.\&
@@ -364,11 +349,6 @@ Write and validate lean plan artifacts.\&
 \fBplan-gate\fR
 .RS 4
 Gate whether an input is a reviewable implementation plan.\&
-.PP
-.RE
-\fBplan-init\fR
-.RS 4
-Bootstrap implementation plan root files.\&
 .PP
 .RE
 \fBplan-multi-setup\fR
@@ -415,55 +395,10 @@ Select the markdown spell checker for a set of KB content languages.\&
 .RS 4
 Run centralized orchestrator preflight checks.\&
 .PP
-\fBcog preflight claude-env <out.\&json>\fR asserts
-the Claude Code no-backgrounding session env.\& Strict mode requires
-\fBCLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1\fR; Bash timeout env vars are
-recorded as diagnostics only.\&
-.PP
 .RE
 \fBprint-config\fR
 .RS 4
 Print resolved configuration values and their sources.\&
-.PP
-.RE
-\fBqueue-append\fR
-.RS 4
-Append one implementation plan queue entry.\&
-.PP
-.RE
-\fBqueue-bootstrap\fR
-.RS 4
-Create and validate an implementation plan queue.\&
-.PP
-.RE
-\fBqueue-deps-set\fR
-.RS 4
-Replace one mutable queue item dependency list with a guarded graph check.\&
-.PP
-.RE
-\fBqueue-graph-check\fR
-.RS 4
-Validate queue dependency graph references and cycles.\&
-.PP
-.RE
-\fBqueue-prompt-set\fR
-.RS 4
-Set one queue item prompt with an expected-current-prompt guard.\&
-.PP
-.RE
-\fBqueue-reorder\fR
-.RS 4
-Reorder mutable queue items by stable dependency topological sort.\&
-.PP
-.RE
-\fBqueue-select\fR
-.RS 4
-Select the next runnable implementation plan round.\&
-.PP
-.RE
-\fBqueue-status-set\fR
-.RS 4
-Set one queue item status with an expected-current-status guard.\&
 .PP
 .RE
 \fBreadme-apply\fR
@@ -531,21 +466,6 @@ Validate, sort, and severity-filter review findings JSON.\&
 Parse review-plan-multi arguments and create run state.\&
 .PP
 .RE
-\fBreview-queue-rounds-check-idempotency\fR
-.RS 4
-Flag a round whose declared artifacts an earlier round already deployed.\&
-.PP
-.RE
-\fBreview-queue-rounds-scan\fR
-.RS 4
-Inventory all plan-vault queues and repo/plan fingerprints.\&
-.PP
-.RE
-\fBreview-queue-rounds-verify\fR
-.RS 4
-Verify a review-queue-rounds run against a before/after scan.\&
-.PP
-.RE
 \fBreview-scope\fR
 .RS 4
 Detect changed-file review scope.\&
@@ -561,44 +481,9 @@ Detect review technologies and bundled reference targets.\&
 Validate review findings JSON.\&
 .PP
 .RE
-\fBround-prompt\fR
-.RS 4
-Assemble and validate executor-stamped round prompts.\&
-.PP
-.RE
-\fBround-req\fR
-.RS 4
-Stamp and list round acceptance requirement IDs.\&
-.PP
-.RE
-\fBround-rightsize\fR
-.RS 4
-Drive the recursive round right-sizing queue.\&
-.PP
-.RE
-\fBround-split\fR
-.RS 4
-Check split-round requirement coverage.\&
-.PP
-.RE
 \fBrundir\fR
 .RS 4
 Create a workflow run directory and optionally acquire its lock.\&
-.PP
-.RE
-\fBrunner-all-setup\fR
-.RS 4
-Parse runner-all arguments and create main queue run state.\&
-.PP
-.RE
-\fBrunner-commit-parse\fR
-.RS 4
-Parse runner commit result lines.\&
-.PP
-.RE
-\fBrunner-plan-setup\fR
-.RS 4
-Parse runner-plan arguments and create round queue run state.\&
 .PP
 .RE
 \fBskill-class\fR
@@ -614,11 +499,6 @@ Lint SKILL.\&md files against the skill/script boundary.\&
 \fBskill-refs\fR
 .RS 4
 Resolve in-repo/installed skill-source reference files.\&
-.PP
-.RE
-\fBspec-leakage-scan\fR
-.RS 4
-scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
 .PP
 .RE
 \fBsuckless-apply\fR
@@ -669,7 +549,6 @@ Report tracked artifacts whose revalidation cadence is overdue.\&
 \fBworkflow\fR
 .RS 4
 Resolve, validate, and drive workflow runs.\&
-.PP
 .RE
 .SH FILES
 .PP

@@ -2,7 +2,7 @@
 
 What a provider runner must do to be dispatchable. A runner is the component that turns one fresh-context step into one running agent and one set of durable artifacts: `cog codex-runner` today, `cog claude-runner` next. This is the vendor-neutral contract slice 006 builds both against.
 
-Three contracts sit near each other and own different things. [Orchestrator contract](./orchestrator-contract.md) owns what a driver of `cog workflow` owes the engine. [Orchestration contract](./orchestration-contract.md) owns how cog's skills and agents compose Claude, Codex, queues, and subagents, and it owns the durable-job rules this page builds on. This page owns the provider boundary: what every runner normalizes, and what it deliberately leaves provider-shaped.
+Three contracts sit near each other and own different things. [Orchestrator contract](./orchestrator-contract.md) owns what a driver of `cog workflow` owes the engine. [Orchestration contract](./orchestration-contract.md) owns how cog's skills and agents compose Claude, Codex, workflows, and subagents, and it owns the durable-job rules this page builds on. This page owns the provider boundary: what every runner normalizes, and what it deliberately leaves provider-shaped.
 
 Parts of this contract are specified ahead of the runtime. Each is marked where it appears.
 

@@ -119,7 +119,7 @@ When a coordinator has N independent units of the **same** work — one per repo
 
    ```bash
    cat "$RUN_DIR"/*/result-line.txt > "$RUN_DIR/<RESULTS>"
-   # commit fan-out: cog runner-commit-parse "$RUN_DIR/<RESULTS>" --json  (fails closed on any *_FAILED)
+   # commit fan-out: cog gc-commit-parse "$RUN_DIR/<RESULTS>" --json  (fails closed on any *_FAILED)
    ```
 
 ### Rules

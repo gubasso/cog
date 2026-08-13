@@ -24,3 +24,5 @@ Chosen option: `Use named cells and tiers with source and skill registries` — 
 Implemented
 
 Enacted by [power grade](../explanation/power-grade.md) and [model-effort policy](../reference/model-effort-policy.md).
+
+Amended by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — the tier ladder survives; the executor-capability routing half of the power grade does not.

@@ -55,9 +55,6 @@ The governing skill taxonomy is defined in [Skill contract](./skill-contract.md)
 - skills/claude/plan-oneshot-codex
 - skills/claude/plan-oneshot
 - skills/claude/plan-multi
-- skills/claude/plan-split
-- skills/claude/plan-builder-to-queue
-- skills/claude/plan-builder-to-queue-vetted-multi
 - skills/codex/plan-oneshot
 
 ### review-*
@@ -67,7 +64,6 @@ Code-review skills:
 - skills/claude/review-oneshot
 - skills/claude/review-findings
 - skills/claude/review-loop
-- skills/claude/review-queue-rounds
 - skills/codex/implementation-reviewer
 - skills/codex/review-oneshot
 - skills/codex/review-findings
@@ -77,7 +73,6 @@ Plan-review sub-namespace (`review-plan-*`):
 - skills/claude/review-plan-oneshot
 - skills/claude/review-plan-oneshot-codex
 - skills/claude/review-plan-multi
-- skills/claude/review-plan-complexity
 - skills/codex/review-plan-oneshot
 
 ### executor-*
@@ -90,14 +85,9 @@ Plan-review sub-namespace (`review-plan-*`):
 
 `executor-vetted` is a Claude-only orchestrator (its `plan-multi` / `review-plan-multi` producers run Claude and Codex together), so it has no Codex twin or `-codex` delegation launcher.
 
-### runner-*
-
-- skills/claude/runner-all
-- skills/claude/runner-plan
-
 ### Other shipped skills and agents
 
-Utility skills outside the four governed behavioral prefixes, plus shipped agents:
+Utility skills outside the three governed behavioral prefixes, plus shipped agents:
 
 - skills/claude/assess-input
 - skills/codex/assess-input

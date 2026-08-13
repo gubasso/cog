@@ -15,25 +15,19 @@ cog::fn::plan_artifact::require_absolute_path() {
 }
 
 cog::fn::plan_artifact::runtime_root() {
-  cog::fn::rundir_base "cog/plan-artifacts"
+  cog::fn::rundir_base
 }
 
 cog::fn::plan_artifact::run_dir() {
   local family="${1:-}"
   local slug="${2:-}"
-  local prefix root run_dir
+  local prefix
 
   [[ -n $family ]] || cog::fn::error_raise "MissingArgument" \
     "missing plan artifact family" "function: cog::fn::plan_artifact::run_dir" "" ""
   prefix="$family"
   [[ -z $slug ]] || prefix="${prefix}-${slug}"
-  root="$(cog::fn::plan_artifact::runtime_root)"
-  mkdir -p -- "$root" || cog::fn::error_raise "JsonWriteFailed" \
-    "could not create plan artifact root" "path: ${root}" "" "check permissions and retry"
-  run_dir="${root}/${prefix}-$(date -u +%Y%m%dT%H%M%S)-$$"
-  mkdir -p -- "$run_dir" || cog::fn::error_raise "JsonWriteFailed" \
-    "could not create plan artifact run directory" "path: ${run_dir}" "" "check permissions and retry"
-  printf '%s\n' "$run_dir"
+  cog::fn::rundir_create "$prefix"
 }
 
 cog::fn::plan_artifact::slug_from_text() {

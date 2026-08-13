@@ -24,12 +24,12 @@ cog::fn::skill_class::data_json() {
 }
 
 cog::fn::skill_class::governed_classes() {
-  printf '%s\n' plan review review-plan executor runner bootstrap
+  printf '%s\n' plan review review-plan executor bootstrap
 }
 
 cog::fn::skill_class::is_governed_class() {
   case "${1:-}" in
-    plan | review | review-plan | executor | runner | bootstrap) return 0 ;;
+    plan | review | review-plan | executor | bootstrap) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -47,7 +47,7 @@ cog::fn::skill_class::list_json() {
 cog::fn::skill_class::show_json() {
   local class="${1:-}" data contract
   cog::fn::skill_class::is_governed_class "$class" || cog::fn::error_raise "InvalidInput" \
-    "unknown skill class" "class: ${class}" "expected plan|review|review-plan|executor|runner|bootstrap" \
+    "unknown skill class" "class: ${class}" "expected plan|review|review-plan|executor|bootstrap" \
     "run 'cog skill-class list'"
   data="$(cog::fn::skill_class::data_json)"
   contract="$(jq -c --arg c "$class" '.skill_classes[$c]' <<<"$data")"

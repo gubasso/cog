@@ -2,7 +2,9 @@
 
 ## What this is for
 
-Cog provides deterministic mechanics for agent-oriented development workflows while leaving sequencing and judgment to runtime skills and agents. The reviewed roadmap lives here; generated execution queues remain in `.implementation-plans/` and resolved plan-vault stores.
+Cog provides deterministic mechanics for agent-oriented development workflows while leaving sequencing and judgment to runtime skills and agents. The reviewed roadmap lives here.
+
+Cog does not own a plan vault, execution queues, round sizing, spec production, or executor match telemetry; [ADR-0032](../decisions/ADR-0032-remove-the-plan-vault-and-the-round-layer.md) retired all five. Plan authoring, plan review, and executors remain in scope, and a plan is one artifact under the run-directory root.
 
 ## Pillars
 
@@ -15,7 +17,7 @@ Cog provides deterministic mechanics for agent-oriented development workflows wh
 
 - An unattended autonomous scheduler.
 - Hidden dependencies on external local repositories.
-- Duplicated sources of truth between the plan zone and plan vault.
+- Duplicated sources of truth between the plan zone and any generated artifact.
 - Activation of workflow-engine implementation before slice 002 accepts it.
 
 ## Appetite unit

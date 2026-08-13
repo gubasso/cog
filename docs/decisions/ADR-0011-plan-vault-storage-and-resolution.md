@@ -21,6 +21,6 @@ Chosen option: `Use global and trusted local vaults with whole-store resolution`
 
 ## Status
 
-Implemented
+Superseded
 
-Enacted by [plan vault](../explanation/plan-vault.md) and [plan-vault reference](../reference/plan-vault.md).
+Superseded by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — cog no longer stores, queues, splits, or calibrates plans. The surfaces this record enacted are removed; the record is kept for its history.

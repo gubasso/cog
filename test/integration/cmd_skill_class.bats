@@ -30,7 +30,7 @@ write_skill() {
 @test "cog skill-class list returns the governed classes" {
   run cog skill-class list --json
   assert_success
-  [[ "$(jq -r '[.classes[].class] | sort | join(",")' <<<"$output")" == "bootstrap,executor,plan,review,review-plan,runner" ]]
+  [[ "$(jq -r '[.classes[].class] | sort | join(",")' <<<"$output")" == "bootstrap,executor,plan,review,review-plan" ]]
 }
 
 @test "cog skill-class show returns one class contract" {
@@ -72,10 +72,16 @@ write_skill() {
   for f in "$REPO_ROOT"/skills/claude/*/SKILL.md "$REPO_ROOT"/skills/codex/*/SKILL.md; do
     name="$(basename "$(dirname "$f")")"
     case "$name" in
-      plan-* | review-* | executor-* | runner-* | bootstrap-*) ;;
+      plan-* | review-* | executor-* | bootstrap-*) ;;
       *) continue ;;
     esac
     run cog skill-class check --skill "$f" --json
     assert_success
   done
+}
+
+@test "cog skill-class show rejects the retired runner class" {
+  run --separate-stderr cog skill-class show --class runner --json
+  assert_failure
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
 }

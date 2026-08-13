@@ -51,7 +51,7 @@ cog msg failed commit "<reason> repo=$ROOT log=<path>"   # COMMIT_FAILED ...
 cog msg failed commit-push "<reason> repo=$ROOT"         # COMMIT_PUSH_FAILED ...
 ```
 
-A coordinator reads these via `cog runner-commit-parse`, which fails closed if the line is `*_FAILED`.
+A coordinator reads these via `cog gc-commit-parse`, which fails closed if the line is `*_FAILED`.
 
 ## Workflow
 

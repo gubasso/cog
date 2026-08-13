@@ -110,8 +110,7 @@ When the round is an operator-approval gate — its round prompt requires a huma
 cog gate approve --round-id <round_id> --round-path <input-round-path>
 ```
 
-Then gate completion on the hash-bound check, resolving `<round_id>` from `cog match-telemetry
-round-key`:
+Then gate completion on the hash-bound check, using the same `<round_id>` and `<input-round-path>` passed to `approve`:
 
 ```bash
 cog gate check-approval --round-id <round_id> --round-path <input-round-path>

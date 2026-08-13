@@ -30,10 +30,9 @@ __cog_workflow_advance_self_check='(.schema=="cog.workflow.advance.v1") and (.ou
 __cog_workflow_reclaim_self_check='(.schema=="cog.workflow.reclaim.v1") and (.ok==true) and (.claim_token|type=="string")'
 __cog_workflow_summary_self_check='(.schema=="cog.workflow.summary.v1") and (.ok==true) and (.nodes|type=="array")'
 
-# The receipt key set is closed. Rabbit-hole escape: receipt schemas expanding
-# into telemetry. Only inputs, outputs, state, and dispatch identity — no token
-# counts, no cost, no durations, no provider response metadata. The equality
-# below is the mechanical guard; do not weaken it to has(...) checks.
+# The receipt key set is closed to inputs, outputs, state, and dispatch identity:
+# no token counts, no cost, no durations, no provider response metadata. The
+# equality below is the mechanical guard; do not weaken it to has(...) checks.
 __cog_workflow_receipt_self_check='(.schema=="cog.workflow.receipt.v1") and ((keys_unsorted|sort) == ["as","engine","error","final_message","final_message_truncated","inputs","outputs","owner","schema","status"])'
 
 __cog_workflow_final_message_ceiling=2000

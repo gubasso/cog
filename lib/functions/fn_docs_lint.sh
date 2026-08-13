@@ -13,14 +13,14 @@ cog::fn::docs_lint::files() {
 
   [[ -d $root/docs ]] && roots+=("$root/docs")
   [[ -d $root/skill-refs/docs-design ]] && roots+=("$root/skill-refs/docs-design")
-  [[ -d $root/.draft ]] && roots+=("$root/.draft")
 
-  # The retired archive is a user-owned hand-off buffer, not an active docs source.
+  # `.draft/` is the gitignored scratch workspace: its contents are never
+  # published and are not an active docs source, so a half-written draft must
+  # not gate a commit through the always_run docs-lint hook.
   ((${#roots[@]})) || return 0
   while IFS= read -r -d '' path; do
     printf '%s\0' "$path"
-  done < <(find "${roots[@]}" -type f -name '*.md' \
-    ! -path "$root/.draft/safe-to-delete/*" -print0 | sort -z)
+  done < <(find "${roots[@]}" -type f -name '*.md' -print0 | sort -z)
 }
 
 cog::fn::docs_lint::relative() {

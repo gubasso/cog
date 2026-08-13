@@ -19,7 +19,6 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 - Install workflow assets, completion, man entries, and skill-class data through existing whole-tree lanes.
 - Assert uninstall removes every manifest-owned workflow asset while preserving user files.
 - Add install completeness and stale-reference tests.
-- Fix missing `data/spec-leakage/` install coverage only if the adjacent defect is still reproducible. This is cut first.
 
 ## Out of scope
 
@@ -43,7 +42,6 @@ When cog uninstalls, the uninstaller shall remove only those owned assets and le
 ## Rabbit holes
 
 - Installer duplication can create a second ownership lane — escape: extend existing whole-tree assertions before adding code.
-- Adjacent spec-leakage coverage can consume the slice — escape: fix it only with a current reproduction.
 
 ## Done when
 
@@ -51,4 +49,4 @@ Install and uninstall round-trip, stale-reference checks pass, obsolete surfaces
 
 ## Revisions
 
-None.
+- 2026-08-13 — In scope and Rabbit holes dropped their `data/spec-leakage/` clauses. ADR-0032 deleted that data subtree, so the missing install coverage it named can no longer be reproduced or fixed.

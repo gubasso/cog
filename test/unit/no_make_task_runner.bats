@@ -13,9 +13,6 @@ setup() {
 #   - the suckless commands, which build dwm/st/dmenu with `make clean && make`
 #   - the C pre-commit template's build hook and the C editorconfig tab rule
 #
-# `.implementation-plans/` is excluded wholesale: it is a machine queue of past
-# rounds, and rewriting settled history there would be meaningless.
-#
 # Anything else matching a make-as-task-runner pattern is a leftover. This test
 # is what keeps the migration from silently regressing.
 _allowlisted() {
@@ -46,7 +43,7 @@ _allowlisted() {
   done < <(
     cd "$repo_root" && git grep -lEI \
       'Makefile|GNUmakefile|\.PHONY|\bgmake\b|\bmake (install|test|lint|build|clean)\b' \
-      -- . ':(exclude).implementation-plans' 2>/dev/null || true
+      -- . 2>/dev/null || true
   )
 
   if [ ${#offenders[@]} -ne 0 ]; then

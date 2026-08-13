@@ -4,7 +4,7 @@ Decision record + canon for how orchestrating skills run a fresh, full Claude ex
 
 ## Decision
 
-Run delegated agentic work as **in-session foreground subagents**, not via a headless `claude -p` subprocess. A generic `claude-delegate` subagent is the reusable primitive; orchestrators (for example `runner-all` and `runner-plan`) dispatch each unit to it via the **Agent tool**.
+Run delegated agentic work as **in-session foreground subagents**, not via a headless `claude -p` subprocess. A generic `claude-delegate` subagent is the reusable primitive; orchestrators (for example `executor-prex`) dispatch each unit to it via the **Agent tool**.
 
 ## Why headless `claude -p` was wrong
 
@@ -39,8 +39,8 @@ See <https://code.claude.com/docs/en/sub-agents> ("Spawn nested subagents") and 
   > 600s call). Duration is never judged: a long unit is never a reason to split it. The orchestrator's own tool calls stay foreground; the model still never backgrounds its own tool calls. This applies in every Codex-driving skill (`executor-prex`, `review-loop`, `plan-multi`, `ask`); runtime behavior is owned by `cog codex-runner`, and the durable-job contract is recorded in `docs/decisions/ADR-0009-orchestration-and-durable-jobs.md`.
 - **Use the `Agent` tool, never the `Skill` tool, for nested delegation** — `Skill` inline-injects the child body and the orchestrator stops mid-workflow (`anthropics/claude-code#17351`). Nesting being supported does not change this: the Agent tool is still the boundary. See `../skills-and-orchestration.md` (Dispatch vs Delegation).
 
-The current guarantee is env-first: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is asserted before orchestration work that depends on foreground execution. Multi-level completion stays independently backstopped by durable postcondition checks such as queue status, scan/verify artifacts, and parsed commit result lines.
+The current guarantee is env-first: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is asserted before orchestration work that depends on foreground execution. Multi-level completion stays independently backstopped by durable postcondition checks such as executor stage artifacts, the asserted review-loop summary, and parsed commit result lines.
 
 ## Status
 
-Accepted / Implemented (2026-06-17). Current queue orchestration uses `runner-all`, `runner-plan`, `claude-delegate`, and executor skills. Recorded in-repo as [ADR-0009](../../docs/decisions/ADR-0009-orchestration-and-durable-jobs.md).
+Accepted / Implemented (2026-06-17). Current orchestration uses `claude-delegate` and the executor skills. Recorded in-repo as [ADR-0009](../../docs/decisions/ADR-0009-orchestration-and-durable-jobs.md).

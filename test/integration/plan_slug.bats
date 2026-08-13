@@ -12,7 +12,7 @@ setup() {
 }
 
 @test "cog plan-slug rejects reserved names" {
-  run cog plan-slug --text "QUEUE" --json
+  run cog plan-slug --text "STRATEGY" --json
 
   assert_failure
   printf '%s\n' "$output" | jq -e '.ok == false and .slug == null and .reserved == true' >/dev/null

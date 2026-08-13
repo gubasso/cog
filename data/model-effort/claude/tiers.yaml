@@ -48,10 +48,7 @@ tiers:
       - ask
       - plan-oneshot
       - plan-multi
-      - plan-builder-to-queue
-      - plan-builder-to-queue-vetted-multi
       - plan-vetted
-      - executor-greenfield-from-spec
       - executor-prex
       - review-plan-oneshot
       - review-plan-multi
@@ -80,7 +77,7 @@ tiers:
       - repeatable runbook
       - deterministic core delegated to cog
       - bounded judgment
-      - verbatim queue dispatch
+      - bounded mechanical sequencing
     skills:
       - bootstrap
       - bootstrap-lint
@@ -94,7 +91,6 @@ tiers:
       - bootstrap-knowledge-base
       - test-review
       - review-findings
-      - review-queue-rounds
       - claudemd
       - osc-obs
       - suckless-patcher
@@ -104,8 +100,6 @@ tiers:
       - gc
       - gc-hook-fix
       - gc-repo
-      - runner-all
-      - runner-plan
     use_when: |-
       Executes a well-structured, detailed procedure where the hard decisions are already
       made and most mechanics are delegated to scripts or cog subcommands, but some judgment remains.

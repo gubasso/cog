@@ -27,7 +27,7 @@ Review one implementation plan before implementation by delegating the whole rev
 `$ARGUMENTS` is the plan to review, in any of three forms:
 
 - A plan **file** path.
-- A plan **directory** of round files.
+- A plan **directory** of markdown sources.
 - **Inline** text carrying the plan (and often its context) from the session.
 
 Required. If `$ARGUMENTS` is empty, ask the user for the plan before proceeding. This skill depends only on the plan structure it reads; it is blind to which skill produced the plan.
@@ -43,7 +43,7 @@ RUN_DIR="$(cog rundir review-plan-oneshot-codex | sed -n 's/^RUN_DIR=//p')"
 
 When `$ARGUMENTS` is not an existing path, write the inline text verbatim to `<RUN_DIR>/raw-input.txt` first.
 
-**Plan-input gate.** Confirm the input is a reviewable plan per `$(cog skill-refs path plan-rounds/plan-input-gate.md)` before building anything and before any Codex dispatch:
+**Plan-input gate.** Confirm the input is a reviewable plan per `$(cog skill-refs path plan-quality/plan-input-gate.md)` before building anything and before any Codex dispatch:
 
 ```bash
 cog plan-gate check <plan-file | plan-dir>            # path input

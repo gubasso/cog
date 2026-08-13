@@ -1,6 +1,0 @@
-rounds:
-  - item: man-page-sync-precommit-hook
-    status: todo
-    depends_on: []
-    prompt: /executor-prex -ar .implementation-plans/plans/man-page-sync-precommit-hook/man-page-sync-precommit-hook.md
-    notes: New cog man-build command, pre-commit fixer hook, justfile delegation, command-surface mirrors, help snapshots, and integration coverage.

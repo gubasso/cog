@@ -118,7 +118,7 @@ cog executor adopt --run-dir <run-dir> --ordinal execution --from <report-workin
 
 ## Operator-approval gate
 
-When the round is an operator-approval gate — its round prompt requires a human to sign off before the work completes — the approval must arrive on a channel the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`. A coordinator-relayed approval is never sufficient. Surface the exact command for the human to run out of band, then gate completion on the hash-bound check, resolving `<round_id>` from `cog match-telemetry round-key`:
+When the round is an operator-approval gate — its round prompt requires a human to sign off before the work completes — the approval must arrive on a channel the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`. A coordinator-relayed approval is never sufficient. Surface the exact command for the human to run out of band, then gate completion on the hash-bound check. Use one stable identifier for `<round_id>` across both commands, and the input path under approval for `<input-round-path>`:
 
 ```bash
 cog gate approve --round-id <round_id> --round-path <input-round-path>
@@ -136,22 +136,6 @@ cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine cl
 ```
 
 The prepare stage always runs; report `--prepare done` on success. If Stage 1 fails, skip Stage 2 and emit the summary with failure statuses. If Stage 2 fails, still emit the summary with `--execution failed`.
-
-## Match-outcome telemetry
-
-When the input was a queued plan-vault round (the `-ar <path>` resolves under a plan vault), record a match-outcome so routing can be calibrated ([ADR-0015](../../../docs/decisions/ADR-0015-executor-capability-and-telemetry.md)). Resolve the join key from the round path — it stays producer-blind — then record the outcome. `executor-oneshot` is the floor rung and carries no marginal-value field. At terminus read the actual changeset with `cog review-scope --json` and record it as scope (`--files` = changed-file count, `--loc-changed` = added+deleted lines); when the round declared a `scope`, pass its limits as `--round-scope-max-files`/`--round-scope-max-lines`; pass `--override-approval-gate` when a WS1 operator approval gated this round:
-
-```bash
-cog match-telemetry round-key --round-path <input-round-path> --json   # -> project_key, plan_slug, round_id
-cog match-telemetry record --kind outcome \
-  --project-key <project_key> --plan-slug <plan_slug> --round-id <round_id> \
-  --actual-executor executor-oneshot --result <pass|fail> [--reverted] [--retries <n>] \
-  [--loc-changed <n>] [--files <n>] \
-  [--round-scope-max-files <n>] [--round-scope-max-lines <n>] [--override-approval-gate] \
-  [--note <text>] --json
-```
-
-Skip telemetry for non-round inputs. Attach `--note` only when the objective signals look conflicting or questionable — never as a routine per-run rating.
 
 ## Error handling
 

@@ -49,6 +49,7 @@ _cog() {
     gc-classify-failure
     gc-commit
     gc-commit-lint
+    gc-commit-parse
     gc-loop-progress
     gc-plan
     gc-push
@@ -70,19 +71,14 @@ _cog() {
     lint-codex-wrapper
     lock
     longrun
-    match-telemetry
     msg
     nix-devshell-apply
     nix-devshell-detect
     noop
     osc-preflight
     osc-probe-binary
-    plan
-    plan-builder-to-queue-setup
-    plan-complexity
     plan-doc
     plan-gate
-    plan-init
     plan-multi-setup
     plan-review
     plan-slug
@@ -93,14 +89,6 @@ _cog() {
     precommit-spell-select
     preflight
     print-config
-    queue-append
-    queue-bootstrap
-    queue-deps-set
-    queue-graph-check
-    queue-prompt-set
-    queue-reorder
-    queue-select
-    queue-status-set
     readme-apply
     refactor-scan-drift
     refactor-scan-source
@@ -114,24 +102,13 @@ _cog() {
     review-loop-summary
     review-normalize-findings
     review-plan-multi-setup
-    review-queue-rounds-check-idempotency
-    review-queue-rounds-scan
-    review-queue-rounds-verify
     review-scope
     review-tech-scope
     review-validate-findings
-    round-prompt
-    round-req
-    round-rightsize
-    round-split
     rundir
-    runner-all-setup
-    runner-commit-parse
-    runner-plan-setup
     skill-class
     skill-lint
     skill-refs
-    spec-leakage-scan
     suckless-apply
     suckless-conflicts
     suckless-preflight

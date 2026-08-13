@@ -63,6 +63,7 @@ Commands:
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
+  gc-commit-parse Parse gc commit result lines.
   gc-loop-progress Compare commit failure reports across round-loop rounds.
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
@@ -84,19 +85,14 @@ Commands:
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
-  match-telemetry Record and report plan→executor match-outcome telemetry.
   msg            Emit uniform machine status lines.
   nix-devshell-apply Apply a nix devshell template to a project.
   nix-devshell-detect Detect nix devshell template type.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
-  plan           Resolve and manage plan stores.
-  plan-builder-to-queue-setup Parse plan-builder-to-queue arguments and create plan-vault run state.
-  plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
   plan-gate      Gate whether an input is a reviewable implementation plan.
-  plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
@@ -107,14 +103,6 @@ Commands:
   precommit-spell-select Select the markdown spell checker for a set of KB content languages.
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
-  queue-append   Append one implementation plan queue entry.
-  queue-bootstrap Create and validate an implementation plan queue.
-  queue-deps-set Replace one mutable queue item dependency list with a guarded graph check.
-  queue-graph-check Validate queue dependency graph references and cycles.
-  queue-prompt-set Set one queue item prompt with an expected-current-prompt guard.
-  queue-reorder  Reorder mutable queue items by stable dependency topological sort.
-  queue-select   Select the next runnable implementation plan round.
-  queue-status-set Set one queue item status with an expected-current-status guard.
   readme-apply   Apply a README skeleton to a project.
   refactor-scan-drift Compute byte-stable source-scan fingerprint.
   refactor-scan-source Run deterministic source static-analysis probes.
@@ -128,24 +116,13 @@ Commands:
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
-  review-queue-rounds-check-idempotency Flag a round whose declared artifacts an earlier round already deployed.
-  review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
-  review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
-  round-prompt   Assemble and validate executor-stamped round prompts.
-  round-req      Stamp and list round acceptance requirement IDs.
-  round-rightsize Drive the recursive round right-sizing queue.
-  round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  runner-all-setup Parse runner-all arguments and create main queue run state.
-  runner-commit-parse Parse runner commit result lines.
-  runner-plan-setup Parse runner-plan arguments and create round queue run state.
   skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
-  spec-leakage-scan scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
@@ -201,6 +178,7 @@ Commands:
   gc-classify-failure Classify commit or push failure logs.
   gc-commit      Commit with a message file and explicit pathspec.
   gc-commit-lint Validate a commit message against Conventional Commits (or defer to the repo linter).
+  gc-commit-parse Parse gc commit result lines.
   gc-loop-progress Compare commit failure reports across round-loop rounds.
   gc-plan        Partition session files by owning repo and run safety scan.
   gc-push        Run git push without force support.
@@ -222,19 +200,14 @@ Commands:
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
   longrun        Launch, poll, finalize, and cancel cog-owned durable long-running jobs.
-  match-telemetry Record and report plan→executor match-outcome telemetry.
   msg            Emit uniform machine status lines.
   nix-devshell-apply Apply a nix devshell template to a project.
   nix-devshell-detect Detect nix devshell template type.
   noop           Exercise command dispatch without side effects.
   osc-preflight  Detect OBS/osc session prerequisites.
   osc-probe-binary Resolve a binary RPM to an OBS source package.
-  plan           Resolve and manage plan stores.
-  plan-builder-to-queue-setup Parse plan-builder-to-queue arguments and create plan-vault run state.
-  plan-complexity Extract and compare implementation plan complexity signals.
   plan-doc       Write and validate lean plan artifacts.
   plan-gate      Gate whether an input is a reviewable implementation plan.
-  plan-init      Bootstrap implementation plan root files.
   plan-multi-setup Parse plan-multi arguments and create run state.
   plan-review    Write and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
@@ -245,14 +218,6 @@ Commands:
   precommit-spell-select Select the markdown spell checker for a set of KB content languages.
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
-  queue-append   Append one implementation plan queue entry.
-  queue-bootstrap Create and validate an implementation plan queue.
-  queue-deps-set Replace one mutable queue item dependency list with a guarded graph check.
-  queue-graph-check Validate queue dependency graph references and cycles.
-  queue-prompt-set Set one queue item prompt with an expected-current-prompt guard.
-  queue-reorder  Reorder mutable queue items by stable dependency topological sort.
-  queue-select   Select the next runnable implementation plan round.
-  queue-status-set Set one queue item status with an expected-current-status guard.
   readme-apply   Apply a README skeleton to a project.
   refactor-scan-drift Compute byte-stable source-scan fingerprint.
   refactor-scan-source Run deterministic source static-analysis probes.
@@ -266,24 +231,13 @@ Commands:
   review-loop-summary Assemble and validate the review-loop terminal summary.
   review-normalize-findings Validate, sort, and severity-filter review findings JSON.
   review-plan-multi-setup Parse review-plan-multi arguments and create run state.
-  review-queue-rounds-check-idempotency Flag a round whose declared artifacts an earlier round already deployed.
-  review-queue-rounds-scan Inventory all plan-vault queues and repo/plan fingerprints.
-  review-queue-rounds-verify Verify a review-queue-rounds run against a before/after scan.
   review-scope   Detect changed-file review scope.
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
-  round-prompt   Assemble and validate executor-stamped round prompts.
-  round-req      Stamp and list round acceptance requirement IDs.
-  round-rightsize Drive the recursive round right-sizing queue.
-  round-split    Check split-round requirement coverage.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  runner-all-setup Parse runner-all arguments and create main queue run state.
-  runner-commit-parse Parse runner commit result lines.
-  runner-plan-setup Parse runner-plan arguments and create round queue run state.
   skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
-  spec-leakage-scan scan a tech-agnostic spec artifact for stack/command/test-structure/intent leakage
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.

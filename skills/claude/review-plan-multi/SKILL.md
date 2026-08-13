@@ -6,9 +6,9 @@ description: >
   reconciles both annotated reviews into a single vetted review saved through cog
   plan-review. Use when the user says "review-plan-multi", "dual-engine plan review",
   "review this plan with codex", "two reviews then synthesize", or wants a second
-  independent engine cross-checking a plan review. Accepts a plan file, a plan directory,
-  or inline plan+context text. Optional flag: --solo (skip Codex; Claude-only).
-argument-hint: "[--solo] <plan-file | plan-dir | inline plan+context>"
+  independent engine cross-checking a plan review. Accepts a plan file or inline
+  plan+context text. Optional flag: --solo (skip Codex; Claude-only).
+argument-hint: "[--solo] <plan-file | inline plan+context>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 ---
@@ -26,7 +26,7 @@ This skill runs **inline** (no fork): only the main thread can read the live con
 **Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`.
 
 ```text
-inline: read the plan input (file | dir | inline text) → build PLAN-UNDER-REVIEW + raw REQUEST brief → preflight
+inline: read the plan input (file | inline text) → build PLAN-UNDER-REVIEW + raw REQUEST brief → preflight
             │
             ├──(Agent fork)── Claude review-plan-oneshot → claude-review.md   (via cog plan-review)
             └──(Bash)──────── Codex  review-plan-oneshot → codex-review.md    (via cog plan-review)
@@ -50,7 +50,7 @@ The verdict model and orchestration references ship with `cog` and resolve in-re
 
 ## Inputs
 
-- `$ARGUMENTS` — the plan to review plus the optional `--solo` flag. The plan input may be a single plan file, a plan directory of round files, or inline text that mixes the request/context with a full plan. Required. If empty, ask the user for a plan before proceeding. The skill depends only on the `.implementation-plans/` plan structure it reads; it is blind to which skill produced the plan.
+- `$ARGUMENTS` — the plan to review plus the optional `--solo` flag. The plan input may be a single plan file or inline text that mixes the request/context with a full plan. Required. If empty, ask the user for a plan before proceeding. The skill is blind to which skill produced the plan.
 
 ## Phase 1: Setup
 
@@ -60,14 +60,14 @@ Parse flags and classify the plan input deterministically, then create the run d
 cog review-plan-multi-setup "$ARGUMENTS"
 ```
 
-The command parses `--solo`, classifies the input form, creates the run dir, resolves the repo root, and pre-computes every scratch path. It emits `RUN_DIR=`, `MODE=` (`file|dir|inline`), `SOLO=`, `REPO_ROOT=`, `REQUEST_FILE=`, `PLAN_UNDER_REVIEW=`, `CLAUDE_REVIEW=`, `CODEX_REVIEW=`, `FINAL_REVIEW=`, and the mode-specific `PLAN_PATH=` (file), `PLAN_DIR=`/`PLAN_SOURCES=` (dir), or `RAW_INPUT_FILE=` (inline). It exits 2 on an unknown flag or empty input (surface that error to the user).
+The command parses `--solo`, classifies the input form, creates the run dir, resolves the repo root, and pre-computes every scratch path. It emits `RUN_DIR=`, `MODE=` (`file|inline`), `SOLO=`, `REPO_ROOT=`, `REQUEST_FILE=`, `PLAN_UNDER_REVIEW=`, `CLAUDE_REVIEW=`, `CODEX_REVIEW=`, `FINAL_REVIEW=`, and the mode-specific `PLAN_PATH=` (file) or `RAW_INPUT_FILE=` (inline). It exits 2 on an unknown flag, a directory argument, or empty input (surface that error to the user).
 
 Shell state does not persist between Bash calls — substitute the literal path values into later commands.
 
-**Plan-input gate.** With the classified input in hand, confirm it is a reviewable plan per `$(cog skill-refs path plan-rounds/plan-input-gate.md)` before building anything or dispatching either worker. Pass the form the setup command reported:
+**Plan-input gate.** With the classified input in hand, confirm it is a reviewable plan per `$(cog skill-refs path plan-quality/plan-input-gate.md)` before building anything or dispatching either worker. Pass the form the setup command reported:
 
 ```bash
-cog plan-gate check <PLAN_PATH | PLAN_DIR>          # MODE=file | MODE=dir
+cog plan-gate check <PLAN_PATH>                     # MODE=file
 cog plan-gate check --input-file <RAW_INPUT_FILE>   # MODE=inline
 ```
 
@@ -80,7 +80,6 @@ Produce the **single, identical pair of inputs** both workers receive.
 **`PLAN_UNDER_REVIEW`** — the consolidated plan content to review:
 
 - `MODE=file` — the plan is `PLAN_PATH`; use it directly as `PLAN_UNDER_REVIEW` (copy or reference).
-- `MODE=dir` — read every file listed in `PLAN_SOURCES` (in listed order) and consolidate them into `PLAN_UNDER_REVIEW`, preserving each file's heading and content.
 - `MODE=inline` — read `RAW_INPUT_FILE`; separate the plan portion into `PLAN_UNDER_REVIEW`.
 
 **`REQUEST_FILE`** — the goal and context the plan is reviewed **against**, built as a best-constructed context brief per `$(cog skill-refs path orchestration/context-brief-contract.md)`. First write the user's original request/goal (the intent the plan is reviewed against, drawn from the input and conversation) to `$RUN_DIR/objective.txt`. Scaffold the authored body:

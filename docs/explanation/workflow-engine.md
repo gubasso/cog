@@ -47,7 +47,7 @@ $RUN_DIR/
 
 One `record` call inventories the node directory, truncates the captured final message, writes `<as>/outputs.json`, and updates `state.json`. The receipt lists what the directory holds rather than verifying it against a declaration: cog counts files and never reads them. A failed node still gets a receipt, carrying an `error` object.
 
-The receipt key set is closed to inputs, outputs, state, and dispatch identity, and a jq key-set equality check enforces it on every write. That check is the guard against receipts drifting into telemetry; weakening it to `has(...)` tests would remove the only thing stopping a token count from being added quietly.
+The receipt key set is closed to inputs, outputs, state, and dispatch identity — no token counts, no cost, no durations, no provider response metadata — and a jq key-set equality check enforces it on every write. Weakening that check to `has(...)` tests would remove the only thing stopping a token count from being added quietly.
 
 ## What this release does not do
 

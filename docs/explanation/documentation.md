@@ -6,7 +6,7 @@ This page owns only cog-specific documentation mechanics: how `cog docs-lint` wo
 
 `cog docs-lint` scans shipped cog docs and the imported docs-design shelf for decorative emphasis, validates lean ADR shape and lifecycle, validates plan headings and milestone vocabulary, and resolves acceptance tests for active, done, or cut slices. Markdownlint owns fence-language and relative-link validation.
 
-[Documentation migration](../reference/documentation-migration.md) is lookup history for the one-time reset, never current architecture. `docs/plan/` owns reviewed slice intent and status; `.implementation-plans/` and XDG plan vaults own generated execution queues.
+[Documentation migration](../reference/documentation-migration.md) is lookup history for the one-time reset, never current architecture. `docs/plan/` owns reviewed slice intent and status.
 
 ## Tracking registry
 
@@ -83,7 +83,7 @@ The exclusions are owners, independent namespaces, and constructed paths — not
 
 ## Current constraints
 
-[ADR-0001](../decisions/ADR-0001-adopt-documentation-architecture.md) records the architecture and one-time reset. Drafts remain in `.draft/` until promoted, and `.draft/safe-to-delete/` is only a manual-deletion hand-off buffer.
+[ADR-0001](../decisions/ADR-0001-adopt-documentation-architecture.md) records the architecture and one-time reset. Drafts remain in `.draft/` until promoted, and `.draft/safe-to-delete/` is only a manual-deletion hand-off buffer. `docs-lint` does not read `.draft/`: the hook is `always_run`, so linting a gitignored scratch tree would let an unfinished draft block every commit.
 
 ## Unresolved
 

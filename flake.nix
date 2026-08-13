@@ -62,8 +62,8 @@
             pkgs.gnugrep
             pkgs.gawk
             pkgs.gnused
-            pkgs.perl # fn_round_req.sh requirement-ID stamping
-            pkgs.util-linux # flock, for fn_match_telemetry.sh's append lock
+            pkgs.perl # in-place multiline edits in the test suite
+            pkgs.util-linux # flock, for cog lock and cog rundir
           ];
 
           # The greeting goes to standard error, because `nix develop --command`

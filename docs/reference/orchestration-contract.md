@@ -1,6 +1,6 @@
 # Orchestration Contract
 
-This reference defines how `cog` skills and agents compose Claude, Codex, queues, and subagents. Skills keep sequencing and judgment in prose; deterministic checks and workflow mechanics stay in `cog`.
+This reference defines how `cog` skills and agents compose Claude, Codex, workflows, and subagents. Skills keep sequencing and judgment in prose; deterministic checks and workflow mechanics stay in `cog`.
 
 ## Recursion Primitives
 
@@ -41,26 +41,24 @@ This is the only sanctioned form of non-blocking execution. cog detaching its ow
 
 ## Delegate And Verify
 
-Every orchestration boundary must verify a durable postcondition after the delegate returns. A parent must re-read state such as a queue item, report file, or test artifact rather than trusting a returned summary.
+Every orchestration boundary must verify a durable postcondition after the delegate returns. A parent must re-read state such as a workflow node, report file, or test artifact rather than trusting a returned summary.
 
-For queue-driven work, the usual postcondition is:
+For workflow-driven work, the postcondition is the run's own durable state rather than the delegate's word:
 
 ```text
-inner queue-rounds.yaml round status == done
-top-level queue-plans.yaml plan status == done
+cog workflow summary --run-dir <dir> --json    # per-node state
+cog workflow conformance --run-dir <dir>       # durable postconditions hold
 ```
 
-Plan directories are flat siblings, a single level under `<PLAN_ROOT>/plans/`; ordering between plans lives only in `queue-plans.yaml` `depends_on`, never in the filesystem. The runner and the revision boundary both resolve the vault store through `cog plan runner-resolve`: `cog runner-plan-setup` requires its target to resolve to a flat plan directory, and `cog review-queue-rounds-scan` fails closed on any nested plan.
+What each node must have written before it may be called done is owned by [orchestrator contract](./orchestrator-contract.md); the artifact-by-directory rule is [ADR-0024](../decisions/ADR-0024-pass-step-artifacts-by-directory.md).
 
-Queue runners dispatch selected item prompts verbatim. `runner-all` dispatches a main queue prompt such as `/runner-plan -ar @<PLAN_ROOT>/plans/<slug>/`; `runner-plan` dispatches each round prompt such as `/executor-prex -ar <PLAN_ROOT>/plans/<slug>/rounds/<round>.md`.
-
-A queue runner may invoke a revision subagent as a foreground sibling boundary after a committed item. The revision subagent is a sibling of the round delegate (a +1 from the runner's depth 0), not nested beneath it, so the boundary stays flat against the depth cap; it spends one depth level and must verify a clean, committed postcondition before selecting more work.
+An orchestrator may invoke a review subagent as a foreground sibling boundary after a committed unit. The review subagent is a sibling of the work delegate (a +1 from the orchestrator's depth 0), not nested beneath it, so the boundary stays flat against the depth cap; it spends one depth level and must verify a clean, committed postcondition before selecting more work.
 
 ## Depth Budget
 
 Claude Code permits a fixed maximum of five subagent levels below the main conversation. The limit applies regardless of whether each level is foreground or background. A subagent at depth five does not receive the Agent tool and cannot spawn further; the limit is fixed and not configurable.
 
-Spend depth only when isolation is valuable. Chain skills inline when same-context composition is enough. When a design would exceed depth five, flatten it into durable queue iteration: persist the next unit of work, return to the parent, and start a fresh foreground chain from queue state. This durable-queue trampoline is a documented future option, not a new mechanism in this round.
+Spend depth only when isolation is valuable. Chain skills inline when same-context composition is enough. When a design would exceed depth five, flatten it into durable iteration: persist the next unit of work, return to the parent, and start a fresh foreground chain from that durable state.
 
 Cog-owned durable jobs (above) are processes cog supervises, not Agent-tool subagents, so they cost zero subagent levels: the polling orchestrator stays at its current depth regardless of how long the job runs.
 
