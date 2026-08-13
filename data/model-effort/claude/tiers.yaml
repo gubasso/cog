@@ -83,15 +83,13 @@ tiers:
       - verbatim queue dispatch
     skills:
       - bootstrap
-      - bootstrap-precommit
-      - bootstrap-editorconfig
+      - bootstrap-lint
       - bootstrap-nix
       - bootstrap-repo
       - bootstrap-ci
       - bootstrap-taskrunner
       - bootstrap-governance
       - bootstrap-rust
-      - bootstrap-cargo-publish
       - bootstrap-installer
       - bootstrap-knowledge-base
       - test-review

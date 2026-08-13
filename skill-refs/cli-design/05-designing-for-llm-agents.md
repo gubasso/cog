@@ -403,7 +403,7 @@ Mitigations to bake into your agent's instructions (AGENTS.md, CLAUDE.md, or the
 
 - **Load the project's testing principles before writing tests.** Point the agent at [08 — Testing Strategy](08-testing-and-quality/testing-strategy.md) and [08a — Testing Tools](08-testing-and-quality/testing-tools.md). The five heuristics are non-negotiable.
 - **Refuse mock-only assertions.** If the only thing a test asserts on is a mock's call shape, the test is rejected at review.
-- **Surface coverage AND mutation score.** Coverage alone is the wrong signal; a `make mutate` (or equivalent) target keeps mutation testing one keystroke away. See [08a § Mutation testing](08-testing-and-quality/testing-tools.md#mutation-testing).
+- **Surface coverage AND mutation score.** Coverage alone is the wrong signal; a `just mutate` (or equivalent) recipe keeps mutation testing one keystroke away. See [08a § Mutation testing](08-testing-and-quality/testing-tools.md#mutation-testing).
 - **Audit existing tests with the `test-review` skill.** The skill ships with cog (Claude planner + Codex implementer) and lints any project's test suite against the principles file, producing a refactor plan tied to the specific heuristic each finding violates.
 
 For agents writing tests for _this_ CLI specifically: snapshot-test `--help`, the JSON schema, and the exit-code matrix (see [99-checklist § Designing for LLM coding agents](./99-checklist.md#designing-for-llm-coding-agents)). Those three artifacts are the agent's contract with the tool; lock them down.

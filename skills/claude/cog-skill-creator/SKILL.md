@@ -53,7 +53,7 @@ A governed-intent skill's name must carry the prefix that matches what it does:
 - `review-plan-*` is the `review-*` sub-namespace for plan-before-implementation review;
 - `executor-*` executes one plan/prompt at a time;
 - `runner-*` orchestrates executors over a queue;
-- `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog (a template-shipping worker also runs the template-refresh routine).
+- `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog (a template-shipping worker also runs the domain-worker routine for each domain it owns).
 
 Classify the new skill's behavior during the interview and choose a name whose prefix matches. A skill that is none of these (an authoring or utility skill) takes a descriptive non-taxonomy name and is an ungoverned `other` class. For a governed class, read its full membership contract and scaffold against its exact prerequisites:
 

@@ -150,8 +150,18 @@ __cog_classify_project_detect_languages() {
   fi
   __cog_classify_project_has_file package.json && __cog_classify_project_add_language javascript "package.json"
   __cog_classify_project_has_file go.mod && __cog_classify_project_add_language go "go.mod"
-  if __cog_classify_project_has_file Makefile && [[ $(__cog_classify_project_count_named_files '*.c') -gt 0 ]]; then
-    __cog_classify_project_add_language c "Makefile plus *.c"
+  if [[ $(__cog_classify_project_count_named_files '*.c') -gt 0 ]]; then
+    local c_build=""
+    if __cog_classify_project_has_file CMakeLists.txt; then
+      c_build=CMakeLists.txt
+    elif __cog_classify_project_has_file meson.build; then
+      c_build=meson.build
+    elif __cog_classify_project_has_file configure.ac; then
+      c_build=configure.ac
+    elif __cog_classify_project_has_file config.mk; then
+      c_build=config.mk
+    fi
+    [[ -n $c_build ]] && __cog_classify_project_add_language c "$c_build plus *.c"
   fi
   __cog_classify_project_has_file build.zig && __cog_classify_project_add_language zig "build.zig"
   if __cog_classify_project_has_file package.json && [[ $(__cog_classify_project_count_named_files '*.svelte') -gt 0 ]]; then

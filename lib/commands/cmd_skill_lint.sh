@@ -1292,26 +1292,31 @@ __cog_skill_lint_check_skill_class() {
   return "$failed"
 }
 
-# A bootstrap-* worker whose domain is a valid template-review domain must run the
-# shared template-refresh routine so its cog templates stay freshness-tracked. The
-# domain is the skill name minus the `bootstrap-` prefix; the allowlist SoT is
-# cog::fn::bootstrap_review::valid_domain, so adding a domain there auto-requires this
-# reference. bootstrap-rust (domain `rust`, ships no cog templates) and the `bootstrap`
-# orchestrator are exempt because their stripped name is not a valid domain.
+# A bootstrap-* worker that owns one or more template-review domains must run the
+# shared domain-worker routine so its cog templates stay freshness-tracked. The
+# skill-to-domain mapping SoT is cog::fn::bootstrap_review::skill_domains, so adding
+# a domain there auto-requires this reference. The `bootstrap` orchestrator is exempt
+# because it owns no domain of its own.
 __cog_skill_lint_check_bootstrap_template_review() {
-  local file="$1" runtime name domain
+  local file="$1" runtime name domains domain failed=0
+  local -a owned=()
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
   [[ $runtime == claude ]] || return 0
   name="$(cog::fn::skill::frontmatter_name "$file")"
   [[ $name == bootstrap-* ]] || return 0
-  domain="${name#bootstrap-}"
-  cog::fn::bootstrap_review::valid_domain "$domain" || return 0
+  domains="$(cog::fn::bootstrap_review::skill_domains "$name")" || return 0
+  read -r -a owned <<<"$domains"
 
-  grep -qF "bootstrap-template-review" "$file" && return 0
-  __cog_skill_lint_finding "$file" 1 "bootstrap-template-review" \
-    "bootstrap worker '${name}' ships cog templates (domain '${domain}') but does not run the template-refresh routine" \
-    "follow \$(cog skill-refs path bootstrap/template-refresh-routine.md): cog bootstrap-template-review check|stamp --domain ${domain}"
-  return 1
+  # Every owned domain is checked on its own: a merged worker that runs the
+  # routine for one of its domains still leaves the other untracked.
+  for domain in "${owned[@]}"; do
+    grep -qE "bootstrap-template-review.*--domain[[:space:]]+${domain}([[:space:]]|$)" "$file" && continue
+    __cog_skill_lint_finding "$file" 1 "bootstrap-template-review" \
+      "bootstrap worker '${name}' owns template-review domain '${domain}' but does not run the domain-worker routine for it" \
+      "follow \$(cog skill-refs path bootstrap/domain-worker-routine.md): cog bootstrap-template-review check|stamp --domain ${domain}"
+    failed=1
+  done
+  return "$failed"
 }
 
 # terminal-contract: a curated worker whose run ends with a canonical cog-emitted result line

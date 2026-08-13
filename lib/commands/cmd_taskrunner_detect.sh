@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-: 'desc: Detect the task-runner type for a project.'
+: 'desc: Detect task-runner build signals for a project.'
 
 __cog_taskrunner_detect_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.type|type=="string") and (.signals|type=="array")'
 
@@ -9,6 +9,8 @@ __cog_taskrunner_detect_usage() {
 
 __cog_taskrunner_detect_build_json() {
   local project_root="$1"
+  # `just` is the only task runner cog detects, deploys, or wires (ADR-0028), so
+  # `type` is a constant; `signals[]` carries everything a caller decides on.
   local ok=true reason="" type="just"
   local signals=()
   if [[ ! -d $project_root ]]; then
@@ -16,11 +18,6 @@ __cog_taskrunner_detect_build_json() {
     reason="project root is not a directory"
   fi
   if [[ $ok == true ]]; then
-    # Deterministic type: make when a Makefile pre-exists at the root, else just.
-    if [[ -f $project_root/Makefile || -f $project_root/makefile || -f $project_root/GNUmakefile ]]; then
-      type="make"
-      signals+=("existing Makefile")
-    fi
     # Surface detected lint/test/build conventions for the skill to wire recipes.
     [[ -f $project_root/Cargo.toml ]] && signals+=("cargo (Cargo.toml)")
     [[ -f $project_root/package.json ]] && signals+=("npm (package.json)")

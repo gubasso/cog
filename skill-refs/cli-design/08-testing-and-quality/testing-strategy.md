@@ -550,7 +550,7 @@ Use a parallel-by-default runner with fail-fast and a flat summary. The complete
 | TypeScript/JS | `vitest`, `jest`, or `node:test`         |
 | Bash          | `bats-core`                              |
 
-Wire it through a one-liner (`just test`, `make test`, `task test`). New contributors find it immediately.
+Wire it through a one-liner (`just test`). New contributors find it immediately.
 
 ## CI essentials
 
@@ -565,7 +565,7 @@ Wire it through a one-liner (`just test`, `make test`, `task test`). New contrib
   - **CI**: everything — unit, integration, E2E, lint, format-check, coverage gate.
   - **CI nightly**: mutation testing on critical modules.
 
-Ready-to-paste config snippets (pre-commit, GitHub Actions, Makefile / justfile targets) live in [08a — Pre-commit / CI tiering](./testing-tools.md#pre-commit--ci-tiering).
+Ready-to-paste config snippets (pre-commit, GitHub Actions, justfile recipes) live in [08a — Pre-commit / CI tiering](./testing-tools.md#pre-commit--ci-tiering).
 
 ## Coverage philosophy
 

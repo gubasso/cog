@@ -17,7 +17,7 @@ setup() {
 See `scripts/build.sh` and `missing/file.txt`.
 
 ```
-$ make test
+$ just test
 ```
 EOF
 

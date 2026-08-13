@@ -135,7 +135,7 @@ __cog_test_review_discover_detect_runner_json() {
     grep -Eq '"test"[[:space:]]*:' "$root/package.json" && has_npm_test=true
   fi
 
-  __cog_test_review_discover_add_candidate make-test "$(__cog_test_review_discover_json_string_array make test)" "$([[ -f "$root/Makefile" ]] && grep -Eq '^[[:space:]]*test:' "$root/Makefile" && printf true || printf false)" "Makefile test target"
+  __cog_test_review_discover_add_candidate just-test "$(__cog_test_review_discover_json_string_array just test)" "$(grep -Eqs '^[[:space:]]*test[[:space:]]*:' "$root/justfile" "$root/Justfile" "$root/.justfile" && printf true || printf false)" "justfile test recipe"
   __cog_test_review_discover_add_candidate cargo-nextest "$(__cog_test_review_discover_json_string_array cargo nextest run)" "$([[ -f "$root/Cargo.toml" ]] && __have cargo-nextest && printf true || printf false)" "Cargo.toml and cargo-nextest"
   __cog_test_review_discover_add_candidate cargo-test "$(__cog_test_review_discover_json_string_array cargo test)" "$([[ -f "$root/Cargo.toml" ]] && printf true || printf false)" "Cargo.toml"
   __cog_test_review_discover_add_candidate pytest-xdist "$(__cog_test_review_discover_json_string_array pytest -n auto)" "$([[ $has_py == true ]] && __have pytest && pytest --help 2>/dev/null | grep -q -- '-n' && printf true || printf false)" "Python tests and pytest-xdist"

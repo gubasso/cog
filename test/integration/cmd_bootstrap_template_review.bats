@@ -58,6 +58,23 @@ setup() {
   [ "$(jq -r '.entries' <<<"$output")" -ge 1 ]
 }
 
+@test "bootstrap-template-review stamp records the merged owner as the consuming skill" {
+  run cog bootstrap-template-review stamp --domain precommit --type rust \
+    --summary "hook review" --source-json "$SRC" --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.entry."consuming-skills"[0]' <<<"$output")" = "bootstrap-lint" ]
+
+  run cog bootstrap-template-review stamp --domain cargo-publish --type rust \
+    --summary "publish review" --source-json "$SRC" --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.entry."consuming-skills"[0]' <<<"$output")" = "bootstrap-rust" ]
+
+  run cog bootstrap-template-review stamp --domain nix --type generic \
+    --summary "flake review" --source-json "$SRC" --research-root "$SHELF" --json
+  assert_success
+  [ "$(jq -r '.entry."consuming-skills"[0]' <<<"$output")" = "bootstrap-nix" ]
+}
+
 @test "bootstrap-template-review stamp fails fast on a non-writable template SoT" {
   chmod -R a-w "${XDG_DATA_HOME}/cog/skill-refs"
 

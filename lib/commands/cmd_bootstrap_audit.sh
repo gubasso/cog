@@ -307,16 +307,16 @@ __cog_bootstrap_audit_build_json() {
   fi
   rows+=("$(__cog_bootstrap_audit_domain ci "$ci_present" "$ci_rq" "$ci_detail" "$ci_arts" "$ci_reqs")")
 
-  # taskrunner: any recognized runner file satisfies the domain. Report a single
-  # runner artifact named for whichever variant exists (default justfile) so the
-  # breakdown reads as one deliverable, not competing alternatives.
+  # taskrunner: any justfile filename variant satisfies the domain. Report a
+  # single runner artifact named for whichever variant exists (default justfile)
+  # so the breakdown reads as one deliverable.
   local runner="" cand
-  for cand in justfile Justfile Makefile makefile GNUmakefile; do
+  while IFS= read -r cand; do
     if [[ -e "$project_root/$cand" ]]; then
       runner="$cand"
       break
     fi
-  done
+  done < <(cog::fn::template::justfile_names)
   if [[ -n $runner ]]; then
     present=true
   else

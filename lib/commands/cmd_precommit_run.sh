@@ -97,7 +97,7 @@ __cog_precommit_run_build_json() {
     reason="not a git repository"
   elif [[ ! -f $config ]]; then
     ok=false
-    reason="no .pre-commit-config.yaml (run bootstrap-precommit first)"
+    reason="no .pre-commit-config.yaml (run bootstrap-lint first)"
   fi
 
   if [[ $ok == true ]]; then

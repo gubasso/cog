@@ -28,6 +28,28 @@ cog::fn::template::valid_policy() {
   case "$1" in overwrite | skip | abort) return 0 ;; *) return 1 ;; esac
 }
 
+# The filenames `just` itself accepts for a project's justfile, in cog's
+# resolution order. `just` is the only task runner cog knows (ADR-0028), so this
+# is the single list every cog path that detects, reconciles, wires, or scans a
+# justfile must consult -- a project holding only `.justfile` must not be told it
+# has no runner.
+cog::fn::template::justfile_names() {
+  printf '%s\n' justfile Justfile .justfile
+}
+
+# Print the path of the justfile that already exists under <project_root>, or
+# return 1 when none of the accepted filenames is present.
+cog::fn::template::resolve_justfile() {
+  local project_root="$1" name
+  while IFS= read -r name; do
+    if [[ -f $project_root/$name ]]; then
+      printf '%s\n' "$project_root/$name"
+      return 0
+    fi
+  done < <(cog::fn::template::justfile_names)
+  return 1
+}
+
 cog::fn::template::assert_under_project() {
   local project_root="$1" dst="$2" root_abs dst_abs
   root_abs="$(realpath -m -- "$project_root")"

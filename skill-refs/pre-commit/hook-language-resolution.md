@@ -1,6 +1,6 @@
 # Hook language resolution
 
-How pre-commit decides _which_ runtime a hook executes with, and the traps that follow. Load this from `bootstrap-precommit` when selecting hook ids, and from `bootstrap-nix` when deciding what the devShell must provide — the facts are one set, but the remedies are split across both domains, so neither skill owns them.
+How pre-commit decides _which_ runtime a hook executes with, and the traps that follow. Load this from `bootstrap-lint` when selecting hook ids, and from `bootstrap-nix` when deciding what the devShell must provide — the facts are one set, but the remedies are split across both domains, so neither skill owns them.
 
 - [pre-commit — supported languages](https://pre-commit.com/#supported-languages)
 - [`pre_commit/lang_base.py`](https://github.com/pre-commit/pre-commit/blob/main/pre_commit/lang_base.py)

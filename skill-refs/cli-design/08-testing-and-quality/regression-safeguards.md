@@ -93,7 +93,7 @@ CI — NIGHTLY  (hours OK)
 - Each tier is a superset of the previous — nothing skipped, just added.
 - Pre-commit must never exceed 30 seconds. If a check is too slow, move it to pre-push.
 - Nightly checks are informational, not blocking (unless the team promotes a specific module to gated after the score stabilizes).
-- The layering is encoded in the justfile / Makefile / task runner and in `.pre-commit-config.yaml`. CI invokes the same recipes.
+- The layering is encoded in the justfile and in `.pre-commit-config.yaml`. CI invokes the same recipes.
 - **Profiles are dead config unless invoked explicitly.** Every CI step, pre-commit hook, and pre-push hook must pass the right `--profile` / `--config` flag. This is the most common reason a gate silently does nothing. See [08a § Tuning test-runner output](./testing-tools.md#tuning-test-runner-output-for-ci--ai-agents).
 
 ## Test-Driven Development for AI agents

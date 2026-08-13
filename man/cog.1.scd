@@ -387,10 +387,10 @@ The command list and short descriptions are sourced from command modules under
 	Detect suckless tree signals and clean state.
 
 *taskrunner-apply*
-	Apply a task-runner template to a project.
+	Apply the justfile task-runner template to a project.
 
 *taskrunner-detect*
-	Detect the task-runner type for a project.
+	Detect task-runner build signals for a project.
 
 *test-review-discover*
 	Detect test runner and test-review batch status.

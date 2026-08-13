@@ -54,30 +54,23 @@ setup() {
   printf '%s\n' "$output" | jq -e '.ok == false and .reason == "template dir is not a directory"' >/dev/null
 }
 
-@test "cog installer-apply rejects an invalid --wire-taskrunner value" {
-  run --separate-stderr cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --wire-taskrunner cmake --json
+@test "cog installer-apply reports when --wire-taskrunner finds no justfile" {
+  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --wire-taskrunner --json
 
-  assert_failure
-  printf '%s\n' "$output" | jq -e '.ok == false and .reason == "wire-taskrunner must be just or make"' >/dev/null
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .wire_target == null and (.wire_reason | test("no justfile found"))' >/dev/null
 }
 
 @test "cog installer-apply injects task-runner recipes idempotently" {
   printf 'default:\n    @just --list\n' >"${BATS_TEST_TMPDIR}/repo/justfile"
 
-  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --wire-taskrunner just --json
+  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --wire-taskrunner --json
   assert_success
   printf '%s\n' "$output" | jq -e '(.wired | sort) == ["install","reinstall","uninstall"]' >/dev/null
   grep -q '^install:' "${BATS_TEST_TMPDIR}/repo/justfile"
   grep -q '^# --- cog installer ---' "${BATS_TEST_TMPDIR}/repo/justfile"
 
-  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --conflict overwrite --wire-taskrunner just --json
+  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --conflict overwrite --wire-taskrunner --json
   assert_success
   printf '%s\n' "$output" | jq -e '.wired == []' >/dev/null
-}
-
-@test "cog installer-apply reports a missing runner without failing" {
-  run cog installer-apply --project-root "${BATS_TEST_TMPDIR}/repo" --type bash --wire-taskrunner just --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e '.ok == true and .wire_target == null and (.wire_reason | test("no just runner"))' >/dev/null
 }

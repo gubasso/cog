@@ -1,89 +1,53 @@
 ---
 name: bootstrap-ci
 description: >
-  Sets up a CI workflow for the current project, delegating deterministic git
-  remote detection and template copying to the cog CLI while keeping CI target
-  choice, flake reuse, and web research judgment in prose. Use when the user
-  says "ci workflow", "set up ci", "github actions", or "gitlab ci".
+  Deploy a CI pipeline targeting the project's actual git remote, with every
+  job running through the project's Nix devshell so CI and local development
+  share one toolchain. Use when the user says "bootstrap-ci", "ci workflow",
+  "set up ci", "github actions", or "gitlab ci".
 model: opus
 effort: low
 ---
 
-<!-- trigger-tests: "ci workflow", "set up ci", "github actions", "gitlab ci" -->
+<!-- trigger-tests: "bootstrap-ci", "ci workflow", "set up ci", "github actions", "gitlab ci" -->
 
-# Bootstrap CI Skill
+# Bootstrap CI
 
-Deploy a tailored CI pipeline for the current project. The target host comes from the project's own git remote, and the jobs reuse the project's Nix devshell so CI runs the same toolchain as local development.
+Deploy a CI pipeline for the project. The target host comes from the project's own git remote, never a guess, and the jobs run through the project's Nix devshell so CI uses the same toolchain as local development. The template is broad; the deployed pipeline names this project's real recipes.
 
-Principle: templates are broad and general; the deployed pipeline is precise and wired to the project's actual task runner and toolchain.
-
-## Inputs
-
-- Template directory: cog's `skill-refs/templates/ci/` tree, or a caller-supplied `--template-root`.
-- Release-workflow reference: `$(cog skill-refs path release/release-workflow-conventions.md)` — the version source-of-truth model and the release tool to pick per ecosystem.
-- Current working directory: the target project.
-
-## Cog Contract
-
-`cog` must be installed and on `PATH`; a bare call fails legibly if it is missing. Detect the CI target from the project's git remote:
-
-```bash
-cog ci-detect --json
-```
-
-`ci-detect` reads `<project>/.git/config` as an INI file (it never invokes `git`), classifies the `origin` remote host, and emits:
-
-```json
-{
-  "ok": true,
-  "project_root": "/repo",
-  "remote_url": "https://github.com/owner/repo.git",
-  "host": "github",
-  "target": "github",
-  "requires_question": false,
-  "existing_ci": [],
-  "reason": null
-}
-```
-
-`host` is `github`, `gitlab`, `other`, or `none` (no origin remote). `target` is `github` or `gitlab` when the host maps to a supported provider, otherwise `none`. When `target` is `none` and `requires_question` is `true`, ask the operator which CI target to use before deploying. Deploy the matching template after conflict policy is explicit:
-
-```bash
-cog ci-apply --target "$TARGET" --conflict "$CONFLICT_POLICY" --json
-```
-
-`ci-apply` copies the target's files (GitHub nests `ci.yml` under `.github/workflows/`; GitLab writes `.gitlab-ci.yml` at the project root) and emits `{ok, target, template_dir, copied[], skipped[], conflicts[], conflict, reason}`. Its `--conflict` policy is `overwrite`, `skip`, or `abort` (default `abort`). Reconciling a pre-existing CI file is judgment that stays in this skill: inspect the existing pipeline and merge in prose rather than blind-overwriting a config the project already tuned.
-
-## Template refresh
-
-Follow the shared refresh routine at `$(cog skill-refs path bootstrap/template-refresh-routine.md)` on every run: check freshness, review and update the shared template when stale or missing, stamp the review, then reconcile the target — installing when absent, applying improvements when present. The freshness type is the resolved CI target (`github` or `gitlab`). Use the freshness `check` JSON `/bootstrap` supplied in the brief; when it is absent, resolve the target with `ci-detect` and run it yourself:
+Follow the shared routine at `$(cog skill-refs path bootstrap/domain-worker-routine.md)`; the freshness type is the resolved target:
 
 ```bash
 cog bootstrap-template-review check --domain ci --type "$TARGET" --json
 ```
 
-When `review.fresh` is `true`, reuse the cached `summary` and skip the CI research — go straight to wiring the jobs in the Workflow below. When it is `stale` or `missing`, web-search current CI practice for the host (step 4), update `skill-refs/templates/ci/<target>/` when justified, then stamp the review with `cog bootstrap-template-review stamp --domain ci --type "$TARGET" ...` — even when the conclusion is "no template change" — before reconciling the CI files. Reuse the flake via `nix develop --command` whenever a `flake.nix` exists. `stamp` fails fast when the template SoT is not writable; surface that.
+A fresh review means reuse the cached `summary` and go straight to wiring the jobs; stale or missing means research current CI practice for the host — current action or image versions, recommended job structure — update `skill-refs/templates/ci/<target>/` when justified, and `stamp` before reconciling.
 
-## Workflow
+## Resolve the target
 
-1. Run `cog ci-detect --json` to resolve the target from the git remote.
+```bash
+cog ci-detect --json
+```
 
-2. If `requires_question` is `true` (`target == none`), ask the operator which CI target to use (`github` or `gitlab`). Do not guess a provider without evidence from the remote.
+`ci-detect` reads `<project>/.git/config` as an INI file — it never invokes `git`. `host` is `github`, `gitlab`, `other`, or `none`; `target` is `github` or `gitlab` when the host maps to a supported provider, otherwise `none`.
 
-3. If `existing_ci` lists a pipeline, decide whether to reconcile or replace it, and set the conflict policy accordingly. Ask before overwriting a config the project already tuned.
+When `requires_question` is `true` (`target` is `none`), ask the operator which target to use. Do not guess a provider without evidence from the remote. When `existing_ci` lists a pipeline, decide whether to reconcile or replace it and set the conflict policy accordingly — reconciling a tuned pipeline is judgment, done by reading it, and overwriting one needs the operator's word.
 
-4. Web-search current CI practice for the detected host as enhancers: confirm current action or image versions and recommended job structure. These are optional; proceed from the cog template and this prose when offline.
+```bash
+cog ci-apply --target "$TARGET" --conflict "$POLICY" --json
+```
 
-5. Deploy the matching template with `cog ci-apply --target "$TARGET"`.
+GitHub nests `ci.yml` under `.github/workflows/`; GitLab writes `.gitlab-ci.yml` at the project root.
 
-6. Wire the jobs to the project's toolchain. When a `flake.nix` is present, run each task through the devshell — `nix develop --command <task>` — referencing the task runner's recipe names (for a justfile, `just lint`, `just test`, `just build`). When no flake is present, set up the conventional toolchain for the language and call the task runner directly. Flake reuse is a verified postcondition: when reconciling a pre-existing pipeline that predates the flake, add the `nix develop` wrapping rather than leaving CI on a divergent toolchain. When the brief carries publishing or release workflow requirements, pick the release tooling from the release-workflow reference by ecosystem. For a Bash or other no-registry project the committed `VERSION` is the version source of truth bumped in place by git-cliff, and the annotated `v*` tag mirrors it; deploy the git-cliff + tag-triggered release core with `cog ci-apply --with-release` (adds `release.yml`, `cliff.toml`, and a committed `VERSION`), then wire `release.yml` to the flake and task runner like the other jobs. For a release-plz crate keep the release-plz job shape (`permissions: id-token:
-   write`, no `CARGO_REGISTRY_TOKEN`, first publish manual, optional binary-distribution job). Reconcile every release file under the conflict policy.
+## Wire the jobs
 
-7. Present a final summary: the target deployed, the jobs wired to the flake or conventional toolchain, the task names each job runs, and any pre-existing pipeline reconciled.
+**Flake reuse is a verified postcondition.** When a `flake.nix` is present, run every task through the devshell — `nix develop --command <task>` — naming the justfile's own recipes (`just lint`, `just test`, `just build`). When reconciling a pipeline that predates the flake, add the `nix develop` wrapping rather than leaving CI on a divergent toolchain. With no flake, set up the conventional toolchain for the language and call the task runner directly.
 
-## Guardrails
+When the brief carries release requirements, pick the tooling by ecosystem from `$(cog skill-refs path release/release-workflow-conventions.md)`:
 
-- Target the actual remote provider; ask the operator when the remote is absent or unsupported.
-- Reuse the project's Nix devshell for CI jobs whenever a `flake.nix` is present, so CI and local development share one toolchain.
-- Reconcile a pre-existing CI pipeline in prose; ask before overwriting settings the project already tuned.
-- Treat helper output as mechanics only. CI target choice, job wiring, and web-search enrichment remain skill judgment.
+- **No-registry projects** (Bash and similar): the committed `VERSION` is the version source of truth, bumped in place by git-cliff, and the annotated `v*` tag mirrors it. Deploy the git-cliff + tag-triggered release core with `cog ci-apply --with-release` (adds `release.yml`, `cliff.toml`, and a committed `VERSION`), then wire `release.yml` to the flake and task runner like every other job.
+- **release-plz crates:** keep the release-plz job shape — `permissions: id-token: write`, no `CARGO_REGISTRY_TOKEN`, first publish manual, optional binary-distribution job.
+
+Reconcile every release file under the conflict policy.
+
+Report the target deployed, the jobs wired to the flake or conventional toolchain, the task names each job runs, and any pre-existing pipeline reconciled.

@@ -236,22 +236,9 @@ Match exactly one block to your project's language; delete the rest. Add a `pre-
       stages: [pre-push]
 ```
 
-### `Makefile` / `justfile` target for mutation testing
+### `justfile` recipe for mutation testing
 
-A `make mutate` (or `just mutate`) entry point keeps the invocation discoverable and consistent. The target's command differs by language; the _interface_ is uniform.
-
-```makefile
-# Makefile
-
-.PHONY: test test-unit test-integration test-e2e mutate cover
-
-test:        ; @$(MAKE) test-unit && $(MAKE) test-integration
-test-unit:   ; pytest tests/unit -n auto
-test-integration: ; pytest tests/integration -n auto
-test-e2e:    ; pytest tests/e2e
-cover:       ; pytest --cov=myapp --cov-report=term-missing
-mutate:      ; mutmut run && mutmut results
-```
+A `just mutate` entry point keeps the invocation discoverable and consistent. The recipe's command differs by language; the _interface_ is uniform.
 
 ```just
 # justfile

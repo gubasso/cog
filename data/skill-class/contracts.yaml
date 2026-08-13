@@ -49,4 +49,4 @@ skill_classes:
     forbidden_markers: []
     tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: low)"
     io_contract: Input is the target project plus operator intent; output is reconciled project files via cog *-apply, with scratch under cog rundir.
-    producer_obligations: A worker that ships cog templates runs the template-refresh routine (cog bootstrap-template-review check|stamp) each run; deterministic detection and copying delegate to cog.
+    producer_obligations: A worker that ships cog templates runs the domain-worker routine (cog bootstrap-template-review check|stamp) each run, once per domain it owns; deterministic detection and copying delegate to cog.

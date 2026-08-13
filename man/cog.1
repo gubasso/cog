@@ -183,7 +183,7 @@ Parse executor-prex arguments into run state.\&
 .RE
 \fBgate\fR
 .RS 4
-Render, check, stamp, and list canonical skill gate stanzas.\&
+Manage operator-approval gate records (approve, check-approval, prune).\&
 .PP
 .RE
 \fBgc-classify-failure\fR
@@ -261,9 +261,29 @@ Deterministic Stop hook decisions for active workflows.\&
 Initialize cog runtime directories and prerequisites.\&
 .PP
 .RE
+\fBinstaller-apply\fR
+.RS 4
+Apply an installer script template to a project.\&
+.PP
+.RE
+\fBinstaller-detect\fR
+.RS 4
+Detect installer template type.\&
+.PP
+.RE
 \fBjira-ticket-creator\fR
 .RS 4
 Scaffold, write, and finalize retroactive JIRA ticket drafts.\&
+.PP
+.RE
+\fBkb-apply\fR
+.RS 4
+Apply a knowledge-base scaffold to a project.\&
+.PP
+.RE
+\fBkb-detect\fR
+.RS 4
+Detect knowledge-base scaffold type.\&
 .PP
 .RE
 \fBlicense-apply\fR
@@ -374,6 +394,16 @@ Apply a pre-commit template to a project.\&
 \fBprecommit-detect\fR
 .RS 4
 Detect pre-commit template type.\&
+.PP
+.RE
+\fBprecommit-run\fR
+.RS 4
+Run pre-commit hooks across stages and collect failures.\&
+.PP
+.RE
+\fBprecommit-spell-select\fR
+.RS 4
+Select the markdown spell checker for a set of KB content languages.\&
 .PP
 .RE
 \fBpreflight\fR
@@ -603,12 +633,12 @@ Detect suckless tree signals and clean state.\&
 .RE
 \fBtaskrunner-apply\fR
 .RS 4
-Apply a task-runner template to a project.\&
+Apply the justfile task-runner template to a project.\&
 .PP
 .RE
 \fBtaskrunner-detect\fR
 .RS 4
-Detect the task-runner type for a project.\&
+Detect task-runner build signals for a project.\&
 .PP
 .RE
 \fBtest-review-discover\fR
@@ -629,6 +659,11 @@ Update test-review MANIFEST.\&yaml.\&
 \fBtracking-scan\fR
 .RS 4
 Report tracked artifacts whose revalidation cadence is overdue.\&
+.PP
+.RE
+\fBworkflow\fR
+.RS 4
+Resolve, validate, and drive workflow runs.\&
 .PP
 .RE
 .SH FILES

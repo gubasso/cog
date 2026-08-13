@@ -45,7 +45,22 @@ setup() {
   [ "$(jq -r '[.domains[] | select(.present == true)] | length' <<<"$output")" -eq 7 ]
 }
 
-@test "bootstrap-audit taskrunner is present for a bare Makefile" {
+@test "bootstrap-audit taskrunner is present for a bare justfile" {
+  local dir="$BATS_TEST_TMPDIR/jf"
+  mkdir -p "$dir"
+  touch "$dir/justfile"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "taskrunner")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "true" ]
+  [ "$(jq -r '.artifacts | length' <<<"$row")" -eq 1 ]
+  [ "$(jq -r '.artifacts[0].name' <<<"$row")" = "justfile" ]
+}
+
+@test "bootstrap-audit taskrunner is missing for a project with only a Makefile" {
   local dir="$BATS_TEST_TMPDIR/mk"
   mkdir -p "$dir"
   touch "$dir/Makefile"
@@ -55,9 +70,8 @@ setup() {
   assert_success
   local row
   row="$(jq -c '.domains[] | select(.domain == "taskrunner")' <<<"$output")"
-  [ "$(jq -r '.present' <<<"$row")" = "true" ]
-  [ "$(jq -r '.artifacts | length' <<<"$row")" -eq 1 ]
-  [ "$(jq -r '.artifacts[0].name' <<<"$row")" = "Makefile" ]
+  [ "$(jq -r '.present' <<<"$row")" = "false" ]
+  [ "$(jq -r '.artifacts[0].name' <<<"$row")" = "justfile" ]
 }
 
 @test "bootstrap-audit every domain carries a requirements array" {

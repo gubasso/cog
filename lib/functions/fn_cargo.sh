@@ -221,7 +221,7 @@ cog::fn::cargo::publish_detect_json() {
   local semver_present=false ships_hint=false
   local -a release_signals=() semver_signals=() binary_signals=()
   local wf_dir="$project_root/.github/workflows"
-  local -a scan_paths=("$manifest" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/Makefile")
+  local -a scan_paths=("$manifest" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/.justfile")
 
   if [[ ! -d $project_root ]]; then
     jq -n --arg project_root "$project_root" --arg reason "project root is not a directory" \
@@ -276,7 +276,7 @@ cog::fn::cargo::publish_detect_json() {
     cr=true
     release_signals+=("Cargo.toml [metadata.release]")
   fi
-  if cog::fn::cargo::_matches "cargo release" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/Makefile"; then
+  if cog::fn::cargo::_matches "cargo release" "$wf_dir" "$project_root/justfile" "$project_root/Justfile" "$project_root/.justfile"; then
     cr=true
     release_signals+=("workflow/taskrunner mentions cargo release")
   fi

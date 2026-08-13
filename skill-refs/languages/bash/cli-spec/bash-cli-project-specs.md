@@ -39,7 +39,7 @@ my-cli/
 │   └── cmd_foo.bats
 ├── .shellcheckrc
 ├── .editorconfig
-├── Makefile
+├── justfile
 ├── install.sh
 └── uninstall.sh
 ```
@@ -74,7 +74,7 @@ Multi-file CLI shim shape (`bin/my-cli`):
 set -euo pipefail
 shopt -s inherit_errexit 2>/dev/null || true   # bash 4.4+
 
-# Resolve script path through symlinks (stow, make install, etc.)
+# Resolve script path through symlinks (stow, install scripts, etc.)
 src="${BASH_SOURCE[0]}"
 while [[ -L "$src" ]]; do
   dir="$(cd -P "$(dirname "$src")" && pwd)"
@@ -97,7 +97,7 @@ mycli::main "$@"
 ```
 
 - Shims stay thin — no business logic in `bin/`.
-- Symlink resolution matters: `stow`, `make install`, and `ln -s` in `~/.local/bin` all break the naive `dirname "${BASH_SOURCE[0]}"` idiom.
+- Symlink resolution matters: `stow`, install scripts, and `ln -s` in `~/.local/bin` all break the naive `dirname "${BASH_SOURCE[0]}"` idiom.
 - `inherit_errexit` fixes the silent-`set -e`-disables-in-subshells pitfall; guarded for pre-4.4 bash.
 - A `BASH_SOURCE[0]` source/execute guard is only for intentional dual-mode scripts. Do not make it the default for ordinary runnable entry points.
 
@@ -358,7 +358,7 @@ All checks run through **pre-commit** (see root CLAUDE (path: `../../../../CLAUD
 - `uninstall.sh` reads a manifest written by `install.sh` at install time.
 - Reference: [XDG Base Directory spec](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
 
-`Makefile` wraps `install` / `uninstall` / `test` / `lint` / `man`.
+`justfile` wraps `install` / `uninstall` / `test` / `lint` / `man`.
 
 Bash human-UX should gate color, tables, and spinners with `[[ -t 1 ]]` or `[[ -t 2 ]]` as appropriate. Completion scripts and `scdoc`/man artifacts support both human use and agent self-documentation; expose man text through a `man` subcommand when the CLI needs agents to read it without shelling out to `man(1)`.
 
@@ -371,7 +371,7 @@ Config precedence: see [`cli-design/03-config-precedence.md`](../../../cli-desig
 Prefer [scdoc](https://git.sr.ht/~sircmpwn/scdoc) over hand-rolled `.1` or pandoc — tiny C dep, markdown-ish source, deterministic output:
 
 ```text
-man/my-cli.1.scd   →   man/my-cli.1   (built by Makefile)
+man/my-cli.1.scd   →   man/my-cli.1   (built by the justfile)
 ```
 
 ---

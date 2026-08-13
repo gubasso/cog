@@ -1511,12 +1511,12 @@ EOF
 
   assert_failure
   [[ $stderr == *"bootstrap-template-review"* ]]
-  [[ $stderr == *"template-refresh routine"* ]]
+  [[ $stderr == *"domain-worker routine"* ]]
 }
 
 @test "cog skill-lint accepts a bootstrap worker that references the refresh routine" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo" bootstrap-repo
-  printf '\n## Template refresh\n\nRun cog bootstrap-template-review check on every run.\n' \
+  printf '\n## Template refresh\n\nRun cog bootstrap-template-review check --domain repo on every run.\n' \
     >>"${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
@@ -1524,12 +1524,57 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint exempts bootstrap-rust from template-review (ships no cog templates)" {
+@test "cog skill-lint rejects a routine reference that names no domain" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo" bootstrap-repo
+  printf '\n## Template refresh\n\nRun cog bootstrap-template-review check on every run.\n' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-repo/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"bootstrap-template-review"* ]]
+}
+
+@test "cog skill-lint requires template-review for bootstrap-rust (owns the cargo-publish domain)" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust" bootstrap-rust
 
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust/SKILL.md"
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-rust/SKILL.md"
 
-  assert_success
+  assert_failure
+  [[ $stderr == *"cargo-publish"* ]]
+}
+
+@test "cog skill-lint names both domains a merged bootstrap worker owns" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-lint" bootstrap-lint
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-lint/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"editorconfig"* ]]
+  [[ $stderr == *"precommit"* ]]
+}
+
+@test "cog skill-lint flags the untracked half of a partially compliant merged worker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-lint" bootstrap-lint
+  printf '\n## Template refresh\n\nRun cog bootstrap-template-review check --domain precommit each run.\n' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/bootstrap-lint/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-lint/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"domain 'editorconfig'"* ]]
+  [[ $stderr != *"domain 'precommit'"* ]]
+}
+
+@test "cog skill-lint exempts the bootstrap orchestrator from template-review (owns no domain)" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap" bootstrap
+
+  # The stub trips unrelated orchestrator rules (input-fidelity, tier), so assert
+  # the absence of the template-review finding rather than overall success.
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap/SKILL.md"
+
+  [[ $output != *"bootstrap-template-review"* ]]
+  [[ $stderr != *"bootstrap-template-review"* ]]
 }
 
 @test "cog skill-lint accepts a terminal-contract worker with marker and documented token" {

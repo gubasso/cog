@@ -29,13 +29,29 @@ install-sync:
 uninstall:
 	@./uninstall.sh
 
+# scdoc ships in the devShell, so a missing binary is a broken environment
+# rather than an expected degrade — fail loudly instead of skipping silently.
 man:
-	@if command -v scdoc >/dev/null 2>&1; then \
-		scdoc < man/cog.1.scd > man/cog.1; \
-	else \
-		printf '%s\n' 'scdoc not found; skipping man page build' >&2; \
-		exit 0; \
-	fi
+	@command -v scdoc >/dev/null 2>&1 || { \
+		printf '%s\n' 'scdoc not found; enter the devShell (direnv allow / nix develop)' >&2; \
+		exit 1; \
+	}
+	scdoc < man/cog.1.scd > man/cog.1
+
+# Prove the devShell actually carries every binary this repo invokes: justfile
+# recipes, pre-commit hooks running as `language: system`, and the runtime
+# probes in lib/. Keeps flake.nix honest as the toolchain drifts.
+devshell-check:
+	@missing=(); \
+	for bin in bash jq yq git gh scdoc dprint bats shellcheck shfmt just pre-commit node perl flock nixfmt; do \
+		command -v "$bin" >/dev/null 2>&1 || missing+=("$bin"); \
+	done; \
+	if [ ${#missing[@]} -ne 0 ]; then \
+		printf 'missing from PATH: %s\n' "${missing[*]}" >&2; \
+		printf '%s\n' 'add them to flake.nix and re-enter the devShell' >&2; \
+		exit 1; \
+	fi; \
+	printf '%s\n' 'devshell ok: every declared tool resolves'
 
 # --- build / format / check ---
 

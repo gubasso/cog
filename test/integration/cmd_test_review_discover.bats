@@ -56,16 +56,16 @@ EOF
   assert_file_contains "$PYTEST_FAKE_LOG" "--help"
 }
 
-@test "cog test-review-discover prefers make test before bats" {
-  local repo="${BATS_TEST_TMPDIR}/makerepo"
+@test "cog test-review-discover prefers just test before bats" {
+  local repo="${BATS_TEST_TMPDIR}/justrepo"
   mkdir -p "$repo/tests"
-  printf '%s\n' "test:" >"$repo/Makefile"
+  printf '%s\n' "test:" >"$repo/justfile"
   touch "$repo/tests/test_cli.bats"
 
   run cog test-review-discover --repo-root "$repo" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.runner.name == "make-test" and .runner.command == ["make","test"] and (.runner.candidates[] | select(.name == "bats" and .status == "detected"))' >/dev/null
+  printf '%s\n' "$output" | jq -e '.runner.name == "just-test" and .runner.command == ["just","test"] and (.runner.candidates[] | select(.name == "bats" and .status == "detected"))' >/dev/null
 }
 
 @test "cog test-review-discover detects bats when no earlier runner matches" {

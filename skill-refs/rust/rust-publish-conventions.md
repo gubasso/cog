@@ -1,22 +1,23 @@
 # Rust publishing conventions (the way we intend)
 
-The source of truth for how `bootstrap-cargo-publish` decides and documents cargo crate publishing. The crate skeleton and crates.io metadata in `Cargo.toml` belong to `bootstrap-rust`; this reference covers the publish workflow, the release tooling, authentication policy, and the go/no-go readiness gates that the publishing worker owns.
+The source of truth for how `bootstrap-rust` decides and documents cargo crate publishing: the publish workflow, the release tooling, the authentication policy, and the go/no-go readiness gates.
 
 ## Intent and ownership boundary
 
-`bootstrap-cargo-publish` owns the publish **judgment** layer plus the artifacts that carry it: the auth-gated helper scripts, `PUBLISHING.md`, `release-plz.toml`, and the optional cargo-dist config. Everything else stays with its owner:
+`bootstrap-rust` owns the publish **judgment** layer plus the artifacts that carry it: the auth-gated helper scripts, `PUBLISHING.md`, `release-plz.toml`, and the optional cargo-dist config. It also owns the crate skeleton and the crates.io metadata in `Cargo.toml` (`description`, `license`, `repository`, `keywords`, `categories`, `readme`, `publish`), so a metadata gap found during the readiness gate is fixed in place rather than handed off.
 
-- crates.io metadata in `Cargo.toml` (`description`, `license`, `repository`, `keywords`, `categories`, `readme`, `publish`) — `bootstrap-rust`.
+Two things stay with their own owner:
+
 - publish/version task recipes, when a task runner is present — taskrunner domain.
 - the release CI workflow file — CI domain.
 
 ## Crate metadata gate
 
-crates.io validates `[package]` metadata at publish time, and a missing required field is the single most common first-publish blocker. `description` **and** a license (`license` SPDX expression or `license-file`) are **required** — crates.io hard-rejects a publish that lacks either. `repository` warns and drives the crate-page link; `keywords` (≤5, ≤20 chars each) and `categories` improve discovery, and `categories` must match the canonical crates.io slugs exactly or the publish fails. `cog cargo-publish-detect` reports these as a read-only `metadata` block so gaps surface even when cargo is unreachable. The publish worker surfaces any gap to the metadata owner (`bootstrap-rust`); it never edits `Cargo.toml`.
+crates.io validates `[package]` metadata at publish time, and a missing required field is the single most common first-publish blocker. `description` **and** a license (`license` SPDX expression or `license-file`) are **required** — crates.io hard-rejects a publish that lacks either. `repository` warns and drives the crate-page link; `keywords` (≤5, ≤20 chars each) and `categories` improve discovery, and `categories` must match the canonical crates.io slugs exactly or the publish fails. `cog cargo-publish-detect` reports these as a read-only `metadata` block so gaps surface even when cargo is unreachable. Fix any gap directly in `Cargo.toml`, which the same skill owns.
 
 ## Tarball hygiene
 
-Keep the published `.crate` lean: Cargo packages the whole working tree by default, so project docs, CI, and dev tooling ship as dead weight unless trimmed. Prefer an `exclude` denylist (robust against dropping future `src/` files) over an `include` allowlist, and exclude non-build inputs such as `/docs`, `/.github`, `/scripts`, `/release-plz.toml`, `/dist-workspace.toml`, `/justfile`, `/flake.nix`, and editor/lint configs. Footgun: with an SPDX `license` expression, Cargo does **not** auto-include a plain `README` or `LICENSE`, so an `include` allowlist must list them explicitly. crates.io enforces a hard 10 MB limit; for a binary crate no consumer ever reads the tarball, so docs and tooling are pure waste. `cargo package --list` (via `cog cargo-publish-check`) shows exactly what would ship; the publish worker surfaces a recommended `exclude` list to `bootstrap-rust`.
+Keep the published `.crate` lean: Cargo packages the whole working tree by default, so project docs, CI, and dev tooling ship as dead weight unless trimmed. Prefer an `exclude` denylist (robust against dropping future `src/` files) over an `include` allowlist, and exclude non-build inputs such as `/docs`, `/.github`, `/scripts`, `/release-plz.toml`, `/dist-workspace.toml`, `/justfile`, `/flake.nix`, and editor/lint configs. Footgun: with an SPDX `license` expression, Cargo does **not** auto-include a plain `README` or `LICENSE`, so an `include` allowlist must list them explicitly. crates.io enforces a hard 10 MB limit; for a binary crate no consumer ever reads the tarball, so docs and tooling are pure waste. `cargo package --list` (via `cog cargo-publish-check`) shows exactly what would ship; add the recommended `exclude` list to `Cargo.toml` directly.
 
 ## Publishing workflow and release tool
 

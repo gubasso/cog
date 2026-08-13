@@ -1,36 +1,28 @@
 # shellcheck shell=bash
-: 'desc: Apply a task-runner template to a project.'
+: 'desc: Apply the justfile task-runner template to a project.'
 
 __cog_taskrunner_apply_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.mode|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.appended|type=="array")'
 
 __cog_taskrunner_apply_usage() {
-  cog::fn::ui_data "Usage: cog taskrunner-apply --type just|make [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--append] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog taskrunner-apply [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--append] (<out.json>|--json)"
 }
 
-__cog_taskrunner_apply_basename() {
-  case "$1" in
-    just) printf 'justfile\n' ;;
-    make) printf 'Makefile\n' ;;
-    *) return 1 ;;
-  esac
-}
+# `just` is the only task runner cog deploys (ADR-0028).
+__cog_taskrunner_apply_type=just
+__cog_taskrunner_apply_basename=justfile
 
-# The standard task-runner recipes every template scaffolds. Append mode injects
-# only the ones an existing file is missing, so a hand-written runner is
-# augmented rather than replaced.
+# The standard recipes the template scaffolds. Append mode injects only the ones
+# an existing justfile is missing, so a hand-written runner is augmented rather
+# than replaced.
 __cog_taskrunner_apply_standard_targets=(lint test build fmt check)
 
-# Marker-safe append: add each standard target missing from an existing runner
-# file inside a managed block, never touching targets the project already
-# defines. Idempotent: a re-run finds every target defined and adds nothing.
+# Marker-safe append: add each standard recipe missing from an existing justfile
+# inside a managed block, never touching recipes the project already defines.
+# Idempotent: a re-run finds every recipe defined and adds nothing.
 __cog_taskrunner_apply_append() {
-  local dst="$1" type="$2"
-  local marker="# --- cog taskrunner (${type}) ---"
-  local indent target missing=()
-  case "$type" in
-    make) indent=$'\t' ;;
-    *) indent="    " ;;
-  esac
+  local dst="$1"
+  local marker="# --- cog taskrunner ---"
+  local indent="    " target missing=()
   for target in "${__cog_taskrunner_apply_standard_targets[@]}"; do
     grep -qE "^${target}[[:space:]]*:" "$dst" && continue
     missing+=("$target")
@@ -41,7 +33,6 @@ __cog_taskrunner_apply_append() {
   fi
   {
     printf '\n%s\n' "$marker"
-    [[ $type == make ]] && printf '.PHONY: %s\n' "${missing[*]}"
     for target in "${missing[@]}"; do
       if [[ $target == check ]]; then
         printf '\ncheck: fmt lint test\n'
@@ -54,19 +45,14 @@ __cog_taskrunner_apply_append() {
 }
 
 __cog_taskrunner_apply_build_json() {
-  local type="$1" project_root="$2" template_root="$3" conflict="$4" append="$5"
-  local ok=true reason="" basename="" template_dir="$template_root/$type" src="" dst=""
+  local project_root="$1" template_root="$2" conflict="$3" append="$4"
+  local type="$__cog_taskrunner_apply_type" basename="$__cog_taskrunner_apply_basename"
+  local ok=true reason="" template_dir="$template_root/$type" src="" dst=""
   local mode=copy copied=() skipped=() conflicts=() appended_json='[]'
   [[ $append == true ]] && mode=append
   if ! cog::fn::template::valid_policy "$conflict"; then
     ok=false
     reason="conflict policy must be overwrite, skip, or abort"
-  elif [[ -z $type ]]; then
-    ok=false
-    reason="type is required"
-  elif ! basename="$(__cog_taskrunner_apply_basename "$type")"; then
-    ok=false
-    reason="type must be just or make"
   elif [[ ! -d $project_root ]]; then
     ok=false
     reason="project root is not a directory"
@@ -76,7 +62,10 @@ __cog_taskrunner_apply_build_json() {
   fi
   if [[ $ok == true ]]; then
     src="$template_dir/$basename"
-    dst="$project_root/$basename"
+    # Reconcile against whichever accepted justfile filename the project already
+    # uses, so `.justfile` is augmented in place rather than shadowed by a second
+    # runner; fall back to the canonical basename when none exists yet.
+    dst="$(cog::fn::template::resolve_justfile "$project_root")" || dst="$project_root/$basename"
     if [[ ! -f $src || -L $src ]]; then
       ok=false
       reason="template config not found"
@@ -98,7 +87,7 @@ __cog_taskrunner_apply_build_json() {
       fi
     else
       local added added_targets=()
-      if added="$(__cog_taskrunner_apply_append "$dst" "$type")"; then
+      if added="$(__cog_taskrunner_apply_append "$dst")"; then
         if [[ -n $added ]]; then
           mapfile -t added_targets <<<"$added"
           appended_json="$(cog::fn::template::json_string_array "${added_targets[@]}")"
@@ -135,7 +124,7 @@ __cog_taskrunner_apply_build_json() {
 }
 
 cog::cmd::taskrunner_apply() {
-  local type="" project_root template_root conflict=abort append=false mode="" out="" json
+  local project_root template_root conflict=abort append=false mode="" out="" json
   project_root="$(pwd -P)"
   template_root="$(cog::fn::template::root taskrunner)"
   while (($# > 0)); do
@@ -143,11 +132,6 @@ cog::cmd::taskrunner_apply() {
       -h | --help)
         __cog_taskrunner_apply_usage
         return 0
-        ;;
-      --type)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template type" "option: --type" "" "run 'cog taskrunner-apply --help'"
-        type="$2"
-        shift 2
         ;;
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog taskrunner-apply --help'"
@@ -182,9 +166,9 @@ cog::cmd::taskrunner_apply() {
         ;;
     esac
   done
-  [[ -n $type && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing taskrunner-apply argument" "usage: cog taskrunner-apply --type just|make ... (<out.json>|--json)" "" "run 'cog taskrunner-apply --help'"
+  [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing taskrunner-apply output mode" "usage: cog taskrunner-apply [flags] (<out.json>|--json)" "" "run 'cog taskrunner-apply --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_taskrunner_apply_build_json "$type" "$project_root" "$template_root" "$conflict" "$append")"
+  json="$(__cog_taskrunner_apply_build_json "$project_root" "$template_root" "$conflict" "$append")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_taskrunner_apply_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_taskrunner_apply_self_check" "$json"; fi
   jq -e '.ok == true' <<<"$json" >/dev/null
 }

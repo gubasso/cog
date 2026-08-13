@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Deterministic mechanics for the bootstrap template-refresh review routine
+# Deterministic mechanics for the bootstrap domain-worker review routine
 # (ADR-0019): freshness selection over the research shelf plus template-SoT
 # origin/writability surfacing. Judgment — which hooks, what to change, how to
 # merge — stays in the bootstrap worker prose; this file owns the freshness,
@@ -30,6 +30,39 @@ cog::fn::bootstrap_review::template_domains() {
     installer) printf '%s\n' "installer" ;;
     knowledge-base) printf '%s\n' "knowledge-base" ;;
     *) return 1 ;;
+  esac
+}
+
+# The template-review domains a given bootstrap worker skill owns. Most workers
+# own the single domain their name carries, but two own more than one, so the
+# mapping cannot be derived from the skill name alone:
+#
+#   bootstrap-lint  → editorconfig + precommit (one code-style domain, two files)
+#   bootstrap-rust  → cargo-publish (the conditional publishing branch)
+#
+# skill-lint reads this to decide which domains each worker must run the routine
+# for, so a merge can never silently drop a domain's freshness tracking.
+cog::fn::bootstrap_review::skill_domains() {
+  case "${1:-}" in
+    bootstrap-lint) printf '%s\n' "editorconfig precommit" ;;
+    bootstrap-rust) printf '%s\n' "cargo-publish" ;;
+    bootstrap-*)
+      local domain="${1#bootstrap-}"
+      cog::fn::bootstrap_review::valid_domain "$domain" || return 1
+      printf '%s\n' "$domain"
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# The bootstrap worker that owns a domain: the inverse of skill_domains. Freshness
+# records name their consuming skill, so a merged domain must record its merged
+# owner (ADR-0029) instead of the deleted domain-named worker.
+cog::fn::bootstrap_review::domain_skill() {
+  case "${1:-}" in
+    editorconfig | precommit) printf 'bootstrap-lint\n' ;;
+    cargo-publish) printf 'bootstrap-rust\n' ;;
+    *) printf 'bootstrap-%s\n' "${1:-}" ;;
   esac
 }
 
@@ -177,7 +210,7 @@ cog::fn::bootstrap_review::stamp_json() {
     "date arithmetic failed" "install GNU coreutils date or pass a valid --freshness-days"
 
   tags_json="$(cog::fn::bootstrap_review::topic_tags_json "$domain" "$type")"
-  skills_json="$(jq -cn --arg s "bootstrap-${domain}" '[$s]')"
+  skills_json="$(jq -cn --arg s "$(cog::fn::bootstrap_review::domain_skill "$domain")" '[$s]')"
   entry_without_id="$(jq -n -cS \
     --arg recorded_date "$today" \
     --arg stable_summary "$summary" \

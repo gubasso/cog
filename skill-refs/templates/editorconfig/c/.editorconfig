@@ -13,6 +13,9 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
+# C projects are commonly built by a hand-written upstream Makefile, whose
+# recipe lines must be tab-indented to parse at all. This rule protects an
+# existing build file; cog itself scaffolds a justfile (ADR-0028).
 [Makefile]
 indent_style = tab
 

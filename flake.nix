@@ -20,15 +20,17 @@
         formatter = pkgs.nixfmt;
 
         devShells.default = pkgs.mkShell {
-          # Toolchain pinned to what cog actually builds, tests, lints, and runs.
+          # Every package here backs a recipe in the justfile, a hook in
+          # .pre-commit-config.yaml, or a `command -v` probe in lib/. `just
+          # devshell-check` is the executable form of that claim.
           packages = [
             # Shell CLI core
             pkgs.bash # cog is a Bash CLI; pin the interpreter
             pkgs.shellcheck # .shellcheckrc (bash + external-sources); heavy lint use
-            pkgs.shfmt # shell formatting hook
+            pkgs.shfmt # `just fmt` and the shfmt hook
 
             # Task runner & git hooks
-            pkgs.just # justfile recipes: lint, test, install, ...
+            pkgs.just # the only task runner (ADR-0028)
             pkgs.pre-commit # source of truth for quality gates
 
             # Tests
@@ -38,25 +40,21 @@
             pkgs.jq # heavy JSON use across the CLI
             pkgs.yq-go # data/ is YAML, one file per table
 
-            # VCS
+            # VCS + forge
             pkgs.git
+            pkgs.gh # cog review-comment posts PR comments through it
 
             # Docs / man tooling
-            pkgs.mandoc # ships a man page; render/validate
-            pkgs.man-db # `man` for local page inspection
-            pkgs.mdformat # markdown formatter for docs/ (Diataxis)
-            pkgs.markdownlint-cli # markdown linter for docs/
-            # Runtime for the `language: node` markdownlint-cli2 hook. That hook
-            # carries additional_dependencies, so it needs pre-commit's own node
-            # env; pre-commit selects `system` for it only when node is on PATH.
+            pkgs.scdoc # `just man` builds man/cog.1 from man/cog.1.scd
+            # Node runtime for the `language: node` markdownlint-cli2 hook. That
+            # hook carries additional_dependencies, so it needs pre-commit's own
+            # node env; pre-commit selects `system` for it only when node is on
+            # PATH. npm (bundled here) installs the hook's pure-JS custom rule.
             pkgs.nodejs
-            pkgs.dprint # JSON/JSONC formatter (pre-commit dprint hook)
+            pkgs.dprint # JSON/JSONC + markdown formatter hooks
 
-            # Nix quality tools for the pre-commit `_nix` overlay hooks
-            # (nixfmt/statix/deadnix run as language:system off PATH).
+            # `nix fmt` / the formatter output above.
             pkgs.nixfmt
-            pkgs.statix
-            pkgs.deadnix
 
             # Deterministic GNU coreutils/text tools across macOS + Linux
             pkgs.coreutils
@@ -65,7 +63,14 @@
             pkgs.gawk
             pkgs.gnused
             pkgs.perl # fn_round_req.sh requirement-ID stamping
+            pkgs.util-linux # flock, for fn_match_telemetry.sh's append lock
           ];
+
+          # The greeting goes to standard error, because `nix develop --command`
+          # shares the command's stdout: on stdout this banner is prepended to
+          # whatever the command emits, which silently corrupts every redirected
+          # artifact (`just man` writes man/cog.1 through a redirection).
+          shellHook = ''echo "cog dev shell ready" >&2'';
         };
       }
     );

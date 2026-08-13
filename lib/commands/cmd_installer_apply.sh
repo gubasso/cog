@@ -4,7 +4,7 @@
 __cog_installer_apply_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.conflict|type=="string") and (.wired|type=="array")'
 
 __cog_installer_apply_usage() {
-  cog::fn::ui_data "Usage: cog installer-apply --type bash|generic|rust|python|node [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--wire-taskrunner just|make] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog installer-apply --type bash|generic|rust|python|node [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--wire-taskrunner] (<out.json>|--json)"
 }
 
 # The install/uninstall/reinstall recipes wired into an existing task runner.
@@ -33,16 +33,12 @@ __cog_installer_apply_enumerate_operations() {
   OPERATIONS+=("$src"$'\t'"$dst"$'\t'0755)
 }
 
-# Resolve the task-runner file to wire, honoring the runner's filename variants.
-# Prints the resolved path and returns 0, or returns 1 when none is present.
+# Resolve the justfile to wire, honoring its filename variants. Prints the
+# resolved path and returns 0, or returns 1 when none is present.
 __cog_installer_apply_resolve_runner() {
-  local project_root="$1" type="$2" name
-  local -a candidates
-  case "$type" in
-    just) candidates=(justfile Justfile .justfile) ;;
-    make) candidates=(Makefile makefile GNUmakefile) ;;
-    *) return 1 ;;
-  esac
+  local project_root="$1" name
+  local -a candidates=()
+  mapfile -t candidates < <(cog::fn::template::justfile_names)
   for name in "${candidates[@]}"; do
     if [[ -f $project_root/$name ]]; then
       printf '%s\n' "$project_root/$name"
@@ -53,17 +49,13 @@ __cog_installer_apply_resolve_runner() {
 }
 
 # Marker-safe injection of install/uninstall/reinstall recipes into an existing
-# runner file. Adds only targets the file is missing, inside a managed block,
-# never touching targets the project already defines. Idempotent. Prints the
-# injected target names, one per line.
+# justfile. Adds only recipes the file is missing, inside a managed block, never
+# touching recipes the project already defines. Idempotent. Prints the injected
+# recipe names, one per line.
 __cog_installer_apply_wire() {
-  local dst="$1" type="$2"
+  local dst="$1"
   local marker="# --- cog installer ---"
-  local indent target missing=()
-  case "$type" in
-    make) indent=$'\t' ;;
-    *) indent="    " ;;
-  esac
+  local indent="    " target missing=()
   for target in "${__cog_installer_apply_standard_targets[@]}"; do
     grep -qE "^${target}[[:space:]]*:" "$dst" && continue
     missing+=("$target")
@@ -74,7 +66,6 @@ __cog_installer_apply_wire() {
   fi
   {
     printf '\n%s\n' "$marker"
-    [[ $type == make ]] && printf '.PHONY: %s\n' "${missing[*]}"
     for target in "${missing[@]}"; do
       case "$target" in
         install) printf '\ninstall:\n%s@./install.sh\n' "$indent" ;;
@@ -87,7 +78,7 @@ __cog_installer_apply_wire() {
 }
 
 __cog_installer_apply_build_json() {
-  local type="$1" project_root="$2" template_root="$3" conflict="$4" wire_type="$5"
+  local type="$1" project_root="$2" template_root="$3" conflict="$4" wire="$5"
   local ok=true reason="" template_dir="$template_root/$type"
   local op src dst mode enum_status copied=() skipped=() conflicts=()
   local wired_json='[]' wire_target="" wire_reason=""
@@ -100,9 +91,6 @@ __cog_installer_apply_build_json() {
   elif [[ ! $type =~ ^[a-z0-9-]+$ ]]; then
     ok=false
     reason="type must match ^[a-z0-9-]+$"
-  elif [[ -n $wire_type && $wire_type != just && $wire_type != make ]]; then
-    ok=false
-    reason="wire-taskrunner must be just or make"
   elif [[ ! -d $project_root ]]; then
     ok=false
     reason="project root is not a directory"
@@ -150,11 +138,11 @@ __cog_installer_apply_build_json() {
       fi
     done
   fi
-  if [[ $ok == true && -n $wire_type ]]; then
+  if [[ $ok == true && $wire == true ]]; then
     local runner added added_targets=()
-    if runner="$(__cog_installer_apply_resolve_runner "$project_root" "$wire_type")"; then
+    if runner="$(__cog_installer_apply_resolve_runner "$project_root")"; then
       wire_target="$runner"
-      if added="$(__cog_installer_apply_wire "$runner" "$wire_type")"; then
+      if added="$(__cog_installer_apply_wire "$runner")"; then
         if [[ -n $added ]]; then
           mapfile -t added_targets <<<"$added"
           wired_json="$(cog::fn::template::json_string_array "${added_targets[@]}")"
@@ -164,7 +152,7 @@ __cog_installer_apply_build_json() {
         reason="recipe injection failed"
       fi
     else
-      wire_reason="no ${wire_type} runner file found; run the task-runner bootstrap first"
+      wire_reason="no justfile found; run the task-runner bootstrap first"
     fi
   fi
   jq -n --argjson ok "$ok" --arg project_root "$project_root" --arg template_root "$template_root" \
@@ -182,7 +170,7 @@ __cog_installer_apply_build_json() {
 }
 
 cog::cmd::installer_apply() {
-  local type="" project_root template_root conflict=abort wire_type="" mode="" out="" json
+  local type="" project_root template_root conflict=abort wire=false mode="" out="" json
   project_root="$(pwd -P)"
   template_root="$(cog::fn::template::root installer)"
   while (($# > 0)); do
@@ -212,9 +200,8 @@ cog::cmd::installer_apply() {
         shift 2
         ;;
       --wire-taskrunner)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing wire-taskrunner runner" "option: --wire-taskrunner" "" "run 'cog installer-apply --help'"
-        wire_type="$2"
-        shift 2
+        wire=true
+        shift
         ;;
       --json)
         [[ -z $mode ]] || cog::fn::error_raise "InvalidInput" "duplicate installer-apply output mode" "" "" "choose either --json or an output path"
@@ -232,7 +219,7 @@ cog::cmd::installer_apply() {
   done
   [[ -n $type && (-n $mode || ${COG_UI_JSON:-false} == true) ]] || cog::fn::error_raise "MissingArgument" "missing installer-apply argument" "usage: cog installer-apply --type <type> ... (<out.json>|--json)" "" "run 'cog installer-apply --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_installer_apply_build_json "$type" "$project_root" "$template_root" "$conflict" "$wire_type")"
+  json="$(__cog_installer_apply_build_json "$type" "$project_root" "$template_root" "$conflict" "$wire")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_installer_apply_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_installer_apply_self_check" "$json"; fi
   jq -e '.ok == true' <<<"$json" >/dev/null
 }
