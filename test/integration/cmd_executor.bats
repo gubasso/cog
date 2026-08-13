@@ -86,24 +86,41 @@ setup() {
   run cog executor prepare-step --executor executor-oneshot --engine claude --route needs-plan --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/plan-oneshot" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/plan-oneshot" and .prepare_engine == "claude"' >/dev/null
 
   run cog executor prepare-step --executor executor-oneshot --engine claude --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/review-plan-oneshot" and .prepare_engine == "codex" and .lane == "codex-runner"' >/dev/null
+    '.producer == "/review-plan-oneshot" and .prepare_engine == "codex"' >/dev/null
 
+  # prepare_engine is the flow table's assignment, not where a run executed. On a
+  # Codex host this route still resolves "claude" while the review actually runs
+  # same-engine -- the interim degrade tracked as Q-007.
   run cog executor prepare-step --executor executor-oneshot --engine codex --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/review-plan-oneshot" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/review-plan-oneshot" and .prepare_engine == "claude"' >/dev/null
+}
+
+# The invocation lane is not a function of (executor, engine, route): the same
+# producer runs inline on one host and forked on another, and a deliberate fork
+# for bias isolation is judgment. Lane selection lives in skill prose.
+@test "cog executor prepare-step emits no invocation lane" {
+  run cog executor prepare-step --executor executor-oneshot --engine claude --route needs-plan --json
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.schema == "cog.executor.prepare-step.v2" and (has("lane") | not)' >/dev/null
+
+  run cog executor prepare-step --executor plan-vetted --engine claude --route good-input --json
+  assert_success
+  printf '%s\n' "$output" | jq -e 'has("lane") | not' >/dev/null
 }
 
 @test "cog executor prepare-step resolves the vetted-plan producer on claude" {
   run cog executor prepare-step --executor executor-vetted --engine claude --route needs-plan --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/plan-vetted" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/plan-vetted" and .prepare_engine == "claude"' >/dev/null
 
   run cog executor prepare-step --executor executor-vetted --engine claude --route good-input --json
   assert_success
@@ -115,12 +132,12 @@ setup() {
   run cog executor prepare-step --executor plan-vetted --engine claude --route needs-plan --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/plan-multi" and .prepare_engine == "claude"' >/dev/null
 
   run cog executor prepare-step --executor plan-vetted --engine claude --route good-input --json
   assert_success
   printf '%s\n' "$output" | jq -e \
-    '.producer == "/review-plan-multi" and .prepare_engine == "claude" and .lane == "agent"' >/dev/null
+    '.producer == "/review-plan-multi" and .prepare_engine == "claude"' >/dev/null
 }
 
 @test "cog executor plan-vetted flow is a single prepare phase and rejects codex" {

@@ -10,9 +10,9 @@ description: >
 
 # Executor Single
 
-Execute one prompt or one implementation plan through the gated 2-stage executor flow: an input-evaluation gate guarantees a good plan, then Codex implements it. This skill owns sequencing and judgment. Run directory setup, input classification, the quality verdict, producer resolution, canonical artifact paths, Codex invocation, and executor summaries stay behind `cog`.
+Execute one prompt or one implementation plan through the gated 2-stage executor flow: an input-evaluation gate guarantees a good plan, then Codex implements it. The gate and the `good-input` plan review run **in this session**, which already holds the request; the `needs-plan` plan job and the implementation job are fresh contexts and get validated briefs. This skill owns sequencing and judgment. Run directory setup, input classification, verdict persistence, canonical artifact paths, Codex invocation, and executor summaries stay behind `cog`.
 
-**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`. That covers the `needs-plan` plan job and Stage 2; the in-session review reads the request directly.
 
 ## Inputs
 
@@ -33,56 +33,67 @@ Every Codex run is a cog-owned durable job: `cog codex-runner run-exec` launches
 
 ## Input Evaluation (gate)
 
-Determine whether the input already carries a good plan or needs one built. Delegate the verdict to the canonical `assess-input` skill: build a prompt whose first line is the write orientation from `cog
-codex-runner orientation write`, followed by `$assess-input`, `--run-dir <run-dir>`, and the original input verbatim and in full. Launch it write-capable as a durable job so it can persist its verdict:
+Judge the route here, in this session. The input is already present, so the verdict costs one command and one judgment call — a second Codex session would only re-read what this one holds.
+
+Write the original input verbatim to `<run-dir>/assess-input-source.md`, identify every readable plan file it references, and gather the deterministic signals:
 
 ```bash
-cog codex-runner run-exec --mode danger --access write --effort low --prompt <gate-prompt.md> --output <gate-output.md> --events <gate-events.jsonl> --stderr <gate-stderr.log> --state <gate.longrun.json>
-cog codex-runner finalize --state <gate.longrun.json> --max-wall 300
+cog assess-input facts --input-file <run-dir>/assess-input-source.md --file <each referenced plan> --json
 ```
 
-Read the route from `<run-dir>/assess-input.json` (`needs-plan` or `good-input`); confirm with `cog
-assess-input validate <run-dir>/assess-input.json`. Resolve the prepare-stage producer:
+Apply the rubric at `$(cog skill-refs path orchestration/input-quality-rubric.md)` to the input and those signals. Higher heading coverage and scope-proportional depth favor `good-input`; near-zero plan structure favors `needs-plan`. When genuinely uncertain, choose `needs-plan`. Persist the verdict so the call stays auditable and tunable:
 
 ```bash
-cog executor prepare-step --executor executor-oneshot --engine codex --route <needs-plan|good-input> --json
+cog assess-input record --run-dir <run-dir> --route <needs-plan|good-input> --confidence <high|medium|low> --rationale "<one line>" --signal max_heading_count=<n> --signal plan_files=<n> --json
 ```
+
+`record` writes `<run-dir>/assess-input.json` and fails closed, so its own output is the confirmation.
 
 ## Stage 1: Prepare The Plan
 
-Write the prepared plan to `<run-dir>/prepared-plan.md`.
+Write the prepared plan to `<run-dir>/prepared-plan.md`. Ensure `<run-dir>/request.md` exists on either route (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan source context verbatim and in full).
 
-Build the producer's input as a validated context brief first. Ensure `<run-dir>/request.md` exists (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan source context verbatim and in full). Build the brief per `$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it from the whole session (a well-oriented Objective; Output Format; Boundaries; Context & Decisions carrying the full substance; Artifacts inline or pointed-to; Effort Guidance; Not Evaluated — keep your own verdict out), then build it:
+- **`needs-plan` → generate (`/plan-oneshot`, Codex).** This is a fresh context, so build its input as a validated context brief first, per `$(cog skill-refs path orchestration/context-brief-contract.md)`: scaffold the authored body, fill it from the whole session (a well-oriented Objective; Output Format; Boundaries; Context & Decisions carrying the full substance; Artifacts inline or pointed-to; Effort Guidance; Not Evaluated — keep your own verdict out), then build it:
 
-```bash
-cog context-brief template --out <run-dir>/brief-body.md
-# fill <run-dir>/brief-body.md per the contract, then:
-cog context-brief build --request <run-dir>/request.md --body <run-dir>/brief-body.md --out <run-dir>/brief.md
-```
+  ```bash
+  cog context-brief template --out <run-dir>/brief-body.md
+  # fill <run-dir>/brief-body.md per the contract, then:
+  cog context-brief build --request <run-dir>/request.md --body <run-dir>/brief-body.md --out <run-dir>/brief.md
+  ```
 
-`build` attaches the request verbatim and fails closed unless every section is filled. Carry `<run-dir>/brief.md` as the worker's complete context in both routes below.
+  `build` attaches the request verbatim and fails closed unless every section is filled.
 
-- **`needs-plan` → generate (`/plan-oneshot`, Codex).** Build a prompt whose first line is the write orientation, followed by `$plan-oneshot`, `--output <run-dir>/prepared-plan.md`, and `<run-dir>/brief.md` as the complete context (the validated context brief built above). `$plan-oneshot` saves its plan artifact to the output path. Launch write-capable, then poll-and-classify:
+  Then build a prompt whose first line is the write orientation, followed by `$plan-oneshot`, `--output <run-dir>/prepared-plan.md`, and `<run-dir>/brief.md` as the complete context. `$plan-oneshot` saves its plan artifact to the output path. Launch write-capable, then poll-and-classify:
 
   ```bash
   cog codex-runner run-exec --mode danger --access write --effort high --prompt <prepare-prompt.md> --output <prepare-codex-output.md> --events <prepare-events.jsonl> --stderr <prepare-stderr.log> --state <prepare.longrun.json>
   cog codex-runner finalize --state <prepare.longrun.json> --max-wall 300
   ```
 
-- **`good-input` → review (`/review-plan-oneshot`, Claude, cross-engine).** The existing plan is reviewed by the opposite engine for independence. This is a foreground Claude subagent delegation through the Task/Agent tool, not a `cog codex-runner` call. Ensure `<run-dir>/request.md` exists (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan source context verbatim and in full, with only enriching repo constraints). The delegation prompt instructs the Claude subagent to read `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follow its Orchestrator Invocation Contract with three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/brief.md` (the validated context brief), and output-path `<run-dir>/prepared-plan.md` — and to return a one-line confirmation containing the output path.
+- **`good-input` → review (`/review-plan-oneshot`, in session).** Review the existing plan here, by reading `$review-plan-oneshot` and following its Orchestrator Invocation Contract with three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/request.md`, and output-path `<run-dir>/prepared-plan.md`. No brief is built, because no context is crossed.
+
+  This route is an **interim same-engine degrade, not the intended design.** Its purpose is review by the opposite engine for independence, which needs a Codex-to-Claude runner lane; `cog codex-runner` runs the other direction only, so no such lane exists yet. Until one does, the review runs on this engine and the independence the route exists for is unavailable. Say so when reporting the result, because the machine-facing record does not: `cog executor prepare-step` and the `executor-summary.json` it feeds still resolve `prepare_engine: claude` for this route, which is the engine the flow is designed for rather than the one that ran.
 
 After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
 
 ## Stage 2: Implement
 
-Codex implements the prepared plan through `cog codex-runner` with native effort. Build a Stage 2 prompt under the run directory that carries only relevant session context:
+Codex implements the prepared plan through `cog codex-runner` with native effort. This is a fresh context, so build its input as a validated context brief:
 
-- The prepared plan from `<run-dir>/prepared-plan.md`, verbatim. When it is an annotated review, implement the reconciled plan it specifies (apply APPROVED/MODIFIED/ADDED, skip REMOVED).
-- The original request or supplied-plan source context, verbatim and in full, with only enriching repo constraints added.
-- Current session constraints: do not run git commands unless explicitly authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the prepared plan.
-- A required final implementation report covering files changed, commands run, deviations, and unresolved risks.
+```bash
+cog context-brief template --out <run-dir>/execution-brief-body.md
+# fill <run-dir>/execution-brief-body.md per the contract, then:
+cog context-brief build --request <run-dir>/request.md --body <run-dir>/execution-brief-body.md --out <run-dir>/execution-brief.md
+```
 
-Run Codex with the write-capable `danger` sandbox; implementation must create and modify files. Launch the durable job, then poll-and-classify:
+Fill the body so the worker can implement without the prior conversation:
+
+- **Objective** — implement the prepared plan; **Output Format** — the final implementation report covering files changed, commands run, deviations, and unresolved risks.
+- **Artifacts** — the prepared plan from `<run-dir>/prepared-plan.md`, verbatim. When it is an annotated review, state that the reconciled plan is what gets implemented (apply APPROVED/MODIFIED/ADDED, skip REMOVED).
+- **Context & Decisions** — the substance behind the plan. When the `good-input` route recorded no decisions of its own, say so explicitly; `build` fails closed on an unfilled section.
+- **Boundaries** — run no git command unless explicitly authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the prepared plan.
+
+Then write `<run-dir>/execution-prompt.md` with the write orientation followed by `<run-dir>/execution-brief.md` as the complete context. Run Codex with the write-capable `danger` sandbox; implementation must create and modify files. Launch the durable job, then poll-and-classify:
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort medium --prompt <execution-prompt.md> --output <execution-report.md> --events <execution-events.jsonl> --stderr <execution-stderr.log> --state <execution.longrun.json>
@@ -126,7 +137,7 @@ Status rules:
 
 At every boundary, verify the durable postcondition before advancing:
 
-- Gate: `<run-dir>/assess-input.json` exists and validates; the route is `needs-plan` or `good-input`.
+- Gate: `cog assess-input record` returns a route of `needs-plan` or `good-input`.
 - Stage 1: `prepared-plan.md` exists and is non-empty.
 - Plan input: the supplied plan path exists and is readable before review or implementation.
 - Stage 2: `execution-report.md` exists and is non-empty.

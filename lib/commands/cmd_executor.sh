@@ -5,7 +5,7 @@ __cog_executor_init_self_check='(.schema=="cog.executor.init.v2") and (.ok==true
 __cog_executor_queue_prompts_self_check='(.schema=="cog.executor.queue-prompts.v1") and (.prompts|type=="array")'
 __cog_executor_artifacts_self_check='(.schema=="cog.executor.artifacts.v2") and (.phases|type=="array") and (.summary|type=="string")'
 __cog_executor_classify_self_check='(.kind=="prompt" or .kind=="plan") and has("plan_path") and (has("stages")|not)'
-__cog_executor_prepare_step_self_check='(.schema=="cog.executor.prepare-step.v1") and (.producer|type=="string") and (.prepare_engine|type=="string") and (.lane|type=="string")'
+__cog_executor_prepare_step_self_check='(.schema=="cog.executor.prepare-step.v2") and (.producer|type=="string") and (.prepare_engine|type=="string") and (.artifact|type=="string")'
 __cog_executor_adopt_prepared_self_check='(.schema=="cog.executor.adopt-prepared.v1") and (.ok==true) and (.path|type=="string")'
 __cog_executor_adopt_artifact_self_check='(.schema=="cog.executor.adopt-artifact.v1") and (.ok==true) and (.ordinal|type=="string") and (.path|type=="string")'
 __cog_executor_verify_artifact_self_check='(.schema=="cog.executor.verify-artifact.v1") and (.ok==true) and (.ordinal|type=="string") and (.path|type=="string")'
@@ -227,7 +227,6 @@ __cog_executor_prepare_step() {
   else
     cog::fn::ui_data "PRODUCER=$(jq -r '.producer' <<<"$result")"
     cog::fn::ui_data "PREPARE_ENGINE=$(jq -r '.prepare_engine' <<<"$result")"
-    cog::fn::ui_data "LANE=$(jq -r '.lane' <<<"$result")"
     cog::fn::ui_data "ARTIFACT=$(jq -r '.artifact' <<<"$result")"
   fi
 }

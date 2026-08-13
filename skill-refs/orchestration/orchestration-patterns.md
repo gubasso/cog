@@ -13,6 +13,22 @@ Before the first Codex call in a workflow, determine whether the native bwrap sa
 - Use the Bash tool timeout of `30000ms` for the probe.
 - If fallback: inform the user in one line.
 
+## Inline by Default, Fork on a Real Boundary
+
+Every pattern below crosses into a fresh context. This one decides whether to cross at all.
+
+Run a producer in the caller's own context by default. The session already holds the request, the research, and the decisions; a fresh context must re-derive them from a brief that can only ever be a lossy re-encoding of what the caller already has. Inline is cheaper, faster, and better informed.
+
+Cross into a fresh context when the crossing buys something concrete:
+
+- **A different engine.** Cross-engine review is independence by construction; a Claude session cannot get a Codex opinion in-session.
+- **Real parallelism.** N independent units of the same work run concurrently only as N workers (§Homogeneous Parallel Fan-Out).
+- **Deliberate bias isolation.** When the worker must not see the coordinator's verdict, the fork _is_ the mechanism — the coordinator withholds its conclusion, and only a context that never saw it can form an independent one.
+
+Two shipped examples anchor the rule. `gc` commits inline for a single repo and fans out one worker per repo only when the session touched more than one. `plan-vetted` dispatches its multi-review through the Agent tool even though both sides are Claude, because the isolation is the point.
+
+The judgment is the caller's and lives in skill prose. It is not a lookup: the same producer runs inline on one host and forked on another, and no `(executor, engine, route)` key can express a fork chosen for independence rather than for engine mismatch.
+
 ## Proof-of-Delegation
 
 When delegating work to a subagent via the **Agent tool** (`subagent_type: general-purpose`), wrap the delegation in a snapshot/diff/validate pattern to confirm the subagent actually did the work.

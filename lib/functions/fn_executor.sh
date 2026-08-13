@@ -94,11 +94,26 @@ cog::fn::executor::validate_route() {
   esac
 }
 
-# Resolve the prepare-stage producer skill, the engine it runs on, and the
-# invocation lane for an (executor, engine, route) triple.
+# Resolve the prepare-stage producer skill, the engine the flow assigns it, and
+# the prepare artifact for an (executor, engine, route) triple.
+#
+# prepare_engine is the flow table's assignment, not an observation of where a
+# run executed. They diverge in one place today: the Codex-hosted
+# executor-oneshot twin reviews good-input in session on Codex while this key
+# resolves "claude", the interim degrade tracked as Q-007. The key cannot fix
+# it -- the Claude-hosted executor-oneshot-codex twin passes the same
+# --engine codex and really does review in Claude, so the engine names who
+# executes, not who hosts.
+#
+# The invocation lane is deliberately absent. It is not a function of this key:
+# the same producer runs inline on one host and in a fresh context on another,
+# and a deliberate fork (plan-vetted forking review-plan-multi for bias
+# isolation, though both sides are Claude) is judgment no lookup can express.
+# Lane selection belongs to skill prose -- see the "inline by default, fork on a
+# real boundary" pattern in skill-refs/orchestration/orchestration-patterns.md.
 cog::fn::executor::prepare_step_json() {
   local executor="${1:-}" engine="${2:-}" route="${3:-}"
-  local flow producer skill engine_rule prepare_engine lane artifact
+  local flow producer skill engine_rule prepare_engine artifact
 
   cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
   cog::fn::executor::validate_route "$route"
@@ -115,7 +130,6 @@ cog::fn::executor::prepare_step_json() {
     *) cog::fn::error_raise "InvalidInput" "invalid producer engine rule" "engine_rule: ${engine_rule}" \
       "expected same, other, or claude" "" ;;
   esac
-  [[ $prepare_engine == codex ]] && lane=codex-runner || lane=agent
 
   jq -cn \
     --arg executor "$executor" \
@@ -123,10 +137,9 @@ cog::fn::executor::prepare_step_json() {
     --arg route "$route" \
     --arg producer "$skill" \
     --arg prepare_engine "$prepare_engine" \
-    --arg lane "$lane" \
     --arg artifact "$artifact" \
-    '{schema: "cog.executor.prepare-step.v1", executor: $executor, engine: $engine, route: $route,
-      producer: $producer, prepare_engine: $prepare_engine, lane: $lane, artifact: $artifact}'
+    '{schema: "cog.executor.prepare-step.v2", executor: $executor, engine: $engine, route: $route,
+      producer: $producer, prepare_engine: $prepare_engine, artifact: $artifact}'
 }
 
 cog::fn::executor::artifact_name() {
