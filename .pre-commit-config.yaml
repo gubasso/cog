@@ -59,17 +59,6 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
-      # Validates against the checkout, not whatever is installed:
-      # cog::fn::data_root prefers the installed XDG root whenever it exists,
-      # so an installed cog would otherwise gate on a stale registry.
-      - id: workflow-validate
-        name: workflow definition validation
-        entry: bash -c 'XDG_DATA_HOME="$(mktemp -d)" bin/cog workflow validate --all'
-        language: system
-        files: '^(workflow/.*\.ya?ml|data/workflow-engines/.*\.ya?ml)$'
-        pass_filenames: false
-        stages: [pre-commit]
-
       # JSON/JSONC formatter: dprint (comment-safe autofix). Config + pinned
       # plugin in ./dprint.json; template payloads and vendored libs excluded
       # there. External dependency: dprint on PATH (provided by the nix devShell).
@@ -232,14 +221,6 @@ repos:
       # and merged OVER the --config base. That merge is why MD043 must not appear
       # in that file at any value: an explicit `false` there silently switches off
       # every shape below while these hooks keep reporting success.
-      - id: markdownlint-cli2
-        alias: md-workflow-skill
-        name: markdownlint (workflow step skill heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^workflow/skills/[^/]+\.md$'
-        args: ['--config', '.markdownlint/workflow-skill.markdownlint-cli2.jsonc']
-
       - id: markdownlint-cli2
         alias: md-slice-readme
         name: markdownlint (slice entry heading shape)

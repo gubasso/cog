@@ -18,14 +18,14 @@ The failures at issue are preconditions, not outcomes: no bound account, no reso
 
 Chosen option: `Check preconditions before launching, then treat every job status as the agent's`. A runner reports version and authentication preconditions as its own result, before it creates a durable state file. Once the job exists, its status belongs to the agent and is classified from artifacts alone, unchanged from today.
 
-Managing credentials was rejected as out of scope by slice 006 and by [ADR-0009](./ADR-0009-orchestration-and-durable-jobs.md): reporting a precondition is diagnosis, satisfying one is account management.
+Managing credentials was rejected as out of scope by the provider-runner slice and by [ADR-0009](./ADR-0009-orchestration-and-durable-jobs.md): reporting a precondition is diagnosis, satisfying one is account management.
 
 ## Consequences
 
 - The artifact-only classification rule keeps one meaning, so no runner parses provider prose.
 - A precondition failure costs no durable state file and no run directory.
 - Preflight is a second process launch per dispatch, which is accepted: it runs before any spend.
-- `codex-runner` gains a preflight it does not have today, which is the conformance retrofit slice 006 owns.
+- `codex-runner` gains a preflight it does not have today; the retrofit that owned it was retired, so it is unscheduled and [Q-007](../plan/open-questions.md) tracks the `claude-runner` lane.
 
 ## Status
 

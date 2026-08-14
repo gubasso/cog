@@ -177,11 +177,15 @@ valid_manifest_path() {
     return 1
   fi
 
+  # $data_dir/workflow is a retired destination kept admissible on purpose: cog no
+  # longer ships it, but a manifest written before its removal still records files
+  # under it. Dropping the root would make uninstall refuse the whole manifest and
+  # make the installer's stale-prune skip those entries, orphaning them for good.
   # shellcheck disable=SC2154 # Caller scripts define install roots before invoking manifest helpers.
   if path_under "$path" "$app_root" \
     || path_under "$path" "$data_dir/skill-refs" \
-    || path_under "$path" "$data_dir/workflow" \
     || path_under "$path" "$data_dir/data" \
+    || path_under "$path" "$data_dir/workflow" \
     || path_under "$path" "$prefix/bin" \
     || path_under "$path" "$home/.claude/skills" \
     || path_under "$path" "$home/.claude/agents" \

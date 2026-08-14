@@ -44,16 +44,6 @@ entries:
     references:
       - docs/decisions/ADR-0014-model-effort-and-power-grade.md
       - data/power-grade/matrix
-  - id: workflow-engine-seed
-    path: docs/reference/workflow-contract.md
-    last_checked: 2026-08-06
-    cadence_days: 90
-    owner: workflow engine
-    why: "The accepted eleven-engine seed names current provider families and effort ladders; model rosters and supported efforts drift, and a superseded family left in the seed would still be dispatched."
-    revalidate_how: "Re-check the eleven seeded engines and both effort ladders against data/power-grade/matrix/model-cells.yaml, drop or replace any superseded family, confirm every provider named still has a cog <provider>-runner, then update last_checked."
-    references:
-      - docs/decisions/ADR-0027-accept-the-workflow-engine.md
-      - data/power-grade/matrix/model-cells.yaml
   - id: research-shelf
     path: data/research-shelf/index.jsonl
     last_checked: 2026-06-20

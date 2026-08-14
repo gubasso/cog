@@ -131,8 +131,7 @@ Commands:
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.
-  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue.
-  workflow       Resolve, validate, and drive workflow runs."
+  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue."
 }
 
 @test "cog help matches root help" {
@@ -246,8 +245,7 @@ Commands:
   test-review-discover Detect test runner and test-review batch status.
   test-review-lint Emit deterministic test-review lint signals.
   test-review-manifest Update test-review MANIFEST.yaml.
-  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue.
-  workflow       Resolve, validate, and drive workflow runs."
+  tracking-scan  Report tracked artifacts whose revalidation cadence is overdue."
 }
 
 @test "cog noop --help matches generated snapshot" {

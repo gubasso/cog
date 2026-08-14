@@ -1,5 +1,0 @@
-id: "linear-stub"
-steps:
-  - step: {id: "plan", as: "draft"}
-  - step: {id: "review", as: "vet", needs: ["draft"]}
-  - step: {id: "apply", as: "apply", needs: ["draft", "vet"]}

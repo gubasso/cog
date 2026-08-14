@@ -11,7 +11,7 @@ This reference defines how `cog` skills and agents compose Claude, Codex, workfl
 | Workflow                             | Background parallel fan-out                              | Not synchronous recursion | Use for independent parallel work, not call-stack style orchestration.                              |
 | Headless `claude -p`                 | Separate process without the live interactive event loop | Avoid                     | Abandoned for recursive orchestration because backgrounded work can be reaped after the final turn. |
 
-The `Workflow` row above means background parallel fan-out, and not the `cog workflow` engine. What a driver of that engine owes it is a separate contract with a separate reader: see [orchestrator contract](./orchestrator-contract.md), which requires none of the primitives on this page.
+The `Workflow` row above means background parallel fan-out. It is a harness primitive, not a cog surface — cog ships no workflow engine.
 
 ## Environment Requirements
 
@@ -35,22 +35,11 @@ The exit code is the signal. `finalize` exits `0` (done, ok), `1` (done, failed)
 
 Access is declared per launch and defaults closed. `run-exec --access write` is admitted only by `--mode danger`; every other mode is read-only. `run-resume` takes the same `--access` flag and also defaults to `read-only`, because a resume inherits no sandbox from the thread it resumes: `codex exec resume` accepts no `--sandbox` flag, so cog expresses read-only through the `sandbox_mode` config override and reserves `--dangerously-bypass-approvals-and-sandbox` for `--access write`. `finalize` reports the access the round actually ran under, so a caller can prove a read-only reviewer stayed read-only rather than trusting prompt wording.
 
-What a provider runner must supply on top of these rules — the conformance fields, the absolute artifact paths, the precondition report, and the two ways the Claude and Codex CLIs are not shaped alike — is owned by [runner contract](./runner-contract.md).
-
 This is the only sanctioned form of non-blocking execution. cog detaching its own child is not the model backgrounding its own tool call; ad-hoc shell backgrounding (`&`, `run_in_background: true`) on Codex or orchestration work stays prohibited, and `cog skill-lint` enforces the distinction. Every `codex-session` run is a durable job. See [ADR-0009](../decisions/ADR-0009-orchestration-and-durable-jobs.md).
 
 ## Delegate And Verify
 
-Every orchestration boundary must verify a durable postcondition after the delegate returns. A parent must re-read state such as a workflow node, report file, or test artifact rather than trusting a returned summary.
-
-For workflow-driven work, the postcondition is the run's own durable state rather than the delegate's word:
-
-```text
-cog workflow summary --run-dir <dir> --json    # per-node state
-cog workflow conformance --run-dir <dir>       # durable postconditions hold
-```
-
-What each node must have written before it may be called done is owned by [orchestrator contract](./orchestrator-contract.md); the artifact-by-directory rule is [ADR-0024](../decisions/ADR-0024-pass-step-artifacts-by-directory.md).
+Every orchestration boundary must verify a durable postcondition after the delegate returns. A parent must re-read state such as a report file, a run-directory artifact, or a test result rather than trusting a returned summary.
 
 An orchestrator may invoke a review subagent as a foreground sibling boundary after a committed unit. The review subagent is a sibling of the work delegate (a +1 from the orchestrator's depth 0), not nested beneath it, so the boundary stays flat against the depth cap; it spends one depth level and must verify a clean, committed postcondition before selecting more work.
 

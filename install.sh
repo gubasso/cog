@@ -192,8 +192,6 @@ require_source_path "$repo_root/skill-refs"
 require_source_path "$repo_root/data/power-grade"
 require_source_path "$repo_root/data/model-effort"
 require_source_path "$repo_root/data/skill-class"
-require_source_path "$repo_root/data/workflow-engines"
-require_source_path "$repo_root/workflow"
 require_source_path "$repo_root/data/maintenance-tracking.yaml"
 require_source_path "$repo_root/data/research-shelf/index.jsonl"
 require_source_path "$repo_root/VERSION"
@@ -250,6 +248,10 @@ install -d "$app_root"
 rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/VERSION"
 rm -rf -- "${data_dir:?}/skill-refs"
 rm -rf -- "${data_dir:?}/data/power-grade" "${data_dir:?}/data/model-effort" "${data_dir:?}/data/skill-class" "${data_dir:?}/data/maintenance-tracking.yaml"
+# Retired destinations: cog no longer ships the workflow layer or its engine
+# registry. The manifest-driven stale-prune deletes the recorded files, but not
+# the directories they lived in, so purge both trees here to leave nothing behind
+# on an upgrade from a version that still shipped them.
 rm -rf -- "${data_dir:?}/data/workflow-engines" "${data_dir:?}/workflow"
 cog_install_ok "Prepare destination"
 
@@ -261,8 +263,6 @@ copy_tree "$repo_root/skill-refs" "$data_dir/skill-refs"
 copy_tree "$repo_root/data/power-grade" "$data_dir/data/power-grade"
 copy_tree "$repo_root/data/model-effort" "$data_dir/data/model-effort"
 copy_tree "$repo_root/data/skill-class" "$data_dir/data/skill-class"
-copy_tree "$repo_root/data/workflow-engines" "$data_dir/data/workflow-engines"
-copy_tree "$repo_root/workflow" "$data_dir/workflow"
 install -d "$data_dir/data"
 install -m 0644 "$repo_root/data/maintenance-tracking.yaml" "$data_dir/data/maintenance-tracking.yaml"
 record_path "$data_dir/data/maintenance-tracking.yaml"
