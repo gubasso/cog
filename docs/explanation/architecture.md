@@ -8,6 +8,8 @@ Cog is a standalone Bash CLI plus runtime skills, agent definitions, structured 
 
 `data/` owns structured tables computed over by the CLI. `skill-refs/` owns prose and templates that runtime skills read or deploy. Pre-commit is the quality-gate source of truth; the task runner exposes those same lanes.
 
+One command name that no module owns falls through to an external `cog-<name>` executable, which cog `exec`s as a separate process. That seam is the only extension point: first-party commands always win, cog's Bash stays private, and cog inspects plugins without installing or trusting them. See [plugins](./plugins.md).
+
 ## Current constraints
 
 Machine output and file-first artifacts are the default. Installation is manifest-owned, repository knowledge is self-contained, and every public command keeps its line-2 description sentinel.

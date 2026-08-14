@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# `protocol` exceeds Bash's signed 64-bit range, where (( )) would wrap it.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":9223372036854775808,"name":"huge","version":"1.0.0","summary":"Declares a protocol beyond 64-bit arithmetic"}'; exit 0; }
+printf 'huge ran\n'

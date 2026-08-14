@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Chooses 124 as its own exit status, which is also timeout(1)'s kill signal.
+[[ ${1:-} == cog-plugin-metadata ]] && exit 124
+printf 'exit124 ran\n'

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Prints every COG_ variable it received, so a test can prove the contract.
+set -euo pipefail
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":1,"name":"envdump","version":"1.0.0","summary":"Prints the COG_ environment it received"}'; exit 0; }
+env | LC_ALL=C grep '^COG_' | LC_ALL=C sort

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Conformant on its first probe and malformed on every later one, counting each
+# probe in $COG_FLAKY_COUNTER. A verb that probes once reports one coherent
+# answer; a verb that probes twice reports a state from the first run and
+# metadata from the second.
+set -euo pipefail
+if [[ ${1:-} == cog-plugin-metadata ]]; then
+  counter="${COG_FLAKY_COUNTER:-}"
+  n=0
+  [[ -n $counter && -r $counter ]] && n="$(<"$counter")"
+  [[ -n $counter ]] && printf '%s\n' "$((n + 1))" >"$counter"
+  if ((n == 0)); then
+    printf '%s\n' '{"protocol":1,"name":"flaky","version":"1.0.0","summary":"Conformant on the first probe only"}'
+    exit 0
+  fi
+  printf 'not json at all\n'
+  exit 0
+fi
+printf 'flaky ran\n'

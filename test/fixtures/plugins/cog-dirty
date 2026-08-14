@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# The probe has a side effect; probe_side_effect_free must catch it.
+[[ ${1:-} == cog-plugin-metadata ]] && { : > side-effect.txt; printf '%s\n' '{"protocol":1,"name":"dirty","version":"1.0.0","summary":"Writes a file during its metadata probe"}'; exit 0; }
+printf 'dirty ran\n'

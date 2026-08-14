@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Exits 124 of its own accord, but only after a delay short of the timeout.
+[[ ${1:-} == cog-plugin-metadata ]] && { sleep 1.2; exit 124; }
+printf 'slow124 ran\n'

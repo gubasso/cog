@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Proves verbatim argv and exit-code passthrough. The last argument is the exit
+# code to return.
+set -euo pipefail
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":1,"name":"echoargs","version":"1.0.0","summary":"Echoes argv and exits with the code given as the last argument"}'; exit 0; }
+printf '%s\n' "$@"
+exit "${@: -1}"

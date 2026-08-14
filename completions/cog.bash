@@ -83,6 +83,7 @@ _cog() {
     plan-multi-setup
     plan-review
     plan-slug
+    plugin
     power-grade
     precommit-apply-template
     precommit-detect
@@ -138,6 +139,20 @@ _cog() {
   fi
 
   if [[ $subcommand_seen == false ]]; then
+    # Third-party cog-* plugins, appended at runtime and never written into the
+    # static array above: help_snapshots.bats asserts that array equals
+    # lib/commands/ exactly. Failure is silent by design — a missing, slow, or
+    # broken cog must not break first-party completion.
+    #
+    # The hard time bound is the load-bearing half. Enumeration stats every
+    # $PATH directory, so a stale network mount or an unresponsive filesystem
+    # hangs it, and `|| true` only catches a command that eventually returns —
+    # it cannot bound one that never does. Without the timeout, pressing Tab
+    # would block the user's shell instead of quietly offering the first-party
+    # names, which is what the reference promises.
+    local -a plugin_names=()
+    mapfile -t plugin_names < <(timeout 1 cog plugin list --names 2>/dev/null || true)
+    ((${#plugin_names[@]})) && commands+=("${plugin_names[@]}")
     COMPREPLY=($(compgen -W "${commands[*]}" -- "$cur"))
     return 0
   fi

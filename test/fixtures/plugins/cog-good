@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# A fully conformant fixture plugin.
+set -euo pipefail
+if [[ ${1:-} == cog-plugin-metadata ]]; then
+  printf '%s\n' '{"protocol":1,"name":"good","version":"1.0.0","summary":"A conformant fixture plugin","requires_cog":">=0.1.0"}'
+  exit 0
+fi
+printf 'good: %s\n' "$*"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# `summary` spans two lines. The protocol requires one.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":1,"name":"multiline","version":"1.0.0","summary":"First line\nsecond line"}'; exit 0; }
+printf 'multiline ran\n'

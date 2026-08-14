@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# The probe exceeds the output cap.
+[[ ${1:-} == cog-plugin-metadata ]] && { LC_ALL=C tr -dc 'a' </dev/zero | head -c 70000; printf '\n'; exit 0; }
+printf 'loud ran\n'

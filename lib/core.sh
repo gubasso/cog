@@ -37,9 +37,25 @@ cog::main() {
   [[ -n ${ctx[subcommand]} ]] || cog::helpers::die "$EX_USAGE" "MissingCommand" \
     "no command given" "" "" "run 'cog --help' or 'cog <command>'"
 
-  if [[ ${ctx[help]} == true || ${cmd_argv[0]:-} == "--help" || ${cmd_argv[0]:-} == "-h" ]]; then
+  # A global --help came *before* the command name, so it is cog's to answer for
+  # any command, plugin included. `cog help <plugin>` reaches the same place
+  # through cmd_help.sh.
+  if [[ ${ctx[help]} == true ]]; then
     cog::fn::help_generate command "${ctx[subcommand]}"
     return 0
+  fi
+
+  # `-h`/`--help` *after* the command name belongs to the command. Cog answers
+  # it for a first-party command, but for a plugin it is argv, and the published
+  # contract is that cog interprets nothing after a plugin name. Answering it
+  # here rewrote `cog demo -h extra` into `cog-demo --help`, changing one
+  # argument and dropping another. Falling through to dispatch passes it
+  # verbatim; the plugin decides what its own help flag means.
+  if [[ ${cmd_argv[0]:-} == "--help" || ${cmd_argv[0]:-} == "-h" ]]; then
+    if [[ -r "${LIB_DIR}/commands/cmd_${ctx[subcommand]//-/_}.sh" ]]; then
+      cog::fn::help_generate command "${ctx[subcommand]}"
+      return 0
+    fi
   fi
 
   cog::loader::dispatch "${ctx[subcommand]}" "${cmd_argv[@]}"

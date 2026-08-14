@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# `protocol` is a number but not an integer, and `requires_cog` is not a string.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":0.5,"name":"fractional","version":"1.0.0","summary":"Declares a non-integer protocol","requires_cog":7}'; exit 0; }
+printf 'fractional ran\n'

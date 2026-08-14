@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Metadata `name` disagrees with the filename.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":1,"name":"somethingelse","version":"1.0.0","summary":"Reports a name that is not its filename"}'; exit 0; }
+printf 'misnamed ran\n'

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Dispatch works, the metadata probe fails. Must still execute.
+set -euo pipefail
+[[ ${1:-} == cog-plugin-metadata ]] && exit 3
+printf 'noprobe ran\n'

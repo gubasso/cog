@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Fully conformant, but declares a `requires_cog` no current cog satisfies.
+# Every check must still pass — the constraint is advisory — while `info` and
+# `validate` both report the mismatch.
+set -euo pipefail
+if [[ ${1:-} == cog-plugin-metadata ]]; then
+  printf '%s\n' '{"protocol":1,"name":"future","version":"1.0.0","summary":"Requires a cog that does not exist yet","requires_cog":">=999.0.0"}'
+  exit 0
+fi
+printf 'future ran\n'

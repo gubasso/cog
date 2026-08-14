@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# The probe exits 0 with output that is not JSON.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf 'not json\n'; exit 0; }
+printf 'badjson ran\n'

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Declares a protocol above this cog's.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":99,"name":"newer","version":"1.0.0","summary":"Declares a protocol this cog does not implement"}'; exit 0; }
+printf 'newer ran\n'

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Records that it was probed, so a test can assert dispatch never probes.
+set -euo pipefail
+if [[ ${1:-} == cog-plugin-metadata ]]; then
+  : >"${COG_PROBE_MARKER:-probe-marker}"
+  printf '%s\n' '{"protocol":1,"name":"probemarker","version":"1.0.0","summary":"Records that its metadata probe ran"}'
+  exit 0
+fi
+printf 'probemarker ran\n'

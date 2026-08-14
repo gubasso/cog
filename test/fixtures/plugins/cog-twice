@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Emits two JSON objects. The protocol promises exactly one.
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n%s\n' '{"protocol":1,"name":"twice","version":"1.0.0","summary":"Emits two metadata objects"}' '{"protocol":1,"name":"twice","version":"1.0.0","summary":"Emits two metadata objects"}'; exit 0; }
+printf 'twice ran\n'

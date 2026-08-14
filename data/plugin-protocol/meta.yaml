@@ -1,0 +1,23 @@
+# The vocabulary `cog plugin list` reports and `cog plugin validate` checks.
+# Each state is a row because a reader needs to know the full set without
+# reading the implementation; each check is a row for the same reason.
+plugin-protocol-states:
+  ok: "Resolves, is executable, and its probe returned conformant metadata for a supported protocol."
+  shadowed-by-core: "A first-party command owns this name. Never executed."
+  shadowed-by-path: "An earlier candidate in resolution order wins. Never executed."
+  not-executable: "Found, but not a regular file executable by the current user."
+  metadata-unavailable: "The probe failed, timed out, exceeded the cap, or returned metadata that is not one conformant JSON object naming this plugin. Dispatch still works."
+  protocol-newer: "Declares a protocol above this cog's. Dispatch still works."
+
+plugin-protocol-checks:
+  executable: "The path is executable by the current user."
+  regular_file: "After symlink resolution, the path is a regular file."
+  name_matches_filename: "The filename is cog-<name> for a valid <name>, and metadata `name` equals it."
+  no_firstparty_collision: "No lib/commands module owns this name."
+  metadata_exit: "The probe exits 0."
+  metadata_json: "The probe emits one valid JSON object."
+  metadata_required_fields: "Every required field is present and correctly typed."
+  protocol_supported: "Declared protocol is at or below this cog's."
+  probe_within_timeout: "The probe finished inside probe_timeout_seconds."
+  probe_within_cap: "Probe output did not exceed probe_output_cap_bytes."
+  probe_side_effect_free: "Run in an empty temporary cwd, the probe created nothing there."

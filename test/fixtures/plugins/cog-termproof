@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Ignores TERM for the whole probe. `timeout` sends TERM at the deadline and
+# then waits, so TERM alone never reclaims this process: only the follow-up KILL
+# bounds it. The probe must still be reported as a timeout rather than hanging
+# `list`, `info`, and `validate` forever.
+trap '' TERM
+[[ ${1:-} == cog-plugin-metadata ]] && { sleep 30; exit 0; }
+printf 'termproof ran\n'

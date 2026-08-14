@@ -43,7 +43,7 @@ man:
 # probes in lib/. Keeps flake.nix honest as the toolchain drifts.
 devshell-check:
 	@missing=(); \
-	for bin in bash jq yq git gh scdoc dprint bats shellcheck shfmt just pre-commit node perl flock nixfmt; do \
+	for bin in bash jq yq git gh scdoc dprint bats shellcheck shfmt just pre-commit node perl flock nixfmt timeout; do \
 		command -v "$bin" >/dev/null 2>&1 || missing+=("$bin"); \
 	done; \
 	if [ ${#missing[@]} -ne 0 ]; then \

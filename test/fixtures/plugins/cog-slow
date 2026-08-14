@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Exceeds the probe timeout.
+[[ ${1:-} == cog-plugin-metadata ]] && { sleep 30; exit 0; }
+printf 'slow ran\n'

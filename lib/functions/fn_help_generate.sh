@@ -91,6 +91,14 @@ cog::fn::help_generate() {
 
       path="$(__cog_help_command_path "$sub")"
       if [[ ! -r $path ]]; then
+        # A plugin documents itself: cog has no metadata for it beyond the
+        # probe's one-line summary, so `cog help <plugin>` hands the question
+        # to the plugin and passes its output and exit status through.
+        local plugin_path=""
+        if declare -F cog::fn::plugin_resolve >/dev/null \
+          && plugin_path="$(cog::fn::plugin_resolve "$sub")"; then
+          cog::fn::plugin_exec "$sub" "$plugin_path" --help
+        fi
         cog::helpers::die "$EX_USAGE" "UnknownCommand" \
           "unknown command" "command: ${sub}" "" "run 'cog --help'"
       fi

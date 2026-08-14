@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Writes to both streams so a test can prove they are not merged or annotated.
+set -euo pipefail
+[[ ${1:-} == cog-plugin-metadata ]] && { printf '%s\n' '{"protocol":1,"name":"streams","version":"1.0.0","summary":"Writes to stdout and stderr"}'; exit 0; }
+printf 'to stdout\n'
+printf 'to stderr\n' >&2
