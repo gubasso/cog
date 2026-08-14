@@ -10,10 +10,9 @@ Ids 002 through 009 are retired and must never be reused. They shaped the workfl
 
 ## in flight
 
-- 012 [cross-engine-claude-runner](./slices/012-cross-engine-claude-runner/README.md) — shaped — 2 sessions — adds `claude-runner` so a Codex host can dispatch Claude, and exits Q-007
-
 ## closed
 
 - 001 [documentation-architecture-reset](./slices/001-documentation-architecture-reset/README.md) — done — 3 sessions — archive hashes and all documentation gates passed
 - 010 [plan-vault-retirement](./slices/010-plan-vault-retirement/README.md) — done — 3 sessions — removed the vault, the queues, the round layer, the spec pipeline, and executor match telemetry
 - 011 [approval-gate-artifact-binding](./slices/011-approval-gate-artifact-binding/README.md) — done — 1 session — rebound the operator-approval gate onto the artifact it hashes
+- 012 [cross-engine-claude-runner](./slices/012-cross-engine-claude-runner/README.md) — done — 2 sessions — added `claude-runner`, hoisted the shared runner mechanics, preflighted both runners, and exited Q-007

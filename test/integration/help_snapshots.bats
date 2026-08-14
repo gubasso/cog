@@ -46,6 +46,7 @@ Commands:
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
+  claude-runner  Run claude-session orchestration helpers.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.
@@ -160,6 +161,7 @@ Commands:
   ci-apply       Apply a CI workflow template to a project.
   ci-detect      Detect the CI target from the project git remote.
   classify-project Classify repository shape.
+  claude-runner  Run claude-session orchestration helpers.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
   cog-skill-creator-scaffold Compute skill scaffold paths.

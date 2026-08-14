@@ -10,6 +10,7 @@ setup() {
   source "${LIB_DIR}/functions/fn_json_write.sh"
   source "${LIB_DIR}/functions/fn_codex.sh"
   source "${LIB_DIR}/functions/fn_rundir.sh"
+  source "${LIB_DIR}/functions/fn_runner.sh"
   source "${LIB_DIR}/commands/cmd_codex_runner.sh"
 }
 

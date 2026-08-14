@@ -25,7 +25,7 @@ Managing credentials was rejected as out of scope by the provider-runner slice a
 - The artifact-only classification rule keeps one meaning, so no runner parses provider prose.
 - A precondition failure costs no durable state file and no run directory.
 - Preflight is a second process launch per dispatch, which is accepted: it runs before any spend.
-- `codex-runner` gains a preflight it lacks today. Slice 012 [cross-engine-claude-runner](../plan/slices/012-cross-engine-claude-runner/README.md) carries that retrofit and the `claude-runner` lane [Q-007](../plan/open-questions.md) tracks.
+- Both runners preflight before the durable job. Slice 012 [cross-engine-claude-runner](../plan/slices/012-cross-engine-claude-runner/README.md) added `claude-runner` with the check and retrofitted the same one onto `codex-runner`, which lacked it.
 
 ## Status
 

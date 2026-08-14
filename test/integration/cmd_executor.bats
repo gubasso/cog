@@ -361,6 +361,42 @@ setup() {
     .execute_engine == "claude"' >/dev/null
 }
 
+@test "cog executor summary records the caller-supplied prepare engine over the flow default" {
+  local run_dir
+  run_dir="$(cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
+
+  # Both executor-oneshot twins pass --engine codex, so the flow table cannot
+  # tell which host actually prepared. Only the caller knows.
+  run cog executor summary --run-dir "$run_dir" --executor executor-oneshot --engine codex \
+    --route good-input --prepare-engine codex --prepare "done" --execution "done" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e \
+    '.prepare_engine == "codex" and .execute_engine == "codex"' >/dev/null
+}
+
+@test "cog executor summary keeps the flow-table prepare engine when the caller declares none" {
+  local run_dir
+  run_dir="$(cog executor init --executor executor-oneshot --engine codex --input "Implement thing" --json | jq -r '.run_dir')"
+
+  run cog executor summary --run-dir "$run_dir" --executor executor-oneshot --engine codex \
+    --route good-input --prepare "done" --execution "done" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.prepare_engine == "claude"' >/dev/null
+}
+
+@test "cog executor summary rejects an invalid prepare engine" {
+  local run_dir
+  run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
+
+  run --separate-stderr cog executor summary --run-dir "$run_dir" --executor executor-vetted --engine claude \
+    --route needs-plan --prepare-engine gemini --prepare "done" --execution "done"
+
+  assert_failure
+  [[ $stderr == *"unknown executor engine"* ]]
+}
+
 @test "cog executor summary prints RESOLVED in non-JSON mode" {
   local run_dir
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"

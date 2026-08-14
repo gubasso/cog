@@ -98,12 +98,12 @@ cog::fn::executor::validate_route() {
 # the prepare artifact for an (executor, engine, route) triple.
 #
 # prepare_engine is the flow table's assignment, not an observation of where a
-# run executed. They diverge in one place today: the Codex-hosted
-# executor-oneshot twin reviews good-input in session on Codex while this key
-# resolves "claude", the interim degrade tracked as Q-007. The key cannot fix
-# it -- the Claude-hosted executor-oneshot-codex twin passes the same
-# --engine codex and really does review in Claude, so the engine names who
-# executes, not who hosts.
+# run executed. The key cannot be made into one: both executor-oneshot twins
+# pass --engine codex, one from a Claude host and one from a Codex host, so
+# (executor, engine, route) cannot separate them -- the engine names who
+# executes, not who hosts. A caller that knows its own host declares it through
+# `cog executor summary --prepare-engine`, which overrides this assignment in
+# the summary; this key keeps reporting what the flow is designed for.
 #
 # The invocation lane is deliberately absent. It is not a function of this key:
 # the same producer runs inline on one host and in a fresh context on another,
@@ -392,9 +392,16 @@ cog::fn::executor::summary_self_check() {
   printf '%s\n' "$__cog_executor_summary_self_check"
 }
 
+# The fifth argument is the engine that actually prepared, supplied by the
+# caller and empty when it has nothing to declare. It wins over the flow table,
+# which assigns a prepare engine from (executor, engine, route) and therefore
+# cannot separate two twins that pass the same --engine from different hosts.
+# Only the twin knows its own host, so the record is an observation when the
+# caller makes one and the flow-table assignment otherwise.
 cog::fn::executor::summary_json() {
   local run_dir="${1:-}" executor="${2:-}" engine="${3:-}" route="${4:-}"
-  shift 4 || true
+  local prepare_engine_override="${5:-}"
+  shift 5 || true
   local flow_json prepare_step producer prepare_engine artifacts_json summary_path
   local statuses_json pair ordinal status stages_json input_kind input_kind_file
 
@@ -409,7 +416,12 @@ cog::fn::executor::summary_json() {
   cog::fn::executor::validate_route "$route"
   prepare_step="$(cog::fn::executor::prepare_step_json "$executor" "$engine" "$route")"
   producer="$(jq -r '.producer' <<<"$prepare_step")"
-  prepare_engine="$(jq -r '.prepare_engine' <<<"$prepare_step")"
+  if [[ -n $prepare_engine_override ]]; then
+    cog::fn::executor::validate_engine "$prepare_engine_override" >/dev/null
+    prepare_engine="$prepare_engine_override"
+  else
+    prepare_engine="$(jq -r '.prepare_engine' <<<"$prepare_step")"
+  fi
   artifacts_json="$(cog::fn::executor::artifacts_json "$run_dir")"
   summary_path="$(jq -r '.summary' <<<"$artifacts_json")"
 

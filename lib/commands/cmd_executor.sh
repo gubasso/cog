@@ -20,7 +20,7 @@ __cog_executor_usage() {
   cog::fn::ui_data "Usage: cog executor verify-artifact --run-dir <dir> --ordinal <ordinal> [--json]"
   cog::fn::ui_data "Usage: cog executor export-prepared --run-dir <dir> --output <path> [--json]"
   cog::fn::ui_data "Usage: cog executor artifacts <run-dir> [--json]"
-  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--json]"
+  cog::fn::ui_data "Usage: cog executor summary --run-dir <dir> --executor <executor-vetted|executor-oneshot> --engine <claude|codex> --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> [--prepare-engine <claude|codex>] [--json]"
   cog::fn::ui_data "Usage: cog executor queue-prompts [--json]"
   cog::fn::ui_data "Input classification: an existing readable regular .md file is a plan; everything else, including a missing .md path, is a prompt. The input-quality route (needs-plan|good-input) is the assess-input verdict, independent of input kind."
 }
@@ -441,7 +441,7 @@ __cog_executor_artifacts() {
 }
 
 __cog_executor_summary() {
-  local run_dir="" executor="" engine="" route="" prepare="" execution=""
+  local run_dir="" executor="" engine="" route="" prepare="" execution="" prepare_engine=""
   local json="${COG_UI_JSON:-false}" flow_json summary_json summary_path
   local -a summary_args=()
 
@@ -469,6 +469,12 @@ __cog_executor_summary() {
         [[ $# -ge 2 && -n ${2:-} && -z $route ]] || cog::fn::error_raise "MissingArgument" \
           "missing route" "option: --route" "" "run 'cog executor --help'"
         route="$2"
+        shift 2
+        ;;
+      --prepare-engine)
+        [[ $# -ge 2 && -n ${2:-} && -z $prepare_engine ]] || cog::fn::error_raise "MissingArgument" \
+          "missing prepare engine" "option: --prepare-engine" "" "run 'cog executor --help'"
+        prepare_engine="$2"
         shift 2
         ;;
       --prepare)
@@ -499,13 +505,14 @@ __cog_executor_summary() {
   [[ -n $run_dir && -n $executor && -n $engine && -n $route ]] \
     || cog::fn::error_raise "MissingArgument" \
       "missing summary argument" \
-      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --route <needs-plan|good-input> --prepare <status> --execution <status>" "" \
+      "usage: cog executor summary --run-dir <dir> --executor <executor> --engine <engine> --route <needs-plan|good-input> --prepare <status> --execution <status> [--prepare-engine <engine>]" "" \
       "run 'cog executor --help'"
   [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
     "executor run directory not found" "path: ${run_dir}" "" "check --run-dir"
   flow_json="$(cog::fn::executor::flow_json "$executor")"
   cog::fn::executor::validate_engine_for_executor "$executor" "$engine"
   cog::fn::executor::validate_route "$route"
+  [[ -z $prepare_engine ]] || cog::fn::executor::validate_engine "$prepare_engine" >/dev/null
 
   while IFS= read -r ordinal; do
     case "$ordinal" in
@@ -524,12 +531,12 @@ __cog_executor_summary() {
   if [[ $json == true ]]; then
     # File-first write still happens, but stdout must be pure JSON: suppress the
     # RESOLVED line that write_summary_json (via json_write_fragment) prints.
-    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "${summary_args[@]}" >/dev/null
+    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "$prepare_engine" "${summary_args[@]}" >/dev/null
     summary_path="$(cog::fn::rundir_path "$run_dir" "$(cog::fn::executor::artifact_name "$executor" summary)")"
     summary_json="$(<"$summary_path")"
     cog::fn::json_emit "$(cog::fn::executor::summary_self_check)" "$summary_json"
   else
-    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "${summary_args[@]}"
+    cog::fn::executor::write_summary_json "$run_dir" "$executor" "$engine" "$route" "$prepare_engine" "${summary_args[@]}"
   fi
 }
 

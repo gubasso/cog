@@ -10,7 +10,10 @@ setup() {
   cat >"${BATS_TEST_TMPDIR}/fakebin/codex-session" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"${CODEX_FAKE_LOG}"
-if [[ $* == "account current --format json" ]]; then
+if [[ $1 == account ]]; then
+  if [[ ${CODEX_FAKE_AUTH_FAIL:-0} = 1 ]]; then
+    exit 1
+  fi
   printf '%s\n' '{"name":"fake-account"}'
   exit 0
 fi
@@ -210,6 +213,55 @@ EOF
   [[ $stderr == *"artifact path must be absolute"* ]]
 }
 
+@test "cog codex-runner run-exec creates no durable state file when a precondition fails" {
+  # ADR-0031: preconditions are checked before the durable job exists, so a
+  # failure here costs no state file and no run-directory artifacts.
+  local st="${BATS_TEST_TMPDIR}/pre.longrun.json"
+  CODEX_FAKE_VERSION_FAIL=1 run --separate-stderr cog codex-runner run-exec --mode danger --access write --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/pre.out" --events "${BATS_TEST_TMPDIR}/pre.jsonl" --state "$st"
+  assert_failure
+  [[ $stderr == *"codex-session is not healthy"* ]]
+  [[ ! -e $st ]]
+  [[ ! -e "${BATS_TEST_TMPDIR}/pre.jsonl" ]]
+}
+
+@test "cog codex-runner run-exec creates no durable state file when no account is bound" {
+  # ADR-0031 names the credential alongside the binary and the version: a
+  # wrapper that runs but has nothing to authenticate with cannot launch, and
+  # after launch that failure is indistinguishable from an agent exit.
+  local st="${BATS_TEST_TMPDIR}/auth.longrun.json"
+  CODEX_FAKE_AUTH_FAIL=1 run --separate-stderr cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/auth.out" --events "${BATS_TEST_TMPDIR}/auth.jsonl" --stderr "${BATS_TEST_TMPDIR}/auth.err" --state "$st"
+  assert_failure
+  [[ $stderr == *"no bound codex-session account"* ]]
+  [[ ! -e $st ]]
+  [[ ! -e "${BATS_TEST_TMPDIR}/auth.jsonl" ]]
+}
+
+@test "cog codex-runner run-exec rejects artifact paths that alias each other" {
+  # The four artifacts are independent sinks handed to longrun::start; sharing
+  # one path makes the writes clobber each other, and --state equal to --output
+  # destroys the durable state the caller polls.
+  local st="${BATS_TEST_TMPDIR}/alias.longrun.json"
+  run --separate-stderr cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "$st" --events "${BATS_TEST_TMPDIR}/alias.jsonl" --stderr "${BATS_TEST_TMPDIR}/alias.err" --state "$st"
+  assert_failure
+  [[ $stderr == *"artifact paths must be distinct"* ]]
+  [[ ! -e $st ]]
+
+  run --separate-stderr cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/a.out" --events "${BATS_TEST_TMPDIR}/both.log" --stderr "${BATS_TEST_TMPDIR}/both.log" --state "${BATS_TEST_TMPDIR}/alias2.longrun.json"
+  assert_failure
+  [[ $stderr == *"artifact paths must be distinct"* ]]
+}
+
+@test "cog codex-runner run-exec creates a run directory that does not exist yet" {
+  # The preflight fragment is the first write into the run dir and it lands
+  # before the durable job, so the runner must create the directory the
+  # launcher would otherwise have made.
+  local dir="${BATS_TEST_TMPDIR}/fresh/nested"
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${dir}/o.md" --events "${dir}/ev.jsonl" --stderr "${dir}/e.log" --state "${dir}/j.longrun.json"
+  assert_success
+  assert_output --partial "STATE_FILE=${dir}/j.longrun.json"
+  [[ -e "${dir}/j.longrun.json" ]]
+}
+
 @test "cog codex-runner finalize reports a still-running job with exit 75 and never classifies it" {
   export CODEX_FAKE_SLEEP=5
   local st="${BATS_TEST_TMPDIR}/slow.longrun.json"
@@ -321,7 +373,7 @@ EOF
   export CODEX_FAKE_VERSION_FAIL=1
   run --separate-stderr cog codex-runner gate codex "${BATS_TEST_TMPDIR}/gate-fail.json"
   assert_failure
-  [[ $stderr == *"no healthy codex-session accounts"* ]]
+  [[ $stderr == *"codex-session is not healthy"* ]]
 }
 
 @test "cog codex-runner --help dispatches" {

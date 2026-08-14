@@ -51,6 +51,8 @@ source "${LIB_DIR}/functions/fn_docs_lint.sh"
 source "${LIB_DIR}/functions/fn_rundir.sh"
 # shellcheck source=../lib/functions/fn_longrun.sh
 source "${LIB_DIR}/functions/fn_longrun.sh"
+# shellcheck source=../lib/functions/fn_runner.sh
+source "${LIB_DIR}/functions/fn_runner.sh"
 # shellcheck source=../lib/functions/fn_executor.sh
 source "${LIB_DIR}/functions/fn_executor.sh"
 # shellcheck source=../lib/functions/fn_assess_input.sh
@@ -81,6 +83,8 @@ source "${LIB_DIR}/functions/fn_tracking.sh"
 source "${LIB_DIR}/functions/fn_power_grade.sh"
 # shellcheck source=../lib/functions/fn_codex.sh
 source "${LIB_DIR}/functions/fn_codex.sh"
+# shellcheck source=../lib/functions/fn_claude.sh
+source "${LIB_DIR}/functions/fn_claude.sh"
 # shellcheck source=../lib/functions/fn_skill_refs.sh
 source "${LIB_DIR}/functions/fn_skill_refs.sh"
 # shellcheck source=../lib/functions/fn_template.sh

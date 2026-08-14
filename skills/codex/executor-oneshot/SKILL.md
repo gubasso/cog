@@ -10,9 +10,9 @@ description: >
 
 # Executor Single
 
-Execute one prompt or one implementation plan through the gated 2-stage executor flow: an input-evaluation gate guarantees a good plan, then Codex implements it. The gate and the `good-input` plan review run **in this session**, which already holds the request; the `needs-plan` plan job and the implementation job are fresh contexts and get validated briefs. This skill owns sequencing and judgment. Run directory setup, input classification, verdict persistence, canonical artifact paths, Codex invocation, and executor summaries stay behind `cog`.
+Execute one prompt or one implementation plan through the gated 2-stage executor flow: an input-evaluation gate guarantees a good plan, then Codex implements it. Only the gate runs **in this session**, which already holds the request; every stage that follows is a fresh context and gets a validated brief — the `needs-plan` plan job and the implementation job on Codex, and the `good-input` plan review on Claude. This skill owns sequencing and judgment. Run directory setup, input classification, verdict persistence, canonical artifact paths, agent invocation, and executor summaries stay behind `cog`.
 
-**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`. That covers the `needs-plan` plan job and Stage 2; the in-session review reads the request directly.
+**Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its input brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build it with `cog context-brief build --request` and confirm it with `cog context-brief validate`. That covers all three dispatched stages; only the in-session gate reads the request directly.
 
 ## Inputs
 
@@ -28,8 +28,7 @@ Use the run directory and canonical artifact paths it returns (`prepared-plan.md
 
 ## Execution Discipline
 
-Every Codex run is a cog-owned durable job: `cog codex-runner run-exec` launches it with `--state` and returns immediately, then poll-and-classify with one verb, `cog codex-runner finalize --max-wall
-<secs>`. The exit code is the signal (0 ok, 1 failed, 75 still running); re-run finalize while it exits 75. Duration is never judged. Keep orchestration work foreground; never background it. Native effort is passed with `--effort`.
+Every agent run is a cog-owned durable job: `run-exec` launches it with `--state` and returns immediately, then poll-and-classify with one verb, `finalize --max-wall <secs>`. This holds for both directions — `cog codex-runner` for the Codex jobs this skill launches, `cog claude-runner` for the cross-engine review — because the exit protocol belongs to the durable-job layer, not to either provider. The exit code is the signal (0 ok, 1 failed, 75 still running); re-run finalize while it exits 75. Duration is never judged. Keep orchestration work foreground; never background it. Native effort is passed with `--effort`.
 
 ## Input Evaluation (gate)
 
@@ -70,9 +69,24 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`. Ensure `<run-dir>/reque
   cog codex-runner finalize --state <prepare.longrun.json> --max-wall 300
   ```
 
-- **`good-input` → review (`/review-plan-oneshot`, in session).** Review the existing plan here, by reading `$review-plan-oneshot` and following its Orchestrator Invocation Contract with three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/request.md`, and output-path `<run-dir>/prepared-plan.md`. No brief is built, because no context is crossed.
+- **`good-input` → review (`/review-plan-oneshot`, Claude).** The plan is already detailed, so the value here is an independent reader: the opposite engine reviews it. This crosses contexts _and_ engines, so build a validated context brief first, exactly as the `needs-plan` route does:
 
-  This route is an **interim same-engine degrade, not the intended design.** Its purpose is review by the opposite engine for independence, which needs a Codex-to-Claude runner lane; `cog codex-runner` runs the other direction only, so no such lane exists yet. Until one does, the review runs on this engine and the independence the route exists for is unavailable. Say so when reporting the result, because the machine-facing record does not: `cog executor prepare-step` and the `executor-summary.json` it feeds still resolve `prepare_engine: claude` for this route, which is the engine the flow is designed for rather than the one that ran.
+  ```bash
+  cog context-brief template --out <run-dir>/brief-body.md
+  # fill <run-dir>/brief-body.md per the contract, then:
+  cog context-brief build --request <run-dir>/request.md --body <run-dir>/brief-body.md --out <run-dir>/brief.md
+  ```
+
+  Fill it so a reviewer with none of this session's context can judge the plan: **Artifacts** carries the plan under review verbatim (from the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input); **Objective** is review, not rewrite; **Not Evaluated** keeps this session's own verdict out, since the whole point is independence.
+
+  Then write `<run-dir>/prepare-prompt.md` with `$review-plan-oneshot` and three absolute paths — plan-path, request-path `<run-dir>/brief.md`, and output-path `<run-dir>/prepared-plan.md`. Launch write-capable so the reviewer can save its annotated plan, then poll-and-classify:
+
+  ```bash
+  cog claude-runner run-exec --access write --effort high --prompt <run-dir>/prepare-prompt.md --output <run-dir>/prepare-claude-output.md --events <run-dir>/prepare-events.jsonl --stderr <run-dir>/prepare-stderr.log --state <run-dir>/prepare.longrun.json
+  cog claude-runner finalize --state <run-dir>/prepare.longrun.json --max-wall 300
+  ```
+
+  `run-exec` checks its preconditions before creating the durable state file, so a missing binary or an unbound account fails here with nothing to clean up. If that gate fails, stop the chain and report it — do not silently review on this engine, which would hand back a same-engine verdict under a cross-engine label.
 
 After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
 
@@ -123,12 +137,13 @@ Proceed only on exit `0`. On any other exit, stop and report the verdict `status
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare-engine <codex|claude> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 Status rules:
 
 - The prepare stage always runs; report `--prepare done` on success.
+- `--prepare-engine` is the engine that actually prepared, which only this session knows: `codex` on the `needs-plan` route, `claude` on `good-input`. The flow table cannot infer it, because the Claude-hosted twin passes the same `--engine codex`.
 - If Stage 1 fails, do not run Stage 2; emit the summary with failure statuses.
 - If Stage 2 fails, still emit the summary with `--execution failed`.
 
@@ -146,8 +161,8 @@ On failure, stop the chain, preserve the run directory artifacts, and still emit
 
 ## Guardrails
 
-- Codex runs are cog-owned durable jobs: `run-exec` launches, then poll-and-classify with `cog codex-runner finalize --max-wall <secs>`.
+- Agent runs are cog-owned durable jobs: `run-exec` launches, then poll-and-classify with `cog <engine>-runner finalize --max-wall <secs>`. The exit protocol is the same for both runners.
 - Native effort only, via `--effort`.
 - Do not run git commands unless explicitly authorized.
-- Deterministic mechanics stay behind `cog executor`, `cog assess-input`, `cog codex-runner`, `/plan-oneshot`, and `/review-plan-oneshot`.
+- Deterministic mechanics stay behind `cog executor`, `cog assess-input`, `cog codex-runner`, `cog claude-runner`, `/plan-oneshot`, and `/review-plan-oneshot`.
 - This skill executes one prompt or plan.

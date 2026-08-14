@@ -20,93 +20,32 @@ __cog_codex_runner_usage() {
   cog::fn::ui_data "Usage: cog codex-runner explain-status <status>"
 }
 
+# The mechanics below carry nothing codex-shaped, so they live in
+# lib/functions/fn_runner.sh where claude-runner shares them. These names stay
+# as the codex-runner spelling of each; the runner name is what the shared guard
+# puts in its operator-facing message.
 __cog_codex_runner_bool_for_status() {
-  [[ $1 == ok ]] && printf '%s\n' true || printf '%s\n' false
+  cog::fn::runner::bool_for_status "$1"
 }
 
-# Derive the durable-job label from the --state filename (strip .longrun.json).
 __cog_codex_runner_label_for_state() {
-  local state_file="$1" base
-  base="$(basename -- "$state_file")"
-  base="${base%.longrun.json}"
-  base="${base%.json}"
-  printf '%s\n' "$base"
+  cog::fn::runner::label_for_state "$1"
 }
 
-# Fail closed on a relative artifact path. A durable codex job launches from the
-# project repo (see __cog_codex_runner_resolve_cwd), so a relative --state /
-# --output / --events / --stderr resolves against the project tree and scatters
-# artifacts loose in it. Require an absolute path from a run dir instead.
 __cog_codex_runner_require_abs() {
-  local option="$1" value="$2"
-  # shellcheck disable=SC2016 # literal $RUN_DIR in the operator-facing hint, not an expansion
-  [[ $value == /* ]] || cog::fn::error_raise "InvalidInput" \
-    "codex-runner artifact path must be absolute" "option: ${option}, path: ${value}" \
-    "relative paths resolve against the job cwd (the project repo) and scatter artifacts into it" \
-    'allocate RUN_DIR="$(cog rundir <prefix>)" and pass $RUN_DIR/<file>'
+  cog::fn::runner::require_abs codex-runner "$1" "$2"
 }
 
-# Extract every artifact-write target a prompt references via a --output flag.
-# A prompt may embed an instruction like `$plan-oneshot --output <RUN_DIR>/prepared-plan.md`
-# (the inner agent then runs `cog plan-doc save --output <RUN_DIR>/prepared-plan.md`); the
-# collision key is always the --output value, so one regex covers both spellings.
-# Backslash-continued lines are folded first so a flag split across lines still resolves.
-# Angle-bracket <placeholder> tokens are dropped; nothing is eval'd, so a literal $VAR
-# stays literal — no expansion, no injection, no false positive from a `$VAR` mention.
 __cog_codex_runner_extract_prompt_targets() {
-  local prompt_file="$1" folded line rest path re
-  re='--output[[:space:]]+"?([^[:space:]"'"'"']+)'
-  folded="$(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba}' "$prompt_file")"
-  while IFS= read -r line; do
-    rest="$line"
-    while [[ $rest =~ $re ]]; do
-      path="${BASH_REMATCH[1]}"
-      rest="${rest#*"${BASH_REMATCH[0]}"}"
-      case "$path" in
-        '<'*) continue ;;
-      esac
-      printf '%s\n' "$path"
-    done
-  done <<<"$folded"
+  cog::fn::runner::extract_prompt_targets "$1"
 }
 
-# Fail closed before launch when the runner's own --output (Codex's closing
-# --output-last-message) equals an artifact the prompt tells the inner agent to
-# write. Codex overwrites --output-last-message with its final message; if that
-# path is also where an embedded plan/artifact write lands, the closing message
-# clobbers the durable artifact. Compare on exact absolute-path equality
-# (realpath -m normalizes .././dup-slashes without requiring existence) so an
-# unrelated --output mentioned in the brief never trips it. An unreadable prompt
-# defers to the downstream prompt-readable check in fn_codex.sh.
 __cog_codex_runner_guard_output_collision() {
-  local output="$1" prompt="$2" target output_abs target_abs
-  [[ -r $prompt ]] || return 0
-  output_abs="$(realpath -m -- "$output")"
-  while IFS= read -r target; do
-    [[ -n $target ]] || continue
-    target_abs="$(realpath -m -- "$target")"
-    [[ $output_abs == "$target_abs" ]] || continue
-    # shellcheck disable=SC2016 # literal $RUN_DIR in the operator-facing hint, not an expansion
-    cog::fn::error_raise "InvalidInput" \
-      "codex-runner --output collides with a prompt artifact-write target" \
-      "path: ${output}" \
-      "the runner --output captures Codex's closing message and would clobber the artifact the prompt writes there" \
-      'route the last-message capture to a distinct $RUN_DIR/<label>-codex-output.md'
-  done < <(__cog_codex_runner_extract_prompt_targets "$prompt")
+  cog::fn::runner::guard_output_collision codex-runner "$1" "$2"
 }
 
-# Resolve the durable-job working directory. Codex `exec` refuses with "not
-# inside a trusted directory" when its cwd is neither a git worktree nor a
-# configured trusted project, so the job must launch from the project repo
-# rather than the scratch RUN_DIR the observer may be sitting in. An explicit
-# --cwd wins; otherwise resolve the git repo root of $PWD; otherwise keep $PWD.
 __cog_codex_runner_resolve_cwd() {
-  local cwd="${1:-}"
-  if [[ -z $cwd ]]; then
-    cwd="$(cog::fn::git_root_for "$PWD" 2>/dev/null || true)"
-    [[ -n $cwd ]] || cwd="$PWD"
-  fi
-  printf '%s\n' "$cwd"
+  cog::fn::runner::resolve_cwd "${1:-}"
 }
 
 # run-exec is now a non-blocking LAUNCHER. Codex runs as a cog-owned durable job
@@ -198,7 +137,13 @@ __cog_codex_runner_run_exec() {
   __cog_codex_runner_require_abs --events "$events"
   __cog_codex_runner_require_abs --stderr "$stderr"
 
+  cog::fn::runner::require_distinct_artifacts codex-runner \
+    --state "$state" --output "$output" --events "$events" --stderr "$stderr"
+
   __cog_codex_runner_guard_output_collision "$output" "$prompt"
+
+  cog::fn::runner::ensure_run_dir codex-runner "$run_dir"
+  __cog_codex_runner_preflight "${run_dir}/${label}.preflight.json"
 
   cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
   engine_meta="$(jq -cn \
@@ -298,7 +243,13 @@ __cog_codex_runner_run_resume() {
   __cog_codex_runner_require_abs --events "$events"
   __cog_codex_runner_require_abs --stderr "$stderr"
 
+  cog::fn::runner::require_distinct_artifacts codex-runner \
+    --state "$state" --output "$output" --events "$events" --stderr "$stderr"
+
   __cog_codex_runner_guard_output_collision "$output" "$prompt"
+
+  cog::fn::runner::ensure_run_dir codex-runner "$run_dir"
+  __cog_codex_runner_preflight "${run_dir}/${label}.preflight.json"
 
   cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv "$access"
   engine_meta="$(jq -cn \
@@ -316,11 +267,7 @@ __cog_codex_runner_run_resume() {
 }
 
 __cog_codex_runner_require_state() {
-  local state="$1"
-  [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
-    "missing --state" "option: --state" "" "run 'cog codex-runner --help'"
-  [[ -r $state ]] || cog::fn::error_raise "InputNotFound" \
-    "codex job state not found" "path: ${state}" "" "check the --state path"
+  cog::fn::runner::require_state codex-runner "$1"
 }
 
 __cog_codex_runner_status() {
@@ -522,28 +469,48 @@ __cog_codex_runner_classify_error() {
 }
 
 __cog_codex_runner_snapshot_pre() {
-  [[ $# -eq 2 ]] || cog::fn::error_raise "MissingArgument" \
-    "invalid snapshot-pre arguments" "usage: cog codex-runner snapshot-pre <run-dir> <out.snap>" "" ""
   local json
-  cog::fn::rundir_snapshot "$1" "$2"
-  json="$(jq -n --arg action snapshot-pre --argjson ok true --arg run_dir "$1" --arg snapshot "$2" \
-    '{action: $action, ok: $ok, run_dir: $run_dir, snapshot: $snapshot}')"
+  json="$(cog::fn::runner::snapshot_pre_json "$@")"
   cog::fn::json_emit "$__cog_codex_runner_self_check and .snapshot != null" "$json"
 }
 
 __cog_codex_runner_snapshot_post() {
-  [[ $# -eq 4 ]] || cog::fn::error_raise "MissingArgument" \
-    "invalid snapshot-post arguments" "usage: cog codex-runner snapshot-post <run-dir> <pre.snap> <post.snap> <diff>" "" ""
   local json
-  cog::fn::rundir_snapshot "$1" "$3"
-  cog::fn::rundir_snapshot_diff "$2" "$3" "$4"
-  json="$(jq -n --arg action snapshot-post --argjson ok true --arg run_dir "$1" --arg pre "$2" --arg post "$3" --arg diff "$4" \
-    '{action: $action, ok: $ok, run_dir: $run_dir, pre_snapshot: $pre, post_snapshot: $post, diff: $diff}')"
+  json="$(cog::fn::runner::snapshot_post_json "$@")"
   cog::fn::json_emit "$__cog_codex_runner_self_check and .diff != null" "$json"
 }
 
+# Check the launch preconditions and fail before anything durable exists, per
+# ADR-0031. codex-session supervises rather than execs, so its own failures are
+# distinguishable after the fact — but a precondition failure still costs a
+# state file and a durable job that mean nothing, and the two runners answer to
+# one rule. The preflight fragment stays behind as the operator-facing
+# diagnostic; the state file and the job do not exist.
+__cog_codex_runner_preflight() {
+  local out="$1" available health auth
+
+  if ! declare -F __cog_preflight_codex >/dev/null; then
+    # shellcheck source=/dev/null
+    source "${LIB_DIR}/commands/cmd_preflight.sh"
+  fi
+  __cog_preflight_codex "$out" >/dev/null
+
+  available="$(jq -r '.codex_session.available' "$out")"
+  [[ $available == true ]] || cog::fn::error_raise "InvalidInput" \
+    "codex-session is not available on PATH" "path: ${out}" "" "install codex-session or add it to PATH"
+  health="$(jq -r '.codex_session.health' "$out")"
+  [[ $health == ok ]] || cog::fn::error_raise "InvalidInput" \
+    "codex-session is not healthy" "health: ${health}" \
+    "the wrapper is present but did not report a version" "check the codex-session installation"
+  auth="$(jq -r '.codex_session.auth' "$out")"
+  [[ $auth == ok ]] || cog::fn::error_raise "InvalidInput" \
+    "no bound codex-session account" "auth: ${auth}" \
+    "reporting a precondition is diagnosis; satisfying one is account management" \
+    "bind an account with 'codex-session account add' and retry"
+}
+
 __cog_codex_runner_gate() {
-  local check=codex out="" available health
+  local check=codex out="" available health auth
   if [[ $# -eq 2 ]]; then
     check="$1"
     out="$2"
@@ -571,64 +538,23 @@ __cog_codex_runner_gate() {
     "codex-session is not available on PATH" "path: ${out}" "" "install codex-session or add it to PATH"
   health="$(jq -r '.codex_session.health' "$out")"
   [[ $health == ok ]] || cog::fn::error_raise "InvalidInput" \
-    "no healthy codex-session accounts" "health: ${health}" "" "check codex-session account status"
+    "codex-session is not healthy" "health: ${health}" \
+    "the wrapper is present but did not report a version" "check the codex-session installation"
+  # Only the codex fragment carries auth; the sandbox fragment reports sandbox
+  # capability alone, so the credential check applies where it was measured.
+  auth="$(jq -r '.codex_session.auth // ""' "$out")"
+  [[ -z $auth || $auth == ok ]] || cog::fn::error_raise "InvalidInput" \
+    "no bound codex-session account" "auth: ${auth}" \
+    "reporting a precondition is diagnosis; satisfying one is account management" \
+    "bind an account with 'codex-session account add' and retry"
 }
 
 __cog_codex_runner_json_array() {
-  if (($# == 0)); then
-    jq -cn '[]'
-  else
-    printf '%s\n' "$@" | jq -R . | jq -s .
-  fi
+  cog::fn::runner::json_array "$@"
 }
 
 __cog_codex_runner_verify_proof_json() {
-  local proof="" require_json="" ok=true reason="" last=""
-  local -a artifacts=() reasons=()
-  while (($# > 0)); do
-    case "$1" in
-      --proof)
-        proof="${2:-}"
-        shift 2
-        ;;
-      --artifact)
-        artifacts+=("${2:-}")
-        shift 2
-        ;;
-      --require-json)
-        require_json="${2:-}"
-        shift 2
-        ;;
-      *) cog::fn::error_raise "InvalidInput" "invalid verify-proof argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
-    esac
-  done
-  [[ -n $proof && ${#artifacts[@]} -ge 1 ]] || cog::fn::error_raise "MissingArgument" \
-    "missing verify-proof argument" "usage: cog codex-runner verify-proof --proof <diff> --artifact <file>" "" ""
-  local artifact
-  for artifact in "${artifacts[@]}"; do
-    [[ -n $artifact ]] || cog::fn::error_raise "MissingArgument" "empty artifact path" "option: --artifact" "" ""
-    [[ -s $artifact ]] || reasons+=("missing or empty artifact: $artifact")
-  done
-  [[ -s $proof ]] || reasons+=("missing or empty proof diff: $proof")
-  if [[ -n $require_json ]]; then
-    last="${artifacts[${#artifacts[@]} - 1]}"
-    if [[ -s $last ]]; then
-      jq -e "$require_json" "$last" >/dev/null 2>&1 || reasons+=("artifact failed json check ($require_json): $last")
-    fi
-  fi
-  if ((${#reasons[@]} > 0)); then
-    ok=false
-    reason="$(printf '%s; ' "${reasons[@]}")"
-    reason="${reason%; }"
-  fi
-  jq -n \
-    --arg action verify-proof \
-    --argjson ok "$ok" \
-    --arg reason "$reason" \
-    --argjson artifacts "$(__cog_codex_runner_json_array "${artifacts[@]}")" \
-    --arg proof "$proof" \
-    '{action: $action, ok: $ok, reason: (if $reason == "" then null else $reason end),
-      artifacts: $artifacts, proof: $proof}'
+  cog::fn::runner::verify_proof_json codex-runner "$@"
 }
 
 __cog_codex_runner_verify_proof() {

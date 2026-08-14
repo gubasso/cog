@@ -75,6 +75,9 @@ The command list and short descriptions are sourced from command modules under
 *classify-project*
 	Classify repository shape.
 
+*claude-runner*
+	Run claude-session orchestration helpers.
+
 *claudemd-audit*
 	Audit CLAUDE.md deterministic signals.
 

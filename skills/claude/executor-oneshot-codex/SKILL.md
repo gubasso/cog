@@ -122,7 +122,7 @@ Proceed only on exit `0`. On any other exit, stop and report the verdict `status
 ## Summary
 
 ```bash
-cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
+cog executor summary --run-dir <RUN_DIR> --executor executor-oneshot --engine codex --route <needs-plan|good-input> --prepare-engine <codex|claude> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 Stop the chain on any failed stage, preserve the run directory artifacts, and still emit the summary when enough stage status is known.

@@ -132,7 +132,7 @@ Proceed only on exit `0`. On any other exit, stop and report the verdict `status
 Emit an executor summary after Stage 2 or after a terminal stage failure:
 
 ```bash
-cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine claude --route <needs-plan|good-input> --prepare <done|failed> --execution <done|failed> --json
+cog executor summary --run-dir <run-dir> --executor executor-oneshot --engine claude --route <needs-plan|good-input> --prepare-engine <claude|codex> --prepare <done|failed> --execution <done|failed> --json
 ```
 
 The prepare stage always runs; report `--prepare done` on success. If Stage 1 fails, skip Stage 2 and emit the summary with failure statuses. If Stage 2 fails, still emit the summary with `--execution failed`.

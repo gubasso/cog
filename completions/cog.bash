@@ -32,6 +32,7 @@ _cog() {
     ci-apply
     ci-detect
     classify-project
+    claude-runner
     claudemd-audit
     codex-runner
     cog-skill-creator-scaffold
