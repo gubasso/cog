@@ -246,13 +246,15 @@ cog_install_step "Prepare destination"
 # (COG_INSTALL_MIRROR=1) sync_tree mirrors them destructively instead.
 install -d "$app_root"
 rm -rf -- "${app_root:?}/bin" "${app_root:?}/lib" "${app_root:?}/VERSION"
+# Both trees are cleared whole rather than entry by entry, so an upgrade drops a
+# subtree an older cog shipped and this one does not; enumerating only the live
+# subtrees leaves every retired one behind forever. The research shelf is the one
+# exception, because it is seeded once and then accumulates local records, so it
+# is preserved here and merged rather than replaced by the copy step below.
 rm -rf -- "${data_dir:?}/skill-refs"
-rm -rf -- "${data_dir:?}/data/power-grade" "${data_dir:?}/data/model-effort" "${data_dir:?}/data/skill-class" "${data_dir:?}/data/plugin-protocol" "${data_dir:?}/data/maintenance-tracking.yaml"
-# Retired destinations: cog no longer ships the workflow layer or its engine
-# registry. The manifest-driven stale-prune deletes the recorded files, but not
-# the directories they lived in, so purge both trees here to leave nothing behind
-# on an upgrade from a version that still shipped them.
-rm -rf -- "${data_dir:?}/data/workflow-engines" "${data_dir:?}/workflow"
+if [[ -d ${data_dir:?}/data ]]; then
+  find "${data_dir:?}/data" -mindepth 1 -maxdepth 1 ! -name research-shelf -exec rm -rf -- {} +
+fi
 cog_install_ok "Prepare destination"
 
 cog_install_set_step "copy application payload" "Check write permissions under $app_root and $data_dir."
@@ -320,6 +322,11 @@ if [[ -e $manifest ]]; then
     prune_manifest_skill_dir "$stale" "$home/.agents/skills"
   done < <(comm -23 <(sort -u "$manifest") "$manifest_tmp.sorted")
 fi
+# The prune above deletes files, never the directories that held them. Sweeping
+# $data_dir for empty directories afterwards is what stops an upgrade from an
+# older cog leaving an orphaned tree behind, without this step having to know
+# which subtrees that older cog shipped.
+prune_empty_tree "$data_dir"
 cog_install_ok "Prune stale manifest entries"
 
 cog_install_set_step "finalize manifest" "Check write permissions under $state_dir and available disk space."

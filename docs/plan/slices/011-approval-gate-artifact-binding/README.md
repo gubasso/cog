@@ -24,7 +24,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Out of scope
 
 - The gate's forge resistance, its hash binding, and its TTL, all unchanged.
-- Loop rounds in `review-loop`, `precommit-fix`, `gc`, and the workflow engine, which are a different concept.
+- Loop rounds in `review-loop`, `precommit-fix`, and `gc`, which are a different concept.
 
 ## Governed by
 

@@ -26,7 +26,7 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 ## Out of scope
 
 - Credential management. Reporting a precondition is diagnosis; satisfying one is account management, rejected by [ADR-0009](../../../decisions/ADR-0009-orchestration-and-durable-jobs.md) and by [ADR-0031](../../../decisions/ADR-0031-preflight-provider-preconditions-before-the-durable-job.md).
-- Any vendor-neutral runner contract or capability table. That surface belonged to the withdrawn workflow engine and stays in the draft workspace. Sharing mechanics that are already provider-neutral is not that surface: a helper both runners call is not a contract either runner answers to.
+- Any vendor-neutral runner contract or capability table. Sharing mechanics that are already provider-neutral is not that surface: a helper both runners call is not a contract either runner answers to.
 - A third provider, and any registry of providers.
 
 ## Governed by

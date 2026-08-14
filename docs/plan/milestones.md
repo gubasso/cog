@@ -6,8 +6,6 @@ Two sections, live work first. Status is one of `shaped`, `active`, `done`, `cut
 
 What bounds this work is in the [charter](./charter.md); what could still change it is in [open questions](./open-questions.md).
 
-Ids 002 through 009 are retired and must never be reused. They shaped the workflow engine, which returned to its defining phase on 2026-08-14: the slices, the ADRs, the contracts, and the shipped verbs were all removed from the repository together. The design left cog rather than returning to it — it now lives in [ripwork](https://github.com/gubasso/ripwork), a separate coding-agent-agnostic project, so no slice returns here for it.
-
 ## in flight
 
 ## closed

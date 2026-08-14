@@ -18,7 +18,6 @@ Cog does not own a plan vault, execution queues, round sizing, spec production, 
 - An unattended autonomous scheduler.
 - Hidden dependencies on external local repositories.
 - Duplicated sources of truth between the plan zone and any generated artifact.
-- Workflow-engine implementation while the engine is still being defined outside the record.
 
 ## Appetite unit
 

@@ -172,29 +172,40 @@ setup() {
     .reason == "prefix-default"
   ' >/dev/null
 
-  # The other launchers resolve low too. Their reason is not asserted: it reads
-  # "registry" against a stale installed tiers.yaml that still lists them, since
-  # cog::fn::data_root prefers the XDG install over the repo copy.
-  local skill
-  for skill in plan-oneshot-codex executor-oneshot-codex; do
-    run cog power-grade skill-tier --skill "$skill" --json
+  # plan-oneshot-codex rides the same rule, and its reason is asserted too:
+  # cog::fn::data_root prefers the XDG install over the repo copy, so anything
+  # weaker here passes against a registry the install has not caught up to.
+  run cog power-grade skill-tier --skill plan-oneshot-codex --json
 
-    assert_success
-    printf '%s\n' "$output" | jq -e '.expected == "low" and .actual == "low"' >/dev/null
-  done
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .expected == "low" and
+    .actual == "low" and
+    .reason == "prefix-default"
+  ' >/dev/null
+
+  # executor-oneshot-codex is deliberately absent: it is registry-pinned to the
+  # session-default rung, so it demonstrates the registry beating both, not the
+  # suffix rule beating the base prefix.
 }
 
-# The base prefixes still govern every non-launcher sibling.
+# The base prefixes still govern a non-launcher sibling that no registry pins.
 @test "power-grade skill-tier keeps base prefix defaults for non-launcher siblings" {
+  run cog power-grade skill-tier --skill executor-doc-writeback --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '
+    .expected == "medium" and
+    .actual == "medium" and
+    .reason == "prefix-default"
+  ' >/dev/null
+
+  # review-plan-multi lands on high through the registry rather than the
+  # review-plan-* prefix, so it is asserted on the tier alone.
   run cog power-grade skill-tier --skill review-plan-multi --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.expected == "high" and .actual == "high"' >/dev/null
-
-  run cog power-grade skill-tier --skill executor-oneshot --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e '.expected == "medium" and .actual == "medium"' >/dev/null
 }
 
 @test "power-grade skill-tier reports an ungoverned skill as exempt" {

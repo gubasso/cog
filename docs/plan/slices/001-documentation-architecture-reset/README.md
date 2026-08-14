@@ -22,7 +22,6 @@ This is the ordered negotiable remainder, cut last-first from the bottom of the 
 
 ## Out of scope
 
-- Workflow-engine implementation or approval.
 - Removal, deprecation, or renaming of the tier concept.
 - Deletion of `.draft/` or its manual hand-off buffer.
 

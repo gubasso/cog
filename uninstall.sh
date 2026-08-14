@@ -98,11 +98,9 @@ cog_install_ok "Prune empty skill directories"
 
 cog_install_set_step "prune empty cog trees" "Check permissions under $data_dir, $app_root, $comp_dir, and $man_dir."
 cog_install_step "Prune empty cog trees"
-prune_empty_tree "$data_dir/skill-refs"
-prune_empty_tree "$data_dir/data"
-# Retired destination, still pruned so uninstalling an installation made before
-# the workflow layer was removed leaves no empty tree behind.
-prune_empty_tree "$data_dir/workflow"
+# Swept whole rather than subtree by subtree, so uninstalling an installation
+# made by an older cog leaves no empty tree behind whatever that cog shipped.
+prune_empty_tree "$data_dir"
 rmdir_empty "$data_dir"
 rmdir_empty "$app_root/lib/commands"
 rmdir_empty "$app_root/lib/functions"

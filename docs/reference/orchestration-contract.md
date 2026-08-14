@@ -11,7 +11,7 @@ This reference defines how `cog` skills and agents compose Claude, Codex, workfl
 | Workflow                             | Background parallel fan-out                              | Not synchronous recursion | Use for independent parallel work, not call-stack style orchestration.                              |
 | Headless `claude -p`                 | Separate process without the live interactive event loop | Avoid                     | Abandoned for recursive orchestration because backgrounded work can be reaped after the final turn. |
 
-The `Workflow` row above means background parallel fan-out. It is a harness primitive, not a cog surface — cog ships no workflow engine.
+The `Workflow` row above means background parallel fan-out. It is a harness primitive, not a cog surface.
 
 ## Environment Requirements
 

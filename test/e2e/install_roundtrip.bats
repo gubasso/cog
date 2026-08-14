@@ -142,6 +142,32 @@ teardown() {
   assert_file_exists "$HOME/.claude/agents/user-agent.md"
 }
 
+# $data_dir is admitted whole by valid_manifest_path and swept whole on uninstall,
+# so the blast radius of that widening is pinned here: cog owns $data_dir/data and
+# $data_dir/skill-refs and clears both to drop subtrees an older cog shipped, while
+# anything else a user left under $data_dir is not cog's to remove.
+@test "install and uninstall leave an unlisted file under the data dir alone" {
+  local stray="$XDG_DATA_HOME/cog/user-note.txt"
+  local owned="$XDG_DATA_HOME/cog/data/user-dropped.txt"
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  printf '%s\n' "not cog's" >"$stray"
+  printf '%s\n' "inside a cog-owned tree" >"$owned"
+
+  # Upgrade: the stray file survives, the one inside the owned tree does not.
+  run "$REPO_ROOT/install.sh"
+  assert_success
+  assert_file_exists "$stray"
+  assert_file_not_exists "$owned"
+
+  # Uninstall: the manifest names neither, so the stray file and its parent stay.
+  run "$REPO_ROOT/uninstall.sh"
+  assert_success
+  assert_file_exists "$stray"
+}
+
 @test "no-manifest uninstall is successful and informative" {
   local manifest="$XDG_STATE_HOME/cog/install-manifest"
 
@@ -203,56 +229,57 @@ teardown() {
 }
 
 # The two tests below cover upgrading and uninstalling over an installation made
-# before the workflow layer was removed. Such a manifest names files under
-# $data_dir/workflow and $data_dir/data/workflow-engines, which this cog no
-# longer ships. Both destinations must stay admissible in valid_manifest_path:
-# dropping them makes the installer's stale-prune skip those entries and makes
-# uninstall count them as unsafe and refuse the whole manifest.
+# by an older cog that shipped a data subtree this one does not. Such a manifest
+# names files under $data_dir paths no live copy_tree writes. $data_dir must stay
+# admissible whole in valid_manifest_path: narrowing it to the subtrees cog ships
+# today makes the installer's stale-prune skip those entries and makes uninstall
+# count them as unsafe and refuse the whole manifest.
 
-# Recreates what an installation from before the workflow removal left behind:
-# the retired trees on disk and their manifest entries.
-seed_legacy_workflow_layer() {
+# Recreates what an older installation left behind: a data subtree cog no longer
+# ships, both on disk and in the manifest. The names are deliberately arbitrary —
+# what is under test is any retired subtree, not one particular past layout.
+seed_retired_data_subtree() {
   local manifest="$XDG_STATE_HOME/cog/install-manifest"
 
-  mkdir -p "$XDG_DATA_HOME/cog/workflow/workflows" "$XDG_DATA_HOME/cog/data/workflow-engines"
-  printf '%s\n' "legacy stub" >"$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml"
-  printf '%s\n' "legacy stub" >"$XDG_DATA_HOME/cog/workflow/meta.yaml"
-  printf '%s\n' "legacy registry" >"$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml"
+  mkdir -p "$XDG_DATA_HOME/cog/retired-top-level/nested" "$XDG_DATA_HOME/cog/data/retired-table"
+  printf '%s\n' "retired payload" >"$XDG_DATA_HOME/cog/retired-top-level/nested/entry.yaml"
+  printf '%s\n' "retired payload" >"$XDG_DATA_HOME/cog/retired-top-level/meta.yaml"
+  printf '%s\n' "retired payload" >"$XDG_DATA_HOME/cog/data/retired-table/rows.yaml"
   printf '%s\n' \
-    "$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml" \
-    "$XDG_DATA_HOME/cog/workflow/meta.yaml" \
-    "$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml" >>"$manifest"
+    "$XDG_DATA_HOME/cog/retired-top-level/nested/entry.yaml" \
+    "$XDG_DATA_HOME/cog/retired-top-level/meta.yaml" \
+    "$XDG_DATA_HOME/cog/data/retired-table/rows.yaml" >>"$manifest"
 }
 
-@test "upgrade over a legacy install removes the retired workflow layer" {
+@test "upgrade over an older install removes a retired data subtree" {
   local manifest="$XDG_STATE_HOME/cog/install-manifest"
 
   run "$REPO_ROOT/install.sh"
   assert_success
-  seed_legacy_workflow_layer
+  seed_retired_data_subtree
 
   run "$REPO_ROOT/install.sh"
   assert_success
 
   # Files and their directories both go, so no empty tree is orphaned.
-  assert_dir_not_exists "$XDG_DATA_HOME/cog/workflow"
-  assert_dir_not_exists "$XDG_DATA_HOME/cog/data/workflow-engines"
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/retired-top-level"
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/data/retired-table"
 
   # The replacement manifest must not carry the retired entries forward.
-  run grep -Fq "$XDG_DATA_HOME/cog/workflow/" "$manifest"
+  run grep -Fq "$XDG_DATA_HOME/cog/retired-top-level/" "$manifest"
   assert_failure
-  run grep -Fq "$XDG_DATA_HOME/cog/data/workflow-engines/" "$manifest"
+  run grep -Fq "$XDG_DATA_HOME/cog/data/retired-table/" "$manifest"
   assert_failure
 }
 
-@test "uninstall over a legacy install removes the whole installation" {
+@test "uninstall over an older install removes the whole installation" {
   local manifest="$XDG_STATE_HOME/cog/install-manifest"
   local manifest_copy="$BATS_TEST_TMPDIR/install-manifest.legacy"
   local path
 
   run "$REPO_ROOT/install.sh"
   assert_success
-  seed_legacy_workflow_layer
+  seed_retired_data_subtree
   cp "$manifest" "$manifest_copy"
 
   # Must not fail manifest authority: a retired-but-admissible path is not an
@@ -264,6 +291,6 @@ seed_legacy_workflow_layer() {
   while IFS= read -r path; do
     [ ! -e "$path" ]
   done <"$manifest_copy"
-  assert_dir_not_exists "$XDG_DATA_HOME/cog/workflow"
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/retired-top-level"
   [ ! -L "$PREFIX/bin/cog" ]
 }
