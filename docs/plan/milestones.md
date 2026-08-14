@@ -10,7 +10,7 @@ Ids 002 through 009 are retired and must never be reused. They shaped the workfl
 
 ## in flight
 
-Nothing. The next slice is unshaped.
+- 012 [cross-engine-claude-runner](./slices/012-cross-engine-claude-runner/README.md) — shaped — 2 sessions — adds `claude-runner` so a Codex host can dispatch Claude, and exits Q-007
 
 ## closed
 

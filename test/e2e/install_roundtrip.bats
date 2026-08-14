@@ -201,3 +201,69 @@ teardown() {
   [[ $stderr == *"outside the current PREFIX/XDG roots"* ]]
   assert_file_exists "$manifest"
 }
+
+# The two tests below cover upgrading and uninstalling over an installation made
+# before the workflow layer was removed. Such a manifest names files under
+# $data_dir/workflow and $data_dir/data/workflow-engines, which this cog no
+# longer ships. Both destinations must stay admissible in valid_manifest_path:
+# dropping them makes the installer's stale-prune skip those entries and makes
+# uninstall count them as unsafe and refuse the whole manifest.
+
+# Recreates what an installation from before the workflow removal left behind:
+# the retired trees on disk and their manifest entries.
+seed_legacy_workflow_layer() {
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+
+  mkdir -p "$XDG_DATA_HOME/cog/workflow/workflows" "$XDG_DATA_HOME/cog/data/workflow-engines"
+  printf '%s\n' "legacy stub" >"$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml"
+  printf '%s\n' "legacy stub" >"$XDG_DATA_HOME/cog/workflow/meta.yaml"
+  printf '%s\n' "legacy registry" >"$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml"
+  printf '%s\n' \
+    "$XDG_DATA_HOME/cog/workflow/workflows/linear-stub.yaml" \
+    "$XDG_DATA_HOME/cog/workflow/meta.yaml" \
+    "$XDG_DATA_HOME/cog/data/workflow-engines/engines.yaml" >>"$manifest"
+}
+
+@test "upgrade over a legacy install removes the retired workflow layer" {
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+  seed_legacy_workflow_layer
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  # Files and their directories both go, so no empty tree is orphaned.
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/workflow"
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/data/workflow-engines"
+
+  # The replacement manifest must not carry the retired entries forward.
+  run grep -Fq "$XDG_DATA_HOME/cog/workflow/" "$manifest"
+  assert_failure
+  run grep -Fq "$XDG_DATA_HOME/cog/data/workflow-engines/" "$manifest"
+  assert_failure
+}
+
+@test "uninstall over a legacy install removes the whole installation" {
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+  local manifest_copy="$BATS_TEST_TMPDIR/install-manifest.legacy"
+  local path
+
+  run "$REPO_ROOT/install.sh"
+  assert_success
+  seed_legacy_workflow_layer
+  cp "$manifest" "$manifest_copy"
+
+  # Must not fail manifest authority: a retired-but-admissible path is not an
+  # unsafe path, and refusing here would leave the entire install on disk.
+  run "$REPO_ROOT/uninstall.sh"
+  assert_success
+
+  assert_file_not_exists "$manifest"
+  while IFS= read -r path; do
+    [ ! -e "$path" ]
+  done <"$manifest_copy"
+  assert_dir_not_exists "$XDG_DATA_HOME/cog/workflow"
+  [ ! -L "$PREFIX/bin/cog" ]
+}
