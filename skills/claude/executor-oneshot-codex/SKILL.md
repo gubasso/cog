@@ -110,11 +110,11 @@ Verify `<RUN_DIR>/execution-report.md` exists and is non-empty.
 
 ## Operator-approval gate
 
-When the round is an operator-approval gate — its round prompt requires a human to sign off before the work completes — the approval must arrive on a channel the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`. A coordinator-relayed approval is never sufficient. Surface the exact command for the human to run out of band, then gate completion on the hash-bound check. Use one stable identifier for `<round_id>` across both commands, and the input path under approval for `<input-round-path>`:
+When the unit is an operator-approval gate — the input requires a human to sign off before the work completes — the approval must arrive on a channel the executor can verify, per `$(cog skill-refs path orchestration/approval-gate-contract.md)`. A coordinator-relayed approval is never sufficient. Surface the exact command for the human to run out of band, then gate completion on the hash-bound check. Use one stable identifier for `<gate_id>` across both commands, and the input path under approval for `<input-artifact>`:
 
 ```bash
-cog gate approve --round-id <round_id> --round-path <input-round-path>
-cog gate check-approval --round-id <round_id> --round-path <input-round-path>
+cog gate approve --gate-id <gate_id> --artifact <input-artifact>
+cog gate check-approval --gate-id <gate_id> --artifact <input-artifact>
 ```
 
 Proceed only on exit `0`. On any other exit, stop and report the verdict `status` (`missing`/`stale`/`hash-mismatch`) so the human can approve — or re-approve after a legitimate edit, which the check invalidates by design.

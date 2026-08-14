@@ -2,30 +2,30 @@
 : 'desc: Manage operator-approval gate records (approve, check-approval, prune).'
 
 __cog_gate_usage() {
-  cog::fn::ui_data "Usage: cog gate approve --round-id <id> --round-path <file> [--approver <name>] [--notes <text>]"
-  cog::fn::ui_data "Usage: cog gate check-approval --round-id <id> --round-path <file> [--ttl <secs>]"
+  cog::fn::ui_data "Usage: cog gate approve --gate-id <id> --artifact <file> [--approver <name>] [--notes <text>]"
+  cog::fn::ui_data "Usage: cog gate check-approval --gate-id <id> --artifact <file> [--ttl <secs>]"
   cog::fn::ui_data "Usage: cog gate prune-approvals [--older-than <secs>]"
   cog::fn::ui_data "Usage: cog gate --help"
 }
 
 __cog_gate_approve_cmd() {
-  local round_id="" round_path="" approver="" notes=""
+  local gate_id="" artifact_path="" approver="" notes=""
   while (($# > 0)); do
     case "$1" in
       -h | --help)
         __cog_gate_usage
         return 0
         ;;
-      --round-id)
-        [[ $# -ge 2 && -n ${2:-} && -z $round_id ]] || cog::fn::error_raise "MissingArgument" \
-          "missing round id" "option: --round-id" "" "run 'cog gate --help'"
-        round_id="$2"
+      --gate-id)
+        [[ $# -ge 2 && -n ${2:-} && -z $gate_id ]] || cog::fn::error_raise "MissingArgument" \
+          "missing gate id" "option: --gate-id" "" "run 'cog gate --help'"
+        gate_id="$2"
         shift 2
         ;;
-      --round-path)
-        [[ $# -ge 2 && -n ${2:-} && -z $round_path ]] || cog::fn::error_raise "MissingArgument" \
-          "missing round path" "option: --round-path" "" "run 'cog gate --help'"
-        round_path="$2"
+      --artifact)
+        [[ $# -ge 2 && -n ${2:-} && -z $artifact_path ]] || cog::fn::error_raise "MissingArgument" \
+          "missing artifact path" "option: --artifact" "" "run 'cog gate --help'"
+        artifact_path="$2"
         shift 2
         ;;
       --approver)
@@ -47,28 +47,28 @@ __cog_gate_approve_cmd() {
     esac
   done
   local result
-  result="$(cog::fn::gate_approval::write "$round_id" "$round_path" "$approver" "$notes")"
+  result="$(cog::fn::gate_approval::write "$gate_id" "$artifact_path" "$approver" "$notes")"
   cog::fn::json_emit '(.ok == true) and (.approval_path | type == "string")' "$result"
 }
 
 __cog_gate_check_approval_cmd() {
-  local round_id="" round_path="" ttl=""
+  local gate_id="" artifact_path="" ttl=""
   while (($# > 0)); do
     case "$1" in
       -h | --help)
         __cog_gate_usage
         return 0
         ;;
-      --round-id)
-        [[ $# -ge 2 && -n ${2:-} && -z $round_id ]] || cog::fn::error_raise "MissingArgument" \
-          "missing round id" "option: --round-id" "" "run 'cog gate --help'"
-        round_id="$2"
+      --gate-id)
+        [[ $# -ge 2 && -n ${2:-} && -z $gate_id ]] || cog::fn::error_raise "MissingArgument" \
+          "missing gate id" "option: --gate-id" "" "run 'cog gate --help'"
+        gate_id="$2"
         shift 2
         ;;
-      --round-path)
-        [[ $# -ge 2 && -n ${2:-} && -z $round_path ]] || cog::fn::error_raise "MissingArgument" \
-          "missing round path" "option: --round-path" "" "run 'cog gate --help'"
-        round_path="$2"
+      --artifact)
+        [[ $# -ge 2 && -n ${2:-} && -z $artifact_path ]] || cog::fn::error_raise "MissingArgument" \
+          "missing artifact path" "option: --artifact" "" "run 'cog gate --help'"
+        artifact_path="$2"
         shift 2
         ;;
       --ttl)
@@ -84,7 +84,7 @@ __cog_gate_check_approval_cmd() {
     esac
   done
   local verdict status=0
-  verdict="$(cog::fn::gate_approval::check "$round_id" "$round_path" "$ttl")" || status=$?
+  verdict="$(cog::fn::gate_approval::check "$gate_id" "$artifact_path" "$ttl")" || status=$?
   cog::fn::json_emit '(.status | type == "string")' "$verdict"
   return "$status"
 }

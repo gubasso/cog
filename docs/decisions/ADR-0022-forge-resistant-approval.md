@@ -16,7 +16,7 @@ Chosen option: `Use hash-bound approval records with expiry` — it binds author
 
 ## Consequences
 
-- Changed or stale rounds fail closed.
+- Changed or stale work fails closed.
 - Operators must reapprove materially changed work.
 
 ## Status
@@ -24,3 +24,5 @@ Chosen option: `Use hash-bound approval records with expiry` — it binds author
 Implemented
 
 Enacted by [orchestration](../explanation/orchestration.md) and [`cmd_gate.sh`](../../lib/commands/cmd_gate.sh).
+
+Amended by [ADR-0033](./ADR-0033-bind-the-approval-gate-to-one-artifact.md) — the approval binds a named artifact rather than a queue round.

@@ -3,7 +3,7 @@
 # Forge-resistant operator approval gate (ADR-0022). A human writes a hash-bound
 # approval file with `cog gate approve`; a gate executor reads it directly with
 # `cog gate check-approval`. Because approval lives in a file the coordinator
-# cannot forge and the check re-hashes the round as it stands now, a
+# cannot forge and the check re-hashes the artifact as it stands now, a
 # coordinator-relayed approval claim can never satisfy the gate — and never needs
 # to. See skill-refs/orchestration/approval-gate-contract.md.
 
@@ -18,58 +18,58 @@ cog::fn::gate_approval::dir() {
   (cd -P "$dir" && pwd)
 }
 
-cog::fn::gate_approval::require_round_id() {
-  local round_id="${1:-}"
-  [[ -n $round_id ]] || cog::fn::error_raise "MissingArgument" \
-    "missing round id" "option: --round-id" "" "pass --round-id <id>"
-  [[ $round_id =~ ^[A-Za-z0-9_.-]+$ ]] || cog::fn::error_raise "InvalidInput" \
-    "invalid round id" "round_id: ${round_id}" "" "use ^[A-Za-z0-9_.-]+$"
+cog::fn::gate_approval::require_gate_id() {
+  local gate_id="${1:-}"
+  [[ -n $gate_id ]] || cog::fn::error_raise "MissingArgument" \
+    "missing gate id" "option: --gate-id" "" "pass --gate-id <id>"
+  [[ $gate_id =~ ^[A-Za-z0-9_.-]+$ ]] || cog::fn::error_raise "InvalidInput" \
+    "invalid gate id" "gate_id: ${gate_id}" "" "use ^[A-Za-z0-9_.-]+$"
 }
 
-cog::fn::gate_approval::require_round_file() {
-  local round_path="${1:-}"
-  [[ -n $round_path ]] || cog::fn::error_raise "MissingArgument" \
-    "missing round path" "option: --round-path" "" "pass --round-path <file>"
-  [[ -f $round_path ]] || cog::fn::error_raise "InputNotFound" \
-    "round file not found" "path: ${round_path}" "" "pass an existing round file"
+cog::fn::gate_approval::require_artifact_file() {
+  local artifact_path="${1:-}"
+  [[ -n $artifact_path ]] || cog::fn::error_raise "MissingArgument" \
+    "missing artifact path" "option: --artifact" "" "pass --artifact <file>"
+  [[ -f $artifact_path ]] || cog::fn::error_raise "InputNotFound" \
+    "artifact not found" "path: ${artifact_path}" "" "pass an existing artifact"
 }
 
 cog::fn::gate_approval::content_hash() {
-  local round_path="${1:-}"
-  cog::fn::gate_approval::require_round_file "$round_path"
-  sha256sum "$round_path" | cut -d' ' -f1
+  local artifact_path="${1:-}"
+  cog::fn::gate_approval::require_artifact_file "$artifact_path"
+  sha256sum "$artifact_path" | cut -d' ' -f1
 }
 
 cog::fn::gate_approval::file_path() {
-  local round_id="${1:-}"
-  cog::fn::gate_approval::require_round_id "$round_id"
-  printf '%s/%s.json\n' "$(cog::fn::gate_approval::dir)" "$round_id"
+  local gate_id="${1:-}"
+  cog::fn::gate_approval::require_gate_id "$gate_id"
+  printf '%s/%s.json\n' "$(cog::fn::gate_approval::dir)" "$gate_id"
 }
 
 # Write a hash-bound approval file and echo its verdict JSON.
 cog::fn::gate_approval::write() {
-  local round_id="${1:-}" round_path="${2:-}" approver="${3:-}" notes="${4:-}"
-  local content_hash abs_round approved_at approved_epoch file tmp record
+  local gate_id="${1:-}" artifact_path="${2:-}" approver="${3:-}" notes="${4:-}"
+  local content_hash abs_artifact approved_at approved_epoch file tmp record
   __have jq || cog::fn::error_raise "MissingRequirement" \
     "required command not found" "command: jq" "" "install jq and retry"
-  cog::fn::gate_approval::require_round_id "$round_id"
-  cog::fn::gate_approval::require_round_file "$round_path"
+  cog::fn::gate_approval::require_gate_id "$gate_id"
+  cog::fn::gate_approval::require_artifact_file "$artifact_path"
   [[ -n $approver ]] || approver="${USER:-operator}"
-  abs_round="$(realpath "$round_path")"
-  content_hash="$(cog::fn::gate_approval::content_hash "$round_path")"
+  abs_artifact="$(realpath "$artifact_path")"
+  content_hash="$(cog::fn::gate_approval::content_hash "$artifact_path")"
   approved_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   approved_epoch="$(date -u '+%s')"
-  file="$(cog::fn::gate_approval::file_path "$round_id")"
+  file="$(cog::fn::gate_approval::file_path "$gate_id")"
   record="$(jq -cn \
-    --arg schema "cog.gate.approval.v1" \
-    --arg round_id "$round_id" \
-    --arg round_path "$abs_round" \
+    --arg schema "cog.gate.approval.v2" \
+    --arg gate_id "$gate_id" \
+    --arg artifact_path "$abs_artifact" \
     --arg content_hash "$content_hash" \
     --arg approved_at "$approved_at" \
     --argjson approved_at_epoch "$approved_epoch" \
     --arg approver "$approver" \
     --arg notes "$notes" \
-    '{schema: $schema, round_id: $round_id, round_path: $round_path,
+    '{schema: $schema, gate_id: $gate_id, artifact_path: $artifact_path,
       content_hash: $content_hash, approved_at: $approved_at,
       approved_at_epoch: $approved_at_epoch, approver: $approver, notes: $notes}')"
   tmp="$(mktemp "${file}.tmp.XXXXXX")" || cog::fn::error_raise "TempDirCreateFailed" \
@@ -82,27 +82,27 @@ cog::fn::gate_approval::write() {
   mv -- "$tmp" "$file" || cog::fn::error_raise "JsonWriteFailed" \
     "could not place approval file" "path: ${file}" "" "check permissions"
   jq -cn \
-    --arg schema "cog.gate.approve.v1" \
+    --arg schema "cog.gate.approve.v2" \
     --arg file "$file" \
     --argjson record "$record" \
     '{schema: $schema, ok: true, approval_path: $file, record: $record}'
 }
 
 # Verify a hash-bound approval. Exit 0 iff a matching approval exists, is within
-# TTL, and its recorded hash still matches the round file as it stands now.
+# TTL, and its recorded hash still matches the artifact as it stands now.
 cog::fn::gate_approval::check() {
-  local round_id="${1:-}" round_path="${2:-}" ttl="${3:-}"
-  local file abs_round expected_hash recorded_hash approved_epoch now age status verdict
+  local gate_id="${1:-}" artifact_path="${2:-}" ttl="${3:-}"
+  local file abs_artifact expected_hash recorded_hash approved_epoch now age status verdict
   __have jq || cog::fn::error_raise "MissingRequirement" \
     "required command not found" "command: jq" "" "install jq and retry"
-  cog::fn::gate_approval::require_round_id "$round_id"
-  cog::fn::gate_approval::require_round_file "$round_path"
+  cog::fn::gate_approval::require_gate_id "$gate_id"
+  cog::fn::gate_approval::require_artifact_file "$artifact_path"
   [[ -n $ttl ]] || ttl="$(cog::fn::gate_approval::default_ttl)"
   [[ $ttl =~ ^[0-9]+$ ]] || cog::fn::error_raise "InvalidInput" \
     "ttl must be a non-negative integer" "option: --ttl" "value: ${ttl}" "pass --ttl <secs>"
-  abs_round="$(realpath "$round_path")"
-  expected_hash="$(cog::fn::gate_approval::content_hash "$round_path")"
-  file="$(cog::fn::gate_approval::file_path "$round_id")"
+  abs_artifact="$(realpath "$artifact_path")"
+  expected_hash="$(cog::fn::gate_approval::content_hash "$artifact_path")"
+  file="$(cog::fn::gate_approval::file_path "$gate_id")"
   now="$(date -u '+%s')"
 
   status="approved"
@@ -123,9 +123,9 @@ cog::fn::gate_approval::check() {
   fi
 
   verdict="$(jq -cn \
-    --arg schema "cog.gate.approval-check.v1" \
-    --arg round_id "$round_id" \
-    --arg round_path "$abs_round" \
+    --arg schema "cog.gate.approval-check.v2" \
+    --arg gate_id "$gate_id" \
+    --arg artifact_path "$abs_artifact" \
     --arg approval_path "$file" \
     --arg status "$status" \
     --argjson ttl_seconds "$ttl" \
@@ -133,7 +133,7 @@ cog::fn::gate_approval::check() {
     --arg expected_hash "$expected_hash" \
     --arg recorded_hash "$recorded_hash" \
     '{schema: $schema, ok: ($status == "approved"), status: $status,
-      round_id: $round_id, round_path: $round_path, approval_path: $approval_path,
+      gate_id: $gate_id, artifact_path: $artifact_path, approval_path: $approval_path,
       ttl_seconds: $ttl_seconds, age_seconds: $age_seconds,
       expected_hash: $expected_hash, recorded_hash: $recorded_hash}')"
   printf '%s\n' "$verdict"

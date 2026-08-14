@@ -126,7 +126,7 @@ _new_repo() {
 @test "cog gc-stage matches a staged rename via raw delete+add paths" {
   # Regression: git rename detection collapses delete old + add new into one
   # destination line, which broke the literal path-set equality vs session_files
-  # (observed on a queue-rounds.yaml rename round). --no-renames must keep both
+  # (first observed on a renamed YAML data file). --no-renames must keep both
   # the old and new path so the staged set equals the session-files set.
   cat >"${BATS_TEST_TMPDIR}/fakebin/git" <<'EOF'
 #!/usr/bin/env bash

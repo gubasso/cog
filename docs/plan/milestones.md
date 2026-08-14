@@ -21,3 +21,4 @@ What bounds this work is in the [charter](./charter.md); what could still change
 - 002 [workflow-engine-go-no-go](./slices/002-workflow-engine-go-no-go/README.md) — done — 2 sessions — accepted the engine in ADR-0027, closed Q-001..Q-004, and published the contract
 - 003 [linear-workflow-vertical](./slices/003-linear-workflow-vertical/README.md) — done — 3 sessions — landed the workspace, twelve verbs, the validator, per-file layer resolution, and the receipt contract; the registry grew past the accepted seed
 - 010 [plan-vault-retirement](./slices/010-plan-vault-retirement/README.md) — done — 3 sessions — removed the vault, the queues, the round layer, the spec pipeline, and executor match telemetry
+- 011 [approval-gate-artifact-binding](./slices/011-approval-gate-artifact-binding/README.md) — done — 1 session — rebound the operator-approval gate onto the artifact it hashes
