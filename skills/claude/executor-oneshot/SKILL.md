@@ -4,8 +4,6 @@ description: >
   Execute one prompt or implementation plan through the Claude single executor
   flow: evaluate the input, prepare a good plan (generate in session when thin,
   cross-engine review when already detailed), then implement it natively.
-model: opus
-effort: medium
 argument-hint: "<prompt-or-plan-path>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Grep Glob

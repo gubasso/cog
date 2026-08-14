@@ -4,8 +4,6 @@ description: >
   Execute one prompt or implementation plan through the Codex-backed single
   executor flow from Claude: evaluate the input, prepare a good plan (Codex plans
   when thin, Claude reviews in session when already detailed), then Codex implements.
-model: opus
-effort: low
 argument-hint: "<prompt-or-plan-path>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Grep Glob WebSearch WebFetch

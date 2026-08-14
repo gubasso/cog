@@ -50,6 +50,8 @@ tiers:
       - plan-multi
       - plan-vetted
       - executor-prex
+      - executor-oneshot
+      - executor-oneshot-codex
       - review-plan-oneshot
       - review-plan-multi
       - review-oneshot
@@ -122,7 +124,6 @@ tiers:
       - bounded implementation judgment
       - may spawn subagents
     skills:
-      - executor-oneshot
       - executor-vetted
     use_when: |-
       Executor default: implement a prepared plan with bounded judgment, where the hard
