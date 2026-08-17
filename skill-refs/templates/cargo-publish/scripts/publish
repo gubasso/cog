@@ -24,6 +24,9 @@ cargo_publish_auth_configured() {
 }
 
 if ! cargo_publish_auth_configured; then
+  # shellcheck disable=SC2016 # The single quotes are the point: $CARGO_HOME is
+  # printed literally, as the path the reader types, not expanded to this shell's
+  # value of it.
   printf '%s\n' \
     "No crates.io auth configured." \
     "" \

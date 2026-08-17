@@ -183,15 +183,16 @@ ignored = ["tracing"]  # used via macros only, machete can't see it
 **Configuration** (`deny.toml` for cargo-deny):
 
 ```toml
+# cargo-deny removed both `[advisories] vulnerability` and `[licenses] deny`:
+# every vulnerability advisory is an error, and every license not in `allow` is
+# denied. Either key is now a hard config error.
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
-unsound = "warn"
+unmaintained = "workspace"
+unsound = "workspace"
 yanked = "warn"
 
 [licenses]
 allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib"]
-deny = ["GPL-2.0", "GPL-3.0", "AGPL-3.0"]
 
 [bans]
 deny = [

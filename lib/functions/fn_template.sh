@@ -50,6 +50,47 @@ cog::fn::template::resolve_justfile() {
   return 1
 }
 
+# The filenames a project's license text is conventionally carried in. A single
+# `LICENSE` is only the most common shape: the Rust ecosystem's dual
+# `MIT OR Apache-2.0` ships LICENSE-MIT plus LICENSE-APACHE, GNU projects ship
+# COPYING, and either may carry a .md/.txt extension. Every cog path that asks
+# whether a project HAS a license consults this list, so a conventional layout is
+# never reported as an absent license.
+#
+# Prefixes are matched with a trailing-suffix glob (LICENSE-*), which is why the
+# list is patterns rather than literal names.
+cog::fn::template::license_name_patterns() {
+  printf '%s\n' \
+    LICENSE LICENSE.md LICENSE.txt \
+    'LICENSE-*' \
+    LICENCE LICENCE.md LICENCE.txt \
+    'LICENCE-*' \
+    COPYING COPYING.md COPYING.txt \
+    COPYING.LESSER
+}
+
+# Print the basename of every license file present directly under <project_root>,
+# one per line, in the pattern order above and de-duplicated. Prints nothing and
+# returns 1 when the project carries none.
+cog::fn::template::resolve_licenses() {
+  local project_root="$1" pattern path base
+  local -a found=()
+  while IFS= read -r pattern; do
+    for path in "$project_root"/$pattern; do
+      [[ -f $path ]] || continue
+      base="${path##*/}"
+      # LICENSE-* also matches nothing-special names already listed; keep first.
+      local seen=false existing
+      for existing in ${found[@]+"${found[@]}"}; do
+        [[ $existing == "$base" ]] && seen=true && break
+      done
+      [[ $seen == true ]] || found+=("$base")
+    done
+  done < <(cog::fn::template::license_name_patterns)
+  ((${#found[@]} > 0)) || return 1
+  printf '%s\n' "${found[@]}"
+}
+
 cog::fn::template::assert_under_project() {
   local project_root="$1" dst="$2" root_abs dst_abs
   root_abs="$(realpath -m -- "$project_root")"

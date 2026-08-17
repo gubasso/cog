@@ -33,7 +33,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.8.0
+    rev: v3.11.1
     hooks:
       - id: editorconfig-checker
         alias: ec
@@ -65,7 +65,7 @@ repos:
         args: [--ignore-words-list, "te,thru,ons"]
   # Typos (additional)
   - repo: https://github.com/crate-ci/typos
-    rev: v1.48.0
+    rev: v1.49.0
     hooks:
       # Report-only. The `args:` below are LOAD-BEARING: upstream's default
       # args are [--write-changes, --force-exclude], so a stanza that

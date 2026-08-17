@@ -12,6 +12,6 @@
     "node_modules"
   ],
   "plugins": [
-    "https://plugins.dprint.dev/markdown-0.22.0.wasm"
+    "https://plugins.dprint.dev/markdown-0.22.1.wasm"
   ]
 }

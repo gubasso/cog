@@ -106,7 +106,10 @@ panic           = "deny"
 
 # Restriction: style discipline
 wildcard_imports      = "deny"
-string_to_string      = "warn"
+# Not `string_to_string`: clippy deprecated it in favour of `implicit_clone`,
+# which covers the same cases. A deprecated lint in this table warns, and warns
+# are denied in CI.
+implicit_clone        = "warn"
 redundant_clone       = "warn"
 unnecessary_wraps     = "warn"
 needless_pass_by_value = "warn"
@@ -197,12 +200,16 @@ Create `deny.toml` at the crate root:
 targets = []
 all-features = true
 
+# `vulnerability` is not a key here: cargo-deny removed it, and every
+# vulnerability advisory is an error unconditionally. Setting it is a hard
+# config error, not a warning.
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
-unsound = "warn"
+unmaintained = "workspace"
+unsound = "workspace"
 yanked = "warn"
 
+# `deny` is not a key here either: it was removed with the same release, and
+# every license is denied unless `allow` lists it.
 [licenses]
 allow = [
     "MIT",

@@ -21,7 +21,7 @@ repos:
   # interiors and defaults to indent_size=4 even when unset, and .editorconfig
   # keeps trim_trailing_whitespace=false for *.md.
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.8.0
+    rev: v3.11.1
     hooks:
       - id: editorconfig-checker
         alias: ec

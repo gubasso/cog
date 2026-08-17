@@ -242,11 +242,26 @@ __cog_bootstrap_audit_build_json() {
   rows+=("$(__cog_bootstrap_audit_domain nix "$present" false "nix devshell + direnv" "$arts" "$nix_reqs")")
 
   # repo: gitignore, license, readme are the bootstrap-repo deliverable set;
-  # a missing LICENSE needs operator-supplied SPDX/holder/year.
-  arts="$(__cog_bootstrap_audit_artifacts "$project_root" ".gitignore" "LICENSE" "README.md")"
+  # a missing license needs operator-supplied SPDX/holder/year.
+  #
+  # The license artifact is resolved by convention, not by the literal name
+  # `LICENSE`: a dual `MIT OR Apache-2.0` layout (LICENSE-MIT + LICENSE-APACHE,
+  # the Rust ecosystem norm), a COPYING, or a LICENSE.md all satisfy the
+  # deliverable. Reporting one of those as an absent license told the orchestrator
+  # to ask the operator for an SPDX id the project had already answered. Every
+  # resolved file is reported, so the breakdown names what actually exists.
+  local -a license_arts=()
+  local license_name license_present=false
+  while IFS= read -r license_name; do
+    [[ -n $license_name ]] || continue
+    license_present=true
+    license_arts+=("$(jq -cn --arg n "$license_name" '{name: $n, present: true}')")
+  done < <(cog::fn::template::resolve_licenses "$project_root" || true)
+  ((${#license_arts[@]} > 0)) || license_arts=("$(jq -cn '{name: "LICENSE", present: false}')")
+  arts="$(__cog_bootstrap_audit_artifacts "$project_root" ".gitignore" "README.md")"
+  arts="$(jq -c --argjson lic "$(printf '%s\n' "${license_arts[@]}" | jq -cs '.')" \
+    '[.[0]] + $lic + [.[1]]' <<<"$arts")"
   present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
-  local license_present
-  license_present="$(jq -c '[.[] | select(.name == "LICENSE")][0].present' <<<"$arts")"
   local repo_rq=false
   [[ $license_present == false ]] && repo_rq=true
   rows+=("$(__cog_bootstrap_audit_domain repo "$present" "$repo_rq" "gitignore + license + readme" "$arts")")

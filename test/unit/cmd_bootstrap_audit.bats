@@ -482,3 +482,51 @@ repos: []'
   assert_success
   [ "$(jq -r '.domains[] | select(.domain == "precommit") | .requirements_satisfied' <<<"$output")" = "false" ]
 }
+
+@test "bootstrap-audit accepts a dual MIT/Apache license layout" {
+  # The Rust ecosystem's `MIT OR Apache-2.0` convention ships two files and no
+  # bare LICENSE. Reporting that as an absent license asked the operator for an
+  # SPDX id the project had already answered.
+  local dir="$BATS_TEST_TMPDIR/dual"
+  mkdir -p "$dir"
+  touch "$dir/.gitignore" "$dir/README.md" "$dir/LICENSE-MIT" "$dir/LICENSE-APACHE"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "repo")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "true" ]
+  [ "$(jq -r '.requires_question' <<<"$row")" = "false" ]
+  [ "$(jq -r '[.artifacts[] | select(.name == "LICENSE-MIT")] | length' <<<"$row")" -eq 1 ]
+  [ "$(jq -r '[.artifacts[] | select(.name == "LICENSE-APACHE")] | length' <<<"$row")" -eq 1 ]
+}
+
+@test "bootstrap-audit accepts COPYING as the license deliverable" {
+  local dir="$BATS_TEST_TMPDIR/copying"
+  mkdir -p "$dir"
+  touch "$dir/.gitignore" "$dir/README.md" "$dir/COPYING"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "repo")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "true" ]
+  [ "$(jq -r '.requires_question' <<<"$row")" = "false" ]
+}
+
+@test "bootstrap-audit reports a placeholder LICENSE artifact when none exists" {
+  local dir="$BATS_TEST_TMPDIR/nolicense"
+  mkdir -p "$dir"
+  touch "$dir/.gitignore" "$dir/README.md"
+
+  run cog::cmd::bootstrap_audit --project-root "$dir" --json
+
+  assert_success
+  local row
+  row="$(jq -c '.domains[] | select(.domain == "repo")' <<<"$output")"
+  [ "$(jq -r '.present' <<<"$row")" = "false" ]
+  [ "$(jq -r '.requires_question' <<<"$row")" = "true" ]
+  [ "$(jq -r '[.artifacts[] | select(.name == "LICENSE" and .present == false)] | length' <<<"$row")" -eq 1 ]
+}

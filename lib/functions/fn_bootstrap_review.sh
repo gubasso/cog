@@ -172,6 +172,53 @@ cog::fn::bootstrap_review::check_json() {
       template_roots: $template_roots}'
 }
 
+# Assert every path a stamp claims to have changed is a file under the resolved
+# skill-refs template SoT.
+#
+# A freshness record is a promise that the templates were reviewed AND that the
+# named fixes landed; a later `check` reads `fresh` and skips the review
+# entirely. Recording a path verbatim let a worker stamp edits it never wrote —
+# the template stayed broken while every subsequent bootstrap was told it had
+# been reviewed, and nothing surfaced the gap until a human diffed the tree.
+#
+# Containment is half the check and existence is the other half. Existence alone
+# is satisfiable by any file on the box (`/etc/passwd`, `../README.md`), which
+# would authorize the same misleading stamp the check exists to refuse, so the
+# path is canonicalized and required to resolve beneath the root. It must also be
+# a regular file, not a directory: a stamp names template edits, and the enclosing
+# directory existing says nothing about whether the edit landed. Together these
+# are the strongest claim this layer can verify deterministically (it cannot know
+# what the content should say), and they catch the real failure modes: an edit
+# that never landed, a path typo'd relative to the SoT, and a path pointing
+# outside the SoT entirely.
+#
+# Args: <skill-refs-root> <changed-json-array>.
+cog::fn::bootstrap_review::assert_changed_templates() {
+  local root="${1:-}" changed_json="${2:-[]}" rel abs
+  local -a missing=() outside=()
+  while IFS= read -r rel; do
+    [[ -n $rel ]] || continue
+    # Accept both a path relative to the skill-refs root and an absolute one, so
+    # a worker can pass back exactly what `template_roots` reported.
+    if [[ $rel == /* ]]; then abs="$rel"; else abs="${root}/${rel}"; fi
+    if ! cog::fn::template::assert_under_project "$root" "$abs"; then
+      outside+=("$rel")
+    elif [[ ! -f $abs ]]; then
+      missing+=("$rel")
+    fi
+  done < <(jq -r '.[]' <<<"$changed_json")
+  ((${#outside[@]} == 0)) || cog::fn::error_raise "InvalidInput" \
+    "changed template path escapes the skill-refs SoT" \
+    "outside: ${outside[*]}, root: ${root}" \
+    "a stamp records template edits under the resolved SoT, and a path outside it proves nothing about the templates a later check would report fresh" \
+    "pass the path relative to ${root}, or drop the --changed-template path from the stamp"
+  ((${#missing[@]} == 0)) || cog::fn::error_raise "InputNotFound" \
+    "changed template path does not exist" \
+    "missing: ${missing[*]}" \
+    "a review stamp records that these template edits landed, and a later check would report the domain fresh on the strength of it" \
+    "write the template edit to the skill-refs SoT first, or drop the --changed-template path from the stamp"
+}
+
 # Record a dated template review for a domain/type and report it with the template
 # SoT origin and any changed template paths. Fails fast when the skill-refs template
 # tree is unresolved or not writable — the dual-write-to-SoT contract cannot be
@@ -201,6 +248,8 @@ cog::fn::bootstrap_review::stamp_json() {
     "origin: ${origin}, root: ${root}" \
     "the dual-write to skill-refs/templates cannot be honored on a read-only tree" \
     "make the resolved skill-refs template root writable (fix install permissions) or run against a repo checkout"
+
+  cog::fn::bootstrap_review::assert_changed_templates "$root" "$changed_json"
 
   today="$(date -u +%F)"
   revalidate_after="$(date -u -d "+${freshness_days} days" +%F 2>/dev/null)" \

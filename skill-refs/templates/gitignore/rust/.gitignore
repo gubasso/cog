@@ -14,3 +14,4 @@ rustc-ice-*.txt
 # Nix devshell
 .direnv/
 /result
+/result-*

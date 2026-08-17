@@ -47,7 +47,16 @@ cog license-apply --list --json
 cog license-apply --spdx "$SPDX" --holder "$HOLDER" --year "$YEAR" --conflict "$POLICY" --json
 ```
 
-cog substitutes `{{YEAR}}` and `{{HOLDER}}` for the licenses carrying a copyright line (MIT, BSD-3-Clause), which therefore require `--holder` and `--year`; Apache-2.0 and GPL-3.0 ship verbatim. An unknown `--spdx` fails legibly. Reconcile a pre-existing `LICENSE` with the operator rather than overwriting it.
+cog substitutes `{{YEAR}}` and `{{HOLDER}}` for the licenses carrying a copyright line (MIT, BSD-3-Clause), which therefore require `--holder` and `--year`; Apache-2.0 and GPL-3.0 ship verbatim. An unknown `--spdx` fails legibly. Reconcile a pre-existing license with the operator rather than overwriting it.
+
+A dual license is two applies under two names, via `--filename`:
+
+```bash
+cog license-apply --spdx mit --holder "$HOLDER" --year "$YEAR" --filename LICENSE-MIT --json
+cog license-apply --spdx apache-2.0 --filename LICENSE-APACHE --json
+```
+
+`--filename` accepts only conventional license basenames (`LICENSE`, `LICENSE-<id>`, `COPYING`, and their `.md`/`.txt` forms), which is the same set `cog bootstrap-audit` resolves the license deliverable from — so a dual layout reports present rather than sending the operator back for an SPDX id they already gave. `MIT OR Apache-2.0` is the Rust ecosystem's default; record the choice in the crate's `license` field too.
 
 ## README
 

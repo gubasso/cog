@@ -17,6 +17,12 @@ max_line_length = 100
 indent_style = space
 indent_size = 2
 
+# Every project carries a flake devShell, and the shared nix pre-commit overlay
+# formats it with nixfmt (RFC 166), which indents 2 spaces.
+[*.nix]
+indent_style = space
+indent_size = 2
+
 [*.md]
 trim_trailing_whitespace = false
 max_line_length = off

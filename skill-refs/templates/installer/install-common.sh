@@ -101,7 +101,15 @@ installer_err_trap() {
   printf '    command: %s\n' "$command" >&2
   printf '    status: %s\n' "$status" >&2
   printf '    hint: %s\n' "$hint" >&2
-  exit "$status"
+
+  # The contract promises 0/1/130/143 only. A signal status is passed through
+  # so a caller can still tell an interrupt from a failure; every other status
+  # a wrapped tool happens to use (cargo's 101, for one) becomes a handled
+  # failure rather than leaking a vocabulary this script does not define.
+  case "$status" in
+    130 | 143) exit "$status" ;;
+    *) exit 1 ;;
+  esac
 }
 
 installer_set_step() {
@@ -137,7 +145,10 @@ installer_require_writable_dir() {
   local dir="$1"
   local label="$2"
 
-  install -d "$dir"
+  # A failure here is not the report-worthy event — the check below is, and it
+  # names the path and the remedy. Letting `install` trip the ERR trap instead
+  # would surface a raw permission error with no context.
+  install -d "$dir" 2>/dev/null || true
   if [[ ! -d $dir || ! -w $dir ]]; then
     installer_die "$label is not writable at $dir; fix permissions or choose a different PREFIX/XDG path"
   fi
@@ -149,7 +160,7 @@ installer_require_parent_writable() {
   local parent
 
   parent="$(dirname "$path")"
-  install -d "$parent"
+  install -d "$parent" 2>/dev/null || true
   if [[ ! -d $parent || ! -w $parent ]]; then
     installer_die "$label parent is not writable at $parent; fix permissions or choose a different PREFIX/XDG path"
   fi

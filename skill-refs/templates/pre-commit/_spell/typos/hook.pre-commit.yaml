@@ -1,6 +1,6 @@
   # --- Spelling (report-only) ---
   - repo: https://github.com/crate-ci/typos
-    rev: v1.48.0
+    rev: v1.49.0
     hooks:
       # Report-only. The `args:` below are LOAD-BEARING: upstream's default
       # args are [--write-changes, --force-exclude], so a stanza that

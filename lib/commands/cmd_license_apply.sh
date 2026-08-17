@@ -4,7 +4,23 @@
 __cog_license_apply_self_check='(.ok|type=="boolean") and (.mode|type=="string")'
 
 __cog_license_apply_usage() {
-  cog::fn::ui_data "Usage: cog license-apply (--list | --spdx <id> --holder <name> --year <year> [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort]) (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog license-apply (--list | --spdx <id> --holder <name> --year <year> [--filename <name>] [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort]) (<out.json>|--json)"
+}
+
+# True when the destination basename is one the project's license is
+# conventionally carried in. A dual `MIT OR Apache-2.0` layout needs two applies
+# under two names (LICENSE-MIT, LICENSE-APACHE), so the destination cannot be
+# hardcoded; restricting it to the conventional set keeps every applied license
+# discoverable by the same resolver `cog bootstrap-audit` reads, instead of
+# landing a license file nothing downstream recognizes.
+__cog_license_apply_valid_filename() {
+  local name="$1" pattern
+  [[ -n $name && $name != */* && $name != .* ]] || return 1
+  while IFS= read -r pattern; do
+    # shellcheck disable=SC2254 # $pattern is a glob by design (LICENSE-*).
+    case "$name" in $pattern) return 0 ;; esac
+  done < <(cog::fn::template::license_name_patterns)
+  return 1
 }
 
 # Shipped SPDX identifiers (lowercased). A directory under the template root
@@ -40,12 +56,15 @@ __cog_license_apply_list_json() {
 }
 
 __cog_license_apply_build_json() {
-  local spdx="$1" holder="$2" year="$3" project_root="$4" template_root="$5" conflict="$6"
-  local ok=true reason="" template_dir="$template_root/$spdx" src="$template_root/$spdx/LICENSE" dst="$project_root/LICENSE"
+  local spdx="$1" holder="$2" year="$3" project_root="$4" template_root="$5" conflict="$6" filename="${7:-LICENSE}"
+  local ok=true reason="" template_dir="$template_root/$spdx" src="$template_root/$spdx/LICENSE" dst="$project_root/$filename"
   local copied=() skipped=() conflicts=()
   if ! cog::fn::template::valid_policy "$conflict"; then
     ok=false
     reason="conflict policy must be overwrite, skip, or abort"
+  elif ! __cog_license_apply_valid_filename "$filename"; then
+    ok=false
+    reason="filename must be a conventional license basename (LICENSE, LICENSE-<id>, COPYING, ...)"
   elif [[ -z $spdx ]]; then
     ok=false
     reason="spdx is required"
@@ -78,8 +97,15 @@ __cog_license_apply_build_json() {
     else
       local content
       content="$(cat "$src")"
-      content="${content//\{\{YEAR\}\}/$year}"
-      content="${content//\{\{HOLDER\}\}/$holder}"
+      # The replacements are quoted because bash's `patsub_replacement` (on by
+      # default since 5.2) expands an unquoted `&` in the replacement to the
+      # matched text: an ordinary holder like `Smith & Wesson` otherwise lands in
+      # the deployed license as `Smith {{HOLDER}} Wesson` — wrong attribution
+      # plus a leftover marker, reported as a success. Quoting is the remedy the
+      # bash manual prescribes and is a no-op on older bash, where quote removal
+      # applies and `&` was never special here.
+      content="${content//\{\{YEAR\}\}/"$year"}"
+      content="${content//\{\{HOLDER\}\}/"$holder"}"
       if mkdir -p "$(dirname "$dst")" && printf '%s\n' "$content" >"$dst"; then
         copied+=("$(cog::fn::template::record_json "$src" "$dst")")
       else
@@ -90,19 +116,20 @@ __cog_license_apply_build_json() {
   fi
   jq -n --argjson ok "$ok" --arg project_root "$project_root" --arg template_root "$template_root" \
     --arg spdx "$spdx" --arg holder "$holder" --arg year "$year" --arg template_dir "$template_dir" \
+    --arg filename "$filename" \
     --argjson copied "$(cog::fn::template::json_object_array "${copied[@]}")" \
     --argjson skipped "$(cog::fn::template::json_object_array "${skipped[@]}")" \
     --argjson conflicts "$(cog::fn::template::json_object_array "${conflicts[@]}")" \
     --arg conflict "$conflict" --arg reason "$reason" \
     '{ok: $ok, mode: "apply", project_root: $project_root, template_root: $template_root,
-      spdx: $spdx, holder: (if $holder == "" then null else $holder end),
+      spdx: $spdx, filename: $filename, holder: (if $holder == "" then null else $holder end),
       year: (if $year == "" then null else $year end), template_dir: $template_dir,
       copied: $copied, skipped: $skipped, conflicts: $conflicts, conflict: $conflict,
       reason: (if $ok then null else $reason end)}'
 }
 
 cog::cmd::license_apply() {
-  local spdx="" holder="" year="" project_root template_root conflict=abort list=false mode="" out="" json
+  local spdx="" holder="" year="" filename="LICENSE" project_root template_root conflict=abort list=false mode="" out="" json
   project_root="$(pwd -P)"
   template_root="$(cog::fn::template::root license)"
   while (($# > 0)); do
@@ -128,6 +155,11 @@ cog::cmd::license_apply() {
       --year)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing year" "option: --year" "" "run 'cog license-apply --help'"
         year="$2"
+        shift 2
+        ;;
+      --filename)
+        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing filename" "option: --filename" "" "run 'cog license-apply --help'"
+        filename="$2"
         shift 2
         ;;
       --project-root)
@@ -165,7 +197,7 @@ cog::cmd::license_apply() {
     json="$(__cog_license_apply_list_json "$template_root")"
   else
     [[ -n $spdx ]] || cog::fn::error_raise "MissingArgument" "missing license-apply argument" "usage: cog license-apply --spdx <id> --holder <name> --year <year> ... (<out.json>|--json)" "" "run 'cog license-apply --help'"
-    json="$(__cog_license_apply_build_json "$spdx" "$holder" "$year" "$project_root" "$template_root" "$conflict")"
+    json="$(__cog_license_apply_build_json "$spdx" "$holder" "$year" "$project_root" "$template_root" "$conflict" "$filename")"
   fi
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_license_apply_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_license_apply_self_check" "$json"; fi
   jq -e '.ok == true' <<<"$json" >/dev/null

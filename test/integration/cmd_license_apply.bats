@@ -65,3 +65,41 @@ setup() {
   assert_success
   [[ $output == *"Apply an SPDX LICENSE"* ]]
 }
+
+@test "cog license-apply --filename lands a dual-license half" {
+  run cog license-apply --project-root "${BATS_TEST_TMPDIR}/repo" --spdx mit \
+    --holder "Jane Doe" --year 2026 --filename LICENSE-MIT --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .filename == "LICENSE-MIT"' >/dev/null
+  [ -f "${BATS_TEST_TMPDIR}/repo/LICENSE-MIT" ]
+  [ ! -e "${BATS_TEST_TMPDIR}/repo/LICENSE" ]
+  grep -qF 'Copyright (c) 2026 Jane Doe' "${BATS_TEST_TMPDIR}/repo/LICENSE-MIT"
+
+  run cog license-apply --project-root "${BATS_TEST_TMPDIR}/repo" --spdx apache-2.0 \
+    --filename LICENSE-APACHE --json
+
+  assert_success
+  [ -f "${BATS_TEST_TMPDIR}/repo/LICENSE-APACHE" ]
+}
+
+@test "cog license-apply rejects a filename that is not a license basename" {
+  run --separate-stderr cog license-apply --project-root "${BATS_TEST_TMPDIR}/repo" \
+    --spdx mit --holder x --year 2026 --filename src/notice.txt --json
+
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.ok == false and (.reason | test("conventional license basename"))' >/dev/null
+  [ ! -e "${BATS_TEST_TMPDIR}/repo/src/notice.txt" ]
+}
+
+@test "cog license-apply keeps an ampersand in the holder literal" {
+  # Bash's patsub_replacement expands an unquoted `&` in a replacement to the
+  # matched text, which would land `Smith {{HOLDER}} Wesson` in a real LICENSE
+  # and report success.
+  run cog license-apply --project-root "${BATS_TEST_TMPDIR}/repo" --spdx mit \
+    --holder "Smith & Wesson" --year 2026 --json
+
+  assert_success
+  grep -qF 'Copyright (c) 2026 Smith & Wesson' "${BATS_TEST_TMPDIR}/repo/LICENSE"
+  run ! grep -qF '{{' "${BATS_TEST_TMPDIR}/repo/LICENSE"
+}

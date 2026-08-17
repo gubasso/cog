@@ -2,9 +2,15 @@
 # Default path reuses the project's Nix devshell so CI runs the same toolchain
 # as local development: `nix develop --command <task>`, where the tasks are the
 # project task runner's recipe names (e.g. just lint / just test / just build).
+# When the task runner already prefixes every recipe with `nix develop --command`,
+# pass its override (e.g. `just dev='' lint`) so the devshell is entered once per
+# job instead of once per recipe.
 # When the project has no flake.nix, drop the "Install Nix" step from each job
 # and call the task runner directly (`just lint`, etc.) after setting up the
 # conventional toolchain for the language.
+#
+# Hardening upgrade: pin each action to a full commit SHA and let Dependabot
+# raise the bumps. Left on major tags here because unattended SHA pins rot.
 name: ci
 
 on:
@@ -12,13 +18,23 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: read the code, nothing else. A job needing more raises it
+# at the job level.
+permissions:
+  contents: read
+
+# One in-flight run per ref; a new push supersedes the old one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -28,9 +44,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -40,9 +56,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes

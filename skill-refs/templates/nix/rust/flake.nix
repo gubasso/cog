@@ -5,28 +5,42 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { self, nixpkgs, rust-overlay, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ (import rust-overlay) ];
-        };
-        # Reads channel + components + targets straight from rust-toolchain.toml.
-        toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-      in
-      {
-        # `nix fmt` uses the RFC 166 formatter (also on PATH for the pre-commit hook).
-        formatter = pkgs.nixfmt-rfc-style;
+    { nixpkgs, rust-overlay, ... }:
+    let
+      # Inlined instead of flake-utils.lib.eachDefaultSystem: one fewer input to
+      # lock, and flake-utils has been unmaintained since 2024-11.
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems =
+        f:
+        nixpkgs.lib.genAttrs systems (
+          system:
+          f (
+            import nixpkgs {
+              inherit system;
+              overlays = [ (import rust-overlay) ];
+            }
+          )
+        );
+    in
+    {
+      # `nix fmt` uses the RFC 166 formatter. `pkgs.nixfmt-rfc-style` is a
+      # deprecated alias for it as of nixpkgs 2025-07.
+      formatter = forAllSystems (pkgs: pkgs.nixfmt);
 
-        devShells.default = pkgs.mkShell {
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
           packages = [
-            toolchain
+            # Reads channel + components + targets straight from rust-toolchain.toml,
+            # which stays the single home for the version.
+            (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
             pkgs.cargo-nextest
             pkgs.cargo-deny
             pkgs.cargo-audit
@@ -37,7 +51,7 @@
             pkgs.taplo
             # Nix quality tools for the pre-commit `_nix` overlay hooks
             # (nixfmt/statix/deadnix run as language:system off PATH).
-            pkgs.nixfmt-rfc-style
+            pkgs.nixfmt
             pkgs.statix
             pkgs.deadnix
             # Provider for the `language: system` dprint hooks — the type's own
@@ -58,6 +72,6 @@
           # nativeBuildInputs = [ pkgs.pkg-config ];
           shellHook = ''echo "rust dev shell ready (toolchain from rust-toolchain.toml)"'';
         };
-      }
-    );
+      });
+    };
 }

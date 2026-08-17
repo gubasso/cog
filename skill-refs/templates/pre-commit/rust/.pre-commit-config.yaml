@@ -49,7 +49,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.8.0
+    rev: v3.11.1
     hooks:
       - id: editorconfig-checker
         alias: ec
@@ -125,6 +125,14 @@ repos:
   # stages: it's nearly free and guards against committed-but-not-tested
   # changes (rebases, amends) reaching the remote.
   #
+  # `--no-tests=warn` is load-bearing on a young crate. Since nextest 0.9.85 the
+  # default is `fail`: a run matching zero tests exits 4 (NO_TESTS_RUN), so a
+  # freshly scaffolded crate — or a profile whose `default-filter` legitimately
+  # selects nothing yet — could not commit at all. `warn` keeps the run green
+  # while still printing the no-op, so an over-narrow filter stays visible
+  # rather than silently passing forever (which `pass` would hide). There is no
+  # `.config/nextest.toml` key for this: it is a CLI flag (or NEXTEST_NO_TESTS).
+  #
   # Requires:
   #   - `cargo nextest` on PATH (cargo install --locked cargo-nextest)
   #   - the sibling `.config/nextest.toml` at the repo root, defining the
@@ -133,7 +141,7 @@ repos:
     hooks:
       - id: cargo-nextest-unit
         name: cargo nextest (unit tests)
-        entry: cargo nextest run --profile pre-commit --all-features
+        entry: cargo nextest run --profile pre-commit --all-features --no-tests=warn
         language: system
         types: [rust]
         pass_filenames: false
@@ -141,7 +149,7 @@ repos:
 
       - id: cargo-nextest-integration
         name: cargo nextest (integration tests)
-        entry: cargo nextest run --profile pre-push --all-features
+        entry: cargo nextest run --profile pre-push --all-features --no-tests=warn
         language: system
         types_or: [rust, toml]
         pass_filenames: false
@@ -157,7 +165,7 @@ repos:
 
   # --- Spell check ---
   - repo: https://github.com/crate-ci/typos
-    rev: v1.48.0
+    rev: v1.49.0
     hooks:
       # Report-only. The `args:` below are LOAD-BEARING: upstream's default
       # args are [--write-changes, --force-exclude], so a stanza that

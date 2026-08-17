@@ -60,7 +60,7 @@ repos:
 
   # --- EditorConfig ---
   - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.8.0
+    rev: v3.11.1
     hooks:
       - id: editorconfig-checker
         alias: ec
