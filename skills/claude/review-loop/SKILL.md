@@ -1,12 +1,11 @@
 ---
 name: review-loop
 description: >
-  Automated review loop: Codex reviews uncommitted changes, Claude delegates
-  triage to review-findings, applies fixes, and repeats until clean, approved,
-  stalled, user-limited, or aborted.
+  Automated review loop: Codex reviews the session's changes — working tree,
+  commits, or a declared file set — Claude delegates triage to review-findings,
+  applies fixes, and repeats until clean, approved, stalled, user-limited, or
+  aborted.
 argument-hint: "[task context or path to review_loop_input.json]"
-context: fork
-agent: general-purpose
 allowed-tools: Bash Read Write Edit Skill
 ---
 
@@ -15,7 +14,7 @@ allowed-tools: Bash Read Write Edit Skill
 
 # Review Loop
 
-Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the live diff: a fresh from-scratch review with full input (task, reviewed plan, context, changed files). Rounds 2+ resume that same reviewer thread — warm context that retains every prior round — and in each resumed round the reviewer both re-checks whether prior findings were resolved and performs a full re-review for new regressions in the applied fixes. Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
+Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the run's declared scope: a fresh from-scratch review with full input (task, reviewed plan, context, changed files). Rounds 2+ resume that same reviewer thread — warm context that retains every prior round — and in each resumed round the reviewer both re-checks whether prior findings were resolved and performs a full re-review for new regressions in the applied fixes. Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
 
 **Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists — assembled and asserted by `cog review-loop-summary finalize --run-dir "$RUN_DIR"`, whose printed `REVIEW_LOOP_OK` line is the run's trailing result line (see Terminate and Result Line Contract). `summary.md` is the single exit artifact for every termination reason, including when the work looks finished after a round's fixes. Reaching a clean or fixed state is not the end of the run; running `finalize` is. Its two inputs — the narrative body (`summary-body.md`) and the termination reason (`termination-reason.txt`) — are maintained as durable run-dir artifacts during the loop, so termination is a single mechanical command with no narrative authored in the moment of stopping. Triage narrative belongs in `summary.md`, never as a freeform reply.
 
@@ -33,9 +32,11 @@ Handoff mode: `$ARGUMENTS` is a `review_loop_input.json` path. Validate it first
 cog review-loop-input validate --input "$ARGUMENTS"
 ```
 
-Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id` are informational. When the input carries an optional `context` value — a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` — use it verbatim as the round-1 context brief instead of assembling a new one.
+Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id` are informational. When the input carries an optional `context` value — a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` — use it verbatim as the round-1 context brief instead of assembling a new one. When it carries an optional `scope` object (`ranges`, `shas`, `files`, `worktree`), that is the parent's declaration of what to review; translate it into the source flags in **Scope** below. A handoff without `scope` reviews the working tree, which is what this lane has always done.
 
-Standalone mode: use `$ARGUMENTS`, conversation context, and read-only git inspection commands to understand the work. If intent is unclear, ask one focused question before round 1.
+Standalone mode: use `$ARGUMENTS`, this session's own context, and read-only git inspection commands to understand the work. If intent is unclear, ask one focused question before round 1.
+
+**This skill runs inline in the invoking context.** The session is the primary input — it is what knows which commits this work produced, which files it touched, and what the user meant. Delegation happens below it, at the Codex boundary and at `/review-findings`, never above it: a parent that wants this loop in a fresh context invokes it through the `Agent` tool and hands it a `review_loop_input.json`, which is the handoff lane.
 
 An explicit user-supplied round limit is allowed. Otherwise rounds are uncapped and stop by the termination rules below.
 
@@ -80,18 +81,38 @@ The Codex twin captures the live diff itself; the brief carries intent and prior
 
 Rounds 2+ resume the round-1 reviewer thread, so the reviewer already retains the task, plan, and every prior-round finding. The resumed round prompt is short: it carries only what is new — a brief summary of fixes since the previous round, any user guidance, and the dual instruction to (a) confirm whether prior findings were resolved and (b) re-review the current diff for new regressions. Prior findings come from the reviewer's retained context, not a cold re-injection.
 
+## Scope
+
+Decide, once and before round 1, what this run reviews. The default is everything this work produced. The sources are additive and any combination is valid:
+
+- **Commits this session made.** The session is the source of truth for these — it knows what it committed. Name each as `--sha <full-sha>`, not a range, so nothing depends on a branch that can re-point mid-run. In handoff mode these come from the input's `scope.shas` and `scope.ranges` instead.
+- **Files this work touched.** Write them one per line, repo-relative, to `$RUN_DIR/session-files.txt` and pass `--files`. Use this when the session touched a file that neither the commits nor the working tree still show.
+- **The live working tree.** On by default; staged, unstaged, and untracked.
+
+When the user narrows in prose — "just the parser change", "only the last two commits", "the committed work, not what I'm still editing" — express that narrowing as a smaller set of these sources, adding `--no-worktree` for the last case. There is no narrowing flag on this skill; the translation is the judgment call.
+
+Resolve the sources before round 1 and reuse them verbatim in every round. Pin `--sha` values to the full SHAs that round 1's `commits[]` reports.
+
 ## Review Round
 
-Reviewer setup (every round, before launching): run the `review-oneshot` Phase 0 commands here, in this orchestrator, and name the resulting artifacts in the round prompt so the sandboxed reviewer only reads them.
+Reviewer setup (every round, before launching): run the `review-oneshot` Phase 0 commands here, in this orchestrator, with the run's declared sources, and name the resulting artifacts in the round prompt so the sandboxed reviewer only reads them.
 
 ```bash
+LOOP_RUN_DIR="$RUN_DIR"
 REVIEW_DIR="$(cog review-init review-loop-round-N | sed -n 's/^RUN_DIR=//p')"
 . "$REVIEW_DIR/paths.env"
-cog review-scope "$SCOPE_JSON"
+RUN_DIR="$LOOP_RUN_DIR"
+cog review-scope --sha <full-sha> --files "$RUN_DIR/session-files.txt" "$SCOPE_JSON"
 cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
 ```
 
-Re-run it per round: the scope changes as each round's fixes land. If the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`.
+`paths.env` sets `RUN_DIR` to the review directory it belongs to, so restore the loop's own `RUN_DIR` immediately after sourcing it — every later step in this skill (`round-N-prompt.txt`, `round-N-findings.json`, `summary-body.md`) resolves against the loop run directory, not the per-round review directory. The `--files` list is written once, before round 1, and stays at `$RUN_DIR/session-files.txt` for every round; the review directory is fresh each round and never holds it.
+
+Substitute the run's actual sources; omit any the run does not have. With no source flags at all this is the working tree alone.
+
+Re-run it per round, with the same source flags: the working-tree part changes as each round's fixes land, which is how a resumed round sees them. The commit and `--files` parts do not change — they are the run's declared subject, not a queue that drains — so a finding recurring against them is a stall signal, judged in Triage, never a reason to drop them from scope.
+
+When the run's only source is the working tree and the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`. A run with a commit or `--files` source always has a scope, so that check does not apply to it; `findings-empty` there means only what the Terminate list already says it means — the reviewer returned no findings.
 
 Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$SCOPE_JSON` and `$TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
 

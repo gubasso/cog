@@ -53,3 +53,36 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e '(.changed_files | type == "array") and (.diff_stats | type == "object")' >/dev/null
 }
+
+# A second fixture with real history. The setup repo above is deliberately
+# commit-less, which is what proves no code path here reaches for HEAD.
+committed_repo() {
+  local repo="${BATS_TEST_TMPDIR}/committed"
+  mkdir -p "$repo"
+  git -C "$repo" init -q
+  git -C "$repo" config user.email t@t
+  git -C "$repo" config user.name t
+  printf 'a\nb\nc\nd\n' >"$repo/committed.txt"
+  git -C "$repo" add -A
+  git -C "$repo" commit -qm "seed"
+  printf '%s\n' "$repo"
+}
+
+@test "review-scope check counts a commit selector against the file limit" {
+  local repo
+  repo="$(committed_repo)"
+  cd "$repo"
+  run cog review-scope check --max-files 0 --sha HEAD --json
+  assert_failure
+  printf '%s\n' "$output" | jq -e '.actual.files == 1 and (.breaches | index("files"))' >/dev/null
+}
+
+@test "review-scope check counts only the commit lines under --no-worktree" {
+  local repo
+  repo="$(committed_repo)"
+  cd "$repo"
+  printf 'x\n' >>"$repo/committed.txt"
+  run cog review-scope check --no-worktree --sha HEAD --max-lines 100 --json
+  assert_success
+  printf '%s\n' "$output" | jq -e '.actual.lines == 4' >/dev/null
+}

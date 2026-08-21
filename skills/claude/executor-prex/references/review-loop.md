@@ -29,6 +29,8 @@ cog review-loop-input build \
 
 When a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` has been assembled for this run, pass it through with `--context "$RUN_DIR/context-brief.md"`; the consumer then seeds its round-1 context from that brief instead of reassembling one. Omit the flag when no brief was built — the canonical 5-key envelope is unchanged and the consumer assembles its own context from `task`, `reviewed_plan`, and `implementation_review`.
 
+Likewise, when this run knows which commits it produced or which files it touched, declare them with `--scope-file "$RUN_DIR/review-scope.json"`, a JSON object carrying any of `ranges`, `shas`, `files`, and `worktree`. The consumer runs in a fresh context and cannot recover that from a session it never had, so an undeclared commit is a commit nobody reviews. Omit the flag when the working tree is the whole change.
+
 The implementation stage runs as a fresh Codex exec, so `plan_thread_id` is normally null while `impl_thread_id` records the implementation exec when available. Both fields are kept in the handoff JSON and may be null. The schema and its required-field contract are owned and enforced by `cog review-loop-input`; do not restate or hand-format the JSON here.
 
 Before delegation, snapshot the run base directory for existing `review-loop-*` children so the new child run dir can be located after the call returns. `cog rundir snapshot-children` resolves the base from `cog rundir` itself (never a hardcoded path, so this never drifts when the base moves) and writes the sorted snapshot:

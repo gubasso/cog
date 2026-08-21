@@ -35,6 +35,24 @@ case "$*" in
   "diff --numstat")
     printf '3\t4\tunstaged.txt\n'
     ;;
+  # Commit-selector arms. Only these two SHAs resolve, so an unknown selector
+  # falls through to the catch-all and the helpers' raise path stays reachable.
+  "rev-parse --verify --quiet aaa^{commit}" | "rev-parse --verify --quiet bbb^{commit}")
+    peel="$4"
+    printf '%s\n' "${peel%%^*}"
+    ;;
+  "show --name-only --format= aaa --")
+    printf '\n%s\n' "ranged.txt" "shared.txt"
+    ;;
+  "show --numstat --format= aaa --")
+    printf '\n2\t0\tranged.txt\n3\t1\tshared.txt\n'
+    ;;
+  "show --name-only --format= bbb --")
+    printf '\n%s\n' "shared.txt"
+    ;;
+  "show --numstat --format= bbb --")
+    printf '\n5\t3\tshared.txt\n'
+    ;;
   log*)
     printf 'abc123\tfirst subject\n'
     printf 'def456\tsecond subject\n'
@@ -228,4 +246,45 @@ EOF
   run ! cog::fn::git_str_in_lines "d" "$(printf 'a\nb\nc')"
   # a substring of a listed entry is not a member
   run ! cog::fn::git_str_in_lines "b" "$(printf 'abc\n')"
+}
+
+@test "git range helpers return empty without invoking git" {
+  : >"$GIT_FAKE_LOG"
+
+  run cog::fn::git_range_files_json
+  assert_success
+  assert_output "[]"
+
+  run cog::fn::git_range_diff_stat_json
+  assert_success
+  printf '%s\n' "$output" | jq -e '.mode == "range" and .files == []' >/dev/null
+
+  run cat "$GIT_FAKE_LOG"
+  assert_output ""
+}
+
+@test "git_range_diff_stat_json sums a path across selectors and sorts by path" {
+  run cog::fn::git_range_diff_stat_json --sha aaa --sha bbb
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.mode == "range"' >/dev/null
+  printf '%s\n' "$output" | jq -e '.files == [{path: "ranged.txt", added: 2, deleted: 0}, {path: "shared.txt", added: 8, deleted: 4}]' >/dev/null
+}
+
+@test "git range helpers raise on a selector that does not resolve" {
+  run --separate-stderr cog::fn::git_range_files_json --sha nope
+  assert_failure 65
+  [[ $stderr == *"could not resolve git commit selector"* ]]
+  [[ $stderr == *"nope"* ]]
+
+  run --separate-stderr cog::fn::git_range_diff_stat_json --range bad..ref
+  assert_failure 65
+  [[ $stderr == *"bad..ref"* ]]
+}
+
+@test "git range helpers reject an unknown option" {
+  run --separate-stderr cog::fn::git_range_files_json --nope
+
+  assert_failure 64
+  [[ $stderr == *"unknown git commit selector option"* ]]
 }

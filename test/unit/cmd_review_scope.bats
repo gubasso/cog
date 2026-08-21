@@ -33,3 +33,19 @@ setup() {
   assert_failure 64
   [[ $stderr == *"err.kind: MissingArgument"* ]]
 }
+
+# shellcheck disable=SC2090  # false positive: shellcheck misparses bats @test blocks
+@test "review-scope changed files union commit and requested paths" {
+  local staged='["a.txt"]'
+  local unstaged='["b.txt"]'
+  # JSON fixture passed quoted to the helper below; not used as a word.
+  # shellcheck disable=SC2089
+  local status='[{"path":"z.txt","untracked":true}]'
+  local commit='["b.txt","c.txt"]'
+  local requested='["d.txt"]'
+
+  run __cog_review_scope_changed_files "$staged" "$unstaged" "$status" "$commit" "$requested"
+
+  assert_success
+  assert_output '["a.txt","b.txt","c.txt","d.txt","z.txt"]'
+}

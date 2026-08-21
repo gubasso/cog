@@ -216,3 +216,151 @@ write_thread_ids() {
   assert_failure
   [[ $stderr == *"review-loop input failed schema validation"* ]]
 }
+
+@test "cog review-loop-input build carries the optional scope declaration" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_required_inputs "$run_dir"
+  write_thread_ids "$run_dir"
+  jq -n '{ranges: ["a..b"], shas: ["abc123"], files: ["lib/a.sh"], worktree: false}' >"${run_dir}/scope.json"
+
+  run cog review-loop-input build --run-dir "$run_dir" --scope-file "${run_dir}/scope.json" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.scope.shas == ["abc123"] and .scope.worktree == false' >/dev/null
+  printf '%s\n' "$output" | jq -e '.scope.ranges == ["a..b"] and .scope.files == ["lib/a.sh"]' >/dev/null
+}
+
+@test "cog review-loop-input build omits scope when none is given" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_required_inputs "$run_dir"
+  write_thread_ids "$run_dir"
+
+  run cog review-loop-input build --run-dir "$run_dir" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '(has("scope") | not) and ([keys[]] | length == 5)' >/dev/null
+}
+
+@test "cog review-loop-input validate accepts context and scope together" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    context: "brief", scope: {shas: ["abc"], worktree: true}
+  }' >"$input"
+
+  run cog review-loop-input validate --input "$input"
+
+  assert_success
+}
+
+@test "cog review-loop-input validate rejects a scope with an unknown key" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {shas: ["abc"], nope: true}
+  }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input"
+
+  assert_failure
+  [[ $stderr == *"failed schema validation"* ]]
+}
+
+@test "cog review-loop-input validate rejects a non-string scope selector" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {shas: ["abc", ""]}
+  }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input"
+
+  assert_failure
+  [[ $stderr == *"failed schema validation"* ]]
+}
+
+@test "cog review-loop-input validate rejects a non-object scope" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: "abc123"
+  }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input"
+
+  assert_failure
+  [[ $stderr == *"failed schema validation"* ]]
+}
+
+@test "cog review-loop-input build rejects a malformed scope declaration" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_required_inputs "$run_dir"
+  printf '%s' "not json" >"${run_dir}/scope.json"
+
+  run --separate-stderr cog review-loop-input build --run-dir "$run_dir" --scope-file "${run_dir}/scope.json" --json
+
+  assert_failure
+  [[ $stderr == *"scope declaration is not valid JSON"* ]]
+}
+
+@test "cog review-loop-input validate rejects an explicitly null scope selector" {
+  # A present null is not an absent key: `// []` would accept this and then read
+  # it as the default, silently turning a committed-work declaration into a
+  # working-tree scope.
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {shas: null}
+  }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input"
+
+  assert_failure
+  [[ $stderr == *"failed schema validation"* ]]
+}
+
+@test "cog review-loop-input validate rejects an explicitly null scope worktree" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {worktree: null}
+  }' >"$input"
+
+  run --separate-stderr cog review-loop-input validate --input "$input"
+
+  assert_failure
+  [[ $stderr == *"failed schema validation"* ]]
+}
+
+@test "cog review-loop-input validate accepts a scope carrying only some keys" {
+  # The has() gating must not turn optional keys into required ones.
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {shas: ["abc123"]}
+  }' >"$input"
+
+  run cog review-loop-input validate --input "$input"
+
+  assert_success
+}
+
+@test "cog review-loop-input validate accepts an empty scope object" {
+  local input="${BATS_TEST_TMPDIR}/input.json"
+  jq -n '{
+    task: "t", reviewed_plan: "p", implementation_review: "r",
+    plan_thread_id: null, impl_thread_id: null,
+    scope: {}
+  }' >"$input"
+
+  run cog review-loop-input validate --input "$input"
+
+  assert_success
+}

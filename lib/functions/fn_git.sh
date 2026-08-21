@@ -418,6 +418,205 @@ cog::fn::git_log_range_json() {
     | jq -c 'reduce .[] as $c ([]; if any(.[]; .sha == $c.sha) then . else . + [$c] end)'
 }
 
+# Shared argv parsing for the commit-selector helpers below. Fills the caller's
+# repo string and ranges/shas arrays by name so the two helpers that accept the
+# same grammar cannot drift apart.
+__cog_git_range_argv() {
+  local -n __cog_range_repo="$1"
+  local -n __cog_range_ranges="$2"
+  local -n __cog_range_shas="$3"
+  shift 3
+
+  __cog_range_repo=""
+  __cog_range_ranges=()
+  __cog_range_shas=()
+
+  while (($# > 0)); do
+    case "$1" in
+      --repo)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --repo value" "option: --repo" "" "pass a worktree path"
+        __cog_range_repo="$2"
+        shift 2
+        ;;
+      --range)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --range value" "option: --range" "" "pass a git range like A..B"
+        __cog_range_ranges+=("$2")
+        shift 2
+        ;;
+      --sha)
+        [[ $# -ge 2 ]] || cog::helpers::die "$EX_USAGE" "MissingArgument" \
+          "missing --sha value" "option: --sha" "" "pass a commit sha"
+        __cog_range_shas+=("$2")
+        shift 2
+        ;;
+      *)
+        cog::helpers::die "$EX_USAGE" "InvalidInput" \
+          "unknown git commit selector option" "option: $1" "" "use --repo, --range, or --sha"
+        ;;
+    esac
+  done
+}
+
+# Run one selector's git command and return its stdout, raising when the
+# selector does not resolve. cog::fn::git_log_range_json swallows git's exit
+# status because a missing commit there costs a log entry; here it would cost
+# the whole changeset and read as a clean review, so it fails loudly instead.
+__cog_git_range_capture() {
+  local -n __cog_range_out="$1"
+  local selector="$2"
+  shift 2
+  local status
+
+  # The output lands in the caller's variable rather than on stdout: a die from
+  # inside a command substitution would only kill the subshell, and the caller
+  # would go on to report an empty changeset for an unresolvable ref.
+  # The `|| status=$?` is load-bearing under errexit: a bare failing assignment
+  # would terminate the shell with git's own status before this check runs, and
+  # the caller would see a raw 128 with no cog error at all.
+  status=0
+  __cog_range_out="$("$@" 2>/dev/null)" || status=$?
+  ((status == 0)) || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+    "could not resolve git commit selector" "selector: ${selector}" \
+    "git exited ${status}" "check the ref and retry"
+}
+
+# Peel every commit selector to the commit it names, replacing the caller's
+# array in place, and fail when a selector names a non-commit object. `git show`
+# will happily print a blob's contents, and `--name-only`/`--numstat` do not
+# suppress that, so `--sha <tree-ish>:<path>` would otherwise land the file's own
+# text in commit_files as though every line were a path. Peeling also pins an
+# annotated tag or a movable branch name to the commit it resolved to, which is
+# what lets a caller resolve once and reuse the result across several helpers
+# instead of re-resolving a ref that can move between them. Runs only when there
+# is at least one selector, so a caller with none still issues no git command
+# from here. Peeling is idempotent: a full commit hash peels to itself.
+cog::fn::git_peel_commit_selectors() {
+  __cog_git_require_git
+
+  local -n __cog_range_peel="$1"
+  local repo="${2:-}"
+  local i peeled status
+
+  ((${#__cog_range_peel[@]} > 0)) || return 0
+
+  local -a gitcmd=(git)
+  [[ -n $repo ]] && gitcmd=(git -C "$repo")
+
+  for i in "${!__cog_range_peel[@]}"; do
+    status=0
+    peeled="$("${gitcmd[@]}" rev-parse --verify --quiet "${__cog_range_peel[i]}^{commit}" 2>/dev/null)" || status=$?
+    # Same headline the capture path raises, because a selector that names a
+    # blob and a selector that names nothing are one failure to the caller: it
+    # is not a commit this scope can read. Only the `why` line distinguishes.
+    { ((status == 0)) && [[ -n $peeled ]]; } || cog::helpers::die "$EX_DATAERR" "InvalidInput" \
+      "could not resolve git commit selector" "selector: ${__cog_range_peel[i]}" \
+      "it does not name a commit" "pass a commit sha, tag, or branch"
+    __cog_range_peel["$i"]="$peeled"
+  done
+}
+
+# Emit a JSON array of the file paths touched by the given ranges and/or SHAs,
+# de-duplicated and sorted. With no selector this returns [] without invoking
+# git at all, which is what keeps the default review-scope path unchanged.
+cog::fn::git_range_files_json() {
+  __cog_git_require_git
+  __cog_git_require_jq
+
+  local repo=""
+  local -a ranges=() shas=()
+  __cog_git_range_argv repo ranges shas "$@"
+
+  if ((${#ranges[@]} + ${#shas[@]} == 0)); then
+    jq -cn '[]'
+    return 0
+  fi
+
+  cog::fn::git_peel_commit_selectors shas "$repo"
+
+  local -a gitcmd=(git)
+  [[ -n $repo ]] && gitcmd=(git -C "$repo")
+
+  local selector out line
+  local -a paths=()
+  for selector in "${ranges[@]}"; do
+    __cog_git_range_capture out "$selector" "${gitcmd[@]}" diff --name-only "$selector" --
+    while IFS= read -r line; do
+      [[ -n $line ]] && paths+=("$line")
+    done <<<"$out"
+  done
+  for selector in "${shas[@]}"; do
+    __cog_git_range_capture out "$selector" "${gitcmd[@]}" show --name-only --format= "$selector" --
+    while IFS= read -r line; do
+      [[ -n $line ]] && paths+=("$line")
+    done <<<"$out"
+  done
+
+  cog::fn::git_json_array_from_lines "${paths[@]}" | jq -c 'unique'
+}
+
+# Emit {mode: "range", files: [{path, added, deleted}]} for the given ranges
+# and/or SHAs, summed per path and sorted by path. This is a sibling of
+# cog::fn::git_diff_stat_json rather than a widening of it: that function's mode
+# is a pinned two-value contract over exactly one git diff, while a selector set
+# is plural and has to merge.
+cog::fn::git_range_diff_stat_json() {
+  __cog_git_require_git
+  __cog_git_require_jq
+
+  local repo=""
+  local -a ranges=() shas=()
+  __cog_git_range_argv repo ranges shas "$@"
+
+  local -a files=()
+  if ((${#ranges[@]} + ${#shas[@]} > 0)); then
+    cog::fn::git_peel_commit_selectors shas "$repo"
+    local -a gitcmd=(git)
+    [[ -n $repo ]] && gitcmd=(git -C "$repo")
+
+    local selector out added deleted path
+    for selector in "${ranges[@]}"; do
+      __cog_git_range_capture out "$selector" "${gitcmd[@]}" diff --numstat "$selector" --
+      while IFS=$'\t' read -r added deleted path; do
+        [[ -n ${path:-} ]] || continue
+        [[ $added == "-" ]] && added=0
+        [[ $deleted == "-" ]] && deleted=0
+        files+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
+          '{path: $path, added: $added, deleted: $deleted}')")
+      done <<<"$out"
+    done
+    for selector in "${shas[@]}"; do
+      __cog_git_range_capture out "$selector" "${gitcmd[@]}" show --numstat --format= "$selector" --
+      while IFS=$'\t' read -r added deleted path; do
+        [[ -n ${path:-} ]] || continue
+        [[ $added == "-" ]] && added=0
+        [[ $deleted == "-" ]] && deleted=0
+        files+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
+          '{path: $path, added: $added, deleted: $deleted}')")
+      done <<<"$out"
+    done
+  fi
+
+  local json
+  json="$(jq -n \
+    --argjson files "$(cog::fn::git_json_object_array_from_lines "${files[@]}")" \
+    '{
+      mode: "range",
+      files: ($files
+        | group_by(.path)
+        | map({
+            path: .[0].path,
+            added: (map(.added) | add),
+            deleted: (map(.deleted) | add)
+          }))
+    }')"
+  cog::fn::json_validate '(.mode == "range") and (.files | type == "array")' "$json" \
+    || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
+      "invalid git range diff stat JSON" "function: cog::fn::git_range_diff_stat_json" "" "report this cog bug"
+  printf '%s\n' "$json"
+}
+
 cog::fn::git_classify_failure_log() {
   __cog_git_require_jq
 

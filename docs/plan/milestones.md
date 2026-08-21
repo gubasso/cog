@@ -15,3 +15,4 @@ What bounds this work is in the [charter](./charter.md); what could still change
 - 011 [approval-gate-artifact-binding](./slices/011-approval-gate-artifact-binding/README.md) — done — 1 session — rebound the operator-approval gate onto the artifact it hashes
 - 012 [cross-engine-claude-runner](./slices/012-cross-engine-claude-runner/README.md) — done — 2 sessions — added `claude-runner`, hoisted the shared runner mechanics, preflighted both runners, and exited Q-007
 - 013 [plugin-protocol](./slices/013-plugin-protocol/README.md) — done — 3 sessions — added the inspect-only `cog-<name>` seam, `cog plugin`, and the published protocol; raised Q-008
+- 014 [declarative-review-scope](./slices/014-declarative-review-scope/README.md) — done — 1 session — commit, file-list, and working-tree sources combine in any combination, declared by the session

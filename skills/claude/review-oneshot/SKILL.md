@@ -21,16 +21,20 @@ Run a deep, single-pass review of the live diff. When a reviewed plan is supplie
 
 Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]` from `$ARGUMENTS`. Default severity is `praise`, the permissive floor for deterministic filtering. Default format is `markdown`.
 
+Commit refs, an explicit file list, and "committed work only" are scope declarations the caller expresses in prose — or, in orchestrator mode, in the artifacts the orchestrator supplies — not flags on this skill. `--scope <glob>` keeps its own meaning: it narrows review judgment, not the deterministic scope artifact.
+
 ## Phase 0: Mechanical Setup
 
 ```bash
 RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^RUN_DIR=//p')"
 . "$RUN_DIR/paths.env"
-cog review-scope "$SCOPE_JSON"
+cog review-scope [--range <A..B>]... [--sha <sha>]... [--files <paths-file>] [--no-worktree] "$SCOPE_JSON"
 cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
 ```
 
-If the scope has no changed files and no status files, stop. If `--scope <glob>` is present, limit the review judgment to matching paths while leaving the deterministic scope artifact intact.
+Add the sources the caller declared: commits to review as `--range`/`--sha`, an explicit repo-relative path list as `--files`, and `--no-worktree` when only committed work is in scope. With no source flags this is the live working tree, unchanged.
+
+If the run's only source is the working tree and the scope has no changed files and no status files, stop. A scope carrying a commit or `--files` source is never empty, so that check does not apply to it. If `--scope <glob>` is present, limit the review judgment to matching paths while leaving the deterministic scope artifact intact.
 
 Load:
 

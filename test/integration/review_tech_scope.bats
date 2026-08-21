@@ -40,3 +40,26 @@ setup() {
   assert_output "RESOLVED $out"
   jq -e '.available_refs | index("code-review/languages/python/code-review-guide.md")' "$out" >/dev/null
 }
+
+@test "cog review-tech-scope ignores the commit-scope keys" {
+  local repo="${BATS_TEST_TMPDIR}/repo"
+  mkdir -p "$repo"
+  printf '%s\n' 'import click' >"$repo/app.py"
+  jq -n --arg repo "$repo" '{
+    repo_root: $repo,
+    changed_files: ["app.py"],
+    staged_files: [],
+    unstaged_files: [],
+    status_files: [],
+    commit_files: ["app.py"],
+    requested_files: [],
+    commits: [{sha: "abc", short: "abc", subject: "s"}],
+    sources: {worktree: false, ranges: [], shas: ["abc"], files_from: null},
+    diff_stats: {staged: {mode: "staged", files: []}, unstaged: {mode: "unstaged", files: []}, commits: {mode: "range", files: []}}
+  }' >"${BATS_TEST_TMPDIR}/scope.json"
+
+  run cog review-tech-scope --scope "${BATS_TEST_TMPDIR}/scope.json" --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.detected_technologies[] | select(.kind == "language" and .name == "python")' >/dev/null
+}

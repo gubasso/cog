@@ -4,22 +4,42 @@
 # self-check (cmd_review_loop_input.sh) and validate use this one filter so the
 # schema cannot drift between two copies.
 #
-# `context` is an optional rich-context-brief pointer/payload. It is omitted when
-# absent (the canonical 5-key envelope) and, when present, must be a non-empty
-# string. The keyset accepts exactly the 5-key or the 6-key (with context) shape.
+# The keyset is expressed as a required subset plus an allowed superset rather
+# than an enumeration of exact key lists: with two optional fields an
+# enumeration needs four alternatives, and the next one doubles it again.
+#
+# `context` is an optional rich-context-brief payload and must be a non-empty
+# string when present. `scope` is an optional declaration of what the run should
+# review — commit selectors, an explicit path list, and whether the live working
+# tree counts — for a consumer that runs without the session that produced the
+# work. Both are omitted when absent, so the canonical 5-key envelope is
+# byte-identical to what it always was.
+#
+# Every optional key is gated on `has(...)` rather than on `// <default>`,
+# because `//` treats a present null as absent: `{"shas": null}` would validate
+# and then read as the default, turning a malformed commit declaration into a
+# silent working-tree scope — a review of the wrong thing that still reports
+# clean.
 __cog_review_loop_input_filter='
 def nonempty: type == "string" and length > 0;
 def thread_id: (. == null) or (type == "string" and test("^[A-Za-z0-9._:-]+$"));
-(
-  ([keys] == [["impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]])
-  or
-  (([keys] == [["context","impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"]]) and (.context | nonempty))
-) and
+def strings: (type == "array") and (all(.[]; nonempty));
+((["impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","task"] - [keys[]]) | length == 0) and
+(([keys[]] - ["context","impl_thread_id","implementation_review","plan_thread_id","reviewed_plan","scope","task"]) | length == 0) and
 (.task | nonempty) and
 (.reviewed_plan | nonempty) and
 (.implementation_review | nonempty) and
 (.plan_thread_id | thread_id) and
-(.impl_thread_id | thread_id)
+(.impl_thread_id | thread_id) and
+((has("context") | not) or (.context | nonempty)) and
+((has("scope") | not) or (
+  (.scope | type == "object") and
+  (((.scope | keys) - ["files","ranges","shas","worktree"]) | length == 0) and
+  ((.scope | has("ranges") | not) or (.scope.ranges | strings)) and
+  ((.scope | has("shas") | not) or (.scope.shas | strings)) and
+  ((.scope | has("files") | not) or (.scope.files | strings)) and
+  ((.scope | has("worktree") | not) or ((.scope.worktree | type) == "boolean"))
+))
 '
 
 cog::fn::review_loop_input_schema_filter() {
@@ -70,9 +90,11 @@ __cog_review_loop_input_read_thread_id() {
 cog::fn::review_loop_input_build() {
   local run_dir="${1:-}"
   local context_file="${2:-}"
+  local scope_file="${3:-}"
   local task_file reviewed_plan_file implementation_review_file plan_file impl_file
   local plan_tid="" impl_tid="" plan_present=false impl_present=false
   local context_source="/dev/null" context_present=false
+  local scope='{}' scope_present=false
 
   [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
     "missing run directory" "function: cog::fn::review_loop_input_build" "" "pass a run directory"
@@ -95,6 +117,16 @@ cog::fn::review_loop_input_build() {
     context_source="$context_file"
     context_present=true
   fi
+  # The optional scope declaration is validated as JSON here so a malformed file
+  # fails at build time rather than at the consumer, which has no session to
+  # fall back on.
+  if [[ -n $scope_file ]]; then
+    cog::fn::rundir_require_file "$scope_file" "scope declaration"
+    jq -e . "$scope_file" >/dev/null 2>&1 || cog::fn::error_raise "InvalidInput" \
+      "scope declaration is not valid JSON" "path: ${scope_file}" "" "fix the JSON and retry"
+    scope="$(jq -c . "$scope_file")"
+    scope_present=true
+  fi
   __cog_review_loop_input_read_thread_id "$impl_file" "impl-thread-id" impl_tid impl_present
 
   jq -n \
@@ -107,6 +139,8 @@ cog::fn::review_loop_input_build() {
     --argjson impl_present "$impl_present" \
     --rawfile context "$context_source" \
     --argjson context_present "$context_present" \
+    --argjson scope "$scope" \
+    --argjson scope_present "$scope_present" \
     '{
       task: $task,
       reviewed_plan: $reviewed_plan,
@@ -114,7 +148,8 @@ cog::fn::review_loop_input_build() {
       plan_thread_id: (if $plan_present then $plan_tid else null end),
       impl_thread_id: (if $impl_present then $impl_tid else null end)
     }
-    + (if $context_present then {context: $context} else {} end)'
+    + (if $context_present then {context: $context} else {} end)
+    + (if $scope_present then {scope: $scope} else {} end)'
 }
 
 cog::fn::review_loop_input_validate_file() {
