@@ -11,16 +11,16 @@ setup() {
   run cog review-init review
 
   assert_success
-  assert_line --regexp '^RUN_DIR='
-  assert_line --regexp '^SCOPE_JSON='
-  assert_line --regexp '^TECH_SCOPE_JSON='
+  assert_line --regexp '^REVIEW_RUN_DIR='
+  assert_line --regexp '^REVIEW_SCOPE_JSON='
+  assert_line --regexp '^REVIEW_TECH_SCOPE_JSON='
   refute_line --regexp '^CLASSIFICATION_JSON='
   refute_line --regexp '^CLI_JSON='
   refute_line --regexp '^REFS_JSON='
   local run_dir
-  run_dir="$(printf '%s\n' "$output" | sed -n 's/^RUN_DIR=//p')"
+  run_dir="$(printf '%s\n' "$output" | sed -n 's/^REVIEW_RUN_DIR=//p')"
   [ -f "${run_dir}/paths.env" ]
-  grep -q '^TECH_SCOPE_JSON=' "${run_dir}/paths.env"
+  grep -q '^REVIEW_TECH_SCOPE_JSON=' "${run_dir}/paths.env"
   refute grep -q '^CLASSIFICATION_JSON=' "${run_dir}/paths.env"
   refute grep -q '^CLI_JSON=' "${run_dir}/paths.env"
   refute grep -q '^REFS_JSON=' "${run_dir}/paths.env"
@@ -50,4 +50,20 @@ setup() {
 
   assert_success
   [[ $output == *"Create a review run"* ]]
+}
+
+@test "sourcing paths.env leaves the caller's own RUN_DIR alone" {
+  local run_dir
+  run_dir="$(cog review-init sourcing-check | sed -n 's/^REVIEW_RUN_DIR=//p')"
+
+  # The defect this replaced: paths.env bound a bare RUN_DIR, so a skill that
+  # sourced it silently lost its own run directory and every later artifact path
+  # resolved against the review directory instead.
+  RUN_DIR="/caller/owns/this"
+  # shellcheck source=/dev/null
+  . "${run_dir}/paths.env"
+
+  [ "$RUN_DIR" = "/caller/owns/this" ]
+  [ "$REVIEW_RUN_DIR" = "$run_dir" ]
+  [ "$REVIEW_SCOPE_JSON" = "${run_dir}/scope.json" ]
 }

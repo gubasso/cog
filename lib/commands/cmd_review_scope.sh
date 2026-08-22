@@ -275,7 +275,7 @@ __cog_review_scope_requested_files() {
 # because the commit helpers return early before invoking git.
 __cog_review_scope_build_json() {
   local repo_root branch staged_files unstaged_files status_json status_files
-  local staged_stat unstaged_stat commit_files commit_stat commits requested_files changed_files
+  local staged_stat unstaged_stat commit_scope commit_files commit_stat commits requested_files changed_files
   local worktree=true files_from="" selector resolved_range=""
   local -a ranges=() shas=() peeled_shas=() selectors=()
 
@@ -350,8 +350,11 @@ __cog_review_scope_build_json() {
     unstaged_stat='{"mode":"unstaged","files":[]}'
   fi
 
-  commit_files="$(cog::fn::git_range_files_json "${selectors[@]}")"
-  commit_stat="$(cog::fn::git_range_diff_stat_json "${selectors[@]}")"
+  # One call, both answers: the file list and the line stats are two readings of
+  # a single numstat record set, so they cannot describe different diffs.
+  commit_scope="$(cog::fn::git_range_scope_json "${selectors[@]}")"
+  commit_files="$(jq -c '.files' <<<"$commit_scope")"
+  commit_stat="$(jq -c '.stat' <<<"$commit_scope")"
   commits="$(__cog_review_scope_commits "${selectors[@]}")"
   requested_files="$(__cog_review_scope_requested_files "$files_from")"
   changed_files="$(__cog_review_scope_changed_files \

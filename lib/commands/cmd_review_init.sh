@@ -25,15 +25,22 @@ __cog_review_init_paths_json() {
     }'
 }
 
+# Every name this fragment binds carries the REVIEW_ prefix. A sourceable
+# fragment runs in the caller's shell, so an unprefixed generic name silently
+# rebinds whatever the caller already holds under it: `RUN_DIR` here used to
+# repoint the sourcing skill's own run directory at this review directory, and
+# every consumer paid for it with a save-and-restore dance around the `.` line.
+# Prefixing every name, rather than only the one that collided today, is what
+# makes the rule checkable without judging which names are ambient.
 __cog_review_init_write_paths_env() {
   local run_dir="$1"
   local paths_env="$2"
 
   {
-    printf 'RUN_DIR=%q\n' "$run_dir"
-    printf 'SCOPE_JSON=%q\n' "${run_dir}/scope.json"
-    printf 'TECH_SCOPE_JSON=%q\n' "${run_dir}/tech-scope.json"
-    printf 'FINDINGS_JSON=%q\n' "${run_dir}/findings.json"
+    printf 'REVIEW_RUN_DIR=%q\n' "$run_dir"
+    printf 'REVIEW_SCOPE_JSON=%q\n' "${run_dir}/scope.json"
+    printf 'REVIEW_TECH_SCOPE_JSON=%q\n' "${run_dir}/tech-scope.json"
+    printf 'REVIEW_FINDINGS_JSON=%q\n' "${run_dir}/findings.json"
   } >"$paths_env" || cog::fn::error_raise "JsonWriteFailed" \
     "could not write review paths env" "path: ${paths_env}" "" "check run directory permissions"
 }
@@ -76,9 +83,12 @@ cog::cmd::review_init() {
     json="$(__cog_review_init_paths_json "$run_dir" "$paths_env")"
     cog::fn::json_emit '(.run_dir | type == "string") and (.paths | type == "object")' "$json"
   else
-    cog::fn::ui_data "RUN_DIR=${run_dir}"
-    cog::fn::ui_data "SCOPE_JSON=${run_dir}/scope.json"
-    cog::fn::ui_data "TECH_SCOPE_JSON=${run_dir}/tech-scope.json"
-    cog::fn::ui_data "FINDINGS_JSON=${run_dir}/findings.json"
+    # Same vocabulary as paths.env: the command reports one set of names, so a
+    # caller that parses these lines and a caller that sources the fragment
+    # cannot end up holding the same directory under two different names.
+    cog::fn::ui_data "REVIEW_RUN_DIR=${run_dir}"
+    cog::fn::ui_data "REVIEW_SCOPE_JSON=${run_dir}/scope.json"
+    cog::fn::ui_data "REVIEW_TECH_SCOPE_JSON=${run_dir}/tech-scope.json"
+    cog::fn::ui_data "REVIEW_FINDINGS_JSON=${run_dir}/findings.json"
   fi
 }

@@ -34,8 +34,14 @@ setup() {
   run __cog_review_init_write_paths_env "$run_dir" "${run_dir}/paths.env"
 
   assert_success
-  assert_file_contains "${run_dir}/paths.env" "RUN_DIR="
-  assert_file_contains "${run_dir}/paths.env" "TECH_SCOPE_JSON="
+  assert_file_contains "${run_dir}/paths.env" "REVIEW_RUN_DIR="
+  assert_file_contains "${run_dir}/paths.env" "REVIEW_TECH_SCOPE_JSON="
+  # Every binding is prefixed. A sourced fragment runs in the caller's shell, so
+  # an unprefixed name here silently rebinds whatever the caller holds under it.
+  run grep -cE '^REVIEW_[A-Z_]+=' "${run_dir}/paths.env"
+  assert_output "4"
+  run grep -cvE '^REVIEW_[A-Z_]+=' "${run_dir}/paths.env"
+  assert_output "0"
   refute grep -q "CLASSIFICATION_JSON=" "${run_dir}/paths.env"
   refute grep -q "CLI_JSON=" "${run_dir}/paths.env"
   refute grep -q "REFS_JSON=" "${run_dir}/paths.env"

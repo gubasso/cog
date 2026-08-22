@@ -287,6 +287,9 @@ cog::fn::git_diff_stat_json() {
       ;;
   esac
 
+  # --no-renames for the same reason the commit selectors use it: plain
+  # --numstat renders a rename as the single literal "old.txt => new.txt",
+  # which is not a path any consumer can open.
   local added deleted path json
   local -a files=()
   while IFS=$'\t' read -r added deleted path; do
@@ -298,7 +301,7 @@ cog::fn::git_diff_stat_json() {
       --argjson added "$added" \
       --argjson deleted "$deleted" \
       '{path: $path, added: $added, deleted: $deleted}')")
-  done < <(git diff "${git_args[@]}" --numstat)
+  done < <(git diff "${git_args[@]}" --numstat --no-renames)
 
   json="$(jq -n \
     --arg mode "$mode" \
@@ -517,51 +520,80 @@ cog::fn::git_peel_commit_selectors() {
   done
 }
 
-# Emit a JSON array of the file paths touched by the given ranges and/or SHAs,
-# de-duplicated and sorted. With no selector this returns [] without invoking
-# git at all, which is what keeps the default review-scope path unchanged.
-cog::fn::git_range_files_json() {
-  __cog_git_require_git
-  __cog_git_require_jq
+# The diff semantics every commit selector is read with. This is one array
+# shared by both public helpers below, because two invocations describing one
+# diff is exactly how commit_files and diff_stats.commits came to disagree.
+#
+# --numstat carries the path in its third field, so it answers "which files" and
+# "how many lines" at once; --name-only is not needed and, on a merge, does not
+# agree with it. --no-renames reports a rename as a delete plus an add of two
+# real paths, instead of the single literal "old.txt => new.txt" that names no
+# file on disk; it over-counts a renamed file's lines, which is the safe
+# direction for a review budget. --first-parent states the merge semantics
+# rather than inheriting them: git show reaches for a combined diff on a merge
+# on its own, and that is what made a merge's files vanish from the file list.
+__cog_git_numstat_opts=(--numstat --no-renames --first-parent)
 
-  local repo=""
-  local -a ranges=() shas=()
-  __cog_git_range_argv repo ranges shas "$@"
-
-  if ((${#ranges[@]} + ${#shas[@]} == 0)); then
-    jq -cn '[]'
-    return 0
-  fi
-
-  cog::fn::git_peel_commit_selectors shas "$repo"
+# Fill the caller's variable with [{path, added, deleted}], one record per
+# numstat line, for every selector in the caller's ranges and shas arrays. The
+# single source both public helpers read: neither issues a git command of its
+# own, so they cannot disagree.
+#
+# The result lands in a named variable rather than on stdout for the same reason
+# __cog_git_range_capture does it: a die from inside a command substitution or a
+# pipeline kills only the subshell, and the caller would carry on with an empty
+# record set — an unresolvable ref reported as a clean scope.
+__cog_git_range_numstat_json() {
+  local -n __cog_ns_out="$1"
+  local -n __cog_ns_ranges="$2"
+  local -n __cog_ns_shas="$3"
+  local repo="${4:-}"
 
   local -a gitcmd=(git)
   [[ -n $repo ]] && gitcmd=(git -C "$repo")
 
-  local selector out line
-  local -a paths=()
-  for selector in "${ranges[@]}"; do
-    __cog_git_range_capture out "$selector" "${gitcmd[@]}" diff --name-only "$selector" --
-    while IFS= read -r line; do
-      [[ -n $line ]] && paths+=("$line")
+  local selector out added deleted path
+  local -a recs=()
+  for selector in "${__cog_ns_ranges[@]}"; do
+    __cog_git_range_capture out "$selector" \
+      "${gitcmd[@]}" diff "${__cog_git_numstat_opts[@]}" "$selector" --
+    while IFS=$'\t' read -r added deleted path; do
+      [[ -n ${path:-} ]] || continue
+      [[ $added == "-" ]] && added=0
+      [[ $deleted == "-" ]] && deleted=0
+      recs+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
+        '{path: $path, added: $added, deleted: $deleted}')")
     done <<<"$out"
   done
-  for selector in "${shas[@]}"; do
-    __cog_git_range_capture out "$selector" "${gitcmd[@]}" show --name-only --format= "$selector" --
-    while IFS= read -r line; do
-      [[ -n $line ]] && paths+=("$line")
+  for selector in "${__cog_ns_shas[@]}"; do
+    __cog_git_range_capture out "$selector" \
+      "${gitcmd[@]}" show "${__cog_git_numstat_opts[@]}" --format= "$selector" --
+    while IFS=$'\t' read -r added deleted path; do
+      [[ -n ${path:-} ]] || continue
+      [[ $added == "-" ]] && added=0
+      [[ $deleted == "-" ]] && deleted=0
+      recs+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
+        '{path: $path, added: $added, deleted: $deleted}')")
     done <<<"$out"
   done
 
-  cog::fn::git_json_array_from_lines "${paths[@]}" | jq -c 'unique'
+  __cog_ns_out="$(cog::fn::git_json_object_array_from_lines "${recs[@]}")"
 }
 
-# Emit {mode: "range", files: [{path, added, deleted}]} for the given ranges
-# and/or SHAs, summed per path and sorted by path. This is a sibling of
-# cog::fn::git_diff_stat_json rather than a widening of it: that function's mode
-# is a pinned two-value contract over exactly one git diff, while a selector set
-# is plural and has to merge.
-cog::fn::git_range_diff_stat_json() {
+# Emit {files: [path, ...], stat: {mode: "range", files: [{path, added, deleted}]}}
+# for the given ranges and/or SHAs: the file list and the line stats of one
+# diff, read from one numstat record set per selector.
+#
+# Both answers come back together because they are one answer. Returning them
+# from separate functions meant two git invocations per selector, and on a merge
+# those two invocations disagreed — the file list came back empty while the
+# stats named a file, so the reviewer never opened a file the budget was charged
+# for. A caller that receives both at once cannot reintroduce that gap.
+#
+# `files` is de-duplicated and sorted; `stat.files` is summed per path and
+# sorted by path. With no selector this returns the empty pair without invoking
+# git at all, which is what keeps the default review-scope path unchanged.
+cog::fn::git_range_scope_json() {
   __cog_git_require_git
   __cog_git_require_jq
 
@@ -569,51 +601,30 @@ cog::fn::git_range_diff_stat_json() {
   local -a ranges=() shas=()
   __cog_git_range_argv repo ranges shas "$@"
 
-  local -a files=()
+  local records='[]'
   if ((${#ranges[@]} + ${#shas[@]} > 0)); then
     cog::fn::git_peel_commit_selectors shas "$repo"
-    local -a gitcmd=(git)
-    [[ -n $repo ]] && gitcmd=(git -C "$repo")
-
-    local selector out added deleted path
-    for selector in "${ranges[@]}"; do
-      __cog_git_range_capture out "$selector" "${gitcmd[@]}" diff --numstat "$selector" --
-      while IFS=$'\t' read -r added deleted path; do
-        [[ -n ${path:-} ]] || continue
-        [[ $added == "-" ]] && added=0
-        [[ $deleted == "-" ]] && deleted=0
-        files+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
-          '{path: $path, added: $added, deleted: $deleted}')")
-      done <<<"$out"
-    done
-    for selector in "${shas[@]}"; do
-      __cog_git_range_capture out "$selector" "${gitcmd[@]}" show --numstat --format= "$selector" --
-      while IFS=$'\t' read -r added deleted path; do
-        [[ -n ${path:-} ]] || continue
-        [[ $added == "-" ]] && added=0
-        [[ $deleted == "-" ]] && deleted=0
-        files+=("$(jq -cn --arg path "$path" --argjson added "$added" --argjson deleted "$deleted" \
-          '{path: $path, added: $added, deleted: $deleted}')")
-      done <<<"$out"
-    done
+    __cog_git_range_numstat_json records ranges shas "$repo"
   fi
 
   local json
-  json="$(jq -n \
-    --argjson files "$(cog::fn::git_json_object_array_from_lines "${files[@]}")" \
+  json="$(jq -n --argjson records "$records" \
     '{
-      mode: "range",
-      files: ($files
-        | group_by(.path)
-        | map({
-            path: .[0].path,
-            added: (map(.added) | add),
-            deleted: (map(.deleted) | add)
-          }))
+      files: ($records | [.[].path] | unique),
+      stat: {
+        mode: "range",
+        files: ($records
+          | group_by(.path)
+          | map({
+              path: .[0].path,
+              added: (map(.added) | add),
+              deleted: (map(.deleted) | add)
+            }))
+      }
     }')"
-  cog::fn::json_validate '(.mode == "range") and (.files | type == "array")' "$json" \
+  cog::fn::json_validate '(.files | type == "array") and (.stat.mode == "range") and (.stat.files | type == "array")' "$json" \
     || cog::helpers::die "$EX_SOFTWARE" "InvalidJsonOutput" \
-      "invalid git range diff stat JSON" "function: cog::fn::git_range_diff_stat_json" "" "report this cog bug"
+      "invalid git range scope JSON" "function: cog::fn::git_range_scope_json" "" "report this cog bug"
   printf '%s\n' "$json"
 }
 

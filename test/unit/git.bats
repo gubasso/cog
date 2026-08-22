@@ -29,28 +29,26 @@ case "$*" in
   "diff --name-only")
     printf '%s\n' "unstaged one.txt"
     ;;
-  "diff --staged --numstat")
-    printf '1\t2\tstaged.txt\n-\t-\tbinary.bin\n'
+  # --no-renames renders a rename as a delete plus an add of two real paths,
+  # which is what the staged arm returns for "old name.txt" and "new name.txt".
+  "diff --staged --numstat --no-renames")
+    printf '1\t2\tstaged.txt\n-\t-\tbinary.bin\n4\t0\tnew name.txt\n0\t3\told name.txt\n'
     ;;
-  "diff --numstat")
+  "diff --numstat --no-renames")
     printf '3\t4\tunstaged.txt\n'
     ;;
   # Commit-selector arms. Only these two SHAs resolve, so an unknown selector
   # falls through to the catch-all and the helpers' raise path stays reachable.
+  # There is one arm per selector, not one per question: the file list and the
+  # line stats both come from this single numstat record set.
   "rev-parse --verify --quiet aaa^{commit}" | "rev-parse --verify --quiet bbb^{commit}")
     peel="$4"
     printf '%s\n' "${peel%%^*}"
     ;;
-  "show --name-only --format= aaa --")
-    printf '\n%s\n' "ranged.txt" "shared.txt"
-    ;;
-  "show --numstat --format= aaa --")
+  "show --numstat --no-renames --first-parent --format= aaa --")
     printf '\n2\t0\tranged.txt\n3\t1\tshared.txt\n'
     ;;
-  "show --name-only --format= bbb --")
-    printf '\n%s\n' "shared.txt"
-    ;;
-  "show --numstat --format= bbb --")
+  "show --numstat --no-renames --first-parent --format= bbb --")
     printf '\n5\t3\tshared.txt\n'
     ;;
   log*)
@@ -248,43 +246,71 @@ EOF
   run ! cog::fn::git_str_in_lines "b" "$(printf 'abc\n')"
 }
 
-@test "git range helpers return empty without invoking git" {
+@test "git_range_scope_json returns the empty pair without invoking git" {
   : >"$GIT_FAKE_LOG"
 
-  run cog::fn::git_range_files_json
+  run cog::fn::git_range_scope_json
   assert_success
-  assert_output "[]"
-
-  run cog::fn::git_range_diff_stat_json
-  assert_success
-  printf '%s\n' "$output" | jq -e '.mode == "range" and .files == []' >/dev/null
+  printf '%s\n' "$output" | jq -e '.files == [] and .stat.mode == "range" and .stat.files == []' >/dev/null
 
   run cat "$GIT_FAKE_LOG"
   assert_output ""
 }
 
-@test "git_range_diff_stat_json sums a path across selectors and sorts by path" {
-  run cog::fn::git_range_diff_stat_json --sha aaa --sha bbb
+@test "git_range_scope_json agrees with itself on the path set" {
+  run cog::fn::git_range_scope_json --sha aaa
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.mode == "range"' >/dev/null
-  printf '%s\n' "$output" | jq -e '.files == [{path: "ranged.txt", added: 2, deleted: 0}, {path: "shared.txt", added: 8, deleted: 4}]' >/dev/null
+  # One numstat record set feeds both halves, so this is a structural property,
+  # not a coincidence two separate git invocations happened to produce.
+  printf '%s\n' "$output" | jq -e '.files == ["ranged.txt","shared.txt"]' >/dev/null
+  printf '%s\n' "$output" | jq -e '.files == [.stat.files[].path]' >/dev/null
 }
 
-@test "git range helpers raise on a selector that does not resolve" {
-  run --separate-stderr cog::fn::git_range_files_json --sha nope
+@test "git_range_scope_json reads one numstat call per selector" {
+  : >"$GIT_FAKE_LOG"
+
+  run cog::fn::git_range_scope_json --sha aaa
+  assert_success
+
+  run grep -c '^show --numstat --no-renames --first-parent --format= aaa --$' "$GIT_FAKE_LOG"
+  assert_output "1"
+  run grep -c '^show --name-only' "$GIT_FAKE_LOG"
+  assert_output "0"
+}
+
+@test "git_range_scope_json sums a path across selectors and sorts by path" {
+  run cog::fn::git_range_scope_json --sha aaa --sha bbb
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.stat.files == [{path: "ranged.txt", added: 2, deleted: 0}, {path: "shared.txt", added: 8, deleted: 4}]' >/dev/null
+  printf '%s\n' "$output" | jq -e '.files == ["ranged.txt","shared.txt"]' >/dev/null
+}
+
+@test "git_range_scope_json raises on a selector that does not resolve" {
+  run --separate-stderr cog::fn::git_range_scope_json --sha nope
   assert_failure 65
   [[ $stderr == *"could not resolve git commit selector"* ]]
   [[ $stderr == *"nope"* ]]
 
-  run --separate-stderr cog::fn::git_range_diff_stat_json --range bad..ref
+  # A range is never peeled, so this failure has to escape the collector itself
+  # rather than a rev-parse guard.
+  run --separate-stderr cog::fn::git_range_scope_json --range bad..ref
   assert_failure 65
   [[ $stderr == *"bad..ref"* ]]
 }
 
-@test "git range helpers reject an unknown option" {
-  run --separate-stderr cog::fn::git_range_files_json --nope
+@test "git_range_scope_json rejects an unknown option" {
+  run --separate-stderr cog::fn::git_range_scope_json --nope
 
   assert_failure 64
   [[ $stderr == *"unknown git commit selector option"* ]]
+}
+
+@test "git_diff_stat_json reports real paths for a rename" {
+  run cog::fn::git_diff_stat_json --staged
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '[.files[].path] | index("new name.txt") and index("old name.txt")' >/dev/null
+  printf '%s\n' "$output" | jq -e '[.files[].path] | any(test(" => ")) | not' >/dev/null
 }

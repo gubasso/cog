@@ -98,15 +98,13 @@ Resolve the sources before round 1 and reuse them verbatim in every round. Pin `
 Reviewer setup (every round, before launching): run the `review-oneshot` Phase 0 commands here, in this orchestrator, with the run's declared sources, and name the resulting artifacts in the round prompt so the sandboxed reviewer only reads them.
 
 ```bash
-LOOP_RUN_DIR="$RUN_DIR"
-REVIEW_DIR="$(cog review-init review-loop-round-N | sed -n 's/^RUN_DIR=//p')"
-. "$REVIEW_DIR/paths.env"
-RUN_DIR="$LOOP_RUN_DIR"
-cog review-scope --sha <full-sha> --files "$RUN_DIR/session-files.txt" "$SCOPE_JSON"
-cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
+REVIEW_RUN_DIR="$(cog review-init review-loop-round-N | sed -n 's/^REVIEW_RUN_DIR=//p')"
+. "$REVIEW_RUN_DIR/paths.env"
+cog review-scope --sha <full-sha> --files "$RUN_DIR/session-files.txt" "$REVIEW_SCOPE_JSON"
+cog review-tech-scope --scope "$REVIEW_SCOPE_JSON" "$REVIEW_TECH_SCOPE_JSON"
 ```
 
-`paths.env` sets `RUN_DIR` to the review directory it belongs to, so restore the loop's own `RUN_DIR` immediately after sourcing it — every later step in this skill (`round-N-prompt.txt`, `round-N-findings.json`, `summary-body.md`) resolves against the loop run directory, not the per-round review directory. The `--files` list is written once, before round 1, and stays at `$RUN_DIR/session-files.txt` for every round; the review directory is fresh each round and never holds it.
+Every name `paths.env` binds is `REVIEW_`-prefixed, so sourcing it leaves this skill's own `RUN_DIR` alone — `round-N-prompt.txt`, `round-N-findings.json`, and `summary-body.md` keep resolving against the loop run directory. The `--files` list is written once, before round 1, and stays at `$RUN_DIR/session-files.txt` for every round; the review directory is fresh each round and never holds it.
 
 Substitute the run's actual sources; omit any the run does not have. With no source flags at all this is the working tree alone.
 
@@ -114,7 +112,7 @@ Re-run it per round, with the same source flags: the working-tree part changes a
 
 When the run's only source is the working tree and the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`. A run with a commit or `--files` source always has a scope, so that check does not apply to it; `findings-empty` there means only what the Terminate list already says it means — the reviewer returned no findings.
 
-Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$SCOPE_JSON` and `$TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
+Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$REVIEW_SCOPE_JSON` and `$REVIEW_TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
 
 ```bash
 cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last

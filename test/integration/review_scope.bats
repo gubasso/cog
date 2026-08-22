@@ -26,10 +26,10 @@ case "$*" in
   "status --porcelain=v1 -uall")
     [ "${GIT_TREE_CLEAN:-0}" = 1 ] || printf '%s\n' "M  staged.txt" " M unstaged.txt" "?? new.txt"
     ;;
-  "diff --staged --numstat")
+  "diff --staged --numstat --no-renames")
     [ "${GIT_TREE_CLEAN:-0}" = 1 ] || printf '1\t0\tstaged.txt\n'
     ;;
-  "diff --numstat")
+  "diff --numstat --no-renames")
     [ "${GIT_TREE_CLEAN:-0}" = 1 ] || printf '2\t1\tunstaged.txt\n'
     ;;
   # A movable ref that actually resolves to a different string, so a test can
@@ -52,22 +52,25 @@ case "$*" in
     printf '%s\n' "${peel%%^*}"
     ;;
   # The commit-selector arms are suffixed globs and the worktree arms above are
-  # exact strings, so a bare `diff --numstat` can never fall through to them.
-  "diff --name-only "*)
-    [ "${GIT_RANGE_FAIL:-0}" = 1 ] && exit 128
-    [ "${GIT_RANGE_EMPTY:-0}" = 1 ] && exit 0
-    printf '%s\n' "ranged.txt" "shared.txt"
-    ;;
-  "diff --numstat "*)
+  # exact strings, so a bare `diff --numstat --no-renames` can never fall
+  # through to them. There is one arm per selector kind, not two: the file list
+  # and the line stats are read from this single numstat record set, so a shim
+  # that could disagree with itself no longer exists.
+  "diff --numstat --no-renames --first-parent "*)
     [ "${GIT_RANGE_FAIL:-0}" = 1 ] && exit 128
     [ "${GIT_RANGE_EMPTY:-0}" = 1 ] && exit 0
     printf '3\t1\tranged.txt\n5\t0\tshared.txt\n'
     ;;
-  "show --name-only --format= "*)
-    [ "${GIT_RANGE_FAIL:-0}" = 1 ] && exit 128
-    printf '\n%s\n' "shown.txt"
+  # A merge: the record set names a file, which under the old two-invocation
+  # split was reported by --numstat and missed entirely by --name-only.
+  "show --numstat --no-renames --first-parent --format= mergehash --")
+    printf '\n1\t0\tmerged.txt\n'
     ;;
-  "show --numstat --format= "*)
+  # A rename under --no-renames: two real paths, never "old.txt => new.txt".
+  "show --numstat --no-renames --first-parent --format= renamehash --")
+    printf '\n4\t0\tnew.txt\n0\t3\told.txt\n'
+    ;;
+  "show --numstat --no-renames --first-parent --format= "*)
     [ "${GIT_RANGE_FAIL:-0}" = 1 ] && exit 128
     printf '\n4\t2\tshown.txt\n'
     ;;
@@ -135,8 +138,8 @@ diff --name-only
 rev-parse --show-toplevel
 branch --show-current
 status --porcelain=v1 -uall
-diff --staged --numstat
-diff --numstat"
+diff --staged --numstat --no-renames
+diff --numstat --no-renames"
 }
 
 @test "cog review-scope unions a commit selector into the changed files" {
@@ -307,11 +310,13 @@ diff --numstat"
   # The movable name is resolved exactly once...
   run grep -c '^rev-parse --verify --quiet topic\^{commit}$' "$GIT_FAKE_LOG"
   assert_output "1"
-  # ...and every collector afterwards is handed the hash it resolved to.
-  run grep -c '^show --name-only --format= topichash --$' "$GIT_FAKE_LOG"
+  # ...and every collector afterwards is handed the hash it resolved to. The
+  # numstat call appears once, not twice: the file list and the line stats are
+  # two readings of one record set, not two questions asked of git.
+  run grep -c '^show --numstat --no-renames --first-parent --format= topichash --$' "$GIT_FAKE_LOG"
   assert_output "1"
-  run grep -c '^show --numstat --format= topichash --$' "$GIT_FAKE_LOG"
-  assert_output "1"
+  run grep -c '^show --name-only' "$GIT_FAKE_LOG"
+  assert_output "0"
   run grep -c '^log -z --no-walk --format=.* topichash$' "$GIT_FAKE_LOG"
   assert_output "1"
   # The original selector is still what `sources` reports back to the caller.
@@ -321,7 +326,7 @@ diff --numstat"
 
 @test "cog review-scope resolves each range endpoint once and reuses the hashes" {
   # The range analogue of resolve-once: `A..B` names whatever A and B point at
-  # when git is called, and the three collectors are three separate calls.
+  # when git is called, and the collectors are separate calls.
   run cog review-scope --no-worktree --range base..topic --json
 
   assert_success
@@ -329,10 +334,10 @@ diff --numstat"
   assert_output "1"
   run grep -c '^rev-parse --verify --quiet topic\^{commit}$' "$GIT_FAKE_LOG"
   assert_output "1"
-  run grep -c '^diff --name-only basehash..topichash --$' "$GIT_FAKE_LOG"
+  run grep -c '^diff --numstat --no-renames --first-parent basehash..topichash --$' "$GIT_FAKE_LOG"
   assert_output "1"
-  run grep -c '^diff --numstat basehash..topichash --$' "$GIT_FAKE_LOG"
-  assert_output "1"
+  run grep -c '^diff --name-only' "$GIT_FAKE_LOG"
+  assert_output "0"
   run grep -c '^log -z --format=.* basehash..topichash$' "$GIT_FAKE_LOG"
   assert_output "1"
 }
@@ -343,9 +348,7 @@ diff --numstat"
   run cog review-scope --no-worktree --range base...topic --json
 
   assert_success
-  run grep -c '^diff --name-only basehash\.\.\.topichash --$' "$GIT_FAKE_LOG"
-  assert_output "1"
-  run grep -c '^diff --numstat basehash\.\.\.topichash --$' "$GIT_FAKE_LOG"
+  run grep -c '^diff --numstat --no-renames --first-parent basehash\.\.\.topichash --$' "$GIT_FAKE_LOG"
   assert_output "1"
 }
 
@@ -392,4 +395,23 @@ diff --numstat"
 
   assert_failure
   [[ $stderr == *"needs a .. or ... separator"* ]]
+}
+
+@test "cog review-scope reports a merge in both the file list and the line stats" {
+  run cog review-scope --no-worktree --sha mergehash --json
+
+  assert_success
+  # The defect this replaced: commit_files was empty while diff_stats.commits
+  # named a file, so the reviewer never opened a file the budget was charged for.
+  printf '%s\n' "$output" | jq -e '.commit_files == ["merged.txt"]' >/dev/null
+  printf '%s\n' "$output" | jq -e '[.diff_stats.commits.files[].path] == ["merged.txt"]' >/dev/null
+  printf '%s\n' "$output" | jq -e '.changed_files == [.diff_stats.commits.files[].path] | not | not' >/dev/null
+}
+
+@test "cog review-scope reports real paths for a renamed file" {
+  run cog review-scope --no-worktree --sha renamehash --json
+
+  assert_success
+  printf '%s\n' "$output" | jq -e '.commit_files == ["new.txt","old.txt"]' >/dev/null
+  printf '%s\n' "$output" | jq -e '[.commit_files[], (.diff_stats.commits.files[].path)] | any(test(" => ")) | not' >/dev/null
 }

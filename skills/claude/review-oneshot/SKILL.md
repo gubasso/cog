@@ -26,10 +26,10 @@ Commit refs, an explicit file list, and "committed work only" are scope declarat
 ## Phase 0: Mechanical Setup
 
 ```bash
-RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^RUN_DIR=//p')"
-. "$RUN_DIR/paths.env"
-cog review-scope [--range <A..B>]... [--sha <sha>]... [--files <paths-file>] [--no-worktree] "$SCOPE_JSON"
-cog review-tech-scope --scope "$SCOPE_JSON" "$TECH_SCOPE_JSON"
+REVIEW_RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^REVIEW_RUN_DIR=//p')"
+. "$REVIEW_RUN_DIR/paths.env"
+cog review-scope [--range <A..B>]... [--sha <sha>]... [--files <paths-file>] [--no-worktree] "$REVIEW_SCOPE_JSON"
+cog review-tech-scope --scope "$REVIEW_SCOPE_JSON" "$REVIEW_TECH_SCOPE_JSON"
 ```
 
 Add the sources the caller declared: commits to review as `--range`/`--sha`, an explicit repo-relative path list as `--files`, and `--no-worktree` when only committed work is in scope. With no source flags this is the live working tree, unchanged.
@@ -41,7 +41,7 @@ Load:
 - `$(cog skill-refs path code-review/reviewer-prompt.md)`
 - `$(cog skill-refs path code-review/llm-review-discipline.md)`
 - `$(cog skill-refs path code-review/review-process.md)`
-- every relative path in `$TECH_SCOPE_JSON` `available_refs[]`, resolved with `cog skill-refs path`
+- every relative path in `$REVIEW_TECH_SCOPE_JSON` `available_refs[]`, resolved with `cog skill-refs path`
 
 When a reviewed plan is supplied, load it from the task/context input and check that required plan phases are materially present in the diff; record gaps as `important` or `question` findings.
 

@@ -39,7 +39,7 @@ A thin skill deals in **inputs and outputs**. It parses arguments, calls a small
 ### Inputs / outputs contract
 
 - A subcommand that produces data takes an `<out.json>` path, writes a **self-checked** JSON fragment, and prints `RESOLVED <out.json>`. The orchestrator reads named fields; it never re-parses free-form text.
-- A subcommand that resolves a set of paths emits `KEY=value` lines (and, where useful, a sourceable `paths.env`) so later Bash blocks can recover the same variables.
+- A subcommand that resolves a set of paths emits `KEY=value` lines (and, where useful, a sourceable `paths.env`) so later Bash blocks can recover the same variables. **Every name it binds carries the subcommand's own prefix** — `cog review-init` emits `REVIEW_RUN_DIR`, `REVIEW_SCOPE_JSON`, and so on. A sourced fragment runs in the caller's shell, so an unprefixed generic name silently rebinds whatever the caller already holds under it; `review-init` once emitted a bare `RUN_DIR` and repointed the sourcing skill's own run directory, which every consumer then paid for with a save-and-restore dance around the `.` line. Prefix every name, not only the one that collides today: that rule is checkable without judging which names are ambient.
 - Each subcommand emits **one** object. The orchestrator should never have to merge several helper outputs with `jq` to get a usable view.
 
 ### RUN_DIR lifecycle
@@ -50,12 +50,14 @@ Shell state does **not** persist between a skill's separate Bash calls. The run 
 # Create once; capture RUN_DIR from the KEY=value line.
 RUN_DIR="$(cog rundir <prefix> | sed -n 's/^RUN_DIR=//p')"
 
-# A review skill resolves all of its output paths in one call and sources them back:
-RUN_DIR="$(cog review-init <skill-name> | sed -n 's/^RUN_DIR=//p')"
-. "$RUN_DIR/paths.env"   # restores SCOPE_JSON, CLASSIFICATION_JSON, … in any later block
+# A review skill resolves all of its output paths in one call and sources them back.
+# The REVIEW_ prefix is what lets a skill that already holds its own RUN_DIR
+# source this without losing it.
+REVIEW_RUN_DIR="$(cog review-init <skill-name> | sed -n 's/^REVIEW_RUN_DIR=//p')"
+. "$REVIEW_RUN_DIR/paths.env"   # restores REVIEW_SCOPE_JSON, REVIEW_TECH_SCOPE_JSON, … in any later block
 ```
 
-Re-source `$RUN_DIR/paths.env` at the top of any later block that needs the path variables; do not assume they survive from an earlier block.
+Re-source the fragment at the top of any later block that needs the path variables; do not assume they survive from an earlier block.
 
 ### Delegation-proof pattern
 
@@ -93,7 +95,7 @@ A skill that hard-depends on `cog` subcommands must **fail legibly** when `cog` 
 `cog` must be on `PATH` (installed via `just install`). A bare call is correct:
 
 ```bash
-cog review-scope "$SCOPE_JSON"
+cog review-scope "$REVIEW_SCOPE_JSON"
 ```
 
 Do **not** carry a hand-rolled resolve-or-fallback block. A historical `COG="$(command -v cog || printf '%s\n' "…/_tmp/cog-build/bin/cog")"` pattern that points at a build-staging path deleted at install time is a bug, not a safety net. A bare `cog` call already fails legibly when the binary is absent.
