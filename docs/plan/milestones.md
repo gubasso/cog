@@ -17,3 +17,4 @@ What bounds this work is in the [charter](./charter.md); what could still change
 - 013 [plugin-protocol](./slices/013-plugin-protocol/README.md) — done — 3 sessions — added the inspect-only `cog-<name>` seam, `cog plugin`, and the published protocol; raised Q-008
 - 014 [declarative-review-scope](./slices/014-declarative-review-scope/README.md) — done — 1 session — commit, file-list, and working-tree sources combine in any combination, declared by the session
 - 015 [single-source-scope-contracts](./slices/015-single-source-scope-contracts/README.md) — done — 1 session — one numstat read per selector, and a paths fragment that no longer rebinds its caller
+- 016 [one-scope-declaration](./slices/016-one-scope-declaration/README.md) — done — 1 session — one declaration in, the same declaration echoed out, and no second spelling of it

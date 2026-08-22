@@ -72,17 +72,21 @@ committed_repo() {
   local repo
   repo="$(committed_repo)"
   cd "$repo"
-  run cog review-scope check --max-files 0 --sha HEAD --json
+  # Outside the repo on purpose: a declaration written inside the fixture is
+  # itself an untracked path and lands in the scope it declares.
+  printf '%s' '{"shas":["HEAD"]}' >"${BATS_TEST_TMPDIR}/declaration.json"
+  run cog review-scope check --max-files 0 --declaration "${BATS_TEST_TMPDIR}/declaration.json" --json
   assert_failure
   printf '%s\n' "$output" | jq -e '.actual.files == 1 and (.breaches | index("files"))' >/dev/null
 }
 
-@test "review-scope check counts only the commit lines under --no-worktree" {
+@test "review-scope check counts only the commit lines when the tree is excluded" {
   local repo
   repo="$(committed_repo)"
   cd "$repo"
   printf 'x\n' >>"$repo/committed.txt"
-  run cog review-scope check --no-worktree --sha HEAD --max-lines 100 --json
+  printf '%s' '{"worktree":false,"shas":["HEAD"]}' >"${BATS_TEST_TMPDIR}/declaration.json"
+  run cog review-scope check --declaration "${BATS_TEST_TMPDIR}/declaration.json" --max-lines 100 --json
   assert_success
   printf '%s\n' "$output" | jq -e '.actual.lines == 4' >/dev/null
 }

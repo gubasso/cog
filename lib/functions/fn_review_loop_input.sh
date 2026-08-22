@@ -32,18 +32,17 @@ def strings: (type == "array") and (all(.[]; nonempty));
 (.plan_thread_id | thread_id) and
 (.impl_thread_id | thread_id) and
 ((has("context") | not) or (.context | nonempty)) and
-((has("scope") | not) or (
-  (.scope | type == "object") and
-  (((.scope | keys) - ["files","ranges","shas","worktree"]) | length == 0) and
-  ((.scope | has("ranges") | not) or (.scope.ranges | strings)) and
-  ((.scope | has("shas") | not) or (.scope.shas | strings)) and
-  ((.scope | has("files") | not) or (.scope.files | strings)) and
-  ((.scope | has("worktree") | not) or ((.scope.worktree | type) == "boolean"))
-))
+((has("scope") | not) or (.scope | __SCOPE_DECLARATION__))
 '
 
+# The `scope` field is validated by the scope-declaration schema itself rather
+# than by a second copy of its rules: the handoff and `cog review-scope
+# --declaration` must accept exactly the same object, or the handoff becomes a
+# way to smuggle in a scope the resolver will later refuse.
 cog::fn::review_loop_input_schema_filter() {
-  printf '%s' "$__cog_review_loop_input_filter"
+  local declaration
+  declaration="$(cog::fn::scope_declaration_filter)"
+  printf '%s' "${__cog_review_loop_input_filter//__SCOPE_DECLARATION__/$declaration}"
 }
 
 cog::fn::review_loop_input_default_path() {
@@ -164,7 +163,7 @@ cog::fn::review_loop_input_validate_file() {
     "review-loop input file is not readable" "path: ${json_file}" "" "check file permissions"
   jq -e . "$json_file" >/dev/null 2>&1 || cog::fn::error_raise "InvalidInput" \
     "review-loop input is not valid JSON" "path: ${json_file}" "" "fix the JSON and retry"
-  jq -e "$__cog_review_loop_input_filter" "$json_file" >/dev/null || cog::fn::error_raise "InvalidInput" \
+  jq -e "$(cog::fn::review_loop_input_schema_filter)" "$json_file" >/dev/null || cog::fn::error_raise "InvalidInput" \
     "review-loop input failed schema validation" "path: ${json_file}" \
     "expected task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id" \
     "fix the handoff JSON and retry"

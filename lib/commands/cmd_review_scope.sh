@@ -1,58 +1,45 @@
 # shellcheck shell=bash
 : 'desc: Detect changed-file review scope.'
 
-__cog_review_scope_self_check='.repo_root != null and (.changed_files | type == "array") and (.staged_files | type == "array") and (.unstaged_files | type == "array") and (.status_files | type == "array") and (.commit_files | type == "array") and (.requested_files | type == "array") and (.commits | type == "array") and (.sources | type == "object") and (.diff_stats | type == "object")'
-
-__cog_review_scope_source_usage="[--range <A..B>]... [--sha <sha>]... [--files <paths-file>] [--no-worktree]"
+__cog_review_scope_self_check='.repo_root != null and (.changed_files | type == "array") and (.staged_files | type == "array") and (.unstaged_files | type == "array") and (.status_files | type == "array") and (.commit_files | type == "array") and (.requested_files | type == "array") and (.commits | type == "array") and (.declaration | type == "object") and (.diff_stats | type == "object")'
 
 __cog_review_scope_usage() {
-  cog::fn::ui_data "Usage: cog review-scope ${__cog_review_scope_source_usage} (<out.json>|--json)"
-  cog::fn::ui_data "Usage: cog review-scope check [--max-files <n>] [--max-lines <n>] ${__cog_review_scope_source_usage} [--json]"
+  cog::fn::ui_data "Usage: cog review-scope [--declaration <scope.json>] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog review-scope check [--max-files <n>] [--max-lines <n>] [--declaration <scope.json>] [--json]"
 }
 
-# Consume one source flag from the head of "$@", appending it to the named array
-# and reporting how many argv entries it took. Returns 1 when the head is not a
-# source flag, so each caller's own case block still owns everything else. Both
-# arg loops route through this so the bare form and `check` can never come to
-# measure different changesets.
-__cog_review_scope_take_source() {
-  local -n __cog_scope_sources="$1"
-  local taken_name="$2"
-  shift 2
+# What to review arrives as one declaration, never as a set of flags. Choosing
+# the sources is judgment that belongs to the caller holding the session;
+# resolving them to files and lines is the mechanics that belong here. A flag
+# per source kind mirrored the same four fields the review-loop handoff already
+# carried, so one concept had two spellings and every new source kind would have
+# had to be added to both. See lib/functions/fn_scope_declaration.sh.
+__cog_review_scope_take_declaration() {
+  local -n __cog_scope_decl_path="$1"
+  shift
 
-  case "$1" in
-    --range | --sha | --files)
-      [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
-        "missing review-scope source value" "option: $1" "" \
-        "pass a value, e.g. --range A..B, --sha <sha>, or --files <paths-file>"
-      __cog_scope_sources+=("$1" "$2")
-      printf -v "$taken_name" '%s' 2
-      ;;
-    --no-worktree)
-      __cog_scope_sources+=("$1")
-      printf -v "$taken_name" '%s' 1
-      ;;
-    *)
-      return 1
-      ;;
-  esac
+  [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
+    "missing scope declaration path" "option: $1" "" \
+    "pass a declaration file, e.g. --declaration scope.json"
+  [[ -z $__cog_scope_decl_path ]] || cog::fn::error_raise "InvalidInput" \
+    "duplicate scope declaration" "option: $1" "" "pass --declaration once"
+  __cog_scope_decl_path="$2"
 }
 
 __cog_review_scope_check_self_check='(.schema=="cog.review-scope.check.v1") and (.ok|type=="boolean") and (.exceeded|type=="boolean") and (.actual|type=="object") and (.breaches|type=="array")'
 
 __cog_review_scope_check_build_json() {
-  local max_files="$1" max_lines="$2" scope_json files lines
-  shift 2
+  local max_files="$1" max_lines="$2" declaration="${3:-}" scope_json files lines
   # Measure the same changeset the review will read, so the guard cannot pass a
-  # diff the reviewer then chokes on. With no source flags that is the whole
+  # diff the reviewer then chokes on. With no declaration that is the whole
   # working tree (staged, unstaged, and untracked), which catches a runaway diff
   # before commit, when a round's edits are typically still unstaged.
   #
-  # A --files path contributes to the file count but not the line count: a bare
+  # A declared file contributes to the file count but not the line count: a bare
   # path listing carries no diff. A file touched both in a commit selector and
   # in the working tree is one entry in changed_files but is counted twice in
   # lines, which is right — those are two distinct sets of lines to read.
-  scope_json="$(__cog_review_scope_build_json "$@")"
+  scope_json="$(__cog_review_scope_build_json "$declaration")"
   files="$(jq '.changed_files | length' <<<"$scope_json")"
   lines="$(jq '[.diff_stats.staged.files[], .diff_stats.unstaged.files[], .diff_stats.commits.files[] | .added + .deleted] | add // 0' <<<"$scope_json")"
   jq -n \
@@ -76,14 +63,14 @@ __cog_review_scope_check_build_json() {
 }
 
 __cog_review_scope_check_cmd() {
-  local max_files="" max_lines="" mode="" out="" json taken=0
-  local -a sources=()
+  local max_files="" max_lines="" mode="" out="" json declaration=""
   while (($# > 0)); do
-    if __cog_review_scope_take_source sources taken "$@"; then
-      shift "$taken"
-      continue
-    fi
     case "$1" in
+      --declaration)
+        __cog_review_scope_take_declaration declaration "$@"
+        shift 2
+        continue
+        ;;
       -h | --help)
         __cog_review_scope_usage
         return 0
@@ -128,7 +115,7 @@ __cog_review_scope_check_cmd() {
   [[ -n $mode || ${COG_UI_JSON:-false} != true ]] || mode=json
   [[ -n $mode ]] || mode=json
 
-  json="$(__cog_review_scope_check_build_json "$max_files" "$max_lines" "${sources[@]}")"
+  json="$(__cog_review_scope_check_build_json "$max_files" "$max_lines" "$declaration")"
   if [[ $mode == file ]]; then
     cog::fn::json_write_fragment "$out" "$__cog_review_scope_check_self_check" "$json"
   else
@@ -253,65 +240,31 @@ __cog_review_scope_resolve_range() {
   __cog_scope_range_out="${ends[0]}${sep}${ends[1]}"
 }
 
-# Read a newline-delimited repo-relative path list into a JSON array. The list
-# shape and its traversal, NUL, and emptiness checks are the ones gc already
-# writes and cog::fn::git_read_session_files already enforces.
-__cog_review_scope_requested_files() {
-  local files_from="$1"
-  local -a requested=()
-
-  [[ -n $files_from ]] || {
-    jq -cn '[]'
-    return 0
-  }
-  cog::fn::git_read_session_files requested "$files_from" relative
-  cog::fn::git_json_array_from_lines "${requested[@]}"
-}
-
-# Assemble the review scope from every declared source. The sources are
-# additive: the live working tree (on unless --no-worktree), the commits named
-# by --range/--sha, and the paths listed by --files. With no source flags this
-# issues exactly the working-tree git commands it always has, in the same order,
+# Resolve one scope declaration into the review scope. The declared sources are
+# additive: the live working tree, the commits named by `ranges` and `shas`, and
+# the paths listed in `files`. With no declaration this resolves the working
+# tree and issues exactly the git commands it always has, in the same order,
 # because the commit helpers return early before invoking git.
+#
+# The declaration is validated by the shared schema before anything here runs,
+# so this function never has to decide what a malformed source means. The
+# source-less case is refused there too, at the point the declaration is
+# written, rather than here at the point it is resolved.
 __cog_review_scope_build_json() {
+  local declaration_path="${1:-}"
   local repo_root branch staged_files unstaged_files status_json status_files
   local staged_stat unstaged_stat commit_scope commit_files commit_stat commits requested_files changed_files
-  local worktree=true files_from="" selector resolved_range=""
+  local declaration worktree selector resolved_range=""
   local -a ranges=() shas=() peeled_shas=() selectors=()
 
-  while (($# > 0)); do
-    case "$1" in
-      --range)
-        ranges+=("$2")
-        shift 2
-        ;;
-      --sha)
-        shas+=("$2")
-        shift 2
-        ;;
-      --files)
-        files_from="$2"
-        shift 2
-        ;;
-      --no-worktree)
-        worktree=false
-        shift
-        ;;
-      *)
-        cog::fn::error_raise "InvalidInput" \
-          "unknown review-scope source" "option: $1" "" "run 'cog review-scope --help'"
-        ;;
-    esac
-  done
-
-  # A scope with no source at all would be indistinguishable from a clean tree,
-  # and every consumer reads an empty scope as "nothing to review". Refuse it
-  # rather than report a review that never happened as passing.
-  [[ $worktree == true || -n $files_from ]] || ((${#ranges[@]} + ${#shas[@]} > 0)) \
-    || cog::fn::error_raise "InvalidInput" \
-      "review-scope has no source" "option: --no-worktree" \
-      "--no-worktree removed the only source" \
-      "add --range, --sha, or --files, or drop --no-worktree"
+  if [[ -n $declaration_path ]]; then
+    declaration="$(cog::fn::scope_declaration_read "$declaration_path")"
+  else
+    declaration="$(cog::fn::scope_declaration_default)"
+  fi
+  worktree="$(jq -r '.worktree' <<<"$declaration")"
+  mapfile -t ranges < <(jq -r '.ranges[]' <<<"$declaration")
+  mapfile -t shas < <(jq -r '.shas[]' <<<"$declaration")
 
   repo_root="$(cog::fn::git_root)" || cog::fn::error_raise "InputNotFound" \
     "could not resolve git repository root" "command: git rev-parse --show-toplevel" "" \
@@ -356,7 +309,7 @@ __cog_review_scope_build_json() {
   commit_files="$(jq -c '.files' <<<"$commit_scope")"
   commit_stat="$(jq -c '.stat' <<<"$commit_scope")"
   commits="$(__cog_review_scope_commits "${selectors[@]}")"
-  requested_files="$(__cog_review_scope_requested_files "$files_from")"
+  requested_files="$(jq -c '.files' <<<"$declaration")"
   changed_files="$(__cog_review_scope_changed_files \
     "$staged_files" "$unstaged_files" "$status_files" "$commit_files" "$requested_files")"
 
@@ -368,12 +321,12 @@ __cog_review_scope_build_json() {
   # skills already own that stop condition. Once the caller has named a commit
   # or a file list, an empty union means the thing they asked to review was not
   # found, and the worktree flag does not make that any less of a false clean.
-  [[ $worktree == true && ${#ranges[@]} -eq 0 && ${#shas[@]} -eq 0 && -z $files_from ]] \
+  [[ $worktree == true && ${#ranges[@]} -eq 0 && ${#shas[@]} -eq 0 && $requested_files == "[]" ]] \
     || [[ $changed_files != "[]" ]] \
     || cog::fn::error_raise "InvalidInput" \
-      "review-scope resolved to an empty scope" "selectors: ${selectors[*]}" \
+      "review-scope resolved to an empty scope" "declaration: ${declaration}" \
       "the declared sources matched no files" \
-      "check the commit refs and the file list, or drop --no-worktree"
+      "check the commit refs and the file list, or let the working tree back in"
 
   jq -n \
     --arg repo_root "$repo_root" \
@@ -385,10 +338,7 @@ __cog_review_scope_build_json() {
     --argjson commit_files "$commit_files" \
     --argjson requested_files "$requested_files" \
     --argjson commits "$commits" \
-    --argjson worktree "$worktree" \
-    --argjson ranges "$(cog::fn::git_json_array_from_lines "${ranges[@]}")" \
-    --argjson shas "$(cog::fn::git_json_array_from_lines "${shas[@]}")" \
-    --arg files_from "$files_from" \
+    --argjson declaration "$declaration" \
     --argjson staged_stat "$staged_stat" \
     --argjson unstaged_stat "$unstaged_stat" \
     --argjson commit_stat "$commit_stat" \
@@ -402,12 +352,7 @@ __cog_review_scope_build_json() {
       commit_files: $commit_files,
       requested_files: $requested_files,
       commits: $commits,
-      sources: {
-        worktree: $worktree,
-        ranges: $ranges,
-        shas: $shas,
-        files_from: (if $files_from == "" then null else $files_from end)
-      },
+      declaration: $declaration,
       diff_stats: {
         staged: $staged_stat,
         unstaged: $unstaged_stat,
@@ -417,8 +362,7 @@ __cog_review_scope_build_json() {
 }
 
 cog::cmd::review_scope() {
-  local mode="" out="" json taken=0
-  local -a sources=()
+  local mode="" out="" json declaration=""
 
   if [[ ${1:-} == check ]]; then
     shift
@@ -427,11 +371,12 @@ cog::cmd::review_scope() {
   fi
 
   while (($# > 0)); do
-    if __cog_review_scope_take_source sources taken "$@"; then
-      shift "$taken"
-      continue
-    fi
     case "$1" in
+      --declaration)
+        __cog_review_scope_take_declaration declaration "$@"
+        shift 2
+        continue
+        ;;
       -h | --help)
         __cog_review_scope_usage
         return 0
@@ -461,7 +406,7 @@ cog::cmd::review_scope() {
     "missing review-scope output mode" "usage: cog review-scope (<out.json>|--json)" "" \
     "run 'cog review-scope --help'"
 
-  json="$(__cog_review_scope_build_json "${sources[@]}")"
+  json="$(__cog_review_scope_build_json "$declaration")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_review_scope_self_check" "$json"
   else

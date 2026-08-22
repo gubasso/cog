@@ -93,6 +93,14 @@ EOF
   export PATH="${BATS_TEST_TMPDIR}/fakebin:${PATH}"
 }
 
+# Write a scope declaration and echo its path. What to review is one JSON
+# object, so a test states it the same way a skill does.
+decl() {
+  local path="${BATS_TEST_TMPDIR}/declaration-${BATS_SUITE_TEST_NUMBER}.json"
+  printf '%s' "$1" >"$path"
+  printf '%s' "$path"
+}
+
 @test "cog review-scope emits changed file union" {
   run cog review-scope --json
 
@@ -143,7 +151,7 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope unions a commit selector into the changed files" {
-  run cog review-scope --sha abc123 --json
+  run cog review-scope --declaration "$(decl '{"shas":["abc123"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_files == ["shown.txt"]' >/dev/null
@@ -153,7 +161,7 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope unions a range selector into the changed files" {
-  run cog review-scope --range aaa..bbb --json
+  run cog review-scope --declaration "$(decl '{"ranges":["aaa..bbb"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_files == ["ranged.txt","shared.txt"]' >/dev/null
@@ -162,7 +170,7 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope sums a path touched by more than one selector" {
-  run cog review-scope --range aaa..bbb --range ccc..ddd --json
+  run cog review-scope --declaration "$(decl '{"ranges":["aaa..bbb","ccc..ddd"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_files == ["ranged.txt","shared.txt"]' >/dev/null
@@ -173,7 +181,7 @@ diff --numstat --no-renames"
   local list="${BATS_TEST_TMPDIR}/files.txt"
   printf '%s\n' "lib/a.sh" "unstaged.txt" >"$list"
 
-  run cog review-scope --files "$list" --json
+  run cog review-scope --declaration "$(decl '{"files":["lib/a.sh","unstaged.txt"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.requested_files == ["lib/a.sh","unstaged.txt"]' >/dev/null
@@ -181,7 +189,7 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope drops the working tree under --no-worktree" {
-  run cog review-scope --no-worktree --sha abc123 --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["abc123"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.staged_files == [] and .unstaged_files == [] and .status_files == []' >/dev/null
@@ -189,47 +197,89 @@ diff --numstat --no-renames"
   printf '%s\n' "$output" | jq -e '.diff_stats.staged.files == [] and .diff_stats.unstaged.files == []' >/dev/null
 }
 
-@test "cog review-scope refuses a scope with no source" {
-  run --separate-stderr cog review-scope --no-worktree --json
+@test "cog review-scope refuses a declaration that names no source" {
+  run --separate-stderr cog review-scope --declaration "$(decl '{"worktree":false}')" --json
 
   assert_failure
-  [[ $stderr == *"review-scope has no source"* ]]
+  [[ $stderr == *"scope declaration failed schema validation"* ]]
 }
 
 @test "cog review-scope fails naming a commit selector that does not resolve" {
   export GIT_RANGE_FAIL=1
 
-  run --separate-stderr cog review-scope --sha nope --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"shas":["nope"]}')" --json
 
   assert_failure
   [[ $stderr == *"could not resolve git commit selector"* ]]
   [[ $stderr == *"nope"* ]]
 }
 
-@test "cog review-scope rejects a source flag with no value" {
-  run --separate-stderr cog review-scope --sha
+@test "cog review-scope rejects --declaration with no value" {
+  run --separate-stderr cog review-scope --declaration
 
   assert_failure
-  [[ $stderr == *"missing review-scope source value"* ]]
+  [[ $stderr == *"missing scope declaration path"* ]]
 }
 
-@test "cog review-scope rejects an unreadable file list" {
-  run --separate-stderr cog review-scope --files "${BATS_TEST_TMPDIR}/absent.txt" --json
+@test "cog review-scope rejects a second --declaration" {
+  run --separate-stderr cog review-scope \
+    --declaration "$(decl '{"shas":["abc123"]}')" \
+    --declaration "$(decl '{"shas":["abc123"]}')" --json
 
   assert_failure
-  [[ $stderr == *"err.kind: InputUnreadable"* ]]
+  [[ $stderr == *"duplicate scope declaration"* ]]
 }
 
-@test "cog review-scope records the sources it was given" {
-  local list="${BATS_TEST_TMPDIR}/files.txt"
-  printf '%s\n' "lib/a.sh" >"$list"
+@test "cog review-scope rejects a declaration with an unknown key" {
+  run --separate-stderr cog review-scope --declaration "$(decl '{"nope":true}')" --json
 
-  run cog review-scope --range aaa..bbb --sha abc123 --files "$list" --json
+  assert_failure
+  [[ $stderr == *"scope declaration failed schema validation"* ]]
+}
+
+@test "cog review-scope rejects a declaration naming an absolute path" {
+  run --separate-stderr cog review-scope --declaration "$(decl '{"files":["/etc/passwd"]}')" --json
+
+  assert_failure
+  [[ $stderr == *"scope declaration failed schema validation"* ]]
+}
+
+@test "cog review-scope rejects a declaration that is not JSON" {
+  run --separate-stderr cog review-scope --declaration "$(decl 'not json')" --json
+
+  assert_failure
+  [[ $stderr == *"scope declaration is not valid JSON"* ]]
+}
+
+@test "cog review-scope rejects a missing declaration file" {
+  run --separate-stderr cog review-scope --declaration "${BATS_TEST_TMPDIR}/absent.json" --json
+
+  assert_failure
+  [[ $stderr == *"err.kind: InputNotFound"* ]]
+}
+
+@test "cog review-scope echoes the normalized declaration it resolved" {
+  run cog review-scope --declaration "$(decl '{"ranges":["aaa..bbb"],"shas":["abc123"],"files":["lib/a.sh"]}')" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.sources.worktree == true' >/dev/null
-  printf '%s\n' "$output" | jq -e '.sources.ranges == ["aaa..bbb"] and .sources.shas == ["abc123"]' >/dev/null
-  printf '%s\n' "$output" | jq --arg l "$list" -e '.sources.files_from == $l' >/dev/null
+  # Every optional field is filled in, so what comes back can be fed straight
+  # back in as a declaration.
+  printf '%s\n' "$output" | jq -e '.declaration == {worktree: true, ranges: ["aaa..bbb"], shas: ["abc123"], files: ["lib/a.sh"]}' >/dev/null
+}
+
+@test "cog review-scope round-trips its own declaration" {
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["abc123"]}')" --json
+  assert_success
+  local first="$output"
+
+  printf '%s' "$first" | jq -c '.declaration' >"${BATS_TEST_TMPDIR}/round-trip.json"
+  run cog review-scope --declaration "${BATS_TEST_TMPDIR}/round-trip.json" --json
+
+  assert_success
+  # worktree:false in particular: jq's `//` treats false as absent, so a
+  # round trip is what catches the declared value being quietly replaced.
+  printf '%s\n' "$output" | jq -e '.declaration.worktree == false' >/dev/null
+  printf '%s\n' "$output" | jq --argjson first "$(printf '%s' "$first" | jq -c '.declaration')" -e '.declaration == $first' >/dev/null
 }
 
 @test "cog review-scope still rejects an unknown option" {
@@ -245,7 +295,7 @@ diff --numstat --no-renames"
   # shellcheck disable=SC2030,SC2031 # Each bats @test runs in its own subshell; exporting the env here is intentional.
   export GIT_RANGE_EMPTY=1
 
-  run --separate-stderr cog review-scope --no-worktree --range HEAD..HEAD --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["HEAD..HEAD"]}')" --json
 
   assert_failure
   [[ $stderr == *"resolved to an empty scope"* ]]
@@ -267,7 +317,7 @@ diff --numstat --no-renames"
   # Two ranges are two revision walks unioned, not one combined walk: a single
   # `git log aaa..bbb ccc..ddd` excludes a commit that one range does include,
   # and commit_files would then name files no reported commit accounts for.
-  run cog review-scope --range aaa..bbb --range ccc..ddd --json
+  run cog review-scope --declaration "$(decl '{"ranges":["aaa..bbb","ccc..ddd"]}')" --json
 
   assert_success
   run grep -c '^log -z --format=' "$GIT_FAKE_LOG"
@@ -278,7 +328,7 @@ diff --numstat --no-renames"
   # shellcheck disable=SC2030,SC2031 # Each bats @test runs in its own subshell; exporting the env here is intentional.
   export GIT_PEEL_FAIL=1
 
-  run --separate-stderr cog review-scope --sha "HEAD:AGENTS.md" --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"shas":["HEAD:AGENTS.md"]}')" --json
 
   assert_failure
   [[ $stderr == *"could not resolve git commit selector"* ]]
@@ -294,7 +344,7 @@ diff --numstat --no-renames"
   # shellcheck disable=SC2030,SC2031 # Each bats @test runs in its own subshell; exporting the env here is intentional.
   export GIT_RANGE_EMPTY=1
 
-  run --separate-stderr cog review-scope --range HEAD..HEAD --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"ranges":["HEAD..HEAD"]}')" --json
 
   assert_failure
   [[ $stderr == *"resolved to an empty scope"* ]]
@@ -304,7 +354,7 @@ diff --numstat --no-renames"
   # A movable ref must not be re-resolved per collector: commit_files,
   # diff_stats.commits, and commits[] would otherwise be able to describe
   # different commits within one scope artifact.
-  run cog review-scope --no-worktree --sha topic --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["topic"]}')" --json
 
   assert_success
   # The movable name is resolved exactly once...
@@ -319,15 +369,15 @@ diff --numstat --no-renames"
   assert_output "0"
   run grep -c '^log -z --no-walk --format=.* topichash$' "$GIT_FAKE_LOG"
   assert_output "1"
-  # The original selector is still what `sources` reports back to the caller.
-  run cog review-scope --no-worktree --sha topic --json
-  printf '%s\n' "$output" | jq -e '.sources.shas == ["topic"]' >/dev/null
+  # The original selector is still what the echoed declaration reports back.
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["topic"]}')" --json
+  printf '%s\n' "$output" | jq -e '.declaration.shas == ["topic"]' >/dev/null
 }
 
 @test "cog review-scope resolves each range endpoint once and reuses the hashes" {
   # The range analogue of resolve-once: `A..B` names whatever A and B point at
   # when git is called, and the collectors are separate calls.
-  run cog review-scope --no-worktree --range base..topic --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["base..topic"]}')" --json
 
   assert_success
   run grep -c '^rev-parse --verify --quiet base\^{commit}$' "$GIT_FAKE_LOG"
@@ -345,7 +395,7 @@ diff --numstat --no-renames"
 @test "cog review-scope preserves the three-dot form when resolving a range" {
   # `A...B` is merge-base semantics; rewriting it to `A..B` would silently
   # change which commits the review covers.
-  run cog review-scope --no-worktree --range base...topic --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["base...topic"]}')" --json
 
   assert_success
   run grep -c '^diff --numstat --no-renames --first-parent basehash\.\.\.topichash --$' "$GIT_FAKE_LOG"
@@ -356,7 +406,7 @@ diff --numstat --no-renames"
   # `git diff A...B` shows B's side only, while `git log A...B` is the symmetric
   # difference and would put A's unique commits into commits[] — commits whose
   # files commit_files never counted.
-  run cog review-scope --no-worktree --range base...topic --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["base...topic"]}')" --json
 
   assert_success
   run grep -c '^log -z --format=.* basehash\.\.topichash$' "$GIT_FAKE_LOG"
@@ -366,23 +416,23 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope reports the original range the caller passed" {
-  run cog review-scope --no-worktree --range base..topic --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["base..topic"]}')" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.sources.ranges == ["base..topic"]' >/dev/null
+  printf '%s\n' "$output" | jq -e '.declaration.ranges == ["base..topic"]' >/dev/null
 }
 
 @test "cog review-scope rejects a --range with no separator" {
   # `git diff HEAD` compares against the working tree, so a bare commit would
   # pull the live tree back into a scope that just declared it out.
-  run --separate-stderr cog review-scope --no-worktree --range HEAD --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["HEAD"]}')" --json
 
   assert_failure
   [[ $stderr == *"needs a .. or ... separator"* ]]
 }
 
 @test "cog review-scope rejects a --range with more than one separator" {
-  run --separate-stderr cog review-scope --no-worktree --range "aaa..bbb..ccc" --json
+  run --separate-stderr cog review-scope --declaration "$(decl '{"worktree":false,"ranges":["aaa..bbb..ccc"]}')" --json
 
   assert_failure
   [[ $stderr == *"more than one separator"* ]]
@@ -391,14 +441,14 @@ diff --numstat --no-renames"
 @test "cog review-scope check rejects a separator-free range the same way" {
   # The guard and the review must never come to measure different changesets,
   # so `check` routes through the same builder and refuses the same values.
-  run --separate-stderr cog review-scope check --max-files 100 --no-worktree --range HEAD --json
+  run --separate-stderr cog review-scope check --max-files 100 --declaration "$(decl '{"worktree":false,"ranges":["HEAD"]}')" --json
 
   assert_failure
   [[ $stderr == *"needs a .. or ... separator"* ]]
 }
 
 @test "cog review-scope reports a merge in both the file list and the line stats" {
-  run cog review-scope --no-worktree --sha mergehash --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["mergehash"]}')" --json
 
   assert_success
   # The defect this replaced: commit_files was empty while diff_stats.commits
@@ -409,7 +459,7 @@ diff --numstat --no-renames"
 }
 
 @test "cog review-scope reports real paths for a renamed file" {
-  run cog review-scope --no-worktree --sha renamehash --json
+  run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["renamehash"]}')" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e '.commit_files == ["new.txt","old.txt"]' >/dev/null

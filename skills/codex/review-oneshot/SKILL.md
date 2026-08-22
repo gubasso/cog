@@ -15,7 +15,7 @@ Run a deep, single-pass review of the live diff. When a reviewed plan is supplie
 
 Parse `[--scope <glob>] [--severity <min>] [--format markdown|json] [--comment]` from the prompt. Default severity is `praise`, the permissive floor for deterministic filtering. Default format is `markdown`.
 
-Commit refs, an explicit file list, and "committed work only" are scope declarations the caller expresses in prose — or, in orchestrator mode, in the artifacts the orchestrator supplies — not flags on this skill. `--scope <glob>` keeps its own meaning: it narrows review judgment, not the deterministic scope artifact.
+Commit refs, an explicit file list, and "committed work only" are stated in the caller's prose — or, in orchestrator mode, in the artifacts the orchestrator supplies — and become one scope declaration, never flags on this skill. Translating prose into that declaration is the judgment; resolving it is cog's. `--scope <glob>` keeps its own meaning: it narrows review judgment, not the deterministic scope artifact.
 
 ## Phase 0: Mechanical Setup
 
@@ -24,11 +24,11 @@ This phase writes, so it belongs to a direct, write-capable invocation. Skip it 
 ```bash
 REVIEW_RUN_DIR="$(cog review-init review-oneshot | sed -n 's/^REVIEW_RUN_DIR=//p')"
 . "$REVIEW_RUN_DIR/paths.env"
-cog review-scope [--range <A..B>]... [--sha <sha>]... [--files <paths-file>] [--no-worktree] "$REVIEW_SCOPE_JSON"
+cog review-scope [--declaration <scope.json>] "$REVIEW_SCOPE_JSON"
 cog review-tech-scope --scope "$REVIEW_SCOPE_JSON" "$REVIEW_TECH_SCOPE_JSON"
 ```
 
-Add the sources the caller declared: commits to review as `--range`/`--sha`, an explicit repo-relative path list as `--files`, and `--no-worktree` when only committed work is in scope. With no source flags this is the live working tree, unchanged.
+Pass `--declaration` when the caller named what to review; with no declaration this is the live working tree, unchanged. A declaration is one JSON object — `{"worktree": bool, "ranges": [...], "shas": [...], "files": [...]}`, every field optional, `files` repo-relative — and cog refuses one that names no source at all. It is the same object the review-loop handoff carries as `scope`, validated by the same schema.
 
 If the run's only source is the working tree and the scope has no changed files and no status files, stop. A scope carrying a commit or `--files` source is never empty, so that check does not apply to it. If `--scope <glob>` is present, limit the review judgment to matching paths while leaving the deterministic scope artifact intact.
 

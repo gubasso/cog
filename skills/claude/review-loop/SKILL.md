@@ -32,7 +32,7 @@ Handoff mode: `$ARGUMENTS` is a `review_loop_input.json` path. Validate it first
 cog review-loop-input validate --input "$ARGUMENTS"
 ```
 
-Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id` are informational. When the input carries an optional `context` value — a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` — use it verbatim as the round-1 context brief instead of assembling a new one. When it carries an optional `scope` object (`ranges`, `shas`, `files`, `worktree`), that is the parent's declaration of what to review; translate it into the source flags in **Scope** below. A handoff without `scope` reviews the working tree, which is what this lane has always done.
+Use `task`, `reviewed_plan`, and `implementation_review` as context. `plan_thread_id` and `impl_thread_id` are informational. When the input carries an optional `context` value — a rich-context brief conforming to `$(cog skill-refs path orchestration/context-brief-contract.md)` — use it verbatim as the round-1 context brief instead of assembling a new one. When it carries an optional `scope` object, that is the parent's scope declaration: write it verbatim to `$RUN_DIR/scope-declaration.json` and use it as-is — it is the same object, validated by the same schema, that **Scope** below describes. A handoff without `scope` reviews the working tree, which is what this lane has always done.
 
 Standalone mode: use `$ARGUMENTS`, this session's own context, and read-only git inspection commands to understand the work. If intent is unclear, ask one focused question before round 1.
 
@@ -83,15 +83,26 @@ Rounds 2+ resume the round-1 reviewer thread, so the reviewer already retains th
 
 ## Scope
 
-Decide, once and before round 1, what this run reviews. The default is everything this work produced. The sources are additive and any combination is valid:
+Decide, once and before round 1, what this run reviews, and write it as one **scope declaration** at `$RUN_DIR/scope-declaration.json`. Choosing the sources is the judgment this skill owns; resolving them to files and lines is cog's. The default is everything this work produced.
 
-- **Commits this session made.** The session is the source of truth for these — it knows what it committed. Name each as `--sha <full-sha>`, not a range, so nothing depends on a branch that can re-point mid-run. In handoff mode these come from the input's `scope.shas` and `scope.ranges` instead.
-- **Files this work touched.** Write them one per line, repo-relative, to `$RUN_DIR/session-files.txt` and pass `--files`. Use this when the session touched a file that neither the commits nor the working tree still show.
-- **The live working tree.** On by default; staged, unstaged, and untracked.
+```json
+{
+  "worktree": true,
+  "shas": ["<full-sha>"],
+  "ranges": [],
+  "files": ["lib/a.sh"]
+}
+```
 
-When the user narrows in prose — "just the parser change", "only the last two commits", "the committed work, not what I'm still editing" — express that narrowing as a smaller set of these sources, adding `--no-worktree` for the last case. There is no narrowing flag on this skill; the translation is the judgment call.
+Every field is optional and the sources are additive:
 
-Resolve the sources before round 1 and reuse them verbatim in every round. Pin `--sha` values to the full SHAs that round 1's `commits[]` reports.
+- **`shas` / `ranges` — commits this session made.** The session is the source of truth for these: it knows what it committed. Prefer full SHAs over a range, so nothing depends on a branch that can re-point mid-run. In handoff mode these arrive as the input's `scope.shas` and `scope.ranges`.
+- **`files` — files this work touched**, repo-relative. Use this when the session touched a file that neither the commits nor the working tree still show.
+- **`worktree` — the live tree**, staged, unstaged, and untracked. Defaults to `true`.
+
+When the user narrows in prose — "just the parser change", "only the last two commits", "the committed work, not what I'm still editing" — write a narrower declaration, setting `"worktree": false` for the last case. There is no narrowing flag; translating the prose into the declaration is the judgment call.
+
+`cog` refuses a declaration that names no source, and refuses one whose sources resolve to nothing, because an empty scope reads as a clean review everywhere downstream. Write the declaration once before round 1 and pass the same file every round, pinning `shas` to the full SHAs that round 1's `commits[]` reports.
 
 ## Review Round
 
@@ -100,17 +111,17 @@ Reviewer setup (every round, before launching): run the `review-oneshot` Phase 0
 ```bash
 REVIEW_RUN_DIR="$(cog review-init review-loop-round-N | sed -n 's/^REVIEW_RUN_DIR=//p')"
 . "$REVIEW_RUN_DIR/paths.env"
-cog review-scope --sha <full-sha> --files "$RUN_DIR/session-files.txt" "$REVIEW_SCOPE_JSON"
+cog review-scope --declaration "$RUN_DIR/scope-declaration.json" "$REVIEW_SCOPE_JSON"
 cog review-tech-scope --scope "$REVIEW_SCOPE_JSON" "$REVIEW_TECH_SCOPE_JSON"
 ```
 
-Every name `paths.env` binds is `REVIEW_`-prefixed, so sourcing it leaves this skill's own `RUN_DIR` alone — `round-N-prompt.txt`, `round-N-findings.json`, and `summary-body.md` keep resolving against the loop run directory. The `--files` list is written once, before round 1, and stays at `$RUN_DIR/session-files.txt` for every round; the review directory is fresh each round and never holds it.
+Every name `paths.env` binds is `REVIEW_`-prefixed, so sourcing it leaves this skill's own `RUN_DIR` alone — `round-N-prompt.txt`, `round-N-findings.json`, and `summary-body.md` keep resolving against the loop run directory. The declaration is written once, before round 1, and stays at `$RUN_DIR/scope-declaration.json` for every round; the review directory is fresh each round and never holds it.
 
-Substitute the run's actual sources; omit any the run does not have. With no source flags at all this is the working tree alone.
+Drop `--declaration` when the run reviews the working tree alone.
 
-Re-run it per round, with the same source flags: the working-tree part changes as each round's fixes land, which is how a resumed round sees them. The commit and `--files` parts do not change — they are the run's declared subject, not a queue that drains — so a finding recurring against them is a stall signal, judged in Triage, never a reason to drop them from scope.
+Re-run it per round with the same declaration file: the working-tree part changes as each round's fixes land, which is how a resumed round sees them. The commit and `files` parts do not change — they are the run's declared subject, not a queue that drains — so a finding recurring against them is a stall signal, judged in Triage, never a reason to drop them from the declaration.
 
-When the run's only source is the working tree and the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`. A run with a commit or `--files` source always has a scope, so that check does not apply to it; `findings-empty` there means only what the Terminate list already says it means — the reviewer returned no findings.
+When the run declares only the working tree and the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`. A declaration naming a commit or a file always resolves to a non-empty scope or fails outright, so that check does not apply to it; `findings-empty` there means only what the Terminate list already says it means — the reviewer returned no findings.
 
 Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$REVIEW_SCOPE_JSON` and `$REVIEW_TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
 
