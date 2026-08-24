@@ -2,7 +2,31 @@
 
 The exact contract between cog and an external `cog-<name>` executable. A third-party project can implement a conformant plugin from this page alone and prove it with `cog plugin validate`, without reading cog's source.
 
-Cog inspects and executes plugins. Cog never installs, downloads, updates, or catalogues them. A plugin arrives on the machine by whatever means its own project ships it. Why this shape was chosen is in [ADR-0034](../decisions/ADR-0034-extend-cog-through-external-executables.md); the living design is in [plugins](../explanation/plugins.md). The constants below are also published as data under `data/plugin-protocol/`.
+Cog inspects and executes plugins. Cog never installs, downloads, updates, or catalogues them. A plugin arrives on the machine by whatever means its own project ships it. To build one step by step with worked examples and real transcripts, follow [write a cog plugin](../guides/write-a-plugin.md); this page is the contract that guide implements. Why this shape was chosen is in [ADR-0034](../decisions/ADR-0034-extend-cog-through-external-executables.md); the living design is in [plugins](../explanation/plugins.md). The constants below are also published as data under `data/plugin-protocol/`.
+
+## Minimum conformant plugin
+
+Every requirement on this page reduces to a filename, an executable bit, and one reserved subcommand:
+
+```bash
+#!/usr/bin/env bash
+# cog-hello
+set -euo pipefail
+if [[ ${1:-} == cog-plugin-metadata ]]; then
+  printf '%s\n' '{"protocol":1,"name":"hello","version":"0.1.0","summary":"Greet a target"}'
+  exit 0
+fi
+printf 'hello, %s\n' "${1:-world}"
+```
+
+```console
+$ chmod +x cog-hello && export COG_PLUGIN_DIR="$PWD"
+$ cog plugin validate hello   # every check passes, exit 0
+$ cog hello world
+hello, world
+```
+
+The sections below state each requirement exactly.
 
 ## Naming
 

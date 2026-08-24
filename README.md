@@ -35,4 +35,5 @@ Quality gates are owned by pre-commit. `just lint` runs `pre-commit run --all-fi
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/explanation/architecture.md)
 - [CLI command reference](docs/reference/cli-commands.md)
+- [Write a cog plugin](docs/guides/write-a-plugin.md)
 - [Decision records](docs/decisions/)

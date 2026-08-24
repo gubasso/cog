@@ -1,6 +1,6 @@
 # Plugins
 
-Cog has exactly one extension seam. An unknown command `cog <name>` resolves an executable called `cog-<name>` and `exec`s it. The exact contract — resolution order, the environment, the metadata probe, the states, and the conformance checks — is owned by [plugin protocol](../reference/plugin-protocol.md); this page owns why the seam has the shape it does. [ADR-0034](../decisions/ADR-0034-extend-cog-through-external-executables.md) records the decision.
+Cog has exactly one extension seam. An unknown command `cog <name>` resolves an executable called `cog-<name>` and `exec`s it. The exact contract — resolution order, the environment, the metadata probe, the states, and the conformance checks — is owned by [plugin protocol](../reference/plugin-protocol.md), and [write a cog plugin](../guides/write-a-plugin.md) walks through building one; this page owns why the seam has the shape it does. [ADR-0034](../decisions/ADR-0034-extend-cog-through-external-executables.md) records the decision.
 
 ## Why a separate process
 
