@@ -872,14 +872,22 @@ EOF
   [[ $stderr == *"skill-prefix-taxonomy"* ]]
 }
 
-@test "cog skill-lint accepts a Codex plan-emitter regardless of prefix" {
+@test "cog skill-lint rejects misleading Codex plan-emitter prefix" {
   write_skill "${BATS_TEST_TMPDIR}/skills/codex/demo-skill" demo-skill codex
   local file="${BATS_TEST_TMPDIR}/skills/codex/demo-skill/SKILL.md"
   printf '\n<!-- cog-skill: plan-emitter -->\nReview this plan later.\n' >>"$file"
 
-  run cog skill-lint "$file"
+  run --separate-stderr cog skill-lint "$file"
 
-  assert_success
+  assert_failure
+  [[ $stderr == *"skill-prefix-taxonomy"* ]]
+}
+
+@test "cog skill-lint rejects a plan skill without the marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/plan-demo" plan-demo codex
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/plan-demo/SKILL.md"
+  assert_failure
+  [[ $stderr == *"skill-class-contract"* ]]
 }
 
 @test "cog skill-lint accepts a non-governed Claude skill" {
@@ -907,7 +915,6 @@ EOF
 @test "cog skill-lint accepts plan-reviewer intent named review-plan-star" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/review-plan-demo" review-plan-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/review-plan-demo/SKILL.md"
-  append_plan_emitter "$file"
   printf '# Plan Reviewer\n' >>"$file"
 
   run cog skill-lint "$file"
@@ -926,7 +933,7 @@ EOF
   [[ $stderr == *"skill-prefix-taxonomy"* ]]
 }
 
-@test "cog skill-lint accepts executor intent under executor prefix" {
+@test "cog skill-lint rejects plan-emitter marker on executor intent" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo claude
   local file="${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
   {
@@ -934,8 +941,17 @@ EOF
     printf '\n# Plan Review Execute\n'
   } >>"$file"
 
-  run cog skill-lint "$file"
+  run --separate-stderr cog skill-lint "$file"
 
+  assert_failure
+  [[ $stderr == *"skill-class-contract"* ]]
+}
+
+@test "cog skill-lint accepts executor intent without plan-emitter marker" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-clean" executor-clean claude
+  local file="${BATS_TEST_TMPDIR}/skills/claude/executor-clean/SKILL.md"
+  printf '\n# Plan Review Execute\n' >>"$file"
+  run cog skill-lint "$file"
   assert_success
 }
 
@@ -1134,6 +1150,9 @@ ${fm}---
 ok
 \`\`\`
 EOF
+  if [[ $name == plan-* ]]; then
+    append_plan_emitter "$dir/SKILL.md"
+  fi
 }
 
 @test "cog skill-lint accepts a governed HIGH skill that rides the session default" {

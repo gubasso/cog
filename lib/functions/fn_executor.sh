@@ -205,9 +205,8 @@ cog::fn::executor::artifacts_json() {
     '{schema: $schema, executor: $executor, phases: $phases, summary: $summary}'
 }
 
-# Adopt a producer artifact whose output path the executor does not control (the
-# review-plan-multi coordinator writes to its own run dir) into the canonical
-# prepared-plan.md slot, so the prepare-stage postcondition stays uniform.
+# Adopt a producer plan whose output path the executor does not control into the
+# canonical prepared-plan.md slot, so the prepare-stage postcondition stays uniform.
 cog::fn::executor::adopt_prepared_json() {
   local run_dir="${1:-}" from="${2:-}" dest
 
@@ -217,6 +216,7 @@ cog::fn::executor::adopt_prepared_json() {
   [[ -d $run_dir ]] || cog::fn::error_raise "InputNotFound" \
     "executor run directory not found" "path: ${run_dir}" "" "check the run directory"
   cog::fn::rundir_require_file "$from" "prepared plan source"
+  cog::fn::plan_doc::require_valid_file "$from"
 
   dest="$(cog::fn::rundir_path "$run_dir" prepared-plan.md)"
   cp -- "$from" "$dest" || cog::fn::error_raise "JsonWriteFailed" \
@@ -262,6 +262,10 @@ cog::fn::executor::adopt_artifact_json() {
   executor="$(cog::fn::executor::read_state_executor "$run_dir")"
   cog::fn::rundir_require_file "$from" "staged artifact source"
 
+  if [[ $ordinal == prepare ]]; then
+    cog::fn::plan_doc::require_valid_file "$from"
+  fi
+
   name="$(cog::fn::executor::artifact_name "$executor" "$ordinal")"
   dest="$(cog::fn::rundir_path "$run_dir" "$name")"
   cp -- "$from" "$dest" || cog::fn::error_raise "JsonWriteFailed" \
@@ -285,6 +289,9 @@ cog::fn::executor::verify_artifact_json() {
   name="$(cog::fn::executor::artifact_name "$executor" "$ordinal")"
   path="$(cog::fn::rundir_path "$run_dir" "$name")"
   cog::fn::rundir_require_file "$path" "${ordinal} artifact"
+  if [[ $ordinal == prepare ]]; then
+    cog::fn::plan_doc::require_valid_file "$path"
+  fi
 
   jq -cn --arg ordinal "$ordinal" --arg path "$path" \
     '{schema: "cog.executor.verify-artifact.v1", ok: true, ordinal: $ordinal, path: $path}'
@@ -305,6 +312,7 @@ cog::fn::executor::export_prepared_json() {
 
   src="$(cog::fn::rundir_path "$run_dir" prepared-plan.md)"
   cog::fn::rundir_require_file "$src" "prepared plan"
+  cog::fn::plan_doc::require_valid_file "$src"
   cp -- "$src" "$output" || cog::fn::error_raise "JsonWriteFailed" \
     "could not export prepared plan" "from: ${src}, to: ${output}" "" "check output path permissions"
 

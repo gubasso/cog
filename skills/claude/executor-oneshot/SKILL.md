@@ -52,7 +52,7 @@ cog assess-input record --run-dir <run-dir> --route <needs-plan|good-input> --co
 
 ## Stage 1: Prepare the plan
 
-Both routes write the prepared plan to `<run-dir>/prepared-plan.md`.
+Both routes write a self-contained plan to `<run-dir>/prepared-plan.md`. The good-input route also retains the review and proof artifacts.
 
 ### `needs-plan` — generate in session
 
@@ -74,16 +74,18 @@ cog context-brief build --request "<run-dir>/request.md" --body "<run-dir>/brief
 
 `build` attaches the request verbatim and fails closed unless every section is filled.
 
-Write `<run-dir>/prepare-prompt.md` with the write orientation from `cog codex-runner orientation write` on its first line, followed by `$review-plan-oneshot` and three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/brief.md`, and output-path `<run-dir>/prepared-plan.md`. Launch the durable job write-capable, then poll-and-classify (exit code is the signal: 0 ok, 1 failed, 75 still running; re-run finalize while it exits 75; duration is never judged):
+Write `<run-dir>/prepare-prompt.md` with the write orientation from `cog codex-runner orientation write` on its first line, followed by `$review-plan-oneshot` and three absolute paths — plan-path (the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input), request-path `<run-dir>/brief.md`, and output-path `<run-dir>/prepared-plan-review.md`. Launch the durable job write-capable, then poll-and-classify (exit code is the signal: 0 ok, 1 failed, 75 still running; re-run finalize while it exits 75; duration is never judged):
 
 ```bash
 cog codex-runner run-exec --mode danger --access write --effort medium --prompt <run-dir>/prepare-prompt.md --output <run-dir>/prepare-codex-output.md --events <run-dir>/prepare-events.jsonl --stderr <run-dir>/prepare-stderr.log --state <run-dir>/prepare.longrun.json
 cog codex-runner finalize --state <run-dir>/prepare.longrun.json --max-wall 300
 ```
 
+Validate `<run-dir>/prepared-plan-review.md`, then follow `$(cog skill-refs path plan-quality/plan-review-fold.md)` in this coordinating context using the supplied plan as the base. Produce `prepared-plan.md`, `prepared-plan-review-items.json`, `prepared-plan-fold-manifest.json`, and `prepared-plan-fold-check.json`.
+
 ### Boundary check
 
-Confirm the prepared plan with `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare` before continuing; it fails closed when the canonical artifact is missing or empty.
+Run `cog plan-doc validate <run-dir>/prepared-plan.md`, then confirm it with `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare`; the canonical boundary enforces the plan-doc contract.
 
 ## Cross-engine decisions
 
@@ -102,7 +104,7 @@ Persist every question, the answer taken, and the engine that answered it to `<r
 
 ## Stage 2: Implement
 
-Implement natively in the current Claude session. Read and follow `<run-dir>/prepared-plan.md`; when it is an annotated review, implement the reconciled plan it specifies (apply APPROVED/MODIFIED/ADDED guidance, skip REMOVED).
+Implement natively in the current Claude session. Read and follow `<run-dir>/prepared-plan.md` as the complete authoritative plan.
 
 Carry the prepared plan verbatim, the original request or supplied-plan source context verbatim and in full with only enriching repo constraints added, and the active session constraints: run no git command unless explicitly authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the prepared plan.
 

@@ -92,7 +92,7 @@ Commands:
   plan-doc       Write and validate lean plan artifacts.
   plan-gate      Gate whether an input is a reviewable implementation plan.
   plan-multi-setup Parse plan-multi arguments and create run state.
-  plan-review    Write and validate annotated plan review artifacts.
+  plan-review    Write, inspect, and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plugin         Inspect external cog-* command plugins.
   power-grade    Inspect and validate model/effort power grades.
@@ -205,7 +205,7 @@ Commands:
   plan-doc       Write and validate lean plan artifacts.
   plan-gate      Gate whether an input is a reviewable implementation plan.
   plan-multi-setup Parse plan-multi arguments and create run state.
-  plan-review    Write and validate annotated plan review artifacts.
+  plan-review    Write, inspect, and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plugin         Inspect external cog-* command plugins.
   power-grade    Inspect and validate model/effort power grades.

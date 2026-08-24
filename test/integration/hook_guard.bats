@@ -51,7 +51,7 @@ acquire() {
 
 @test "executor-prex-stop allows once all required artifacts exist" {
   acquire "$$"
-  printf '%s\n' x >"$RUN_DIR/vetted-plan.md"
+  printf '# Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"$RUN_DIR/vetted-plan.md"
   printf '%s\n' x >"$RUN_DIR/impl-report.txt"
   printf '%s\n' x >"$RUN_DIR/review.md"
 
@@ -63,13 +63,24 @@ acquire() {
 
 @test "executor-prex-stop blocks when implementation artifact is missing" {
   acquire "$$"
-  printf '%s\n' x >"$RUN_DIR/vetted-plan.md"
+  printf '# Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"$RUN_DIR/vetted-plan.md"
   printf '%s\n' x >"$RUN_DIR/review.md"
 
   run --separate-stderr guard_stop "$$"
 
   [ "$status" -eq 2 ]
   [[ $stderr == *"Stage 2: Implementation report"* ]]
+  rm -rf "$RUN_DIR" "$LOCK_FILE"
+}
+
+@test "executor-prex-stop blocks a non-empty annotated review at vetted-plan" {
+  acquire "$$"
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$RUN_DIR/vetted-plan.md"
+  printf x >"$RUN_DIR/impl-report.txt"
+  printf x >"$RUN_DIR/review.md"
+  run --separate-stderr guard_stop "$$"
+  [ "$status" -eq 2 ]
+  [[ $stderr == *"Valid vetted plan"* ]]
   rm -rf "$RUN_DIR" "$LOCK_FILE"
 }
 

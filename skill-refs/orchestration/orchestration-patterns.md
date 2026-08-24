@@ -167,6 +167,8 @@ When a workflow hands off to the `review-loop` skill for iterative Codex review 
 
 Write the JSON to `$RUN_DIR/review_loop_input.json`. The review-loop skill parses this for task context, the reviewed plan, and prior findings, then captures the live git diff independently.
 
+`reviewed_plan` is always the folded, structurally validated contents of `vetted-plan.md`; an annotated plan review is never valid in this field.
+
 ### Delegation prompt template
 
 ```text

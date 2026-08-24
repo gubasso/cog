@@ -1,6 +1,6 @@
 # Plan-quality principles
 
-The single source of truth for the _quality of a plan's content_ — both the driver a `plan-*` emitter writes toward and the reference a `review-plan-*` skill checks against. It is stage-agnostic and format-agnostic: it governs what a plan must contain, not which template renders it. Resolve it at point of use with `cog skill-refs path plan-quality/plan-quality-principles.md`.
+The single source of truth for the _quality of a plan's content_ — both the driver a `plan-*` emitter writes toward and the reference a `review-plan-*` skill checks against. A plan emitter produces a self-contained implementation plan; a reviewer produces an annotated delta. A plan-naming consumer must retain that review and follow `$(cog skill-refs path plan-quality/plan-review-fold.md)` before handoff. This reference is stage-agnostic and format-agnostic: it governs what a plan must contain, not which template renders it. Resolve it at point of use with `cog skill-refs path plan-quality/plan-quality-principles.md`.
 
 A plan for an AI agent is not a project-manager summary. It is an **execution interface**: the artifact that lets a fresh context recover intent, locate the exact working surface, change the system in dependency order, and prove the result. Plans are therefore **lean in format and maximal in depth** — lean format never licenses shallow content. When depth exceeds one session, the answer is to split the work into separate plans, each executable in one fresh context, never to summarize the detail away.
 

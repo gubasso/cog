@@ -12,4 +12,4 @@ cog plan-doc validate "$RUN_DIR/draft-plan.md" || { echo "ERROR: draft-plan.md f
 
 `plan-doc validate` fails on an empty or clobbered artifact (a last-message pointer is not a valid plan doc), so it is a stronger read-back than a bare non-empty check.
 
-The drafted plan is a candidate, not yet authoritative: the plan-review stage vets and reconciles it into `vetted-plan.md`, which the implementation stage consumes.
+The drafted plan is a candidate, not yet authoritative: the next stage creates a separate `plan-review.md`, then folds the base and review into the self-contained `vetted-plan.md` consumed by implementation.

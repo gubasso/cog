@@ -73,6 +73,14 @@ setup() {
   printf '%s\n' "$output" | jq -e '.ok == false and (.errors | length) > 0' >/dev/null
 }
 
+@test "plan-doc validate_json rejects an annotated plan review" {
+  local review="${BATS_TEST_TMPDIR}/review.md"
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$review"
+  run cog::fn::plan_doc::validate_json "$review"
+  assert_success
+  printf '%s\n' "$output" | jq -e '(.ok|not) and (.errors|length)==3' >/dev/null
+}
+
 @test "plan-doc command rejects missing title" {
   run --separate-stderr cog::cmd::plan_doc save
 

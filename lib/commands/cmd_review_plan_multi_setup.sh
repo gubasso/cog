@@ -4,16 +4,16 @@
 __cog_review_plan_multi_setup_self_check='(.run_dir|type=="string") and (.mode|type=="string") and (.solo|type=="boolean") and (.repo_root|type=="string") and (.request_file|type=="string") and (.plan_under_review|type=="string") and (.claude_review|type=="string") and (.codex_review|type=="string") and (.final_review|type=="string") and (.plan_path|type=="string") and (.raw_input_file|type=="string")'
 
 __cog_review_plan_multi_setup_usage() {
-  cog::fn::ui_data "Usage: cog review-plan-multi-setup [--json] [arguments-string]"
+  cog::fn::ui_data "Usage: cog review-plan-multi-setup [--json] [--solo] [--output <absolute.md>] <plan-or-inline-input>"
 }
 
-# Consume only the leading flag tokens (--solo, -- terminator) and keep the rest
+# Consume only the leading flag tokens (--solo, --output, -- terminator) and keep the rest
 # of the input verbatim (newlines preserved), so an inline plan pasted as the
 # argument is not collapsed into a single whitespace-joined line.
 __cog_review_plan_multi_setup_parse() {
   local raw="$1"
-  local out_solo="$2" out_input="$3"
-  local parsed_solo=false rest="$raw"
+  local out_solo="$2" out_output="$3" out_input="$4"
+  local parsed_solo=false parsed_output="" rest="$raw" value
   # strip leading whitespace
   rest="${rest#"${rest%%[![:space:]]*}"}"
   while true; do
@@ -21,6 +21,22 @@ __cog_review_plan_multi_setup_parse() {
       --solo | --solo[[:space:]]*)
         parsed_solo=true
         rest="${rest#--solo}"
+        rest="${rest#"${rest%%[![:space:]]*}"}"
+        ;;
+      --output | --output[[:space:]]*)
+        [[ -z $parsed_output ]] || cog::fn::error_raise_with_exit 2 "InvalidInput" \
+          "duplicate review-plan-multi output" "option: --output" "" "pass --output once"
+        rest="${rest#--output}"
+        rest="${rest#"${rest%%[![:space:]]*}"}"
+        [[ -n $rest ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
+          "review-plan-multi output path is required" "option: --output" "" "pass an absolute .md path"
+        value="${rest%%[[:space:]]*}"
+        [[ $value == /* ]] || cog::fn::error_raise_with_exit 2 "InvalidInput" \
+          "review-plan-multi output path must be absolute" "path: ${value}" "" "pass an absolute .md path"
+        [[ $value == *.md ]] || cog::fn::error_raise_with_exit 2 "InvalidInput" \
+          "review-plan-multi output must be markdown" "path: ${value}" "" "use a .md path"
+        parsed_output="$value"
+        rest="${rest#"$value"}"
         rest="${rest#"${rest%%[![:space:]]*}"}"
         ;;
       -- | --[[:space:]]*)
@@ -39,9 +55,10 @@ __cog_review_plan_multi_setup_parse() {
     esac
   done
   [[ -n $rest ]] || cog::fn::error_raise_with_exit 2 "MissingArgument" \
-    "plan input is required" "usage: cog review-plan-multi-setup [--json] [arguments-string]" \
+    "plan input is required" "usage: cog review-plan-multi-setup [--json] [--solo] [--output <absolute.md>] <input>" \
     "expected a plan file or inline plan+context text" ""
   printf -v "$out_solo" '%s' "$parsed_solo"
+  printf -v "$out_output" '%s' "$parsed_output"
   printf -v "$out_input" '%s' "$rest"
 }
 
@@ -52,11 +69,11 @@ __cog_review_plan_multi_setup_parse() {
 
 __cog_review_plan_multi_setup_build_json() {
   local raw="$1"
-  local solo input mode abs classified run_dir repo_root
+  local solo output_override input mode abs classified run_dir repo_root
   local plan_path="" raw_input_file=""
   local request_file plan_under_review claude_review codex_review final_review
 
-  __cog_review_plan_multi_setup_parse "$raw" solo input
+  __cog_review_plan_multi_setup_parse "$raw" solo output_override input
   classified="$(cog::fn::plan_gate::classify_input "$input")"
   mode="${classified%%$'\t'*}"
   abs="${classified#*$'\t'}"
@@ -70,7 +87,7 @@ __cog_review_plan_multi_setup_build_json() {
   plan_under_review="${run_dir}/plan-under-review.md"
   claude_review="${run_dir}/claude-review.md"
   codex_review="${run_dir}/codex-review.md"
-  final_review="${run_dir}/final-review.md"
+  final_review="${output_override:-${run_dir}/final-review.md}"
 
   case "$mode" in
     file)

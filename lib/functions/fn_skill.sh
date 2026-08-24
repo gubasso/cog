@@ -106,7 +106,6 @@ cog::fn::skill::name_in_namespace() {
 
 cog::fn::skill::is_plan_reviewer_intent() {
   local file="$1"
-  cog::fn::skill::is_plan_emitter "$file" || return 1
   grep -qiE 'review implementation plans|review this plan|^# Plan Reviewer|^name:[[:space:]]*plan-reviewer|^name:[[:space:]]*review-plan' "$file"
 }
 

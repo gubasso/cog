@@ -19,7 +19,7 @@ Before invoking the skill, release the workflow lock so it does not interfere:
 cog lock release "$LOCK_FILE"
 ```
 
-Assemble and validate the handoff input. `cog review-loop-input` owns the handoff schema; `build` reads `request.md`, `vetted-plan.md`, `review.md`, and the optional thread-id files from `$RUN_DIR`, assembles `{task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id}`, and validates the result before it is written:
+Assemble and validate the handoff input. `cog review-loop-input build` structurally validates the folded `vetted-plan.md` before embedding it, reads `request.md`, `review.md`, and optional thread-id files from `$RUN_DIR`, assembles `{task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id}`, and validates the result before it is written:
 
 ```bash
 cog review-loop-input build \

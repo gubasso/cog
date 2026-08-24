@@ -13,6 +13,8 @@ setup() {
   source "${LIB_DIR}/functions/fn_error_raise.sh"
   source "${LIB_DIR}/functions/fn_json_write.sh"
   source "${LIB_DIR}/functions/fn_rundir.sh"
+  source "${LIB_DIR}/functions/fn_plan_artifact.sh"
+  source "${LIB_DIR}/functions/fn_plan_doc.sh"
   source "${LIB_DIR}/commands/cmd_hook_guard.sh"
 }
 
@@ -58,7 +60,7 @@ guard_stop_direct() {
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
-  printf '%s\n' x >"$run_dir/vetted-plan.md"
+  printf '# Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"$run_dir/vetted-plan.md"
   printf '%s\n' x >"$run_dir/review.md"
 
   run --separate-stderr guard_stop_direct "$$"
@@ -73,12 +75,25 @@ guard_stop_direct() {
   local lock_file
   mkdir -p "$run_dir"
   lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
-  printf '%s\n' x >"$run_dir/vetted-plan.md"
+  printf '# Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"$run_dir/vetted-plan.md"
   printf '%s\n' x >"$run_dir/impl-report.txt"
   printf '%s\n' x >"$run_dir/review.md"
 
   run guard_stop_direct "$$"
 
   assert_success
+  rm -rf "$run_dir" "$lock_file"
+}
+
+@test "hook_guard executor-prex-stop blocks an annotated review at vetted-plan" {
+  local run_dir="${BATS_TEST_TMPDIR}/executor-prex-review" lock_file
+  mkdir -p "$run_dir"
+  lock_file="$(cog::fn::rundir_lock_acquire "$run_dir" "$$")"
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$run_dir/vetted-plan.md"
+  printf x >"$run_dir/impl-report.txt"
+  printf x >"$run_dir/review.md"
+  run --separate-stderr guard_stop_direct "$$"
+  assert_failure 2
+  [[ $stderr == *"Valid vetted plan"* ]]
   rm -rf "$run_dir" "$lock_file"
 }

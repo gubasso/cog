@@ -19,30 +19,38 @@ setup() {
 }
 
 @test "review-plan-multi parser strips solo and keeps input verbatim" {
-  local solo input
+  local solo output_path input
 
-  __cog_review_plan_multi_setup_parse "--solo review this plan" solo input
+  __cog_review_plan_multi_setup_parse "--solo review this plan" solo output_path input
 
   [ "$solo" = true ]
   [ "$input" = "review this plan" ]
 }
 
 @test "review-plan-multi parser preserves newlines in inline input" {
-  local solo input
+  local solo output_path input
 
-  __cog_review_plan_multi_setup_parse $'first line\nsecond line' solo input
+  __cog_review_plan_multi_setup_parse $'first line\nsecond line' solo output_path input
 
   [ "$solo" = false ]
   [ "$input" = $'first line\nsecond line' ]
 }
 
 @test "review-plan-multi parser honours -- terminator for dash-leading text" {
-  local solo input
+  local solo output_path input
 
-  __cog_review_plan_multi_setup_parse "-- -starts-with-dash" solo input
+  __cog_review_plan_multi_setup_parse "-- -starts-with-dash" solo output_path input
 
   [ "$solo" = false ]
   [ "$input" = "-starts-with-dash" ]
+}
+
+@test "review-plan-multi parser accepts output and solo in either order" {
+  local solo output_path input
+  __cog_review_plan_multi_setup_parse "--output /tmp/review.md --solo plan text" solo output_path input
+  [ "$solo" = true ]
+  [ "$output_path" = /tmp/review.md ]
+  [ "$input" = "plan text" ]
 }
 
 # review-plan-multi-setup and cog plan-gate share one classifier, so the setup

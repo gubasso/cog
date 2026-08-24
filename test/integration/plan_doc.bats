@@ -68,3 +68,11 @@ setup() {
   assert_failure
   [[ $stderr == *"err.kind: InvalidInput"* ]]
 }
+
+@test "cog plan-doc validate rejects an annotated plan review" {
+  local review="${BATS_TEST_TMPDIR}/review.md"
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$review"
+  run cog plan-doc validate "$review" --json
+  assert_failure 65
+  printf '%s\n' "$output" | jq -e '(.ok|not)' >/dev/null
+}

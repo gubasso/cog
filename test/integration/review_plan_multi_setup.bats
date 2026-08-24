@@ -34,6 +34,25 @@ EOF
   printf '%s\n' "$output" | jq -e --arg p "$plan" '.mode == "file" and .plan_path == $p and .solo == false' >/dev/null
 }
 
+@test "cog review-plan-multi-setup honors an absolute output override" {
+  local output_path="${BATS_TEST_TMPDIR}/final.md"
+  run cog review-plan-multi-setup --json "--solo --output ${output_path} inline plan"
+  assert_success
+  printf '%s\n' "$output" | jq -e --arg p "$output_path" '.solo == true and .final_review == $p' >/dev/null
+
+  run cog review-plan-multi-setup --json "--output ${output_path} --solo inline plan"
+  assert_success
+}
+
+@test "cog review-plan-multi-setup rejects invalid output forms" {
+  run --separate-stderr cog review-plan-multi-setup --json "--output relative.md plan"
+  assert_failure 2
+  run --separate-stderr cog review-plan-multi-setup --json "--output /tmp/a.md --output /tmp/b.md plan"
+  assert_failure 2
+  run --separate-stderr cog review-plan-multi-setup --json "--output"
+  assert_failure 2
+}
+
 @test "cog review-plan-multi-setup rejects a directory argument" {
   local dir="${BATS_TEST_TMPDIR}/plandir"
   mkdir -p "$dir"

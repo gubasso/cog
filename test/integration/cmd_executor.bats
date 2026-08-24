@@ -8,6 +8,10 @@ setup() {
   mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_RUNTIME_DIR"
 }
 
+write_review_shape() {
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$1"
+}
+
 @test "cog executor init classifies prompt input and returns the gated 2-stage flow" {
   run cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json
 
@@ -156,14 +160,14 @@ setup() {
 @test "cog executor export-prepared copies prepared-plan.md to a caller output" {
   local run_dir
   run_dir="$(cog executor init --executor plan-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
-  printf '# vetted plan\n' >"${run_dir}/prepared-plan.md"
+  printf '# Vetted Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do it.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"${run_dir}/prepared-plan.md"
   local dest="${BATS_TEST_TMPDIR}/out.md"
 
   run cog executor export-prepared --run-dir "$run_dir" --output "$dest" --json
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.export-prepared.v1" and .ok == true and (.path | endswith("/out.md"))' >/dev/null
-  assert_file_contains "$dest" "vetted plan"
+  assert_file_contains "$dest" "Vetted Plan"
 }
 
 @test "cog executor export-prepared rejects a missing prepared plan" {
@@ -219,14 +223,14 @@ setup() {
   local run_dir source
   run_dir="$(cog executor init --executor executor-vetted --engine claude --input "Implement thing" --json | jq -r '.run_dir')"
   source="${BATS_TEST_TMPDIR}/review.md"
-  printf '%s\n' "# reviewed plan" >"$source"
+  printf '# Reviewed Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do it.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"$source"
 
   run cog executor adopt-prepared --run-dir "$run_dir" --from "$source" --json
 
   assert_success
   printf '%s\n' "$output" | jq -e \
     '.schema == "cog.executor.adopt-prepared.v1" and .ok == true and (.path | endswith("/prepared-plan.md"))' >/dev/null
-  assert_file_contains "${run_dir}/prepared-plan.md" "reviewed plan"
+  assert_file_contains "${run_dir}/prepared-plan.md" "Reviewed Plan"
 }
 
 @test "cog executor adopt-prepared rejects an empty source" {
@@ -239,6 +243,32 @@ setup() {
 
   assert_failure
   [[ $stderr == *"missing or empty"* ]]
+}
+
+@test "cog executor plan-named gates reject annotated reviews without copying" {
+  local run_dir review dest export_path
+  run_dir="$(cog executor init --executor executor-oneshot --engine claude --input "do thing" --json | jq -r '.run_dir')"
+  review="${BATS_TEST_TMPDIR}/review.md"
+  dest="${run_dir}/prepared-plan.md"
+  export_path="${BATS_TEST_TMPDIR}/export.md"
+  write_review_shape "$review"
+  printf 'sentinel\n' >"$dest"
+
+  run --separate-stderr cog executor adopt-prepared --run-dir "$run_dir" --from "$review"
+  assert_failure 65
+  assert_file_contains "$dest" sentinel
+
+  run --separate-stderr cog executor adopt --run-dir "$run_dir" --ordinal prepare --from "$review"
+  assert_failure 65
+  assert_file_contains "$dest" sentinel
+
+  write_review_shape "$dest"
+  run --separate-stderr cog executor verify-artifact --run-dir "$run_dir" --ordinal prepare
+  assert_failure 65
+
+  run --separate-stderr cog executor export-prepared --run-dir "$run_dir" --output "$export_path"
+  assert_failure 65
+  [ ! -e "$export_path" ]
 }
 
 @test "cog executor adopt places a staged report at the canonical execution slot" {

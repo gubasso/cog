@@ -79,7 +79,7 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`. Ensure `<run-dir>/reque
 
   Fill it so a reviewer with none of this session's context can judge the plan: **Artifacts** carries the plan under review verbatim (from the supplied plan path, or `<run-dir>/request.md` for inline-plan prompt input); **Objective** is review, not rewrite; **Not Evaluated** keeps this session's own verdict out, since the whole point is independence.
 
-  Then write `<run-dir>/prepare-prompt.md` with `$review-plan-oneshot` and three absolute paths — plan-path, request-path `<run-dir>/brief.md`, and output-path `<run-dir>/prepared-plan.md`. Launch write-capable so the reviewer can save its annotated plan, then poll-and-classify:
+  Then write `<run-dir>/prepare-prompt.md` with `$review-plan-oneshot` and three absolute paths — plan-path, request-path `<run-dir>/brief.md`, and output-path `<run-dir>/prepared-plan-review.md`. Launch write-capable so the reviewer can save its annotated review, then poll-and-classify:
 
   ```bash
   cog claude-runner run-exec --access write --effort high --prompt <run-dir>/prepare-prompt.md --output <run-dir>/prepare-claude-output.md --events <run-dir>/prepare-events.jsonl --stderr <run-dir>/prepare-stderr.log --state <run-dir>/prepare.longrun.json
@@ -88,7 +88,9 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`. Ensure `<run-dir>/reque
 
   `run-exec` checks its preconditions before creating the durable state file, so a missing binary or an unbound account fails here with nothing to clean up. If that gate fails, stop the chain and report it — do not silently review on this engine, which would hand back a same-engine verdict under a cross-engine label.
 
-After Stage 1, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
+  Validate `<run-dir>/prepared-plan-review.md`, then follow `$(cog skill-refs path plan-quality/plan-review-fold.md)` in this coordinating context using the supplied plan as the base. Produce `prepared-plan.md`, `prepared-plan-review-items.json`, `prepared-plan-fold-manifest.json`, and `prepared-plan-fold-check.json`.
+
+After Stage 1, run `cog plan-doc validate <run-dir>/prepared-plan.md` and `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare`; the canonical boundary enforces the plan-doc contract.
 
 ## Stage 2: Implement
 
@@ -103,7 +105,7 @@ cog context-brief build --request <run-dir>/request.md --body <run-dir>/executio
 Fill the body so the worker can implement without the prior conversation:
 
 - **Objective** — implement the prepared plan; **Output Format** — the final implementation report covering files changed, commands run, deviations, and unresolved risks.
-- **Artifacts** — the prepared plan from `<run-dir>/prepared-plan.md`, verbatim. When it is an annotated review, state that the reconciled plan is what gets implemented (apply APPROVED/MODIFIED/ADDED, skip REMOVED).
+- **Artifacts** — the complete authoritative plan from `<run-dir>/prepared-plan.md`, verbatim.
 - **Context & Decisions** — the substance behind the plan. When the `good-input` route recorded no decisions of its own, say so explicitly; `build` fails closed on an unfilled section.
 - **Boundaries** — run no git command unless explicitly authorized, follow `AGENTS.md` and `CLAUDE.md`, and stay inside the prepared plan.
 

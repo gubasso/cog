@@ -69,13 +69,9 @@ Write the prepared plan to `<run-dir>/prepared-plan.md`.
 
 - **`needs-plan` → generate (`/plan-multi`).** Run `/plan-multi` as a fresh full run that spawns its own dual engines — a foreground `claude-delegate` Agent, or an inline-chain (read `$HOME/.claude/skills/plan-multi/SKILL.md` and follow it in this coordinator context) — never through the `Skill` tool, which refuses `plan-multi`'s `disable-model-invocation`. Pass `--output <run-dir>/prepared-plan.md` and `<run-dir>/brief.md` as the complete orientation/context (the validated context brief built above), running both engines (not `--solo`). `plan-multi` interviews only in its coordinator and forbids its workers from asking, so its inner opposite-engine Codex draft stays a forked isolation boundary. The operator interview is preserved either way: inline-chaining lets `plan-multi`'s `AskUserQuestion` reach the operator directly, and a `claude-delegate` run works from the decisions the brief already settled. The coordinator's own verdict stays withheld from the forked review, where bias isolation matters.
 
-- **`good-input` → multi-review (`/review-plan-multi`).** Delegate to a foreground Claude subagent through the Agent tool that reads `$HOME/.claude/skills/review-plan-multi/SKILL.md` and follows it. The fork is deliberate and survives the inline-by-default rule in `$(cog skill-refs path orchestration/orchestration-patterns.md)`: this coordinator withholds its own verdict, so the reviewer must form an independent judgment in a context that never saw it. Pass the plan under review (the supplied plan path for plan input, or `<run-dir>/request.md` for prompt input) plus `<run-dir>/brief.md` as the request brief it is reviewed against. The subagent runs both engines and returns the absolute path of its definitive vetted review. Adopt that review as the prepared plan:
+- **`good-input` → multi-review (`/review-plan-multi`).** Delegate to a foreground Claude subagent through the Agent tool that reads `$HOME/.claude/skills/review-plan-multi/SKILL.md` and follows it. The fork is deliberate and survives the inline-by-default rule in `$(cog skill-refs path orchestration/orchestration-patterns.md)`: this coordinator withholds its own verdict, so the reviewer must form an independent judgment in a context that never saw it. Pass `--output <run-dir>/prepared-plan-review.md`, the plan under review (the supplied plan path for plan input, or `<run-dir>/request.md` for prompt input), and `<run-dir>/brief.md` as the request brief. Validate the returned review, then follow `$(cog skill-refs path plan-quality/plan-review-fold.md)` using the supplied plan as the base. Produce `prepared-plan.md`, `prepared-plan-review-items.json`, `prepared-plan-fold-manifest.json`, and `prepared-plan-fold-check.json`.
 
-  ```bash
-  cog executor adopt-prepared --run-dir <run-dir> --from <returned-review-path> --json
-  ```
-
-After this stage, verify that `<run-dir>/prepared-plan.md` exists and is non-empty before continuing.
+After this stage, run `cog plan-doc validate <run-dir>/prepared-plan.md` and `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare` before continuing.
 
 ## Output
 
@@ -85,14 +81,14 @@ When `--output` was supplied, export the canonical prepared plan to it:
 cog executor export-prepared --run-dir <run-dir> --output <output> --json
 ```
 
-Return two lines: the output path (the exported `--output` when supplied, otherwise `<run-dir>/prepared-plan.md`) and the route (`needs-plan` or `good-input`). A `good-input` result is an annotated review of the supplied plan (APPROVED/MODIFIED/ADDED/REMOVED); a consumer implements the reconciled plan it specifies.
+Return two lines: the output path (the exported `--output` when supplied, otherwise `<run-dir>/prepared-plan.md`) and the route (`needs-plan` or `good-input`). On good-input, report the review and proof paths as retained audit artifacts; they are not caller input.
 
 ## Error Handling
 
 At every boundary, verify the durable postcondition before advancing:
 
 - Gate: `cog assess-input record` returns a route of `needs-plan` or `good-input`.
-- Prepare: `prepared-plan.md` exists and is non-empty.
+- Prepare: `prepared-plan.md` passes `cog plan-doc validate`.
 - Plan input: the supplied plan path exists and is readable before review.
 - Output: when `--output` is supplied, the exported file exists and is non-empty.
 

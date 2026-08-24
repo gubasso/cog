@@ -214,7 +214,7 @@ The command list and short descriptions are sourced from command modules under
 	Parse plan-multi arguments and create run state.
 
 *plan-review*
-	Write and validate annotated plan review artifacts.
+	Write, inspect, and validate annotated plan review artifacts.
 
 *plan-slug*
 	Derive and validate an implementation plan slug.

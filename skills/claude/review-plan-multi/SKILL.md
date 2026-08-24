@@ -14,7 +14,6 @@ allowed-tools: Bash Read Write Edit Grep Glob Agent AskUserQuestion
 ---
 
 <!-- trigger-tests: "review-plan-multi", "dual-engine plan review", "review this plan with codex", "two reviews then synthesize" -->
-<!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
 
 # Review Plan Multi
@@ -50,7 +49,7 @@ The verdict model and orchestration references ship with `cog` and resolve in-re
 
 ## Inputs
 
-- `$ARGUMENTS` — the plan to review plus the optional `--solo` flag. The plan input may be a single plan file or inline text that mixes the request/context with a full plan. Required. If empty, ask the user for a plan before proceeding. The skill is blind to which skill produced the plan.
+- `$ARGUMENTS` — the plan to review plus optional leading `--solo` and `--output <absolute.md>` flags, in either order. The plan input may be a single plan file or inline text that mixes the request/context with a full plan. Required. If empty, ask the user for a plan before proceeding. The skill is blind to which skill produced the plan.
 
 ## Phase 1: Setup
 
@@ -60,7 +59,7 @@ Parse flags and classify the plan input deterministically, then create the run d
 cog review-plan-multi-setup "$ARGUMENTS"
 ```
 
-The command parses `--solo`, classifies the input form, creates the run dir, resolves the repo root, and pre-computes every scratch path. It emits `RUN_DIR=`, `MODE=` (`file|inline`), `SOLO=`, `REPO_ROOT=`, `REQUEST_FILE=`, `PLAN_UNDER_REVIEW=`, `CLAUDE_REVIEW=`, `CODEX_REVIEW=`, `FINAL_REVIEW=`, and the mode-specific `PLAN_PATH=` (file) or `RAW_INPUT_FILE=` (inline). It exits 2 on an unknown flag, a directory argument, or empty input (surface that error to the user).
+The command parses `--solo` and the optional absolute output override, classifies the input form, creates the run dir, resolves the repo root, and pre-computes every scratch path. `FINAL_REVIEW` is the override when supplied and otherwise the run-dir `final-review.md`. It emits `RUN_DIR=`, `MODE=` (`file|inline`), `SOLO=`, `REPO_ROOT=`, `REQUEST_FILE=`, `PLAN_UNDER_REVIEW=`, `CLAUDE_REVIEW=`, `CODEX_REVIEW=`, `FINAL_REVIEW=`, and the mode-specific `PLAN_PATH=` (file) or `RAW_INPUT_FILE=` (inline). It exits 2 on an unknown flag, invalid output, a directory argument, or empty input (surface that error to the user).
 
 Shell state does not persist between Bash calls — substitute the literal path values into later commands.
 
@@ -214,16 +213,17 @@ You are the **neutral judge** with the live conversation context neither worker 
 
 **Verdict reconciliation.** Using the `cog plan-review` artifact vocabulary (`APPROVED | MODIFIED`), the final top-level verdict is the **more severe** of the two: `APPROVED` only when both reviewers approve and you find no blocking issue; otherwise `MODIFIED`. Merge the per-item annotations (`APPROVED / MODIFIED / REMOVED / ADDED`) by union, de-duplicating overlapping findings and keeping the stricter classification on conflict. The final review is yours — not a mechanical merge.
 
-Then **write the canonical output yourself** into the `cog plan-review` scaffold:
+Then **write the canonical output yourself** into the `cog plan-review` scaffold at `FINAL_REVIEW` (the default is `$RUN_DIR/final-review.md`; callers may supply `--output <absolute.md>`):
 
 ```bash
-cog plan-review orchestrator "$RUN_DIR/plan-under-review.md" "$RUN_DIR/request.md" "$RUN_DIR/final-review.md" --json
+cog plan-review orchestrator "$RUN_DIR/plan-under-review.md" "$RUN_DIR/request.md" "$FINAL_REVIEW" --json
 ```
 
-Fill the synthesized prose into the existing scaffold sections, preserving every scaffold heading and the `APPROVED/MODIFIED/REMOVED/ADDED` vocabulary, then validate:
+Fill the synthesized prose into the existing scaffold sections, preserving every scaffold heading and the `APPROVED/MODIFIED/REMOVED/ADDED` vocabulary. Use one top-level Markdown list item per independently actionable annotation, nest continuation material below it, and never author fold IDs. Then validate and use deterministic extraction for Phase 6 counts:
 
 ```bash
-cog plan-review validate "$RUN_DIR/final-review.md" --json
+cog plan-review validate "$FINAL_REVIEW" --json
+cog plan-review items "$FINAL_REVIEW" --json
 ```
 
 If validation fails, fix the headings or required vocabulary and validate again. When degraded (Codex unavailable), synthesis is over the Claude review alone.

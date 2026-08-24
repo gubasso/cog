@@ -75,6 +75,8 @@ Plan-review sub-namespace (`review-plan-*`):
 - skills/claude/review-plan-multi
 - skills/codex/review-plan-oneshot
 
+`plan-*` skills emit self-contained plan-docs. `review-plan-*` skills emit annotated reviews that remain separate audit artifacts. A plan-naming consumer validates the base and review, retains the review, then folds them before implementation. Executor-prex uses `plan-review.md` plus `vetted-plan.md` and sibling `vetted-plan-review-items.json`, `vetted-plan-fold-manifest.json`, and `vetted-plan-fold-check.json`. Executor-oneshot, executor-oneshot-codex, and plan-vetted use `prepared-plan-review.md` plus `prepared-plan.md` and the corresponding `prepared-plan-*` proof files.
+
 ### executor-*
 
 - skills/claude/executor-vetted

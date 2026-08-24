@@ -13,7 +13,6 @@ allowed-tools: Bash Read Write Edit Agent Skill
 ---
 
 <!-- trigger-tests: "executor-prex", "plan-review-execute", "have Codex plan and implement while Claude validates", "staged adversarial workflow" -->
-<!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
 
 # Plan Review Execute
@@ -95,7 +94,9 @@ Mid-workflow, the lock is released before pausing for user approval and reacquir
 Write the final task description to `$RUN_DIR/request.md`. Unless the user asks otherwise, keep all stage outputs under `RUN_DIR` using these names:
 
 - `draft-plan.md` (the Codex-drafted plan, written by `plan-oneshot-codex` via `--output`)
-- `vetted-plan.md` (the reviewed, authoritative plan, written by `review-plan-oneshot` via `--output`)
+- `plan-review.md` (the annotated review written by `review-plan-oneshot`)
+- `vetted-plan.md` (the folded, authoritative plan-doc)
+- `vetted-plan-review-items.json`, `vetted-plan-fold-manifest.json`, and `vetted-plan-fold-check.json` (fold proof artifacts)
 - `impl-report.txt`
 - `impl-events.jsonl`
 - `impl.longrun.json` (durable job state)
@@ -168,7 +169,7 @@ Draft the implementation plan with Codex by inline-chaining `plan-oneshot-codex`
 
 ## Stage 2: Review Plan
 
-Vet the drafted plan with `review-plan-oneshot` via the **Agent tool**, passing the three absolute paths it expects: the drafted plan `$RUN_DIR/draft-plan.md`, the request `$RUN_DIR/request.md`, and the output `$RUN_DIR/vetted-plan.md`. The reviewed, reconciled plan written to `vetted-plan.md` is authoritative for implementation. The parent workflow owns lock release/reacquire and the approval loop. Follow `references/review-plan.md` for the delegation shape, proof, and the approval loop.
+Vet the drafted plan with `review-plan-oneshot` via the **Agent tool**, passing the three absolute paths it expects: the drafted plan `$RUN_DIR/draft-plan.md`, the request `$RUN_DIR/request.md`, and the output `$RUN_DIR/plan-review.md`. The parent validates the review and follows `$(cog skill-refs path plan-quality/plan-review-fold.md)` to create the authoritative `$RUN_DIR/vetted-plan.md` and proof artifacts before approval. The parent workflow owns lock release/reacquire and the approval loop. Follow `references/review-plan.md` for the delegation shape, proof, fold, and approval loop.
 
 ## Stage 3: Implement
 
@@ -212,11 +213,13 @@ End with a concise summary covering:
 
 ## Error Handling
 
-After the plan-drafting stage validate the drafted plan as a plan doc (this fails on an empty or clobbered artifact, not just an empty one); after the plan-review stage validate the vetted plan is non-empty:
+After plan drafting, review, and folding, require the structural and coverage postconditions:
 
 ```bash
 cog plan-doc validate "$RUN_DIR/draft-plan.md" || echo "ERROR: draft-plan.md failed plan-doc validation"
-[ -s "$RUN_DIR/vetted-plan.md" ] || echo "ERROR: vetted-plan.md is empty"
+cog plan-review validate "$RUN_DIR/plan-review.md" || echo "ERROR: plan-review.md failed validation"
+cog plan-doc validate "$RUN_DIR/vetted-plan.md" || echo "ERROR: vetted-plan.md failed plan-doc validation"
+cog plan-review fold-check --review "$RUN_DIR/plan-review.md" --plan "$RUN_DIR/vetted-plan.md" --manifest "$RUN_DIR/vetted-plan-fold-manifest.json" || echo "ERROR: fold coverage failed"
 ```
 
 After the stage 3 Codex call, validate the implementation report is non-empty:

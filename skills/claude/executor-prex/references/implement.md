@@ -8,7 +8,7 @@ Build a self-contained implementation prompt. Order the inlined sections so the 
 
 1. The write orientation block from `cog codex-runner orientation write`.
 2. The statement: `The vetted plan below is authoritative. Implement it exactly.`
-3. The full content of `$RUN_DIR/vetted-plan.md` (inlined, not referenced). When the plan is an annotated review (APPROVED/MODIFIED/ADDED/REMOVED), instruct Codex to implement the reconciled plan it specifies — apply APPROVED/MODIFIED/ADDED guidance and skip REMOVED.
+3. The full content of the validated, folded `$RUN_DIR/vetted-plan.md` (inlined, not referenced).
 4. The full content of `$RUN_DIR/request.md` (inlined, not referenced).
 5. Relevant repo constraints and conventions from `CLAUDE.md`.
 6. The implementation instructions: implement phases in order, avoid silent deviations, report files changed and uncertainties, `Do not run any git commands.`, and the literal `Files changed:` section header rule that the implementation-review stage parses.

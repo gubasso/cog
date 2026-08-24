@@ -8,6 +8,8 @@ Native skill trees live under `skills/claude/` and `skills/codex/`. Shared runti
 
 Skills own sequencing, evidence interpretation, and judgment. Commands and shared functions own deterministic parsing, validation, repeated shell mechanics, and filesystem state transitions.
 
+The shared plan-review fold protocol therefore lives as load-bearing prose in `skill-refs/plan-quality/plan-review-fold.md`: authoring a replacement plan is judgment. Manifest comparison and hashing live in CLI code because they are deterministic. Marker requirements live in `data/skill-class/contracts.yaml` because class policy is structured data consumed by lint.
+
 ## Current constraints
 
 Skill prefixes describe roles, native twins share a base name, consumers are producer-blind, machine identifiers are stage-agnostic, and scratch artifacts use cog run directories. `cog skill-lint` enforces the governed contract.

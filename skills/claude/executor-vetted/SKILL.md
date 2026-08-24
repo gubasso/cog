@@ -39,12 +39,11 @@ Delegate the input-evaluation gate plus vetted-plan production to `plan-vetted`.
 
 A dual-engine plan (two strong models drafting independently, then a synthesized best-of-both) is itself the vetting, so neither route needs a separate review pass.
 
-After Stage 1, record the returned route for the summary and confirm the prepared plan with `cog
-executor verify-artifact --run-dir <run-dir> --ordinal prepare` before continuing; it fails closed when the canonical artifact is missing or empty.
+After Stage 1, record the returned route for the summary, run `cog executor verify-artifact --run-dir <run-dir> --ordinal prepare`, and run `cog plan-doc validate <run-dir>/prepared-plan.md` before continuing.
 
 ## Stage 2: Implement
 
-Implement natively in the current Claude session. Read and follow `<run-dir>/prepared-plan.md`; when it is an annotated review, implement the reconciled plan it specifies (apply APPROVED/MODIFIED/ADDED guidance, skip REMOVED).
+Implement natively in the current Claude session. Read and follow `<run-dir>/prepared-plan.md` as the complete authoritative plan.
 
 Carry only relevant session context:
 

@@ -102,13 +102,14 @@ Treat the review artifact, not the runner output, as authoritative:
 
 ```bash
 cog plan-review validate <RUN_DIR>/review.md --json
+cog plan-review items <RUN_DIR>/review.md --json
 ```
 
 A review clobbered by a last-message pointer fails validation deterministically.
 
 ## Final Response
 
-Print the top-level verdict, the saved review path, and the count of `APPROVED` / `MODIFIED` / `REMOVED` / `ADDED` annotations. If Codex fails, report the runner JSON path, the stderr path, the status, and whether the review artifact exists.
+Print the top-level verdict, the saved review path, and the annotation counts from `cog plan-review items`. Call it a review, never a plan. If Codex fails, report the runner JSON path, the stderr path, the status, and whether the review artifact exists.
 
 ## Guardrails
 

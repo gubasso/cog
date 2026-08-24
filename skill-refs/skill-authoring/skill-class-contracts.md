@@ -5,11 +5,18 @@ The core skill taxonomy (ADR-0006) has five governed classes. Each carries a pos
 
 | Class         | Prefix          | Tier (prefix default)                     | Input → output                                                 |
 | ------------- | --------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| `plan`        | `plan-*`        | high                                      | goal/orientation → plan in the structural plan contract        |
+| `plan`        | `plan-*`        | high                                      | goal/orientation → self-contained plan-doc                     |
 | `review`      | `review-*`      | review-oneshot high; else registry/exempt | diff/scope → shared structured-findings contract               |
-| `review-plan` | `review-plan-*` | high                                      | plan → annotated plan-review verdict                           |
+| `review-plan` | `review-plan-*` | high                                      | plan → annotated plan-review delta                             |
 | `executor`    | `executor-*`    | medium                                    | one prompt/plan (`-ar <path>`) → canonical execution report    |
 | `bootstrap`   | `bootstrap-*`   | low                                       | project + operator intent → reconciled files via `cog *-apply` |
+
+| Class                                            | `plan-emitter` marker |
+| ------------------------------------------------ | --------------------- |
+| `plan`                                           | Required              |
+| `review`, `review-plan`, `executor`, `bootstrap` | Forbidden             |
+
+Reviews remain reviews. A plan-naming consumer retains the annotated delta and follows `cog skill-refs path plan-quality/plan-review-fold.md` before a plan-doc handoff. This contract governs Claude and Codex equally.
 
 The `bootstrap-*` class covers the domain and language workers; the `bootstrap` orchestrator (no suffix) is the dispatcher, governed by the `input-fidelity` facet rule and carrying a context-brief gate pointer. A `bootstrap-*` worker that ships cog templates MUST run the domain-worker routine each run (`cog bootstrap-template-review check|stamp`), once per domain it owns; the `bootstrap-template-review` facet rule enforces this for every domain the worker owns. Ownership is a mapping, not the skill name: `bootstrap-lint` owns `editorconfig` and `precommit`, `bootstrap-rust` owns `cargo-publish`, every other worker owns the domain its name carries, and the `bootstrap` orchestrator owns none and is exempt.
 

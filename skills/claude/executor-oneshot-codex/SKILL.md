@@ -10,7 +10,6 @@ allowed-tools: Bash Read Write Grep Glob WebSearch WebFetch
 ---
 
 <!-- trigger-tests: "executor-oneshot-codex", "execute one prompt through Codex single flow from Claude", "Codex prepares and implements one plan" -->
-<!-- cog-skill: plan-emitter -->
 <!-- cog-skill: input-fidelity -->
 
 # Executor Single Codex
@@ -74,9 +73,9 @@ The result is a saved plan doc, so confirm it with `cog plan-doc validate <RUN_D
 
 ### `good-input` — Claude reviews in session
 
-Claude is the opposite engine here, so the cross-engine review needs no fresh context and no brief. Ensure `<RUN_DIR>/request.md` exists first (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan source context verbatim and in full) — Stage 2 builds its brief from it. Read `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follow its Orchestrator Invocation Contract **in this context**, with three absolute paths: plan-path (the supplied plan path, or `<RUN_DIR>/request.md` for inline-plan prompt input), request-path `<RUN_DIR>/request.md`, and output-path `<RUN_DIR>/prepared-plan.md`.
+Claude is the opposite engine here, so the cross-engine review needs no fresh context and no brief. Ensure `<RUN_DIR>/request.md` exists first (init writes it for prompt input; for plan input, create a non-empty `request.md` capturing the supplied-plan source context verbatim and in full) — Stage 2 builds its brief from it. Read `$HOME/.claude/skills/review-plan-oneshot/SKILL.md` and follow its Orchestrator Invocation Contract **in this context**, with three absolute paths: plan-path (the supplied plan path, or `<RUN_DIR>/request.md` for inline-plan prompt input), request-path `<RUN_DIR>/request.md`, and output-path `<RUN_DIR>/prepared-plan-review.md`.
 
-Confirm `<RUN_DIR>/prepared-plan.md` exists and is non-empty.
+Validate the review, then follow `$(cog skill-refs path plan-quality/plan-review-fold.md)` using the supplied plan as the base. Produce `<RUN_DIR>/prepared-plan.md`, `prepared-plan-review-items.json`, `prepared-plan-fold-manifest.json`, and `prepared-plan-fold-check.json`. Run `cog plan-doc validate <RUN_DIR>/prepared-plan.md` and `cog executor verify-artifact --run-dir <RUN_DIR> --ordinal prepare` before handoff.
 
 ## Cross-engine decisions
 
@@ -88,7 +87,7 @@ Persist every question, the answer taken, and the engine that answered it to `<R
 
 ## Stage 2: Implement with Codex
 
-Codex implements in a fresh context, so this stage pays for its own validated brief. Build it per `$(cog skill-refs path orchestration/context-brief-contract.md)`, filling **Objective** with the implementation goal, **Output Format** with the required final report (files changed, deviations, commands run, unresolved risks), **Boundaries** with the active repository constraints, **Context & Decisions** with the session substance that bears on the implementation plus the settled decisions from `<RUN_DIR>/decisions.md` when that file exists — on the `good-input` route, and whenever no decision was open, it does not, so state instead that no cross-engine decision was required — and **Artifacts** with the prepared plan from `<RUN_DIR>/prepared-plan.md` verbatim (when it is an annotated review, carry the reconciled plan — apply APPROVED/MODIFIED/ADDED, skip REMOVED):
+Codex implements in a fresh context, so this stage pays for its own validated brief. Build it per `$(cog skill-refs path orchestration/context-brief-contract.md)`, filling **Objective** with the implementation goal, **Output Format** with the required final report (files changed, deviations, commands run, unresolved risks), **Boundaries** with the active repository constraints, **Context & Decisions** with the session substance that bears on the implementation plus the settled decisions from `<RUN_DIR>/decisions.md` when that file exists — on the `good-input` route, and whenever no decision was open, it does not, so state instead that no cross-engine decision was required — and **Artifacts** with the complete authoritative plan from `<RUN_DIR>/prepared-plan.md` verbatim:
 
 ```bash
 cog context-brief template --out "<RUN_DIR>/execution-brief-body.md"

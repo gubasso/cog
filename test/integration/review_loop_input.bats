@@ -12,7 +12,7 @@ write_required_inputs() {
   local run_dir="$1"
   mkdir -p "$run_dir"
   printf '%s' "task text" >"${run_dir}/request.md"
-  printf '%s' "reviewed plan text" >"${run_dir}/vetted-plan.md"
+  printf '# Reviewed Plan\n\n## Goal\n\nGoal.\n\n## Implementation Plan\n\n1. Do it.\n\n## Acceptance Criteria\n\n- [ ] Done.\n' >"${run_dir}/vetted-plan.md"
   printf '%s' "stage 4 review text" >"${run_dir}/review.md"
 }
 
@@ -33,7 +33,7 @@ write_thread_ids() {
   assert_output "RESOLVED ${run_dir}/review_loop_input.json"
   jq -e \
     '.task == "task text" and
-    .reviewed_plan == "reviewed plan text" and
+    (.reviewed_plan | startswith("# Reviewed Plan")) and
     .implementation_review == "stage 4 review text" and
     .plan_thread_id == "plan-thread-1" and
     .impl_thread_id == "impl-thread-1"' \
@@ -156,6 +156,18 @@ write_thread_ids() {
   [[ $stderr == *"err.kind: InputUnreadable"* ]]
 }
 
+@test "cog review-loop-input rejects review-shaped plans on build and validate" {
+  local run_dir="${BATS_TEST_TMPDIR}/run" input="${BATS_TEST_TMPDIR}/input.json"
+  write_required_inputs "$run_dir"
+  printf '# Annotated Plan Review\n\n## Verdict\n\nMODIFIED\n\n## Annotated Plan\n\n### APPROVED\n\n### MODIFIED\n\n### REMOVED\n\n### ADDED\n' >"$run_dir/vetted-plan.md"
+  run --separate-stderr cog review-loop-input build --run-dir "$run_dir"
+  assert_failure 65
+
+  jq -n --rawfile plan "$run_dir/vetted-plan.md" '{task:"t",reviewed_plan:$plan,implementation_review:"r",plan_thread_id:null,impl_thread_id:null}' >"$input"
+  run --separate-stderr cog review-loop-input validate --input "$input"
+  assert_failure 65
+}
+
 @test "cog review-loop-input build treats missing thread ids as null" {
   local run_dir="${BATS_TEST_TMPDIR}/run"
   write_required_inputs "$run_dir"
@@ -243,8 +255,8 @@ write_thread_ids() {
 
 @test "cog review-loop-input validate accepts context and scope together" {
   local input="${BATS_TEST_TMPDIR}/input.json"
-  jq -n '{
-    task: "t", reviewed_plan: "p", implementation_review: "r",
+  jq -n --arg plan $'# Plan\n\n## Goal\n\nG\n\n## Implementation Plan\n\n1. Do\n\n## Acceptance Criteria\n\n- [ ] Done' '{
+    task: "t", reviewed_plan: $plan, implementation_review: "r",
     plan_thread_id: null, impl_thread_id: null,
     context: "brief", scope: {shas: ["abc"], worktree: true}
   }' >"$input"
@@ -341,8 +353,8 @@ write_thread_ids() {
 @test "cog review-loop-input validate accepts a scope carrying only some keys" {
   # The has() gating must not turn optional keys into required ones.
   local input="${BATS_TEST_TMPDIR}/input.json"
-  jq -n '{
-    task: "t", reviewed_plan: "p", implementation_review: "r",
+  jq -n --arg plan $'# Plan\n\n## Goal\n\nG\n\n## Implementation Plan\n\n1. Do\n\n## Acceptance Criteria\n\n- [ ] Done' '{
+    task: "t", reviewed_plan: $plan, implementation_review: "r",
     plan_thread_id: null, impl_thread_id: null,
     scope: {shas: ["abc123"]}
   }' >"$input"
@@ -354,8 +366,8 @@ write_thread_ids() {
 
 @test "cog review-loop-input validate accepts an empty scope object" {
   local input="${BATS_TEST_TMPDIR}/input.json"
-  jq -n '{
-    task: "t", reviewed_plan: "p", implementation_review: "r",
+  jq -n --arg plan $'# Plan\n\n## Goal\n\nG\n\n## Implementation Plan\n\n1. Do\n\n## Acceptance Criteria\n\n- [ ] Done' '{
+    task: "t", reviewed_plan: $plan, implementation_review: "r",
     plan_thread_id: null, impl_thread_id: null,
     scope: {}
   }' >"$input"

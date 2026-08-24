@@ -14,6 +14,13 @@ _common_setup() {
   mapfile -t git_env_vars < <(git rev-parse --local-env-vars 2>/dev/null || :)
   ((${#git_env_vars[@]})) && unset "${git_env_vars[@]}"
 
+  # Durable-job wrappers export internal COG_LR_* state into their child. Tests
+  # must not accidentally treat that orchestration state as plugin contract
+  # input or otherwise vary based on how the suite was launched.
+  local cog_longrun_env_vars=()
+  mapfile -t cog_longrun_env_vars < <(compgen -A variable COG_LR_ || :)
+  ((${#cog_longrun_env_vars[@]})) && unset "${cog_longrun_env_vars[@]}"
+
   PATH="${BATS_TEST_DIRNAME}/../../bin:${PATH}"
   export XDG_DATA_HOME="${XDG_DATA_HOME:-${BATS_TEST_TMPDIR}/data}"
 }

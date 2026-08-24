@@ -106,6 +106,7 @@ cog::fn::review_loop_input_build() {
 
   cog::fn::rundir_require_file "$task_file" "request.md"
   cog::fn::rundir_require_file "$reviewed_plan_file" "vetted-plan.md"
+  cog::fn::plan_doc::require_valid_file "$reviewed_plan_file"
   cog::fn::rundir_require_file "$implementation_review_file" "review.md"
   __cog_review_loop_input_read_thread_id "$plan_file" "plan-thread-id" plan_tid plan_present
 
@@ -152,7 +153,7 @@ cog::fn::review_loop_input_build() {
 }
 
 cog::fn::review_loop_input_validate_file() {
-  local json_file="${1:-}"
+  local json_file="${1:-}" reviewed_plan
 
   [[ -n $json_file ]] || cog::fn::error_raise "MissingArgument" \
     "missing review-loop input file" "function: cog::fn::review_loop_input_validate_file" "" \
@@ -167,4 +168,6 @@ cog::fn::review_loop_input_validate_file() {
     "review-loop input failed schema validation" "path: ${json_file}" \
     "expected task, reviewed_plan, implementation_review, plan_thread_id, impl_thread_id" \
     "fix the handoff JSON and retry"
+  reviewed_plan="$(jq -r '.reviewed_plan' "$json_file")"
+  cog::fn::plan_doc::require_valid_text "$reviewed_plan" "reviewed_plan"
 }

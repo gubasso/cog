@@ -44,34 +44,59 @@ __cog_plan_doc_error_json() {
   jq -cn --arg reason "$reason" '{reason: $reason}'
 }
 
-cog::fn::plan_doc::validate_content() {
-  local path="${1:-}"
+cog::fn::plan_doc::validate_text() {
+  local content="${1:-}"
+  local label="${2:-<text>}"
   local ok=true
   local -a errors=()
 
-  cog::fn::plan_artifact::file_nonempty "$path" "plan doc"
-  grep -q '^# ' "$path" || {
+  [[ -n $content ]] || cog::fn::error_raise "InvalidInput" \
+    "plan doc is empty" "source: ${label}" "" "provide a non-empty plan document"
+  grep -q '^# ' <<<"$content" || {
     ok=false
     errors+=("$(__cog_plan_doc_error_json "missing H1 heading")")
   }
-  grep -q '^## Goal$' "$path" || {
+  grep -q '^## Goal$' <<<"$content" || {
     ok=false
     errors+=("$(__cog_plan_doc_error_json "missing Goal section")")
   }
-  grep -q '^## Implementation Plan$' "$path" || {
+  grep -q '^## Implementation Plan$' <<<"$content" || {
     ok=false
     errors+=("$(__cog_plan_doc_error_json "missing Implementation Plan section")")
   }
-  grep -q '^## Acceptance Criteria$' "$path" || {
+  grep -q '^## Acceptance Criteria$' <<<"$content" || {
     ok=false
     errors+=("$(__cog_plan_doc_error_json "missing Acceptance Criteria section")")
   }
 
   jq -n \
     --argjson ok "$ok" \
-    --arg path "$path" \
+    --arg path "$label" \
     --argjson errors "$(printf '%s\n' "${errors[@]}" | jq -s '.')" \
     '{ok: $ok, path: $path, errors: $errors}'
+}
+
+cog::fn::plan_doc::validate_content() {
+  local path="${1:-}"
+
+  cog::fn::plan_artifact::file_nonempty "$path" "plan doc"
+  cog::fn::plan_doc::validate_text "$(<"$path")" "$path"
+}
+
+cog::fn::plan_doc::require_valid_file() {
+  local path="${1:-}" report
+  report="$(cog::fn::plan_doc::validate_content "$path")"
+  jq -e '.ok == true' <<<"$report" >/dev/null || cog::fn::error_raise "InvalidInput" \
+    "plan document failed validation" "path: ${path}" "$(jq -c '.errors' <<<"$report")" \
+    "provide a structurally valid plan-doc"
+}
+
+cog::fn::plan_doc::require_valid_text() {
+  local content="${1:-}" label="${2:-<text>}" report
+  report="$(cog::fn::plan_doc::validate_text "$content" "$label")"
+  jq -e '.ok == true' <<<"$report" >/dev/null || cog::fn::error_raise "InvalidInput" \
+    "plan document failed validation" "source: ${label}" "$(jq -c '.errors' <<<"$report")" \
+    "provide a structurally valid plan-doc"
 }
 
 cog::fn::plan_doc::save_json() {

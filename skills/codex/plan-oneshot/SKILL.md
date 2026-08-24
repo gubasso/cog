@@ -5,6 +5,8 @@ description: >
   shelf for reusable context and saving the final plan through cog plan-doc.
 ---
 
+<!-- cog-skill: plan-emitter -->
+
 # Plan Codex
 
 Build one lean, self-contained implementation plan. This skill researches reusable context through the persisted shelf, reasons over the current codebase, emits the plan to screen, and saves one markdown artifact through `cog plan-doc`.

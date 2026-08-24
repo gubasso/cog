@@ -2,6 +2,7 @@ setup() {
   bats_require_minimum_version 1.5.0
   load '../test_helper/common-setup'
   _common_setup
+  export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
   export REPO_ROOT
 }
@@ -65,6 +66,21 @@ write_skill() {
   run cog skill-class check --skill "${BATS_TEST_TMPDIR}/skills/claude/util-thing/SKILL.md" --json
   assert_success
   [[ "$(jq -r '.class' <<<"$output")" == "other" ]]
+}
+
+@test "cog skill-class enforces plan-emitter marker by class and runtime" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/codex/plan-bare" plan-bare body
+  run cog skill-class check --skill "${BATS_TEST_TMPDIR}/skills/codex/plan-bare/SKILL.md" --json
+  assert_failure 65
+  [[ "$(jq -r '.missing[]' <<<"$output")" == *"plan-emitter"* ]]
+
+  local class
+  for class in review-demo review-plan-demo executor-demo bootstrap-demo; do
+    write_skill "${BATS_TEST_TMPDIR}/skills/codex/${class}" "$class" '<!-- cog-skill: plan-emitter -->'
+    run cog skill-class check --skill "${BATS_TEST_TMPDIR}/skills/codex/${class}/SKILL.md" --json
+    assert_failure 65
+    [[ "$(jq -r '.forbidden_present[]' <<<"$output")" == *"plan-emitter"* ]]
+  done
 }
 
 @test "every shipped core-class skill passes its class contract" {

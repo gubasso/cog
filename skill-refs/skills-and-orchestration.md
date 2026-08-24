@@ -95,8 +95,8 @@ Additional repo-specific notes:
    **Caveat on the thin-dispatcher shim pattern:** The Skill-tool dispatch form (a command shim that calls `Skill(<sub-skill>)`) only works when the _target_ sub-skill declares `context: fork` + `agent:` in its frontmatter. In that case the harness forks a real subagent on dispatch, which is permitted even with `disable-model-invocation: true` on the target. Skill-tool dispatch from a shim into a non-forking orchestrator that _also_ has `disable-model-invocation: true` fails with: `Skill <name> cannot be used with Skill tool due to disable-model-invocation`. Such orchestrators (`executor-prex`) must be invoked directly by the user — see **Invocation Patterns** below.
 
    ```bash
-   [ -s "$NEW_RUN_DIR/vetted-plan.md" ] || {
-     echo "ERROR: missing proof of delegation"
+   cog plan-doc validate "$NEW_RUN_DIR/vetted-plan.md" || {
+     echo "ERROR: invalid folded plan"
      exit 1
    }
    ```
@@ -221,10 +221,10 @@ NEW_RUN_DIR="$(comm -13 "$RUN_DIR/pre-dirs.snap" "$RUN_DIR/post-dirs.snap" | tai
 Fail closed unless the expected artifacts exist:
 
 ```bash
-[ -s "$NEW_RUN_DIR/vetted-plan.md" ] || { echo "ERROR: missing vetted-plan.md"; exit 1; }
+cog plan-doc validate "$NEW_RUN_DIR/vetted-plan.md" || { echo "ERROR: invalid vetted-plan.md"; exit 1; }
 ```
 
-Only after both checks pass may this orchestrator continue.
+The annotated review and hash-bound fold-check receipt remain separate audit artifacts. Only after the delegation proof, fold coverage, and plan-doc validation pass may this orchestrator continue.
 ````
 
 The important detail is not the exact path pattern; it is the sequencing. The orchestrator must be able to prove that a separate delegated run happened and that the callee produced the artifacts the next stage depends on.

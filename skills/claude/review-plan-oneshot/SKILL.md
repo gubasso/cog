@@ -10,7 +10,6 @@ allowed-tools: Bash Read Write Grep Glob WebSearch WebFetch
 ---
 
 <!-- trigger-tests: "review-plan-oneshot", "review this plan before implementation", "validate one implementation plan" -->
-<!-- cog-skill: plan-emitter -->
 
 # Review Plan Claude
 
@@ -103,6 +102,8 @@ Use the `cog plan-review` scaffold vocabulary. Classify plan material under the 
 - `REMOVED` - plan material that should not be implemented.
 - `ADDED` - missing steps, checks, dependencies, or constraints that must be added.
 
+Write one top-level Markdown list item per independently actionable annotation; nest continuation details under that item. Never author fold IDs: `cog plan-review items` derives them.
+
 Preserve every scaffold heading:
 
 ```markdown
@@ -137,6 +138,7 @@ Validate the final artifact:
 
 ```bash
 cog plan-review validate "$OUTPUT_PATH" --json
+cog plan-review items "$OUTPUT_PATH" --json
 ```
 
 If validation fails, fix the artifact headings or required vocabulary and validate again before reporting completion.

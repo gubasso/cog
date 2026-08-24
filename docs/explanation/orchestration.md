@@ -8,6 +8,8 @@ Coordinators sequence work in prose. Foreground delegation isolates judgment or 
 
 Context briefs carry an oriented objective, raw request, and full substantive context while omitting the coordinator's solution. Approval records bind an operator decision to the exact artifact hash and expiry.
 
+Before a fresh implementation context receives a reviewed plan, the coordinator validates the annotated review, folds it into a complete plan, proves every review item is folded or reasonedly waived, retains the hash-bound fold receipt, and validates the final plan-doc. Any later edit reruns plan validation and fold-check so the durable postcondition always matches current bytes.
+
 ## Current constraints
 
 Environment guarantees are checked before orchestration, Codex is never backgrounded by skill prose, and every boundary verifies a durable postcondition. The exact contract lives in [orchestration reference](../reference/orchestration-contract.md).

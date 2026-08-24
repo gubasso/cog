@@ -12,9 +12,9 @@ Write `$RUN_DIR/review-context.md` containing, in this order:
 
 - A one-line orchestrator note: `executor-prex implementation review — produce JSON findings for orchestrator triage.`
 - The original task description (verbatim contents of `$RUN_DIR/request.md`).
-- The approved reviewed plan (verbatim contents of `$RUN_DIR/vetted-plan.md`).
+- The approved folded plan-doc (verbatim contents of `$RUN_DIR/vetted-plan.md`).
 
-The reviewed plan source is load-bearing: use `$RUN_DIR/vetted-plan.md`, not the raw input plan, so `review-oneshot` can perform plan-conformance review from the approved plan.
+The folded plan source is load-bearing: use `$RUN_DIR/vetted-plan.md`, not the raw input plan or annotated review, so `review-oneshot` can perform plan-conformance review from the approved self-contained plan-doc.
 
 ### Step 2: Snapshot and clear prior artifacts
 

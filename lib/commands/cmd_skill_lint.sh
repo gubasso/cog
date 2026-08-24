@@ -147,12 +147,12 @@ __cog_skill_lint_check_input_fidelity() {
 }
 
 __cog_skill_lint_check_prefix_taxonomy() {
-  # Prefix taxonomy is a hard-fail structural contract for Claude skills with
+  # Prefix taxonomy is a hard-fail structural contract for runtime skills with
   # governed declared intent.
   local file="$1" runtime name class expected=""
 
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
-  [[ $runtime == claude ]] || return 0
+  [[ $runtime == claude || $runtime == codex ]] || return 0
 
   name="$(cog::fn::skill::frontmatter_name "$file")"
   class="$(cog::fn::skill::classify_prefix "$name")"

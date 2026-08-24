@@ -69,9 +69,9 @@ The Claude allowlist above must match `cog::fn::skill::allowed_frontmatter_keys_
 
 Skill names must follow [ADR-0006](../decisions/ADR-0006-runtime-skill-trees-and-taxonomy.md). The prefix declares what a skill does:
 
-- `plan-*` emits implementation plans.
+- `plan-*` emits self-contained implementation plans and carries `<!-- cog-skill: plan-emitter -->`.
 - `review-*` reviews code against the codebase plus plan, and reviews plans before implementation.
-- `review-plan-*` is the `review-*` sub-namespace for plan-before-implementation review.
+- `review-plan-*` is the `review-*` sub-namespace for annotated plan deltas; it must not carry the plan-emitter marker.
 - `executor-*` executes one plan/prompt at a time and may generate its own better internal plan before executing.
 - `bootstrap-*` scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog (the `bootstrap` orchestrator dispatches these workers).
 
@@ -82,6 +82,8 @@ Governing rule: a skill's prefix must match what it does.
 This taxonomy is related accepted skill governance alongside [ADR-0014](../decisions/ADR-0014-model-effort-and-power-grade.md) (model/effort policy) and [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md) (plan-mode gate); those ADRs are referenced here, not changed.
 
 ## Skill class contracts
+
+The `plan` class requires `cog-skill: plan-emitter`; `review`, `review-plan`, `executor`, and `bootstrap` forbid it, with equal enforcement for Claude and Codex. Plan reviewers write one top-level Markdown list item per actionable annotation and never author fold IDs. A plan-naming consumer follows `plan-quality/plan-review-fold.md`, and every plan handoff passes the `cog plan-doc` structural gate.
 
 Each governed class — `plan`, `review`, `review-plan`, `executor`, `bootstrap` — carries one positive membership contract: the markers, expected tier, and input/output obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review obligation: a `bootstrap-*` worker that ships cog templates references the domain-worker routine (`cog bootstrap-template-review`) once per template-review domain it owns, enforced by the `bootstrap-template-review` rule against the skill-to-domain mapping. The source of truth is [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml); the tier expectation cross-references the model/effort registry and is never duplicated. Query it with `cog skill-class
 list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.
@@ -191,7 +193,7 @@ Every curated terminal-contract worker declares its result line with a `<!-- cog
 - untagged fenced code blocks;
 - emoji characters;
 - missing `trigger-tests` comments in Claude skills;
-- `skill-prefix-taxonomy`: Claude skills with governed intent must use the matching taxonomy prefix: plan-emitters use `plan-*`, plan-reviewers use `review-plan-*`, and executors use `executor-*`. Executor intent takes precedence over plan-emitter status for staged executor skills that emit intermediate plan artifacts.
+- `skill-prefix-taxonomy`: Claude and Codex skills with governed intent must use the matching taxonomy prefix: plan emitters use `plan-*`, plan reviewers use `review-plan-*`, and executors use `executor-*`.
 - `producer-blindness`: a mapped consumer skill names a forbidden producer skill as a whole skill-name token. The scan covers frontmatter `description:` text and body prose while ignoring fenced code blocks, and is scoped to consumers in the curated consumer-to-producer map. See "Producer-blind consumers".
 - `inline-skill-tool-dmi`: a mapped coordinator instructs invoking a `disable-model-invocation` target through the harness `Skill` tool (the phrasings "via the Skill tool", the "Skill ->" dispatch arrow, or "Use Skill to chain"). The harness refuses a model-initiated `Skill` call to a DMI skill, so the caller must instead delegate through a `claude-delegate` Agent or inline-chain (read the target's `SKILL.md` and follow it) — never the `Skill` tool. The scan skips fenced code blocks and is scoped to the curated caller-to-DMI-target map in `lib/commands/cmd_skill_lint.sh`. See [ADR-0009](../decisions/ADR-0009-orchestration-and-durable-jobs.md).
 - `input-fidelity`: a mapped brief-building delegator is missing the `<!-- cog-skill: input-fidelity -->` marker. The rule is scoped to the curated runtime-aware delegator set in `lib/commands/cmd_skill_lint.sh`. See "Input fidelity (enrichment-only briefs)".

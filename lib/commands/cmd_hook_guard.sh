@@ -75,8 +75,13 @@ __cog_hook_guard_executor_prex_stop() {
       continue
     fi
 
-    local missing=()
-    [[ -s "$run_dir/vetted-plan.md" ]] || missing+=("Stage 1: Vetted plan")
+    local missing=() vetted_report=""
+    if [[ ! -s "$run_dir/vetted-plan.md" ]]; then
+      missing+=("Stage 1: Vetted plan")
+    else
+      vetted_report="$(cog::fn::plan_doc::validate_content "$run_dir/vetted-plan.md")"
+      jq -e '.ok == true' <<<"$vetted_report" >/dev/null || missing+=("Stage 1: Valid vetted plan")
+    fi
     [[ -s "$run_dir/impl-report.txt" ]] || missing+=("Stage 2: Implementation report")
     [[ -s "$run_dir/review.md" ]] || missing+=("Stage 3: Implementation review")
     if ((${#missing[@]} > 0)); then

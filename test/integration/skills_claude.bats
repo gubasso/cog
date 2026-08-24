@@ -190,6 +190,54 @@ forbidden_scan_codex() {
   assert_failure
 }
 
+@test "review folding consumers keep review and plan artifacts distinct" {
+  local file
+  for file in \
+    "$repo_root/skills/claude/executor-oneshot/SKILL.md" \
+    "$repo_root/skills/codex/executor-oneshot/SKILL.md" \
+    "$repo_root/skills/claude/executor-oneshot-codex/SKILL.md" \
+    "$repo_root/skills/claude/plan-vetted/SKILL.md"; do
+    assert_file_contains "$file" "prepared-plan-review.md"
+    assert_file_contains "$file" "prepared-plan.md"
+    assert_file_contains "$file" "plan-review-fold.md"
+    assert_file_contains "$file" "cog plan-doc validate"
+    assert_file_contains "$file" "cog plan-review fold-check\|prepared-plan-fold-check.json"
+  done
+
+  file="$repo_root/skills/claude/executor-prex/SKILL.md"
+  assert_file_contains "$file" "plan-review.md"
+  assert_file_contains "$file" "vetted-plan.md"
+  assert_file_contains "$file" "plan-review-fold.md"
+  assert_file_contains "$repo_root/skills/claude/executor-prex/references/review-plan.md" "cog plan-review fold-check"
+}
+
+@test "implementation instructions never ask workers to reconcile annotations" {
+  run rg -n 'implement the reconciled plan|apply APPROVED|skip REMOVED' \
+    "$repo_root/skills/claude/executor-oneshot/SKILL.md" \
+    "$repo_root/skills/codex/executor-oneshot/SKILL.md" \
+    "$repo_root/skills/claude/executor-oneshot-codex/SKILL.md" \
+    "$repo_root/skills/claude/executor-vetted/SKILL.md" \
+    "$repo_root/skills/claude/executor-prex/references/implement.md"
+  assert_failure
+}
+
+@test "only plan skills carry the plan-emitter marker" {
+  local file name
+  while IFS= read -r file; do
+    name="$(basename "$(dirname "$file")")"
+    [[ $name == plan-* ]]
+  done < <(rg -l 'cog-skill: plan-emitter' "$repo_root/skills/claude" "$repo_root/skills/codex")
+  for file in "$repo_root"/skills/claude/plan-*/SKILL.md "$repo_root"/skills/codex/plan-*/SKILL.md; do
+    assert_file_contains "$file" "cog-skill: plan-emitter"
+  done
+}
+
+@test "review-plan-multi stays a review and plan-vetted owns the fold" {
+  assert_file_contains "$repo_root/skills/claude/review-plan-multi/SKILL.md" "FINAL_REVIEW"
+  assert_file_not_contains "$repo_root/skills/claude/review-plan-multi/SKILL.md" "plan-review-fold.md"
+  assert_file_contains "$repo_root/skills/claude/plan-vetted/SKILL.md" "plan-review-fold.md"
+}
+
 @test "deleted authoring surfaces no longer exist (DP6 regression)" {
   [ ! -e "$repo_root/skills/claude/plan-writer-multi/SKILL.md" ]
   [ ! -e "$repo_root/skills/claude/plan-writer/SKILL.md" ]
