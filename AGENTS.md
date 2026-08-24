@@ -41,29 +41,3 @@ Pre-commit is the quality-gate source of truth.
 - `just man` regenerates the tracked man page when `scdoc` is available.
 
 Run no git command unless the orchestrator explicitly authorizes it. This includes `git add`, `git commit`, `git push`, `git status`, `git diff`, `git reset`, and `git checkout`.
-
-## Documentation maintenance
-
-Use the in-repo [docs-design routing digest](./skill-refs/docs-design/AGENTS.md) to find the canonical chapter for any general rule.
-
-Cog uses these zones:
-
-- Decisions and rationale: `docs/decisions/`.
-- Task runbooks: `docs/guides/`.
-- Exact lookup facts: `docs/reference/`.
-- Living subsystem design: `docs/explanation/`.
-- Reviewed roadmap, appetites, questions, and slice status: `docs/plan/`.
-
-The precedence ladder is local and strict: ADRs beat explanation pages for why a decision was made; subsystem pages beat ADRs for what the design is now; a non-owner links to the owner instead of restating it.
-
-Local exceptions:
-
-- Tracking uses `cadence_days`, `revalidate_how`, and `references`.
-- Heading shapes live in `.markdownlint/`, one `MD043` array per shape, each applied by its own `md-*` entry in `.pre-commit-config.yaml`. Never name `MD043` in a `.markdownlint-cli2.jsonc`, which merges over the shape and would switch it off silently. `test/unit/markdownlint_shapes.bats` enforces both halves.
-- [ADR-0001](./docs/decisions/ADR-0001-adopt-documentation-architecture.md) records the one-time reset; the never-delete lifecycle resumes from `Proposed` onward.
-- `.draft/` is the gitignored workspace and is not linted. `.draft/safe-to-delete/` is only the manual-deletion hand-off buffer.
-- Known external-system cases will live under `docs/reference/known-issues/` when the first real case exists.
-
-Until the active slice in docs/plan/milestones.md is implemented, do not add a subsystem page and do not open an ADR outside that slice. A question that arises goes to docs/plan/open-questions.md.
-
-Verify documentation changes with `bin/cog docs-lint`, `bin/cog skill-lint`, `bin/cog digest-check skill-refs/docs-design`, `just lint`, `just test`, and `just test-e2e`.

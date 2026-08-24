@@ -10,7 +10,7 @@ The complete path contract is in [install layout](../reference/install-layout.md
 
 ## Current constraints
 
-The whole `skill-refs/` tree is one install lane, so `skill-refs/docs-design/` needs no special installer branch. User-authored skills and agent files are outside manifest authority.
+The whole `skill-refs/` tree is one install lane, so no subtree needs a special installer branch. User-authored skills and agent files are outside manifest authority.
 
 ## Unresolved
 

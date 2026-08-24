@@ -54,7 +54,6 @@ Commands:
   context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
-  docs-lint      Validate documentation structure and lean Markdown rules.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.
@@ -72,7 +71,7 @@ Commands:
   git-identity   Resolve and check the repo git identity (user.name/user.email).
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
-  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md) to a project.
   governance-detect Detect project governance docs presence and template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
@@ -80,8 +79,6 @@ Commands:
   installer-apply Apply an installer script template to a project.
   installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
-  kb-apply       Apply a knowledge-base scaffold to a project.
-  kb-detect      Detect knowledge-base scaffold type.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
@@ -102,7 +99,7 @@ Commands:
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   precommit-run  Run pre-commit hooks across stages and collect failures.
-  precommit-spell-select Select the markdown spell checker for a set of KB content languages.
+  precommit-spell-select Select the markdown spell checker for a set of content languages.
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
   readme-apply   Apply a README skeleton to a project.
@@ -170,7 +167,6 @@ Commands:
   context-brief  Template, build, and validate a rich-context handoff brief.
   digest-check   Check digest frontmatter for source drift.
   digest-stamp   Stamp digest frontmatter from source files.
-  docs-lint      Validate documentation structure and lean Markdown rules.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.
@@ -188,7 +184,7 @@ Commands:
   git-identity   Resolve and check the repo git identity (user.name/user.email).
   gitignore-apply Apply a gitignore template to a project.
   gitignore-detect Detect gitignore template type.
-  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+  governance-apply Apply project governance docs (CLAUDE.md, AGENTS.md) to a project.
   governance-detect Detect project governance docs presence and template type.
   help           Show generated help for cog or a subcommand.
   hook-guard     Deterministic Stop hook decisions for active workflows.
@@ -196,8 +192,6 @@ Commands:
   installer-apply Apply an installer script template to a project.
   installer-detect Detect installer template type.
   jira-ticket-creator Scaffold, write, and finalize retroactive JIRA ticket drafts.
-  kb-apply       Apply a knowledge-base scaffold to a project.
-  kb-detect      Detect knowledge-base scaffold type.
   license-apply  Apply an SPDX LICENSE to a project.
   lint-codex-wrapper Enforce Codex single-entrypoint markdown snippets.
   lock           Acquire or release a workflow run lock.
@@ -218,7 +212,7 @@ Commands:
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   precommit-run  Run pre-commit hooks across stages and collect failures.
-  precommit-spell-select Select the markdown spell checker for a set of KB content languages.
+  precommit-spell-select Select the markdown spell checker for a set of content languages.
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
   readme-apply   Apply a README skeleton to a project.

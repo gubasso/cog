@@ -99,9 +99,6 @@ The command list and short descriptions are sourced from command modules under
 *digest-stamp*
 	Stamp digest frontmatter from source files.
 
-*docs-lint*
-	Validate documentation structure and lean Markdown rules.
-
 *doctor*
 	Check cog runtime health and installation prerequisites.
 
@@ -154,7 +151,7 @@ The command list and short descriptions are sourced from command modules under
 	Detect gitignore template type.
 
 *governance-apply*
-	Apply project governance docs (CLAUDE.md, AGENTS.md, ADR scaffold) to a project.
+	Apply project governance docs (CLAUDE.md, AGENTS.md) to a project.
 
 *governance-detect*
 	Detect project governance docs presence and template type.
@@ -176,12 +173,6 @@ The command list and short descriptions are sourced from command modules under
 
 *jira-ticket-creator*
 	Scaffold, write, and finalize retroactive JIRA ticket drafts.
-
-*kb-apply*
-	Apply a knowledge-base scaffold to a project.
-
-*kb-detect*
-	Detect knowledge-base scaffold type.
 
 *license-apply*
 	Apply an SPDX LICENSE to a project.
@@ -244,7 +235,7 @@ The command list and short descriptions are sourced from command modules under
 	Run pre-commit hooks across stages and collect failures.
 
 *precommit-spell-select*
-	Select the markdown spell checker for a set of KB content languages.
+	Select the markdown spell checker for a set of content languages.
 
 *preflight*
 	Run centralized orchestrator preflight checks.

@@ -90,7 +90,6 @@ tiers:
       - bootstrap-governance
       - bootstrap-rust
       - bootstrap-installer
-      - bootstrap-knowledge-base
       - test-review
       - review-findings
       - claudemd

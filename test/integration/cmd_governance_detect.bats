@@ -13,17 +13,7 @@ setup() {
   run cog governance-detect --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
   assert_success
-  printf '%s\n' "$output" | jq -e '.ok == true and .present == false and .detected_type == "generic" and (.artifacts | length) == 3' >/dev/null
-}
-
-@test "cog governance-detect reports _docs decisions artifact when requested" {
-  mkdir -p "${BATS_TEST_TMPDIR}/repo/_docs/decisions"
-  touch "${BATS_TEST_TMPDIR}/repo/CLAUDE.md" "${BATS_TEST_TMPDIR}/repo/AGENTS.md"
-
-  run cog governance-detect --project-root "${BATS_TEST_TMPDIR}/repo" --docs-dir _docs --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e '.docs_dir == "_docs" and .present == true and (.artifacts[] | select(.name == "_docs/decisions") | .present == true)' >/dev/null
+  printf '%s\n' "$output" | jq -e '.ok == true and .present == false and .detected_type == "generic" and (.artifacts | length) == 2' >/dev/null
 }
 
 @test "cog governance-detect reports present when both docs exist" {

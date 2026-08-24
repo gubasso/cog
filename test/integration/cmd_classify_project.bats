@@ -38,7 +38,7 @@ EOF
   jq -e '.git_root and (.languages[] | select(.lang == "javascript"))' "$out" >/dev/null
 }
 
-@test "cog classify-project detects a knowledge-base markdown project" {
+@test "cog classify-project reports markdown as the dominant content language" {
   mkdir -p "${BATS_TEST_TMPDIR}/repo/tech"
   printf '# a\n' >"${BATS_TEST_TMPDIR}/repo/README.md"
   printf '# b\n' >"${BATS_TEST_TMPDIR}/repo/tech/b.md"
@@ -47,10 +47,10 @@ EOF
   run bash -c 'cd "$1" && cog classify-project --json' _ "${BATS_TEST_TMPDIR}/repo"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '(.languages[] | select(.lang == "markdown")) and (.project_types | index("knowledge-base"))' >/dev/null
+  printf '%s\n' "$output" | jq -e '(.languages[] | select(.lang == "markdown")) and (.project_types == [])' >/dev/null
 }
 
-@test "cog classify-project does not mark a code project with docs as knowledge-base" {
+@test "cog classify-project keeps a manifest-anchored project with docs as a library" {
   printf '[package]\nname = "demo"\n' >"${BATS_TEST_TMPDIR}/repo/Cargo.toml"
   printf '# docs\n' >"${BATS_TEST_TMPDIR}/repo/README.md"
   printf '# more\n' >"${BATS_TEST_TMPDIR}/repo/GUIDE.md"
@@ -58,10 +58,10 @@ EOF
   run bash -c 'cd "$1" && cog classify-project --json' _ "${BATS_TEST_TMPDIR}/repo"
 
   assert_success
-  printf '%s\n' "$output" | jq -e '(.project_types | index("knowledge-base") | not)' >/dev/null
+  printf '%s\n' "$output" | jq -e '(.primary_type == "library") and (.ambiguous == false)' >/dev/null
 }
 
-@test "cog classify-project treats a markdown vault with tooling scripts as knowledge-base only" {
+@test "cog classify-project does not misfire a markdown vault with tooling scripts to cli" {
   # Regression: a doc-dominated vault with a few shell scripts under systems/ and
   # prose that merely mentions "click"/"typer" must not misfire to cli/python.
   local vault="${BATS_TEST_TMPDIR}/vault"
@@ -79,9 +79,8 @@ EOF
 
   assert_success
   printf '%s\n' "$output" | jq -e '
-    (.project_types == ["knowledge-base"]) and (.is_cli == false)
-    and ((.frameworks | length) == 0) and (.ambiguous == false)
-    and (.primary_type == "knowledge-base")
+    (.project_types == []) and (.is_cli == false)
+    and ((.frameworks | length) == 0)
     and ([.languages[].lang] == ["markdown"])' >/dev/null
 }
 
@@ -112,7 +111,7 @@ EOF
   assert_success
   printf '%s\n' "$output" | jq -e '
     (.is_cli == true) and (.languages[] | select(.lang == "bash"))
-    and (.project_types | index("knowledge-base") | not)' >/dev/null
+    and (.project_types == ["cli"])' >/dev/null
 }
 
 @test "cog classify-project trusts a manifest over surrounding docs" {
@@ -126,7 +125,7 @@ EOF
   assert_success
   printf '%s\n' "$output" | jq -e '
     (.languages[] | select(.lang == "python")) and (.confidence == "high")
-    and (.ambiguous == false) and (.project_types | index("knowledge-base") | not)' >/dev/null
+    and (.ambiguous == false) and (.primary_type == "library")' >/dev/null
 }
 
 @test "cog classify-project reports ambiguous when no shape dominates" {

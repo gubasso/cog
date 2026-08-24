@@ -106,7 +106,6 @@ Utility skills outside the three governed behavioral prefixes, plus shipped agen
 - skills/claude/bootstrap-taskrunner
 - skills/claude/bootstrap-rust
 - skills/claude/bootstrap-installer
-- skills/claude/bootstrap-knowledge-base
 - skills/claude/suckless-patcher
 - skills/claude/test-review
 - skills/codex/ask

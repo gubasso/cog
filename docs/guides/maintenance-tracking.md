@@ -1,6 +1,6 @@
 # Maintenance tracking
 
-This runbook revalidates perishable repository facts registered in `data/maintenance-tracking.yaml`. Registry field definitions, the overdue calculation, and the admission test for a new entry are owned by [documentation mechanics](../explanation/documentation.md).
+This runbook revalidates perishable repository facts registered in `data/maintenance-tracking.yaml`. Registry field definitions, the overdue calculation, and the admission test for a new entry are owned by [tracking registry mechanics](../explanation/tracking-registry.md).
 
 ## Start state
 
@@ -13,7 +13,7 @@ Run from the repository root with network access to the authoritative sources na
 3. Follow its `revalidate_how` procedure using primary sources.
 4. Update the tracked artifact and every existing target under `references`.
 5. Update `last_checked` only for facts actually revalidated.
-6. Run the artifact's focused checks, `cog tracking-scan --registry "$PWD/data/maintenance-tracking.yaml" --json`, and the registry existence sweep in [documentation mechanics](../explanation/documentation.md), because `cog tracking-scan` never resolves a `path` or a `references` target.
+6. Run the artifact's focused checks, `cog tracking-scan --registry "$PWD/data/maintenance-tracking.yaml" --json`, and the registry existence sweep in [tracking registry mechanics](../explanation/tracking-registry.md), because `cog tracking-scan` never resolves a `path` or a `references` target.
 
 ## Verification
 

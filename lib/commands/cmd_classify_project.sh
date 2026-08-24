@@ -193,8 +193,8 @@ __cog_classify_project_detect_languages() {
   [[ $nix_files -gt 0 && $((nix_files * 2)) -gt $code_files ]] \
     && __cog_classify_project_add_language nix "*.nix dominate code"
 
-  # Markdown is a content signal (drives the knowledge-base gate), not a code
-  # language: it is reported only when markdown dominates the whole tree.
+  # Markdown is a content signal, not a code language: it is reported only when
+  # markdown dominates the whole tree.
   local total md_files
   total="$(__cog_classify_project_count_files)"
   md_files="$(__cog_classify_project_count_named_files '*.md')"
@@ -288,29 +288,15 @@ __cog_classify_project_build_json() {
   langs_json="$(__cog_classify_project_json_object_array "${LANGUAGES[@]}")"
 
   # File-mix and manifest facts drive a deterministic, prose-immune verdict.
-  local content_files code_files has_manifest=false has_markdown=false has_code=false
-  content_files="$(__cog_classify_project_count_content_files)"
-  code_files="$(__cog_classify_project_count_code_files)"
+  local has_manifest=false has_code=false
   __cog_classify_project_has_build_manifest && has_manifest=true
-  __cog_classify_project_has_language markdown && has_markdown=true
   __cog_classify_project_has_code_language && has_code=true
 
-  # Knowledge-base: markdown content dominates, no build manifest, and code is a
-  # small minority (< ~20% of classified files). Incidental scripts do not demote.
-  local is_kb=false
-  if [[ $has_markdown == true && $has_manifest == false ]] \
-    && { [[ $code_files -eq 0 ]] || [[ $((code_files * 5)) -lt $((content_files + code_files)) ]]; }; then
-    is_kb=true
-  fi
-
-  # knowledge-base and cli are mutually exclusive: a content library is never a CLI.
   local is_cli=false
   [[ ${#CLI_SIGNALS[@]} -gt 0 ]] && is_cli=true
-  [[ $is_kb == true ]] && is_cli=false
 
   local -a project_types=()
   [[ $is_cli == true ]] && project_types+=(cli)
-  [[ $is_kb == true ]] && project_types+=(knowledge-base)
   project_types_json="$(__cog_classify_project_json_string_array "${project_types[@]}")"
 
   # Confidence + ambiguity: deterministic when a manifest anchors the shape or one
@@ -320,10 +306,6 @@ __cog_classify_project_build_json() {
     confidence=high
     ambiguous=false
     if [[ $is_cli == true ]]; then primary_type='"cli"'; else primary_type='"library"'; fi
-  elif [[ $is_kb == true ]]; then
-    confidence=high
-    ambiguous=false
-    primary_type='"knowledge-base"'
   elif [[ $is_cli == true ]]; then
     confidence=medium
     ambiguous=false

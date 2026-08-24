@@ -10,7 +10,7 @@ Classification ignores prose signals, reports ambiguity, and selects environment
 
 ## Current constraints
 
-Repository identity is resolved before identity-bearing fields are written. Publishing authentication stays script-local, knowledge-base metadata uses `_docs/`, and reviewed templates remain self-contained.
+Repository identity is resolved before identity-bearing fields are written. Publishing authentication stays script-local, and reviewed templates remain self-contained.
 
 ## Unresolved
 

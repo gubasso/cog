@@ -9,28 +9,13 @@ setup() {
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "${BATS_TEST_TMPDIR}/repo"
 }
 
-@test "cog governance-apply lands CLAUDE.md, AGENTS.md, and the ADR scaffold" {
+@test "cog governance-apply lands CLAUDE.md and AGENTS.md" {
   run cog governance-apply --project-root "${BATS_TEST_TMPDIR}/repo" --json
 
   assert_success
   [ -f "${BATS_TEST_TMPDIR}/repo/CLAUDE.md" ]
   [ -f "${BATS_TEST_TMPDIR}/repo/AGENTS.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/docs/decisions/template.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/docs/decisions/0001-self-containment.md" ]
-  printf '%s\n' "$output" | jq -e '.ok == true and (.copied | length) == 4' >/dev/null
-}
-
-@test "cog governance-apply can land ADR scaffold under _docs for knowledge bases" {
-  run cog governance-apply --project-root "${BATS_TEST_TMPDIR}/repo" --docs-dir _docs --json
-
-  assert_success
-  [ -f "${BATS_TEST_TMPDIR}/repo/CLAUDE.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/AGENTS.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/decisions/template.md" ]
-  [ -f "${BATS_TEST_TMPDIR}/repo/_docs/decisions/0001-self-containment.md" ]
-  [ ! -e "${BATS_TEST_TMPDIR}/repo/docs/decisions/template.md" ]
-  [ ! -e "${BATS_TEST_TMPDIR}/repo/docs/decisions/0001-self-containment.md" ]
-  printf '%s\n' "$output" | jq -e '.ok == true and .docs_dir == "_docs" and (.copied | length) == 4' >/dev/null
+  printf '%s\n' "$output" | jq -e '.ok == true and (.copied | length) == 2' >/dev/null
 }
 
 @test "cog governance-apply seeds the self-containment principle into AGENTS.md" {

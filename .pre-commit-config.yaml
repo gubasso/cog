@@ -44,21 +44,6 @@ repos:
 
   - repo: local
     hooks:
-      # The command self-globs, so its scope reaches the gitignored draft
-      # workspace that no `files` pattern can match. `always_run` rather than
-      # `files` because the gate must also fire on a commit that only *deletes* a
-      # file: pre-commit lists staged files with --diff-filter=ACMRTUXB, which
-      # excludes deletions, so a `files`-gated hook would skip the very commit
-      # that drops a .bats file an active slice names as an Acceptance target.
-      # The full run costs ~1s, so running it unconditionally is the cheap fix.
-      - id: docs-lint
-        name: documentation architecture lint
-        entry: bin/cog docs-lint
-        language: system
-        always_run: true
-        pass_filenames: false
-        stages: [pre-commit]
-
       # JSON/JSONC formatter: dprint (comment-safe autofix). Config + pinned
       # plugin in ./dprint.json; template payloads and vendored libs excluded
       # there. External dependency: dprint on PATH (provided by the nix devShell).
@@ -206,57 +191,3 @@ repos:
         language_version: system
         additional_dependencies: ['markdownlint-rule-relative-links']
         exclude: '^(skill-refs/templates/|test/test_helper/)'
-
-      # --- Heading shapes (MD043) ---
-      #
-      # MD043 takes one ordered heading array and markdownlint has no per-glob rule
-      # configuration, so a shape narrower than a whole subtree cannot be expressed
-      # in a config file alone: `docs/plan/slices/<id>/README.md` and the `tasks.md`
-      # beside it need different arrays. The seam that takes a filter is the
-      # invocation — one array per shape in ./.markdownlint/, one entry per shape
-      # here to choose the documents it applies to.
-      #
-      # These are overlays. Every other rule still comes from
-      # ./.markdownlint-cli2.jsonc, which is discovered for the working directory
-      # and merged OVER the --config base. That merge is why MD043 must not appear
-      # in that file at any value: an explicit `false` there silently switches off
-      # every shape below while these hooks keep reporting success.
-      - id: markdownlint-cli2
-        alias: md-slice-readme
-        name: markdownlint (slice entry heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^docs/plan/slices/[^/]+/README\.md$'
-        args: ['--config', '.markdownlint/slice-readme.markdownlint-cli2.jsonc']
-
-      - id: markdownlint-cli2
-        alias: md-milestones
-        name: markdownlint (milestones heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^docs/plan/milestones\.md$'
-        args: ['--config', '.markdownlint/milestones.markdownlint-cli2.jsonc']
-
-      - id: markdownlint-cli2
-        alias: md-charter
-        name: markdownlint (charter heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^docs/plan/charter\.md$'
-        args: ['--config', '.markdownlint/charter.markdownlint-cli2.jsonc']
-
-      - id: markdownlint-cli2
-        alias: md-open-questions
-        name: markdownlint (open-questions heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^docs/plan/open-questions\.md$'
-        args: ['--config', '.markdownlint/open-questions.markdownlint-cli2.jsonc']
-
-      - id: markdownlint-cli2
-        alias: md-adr
-        name: markdownlint (decision record heading shape)
-        language_version: system
-        additional_dependencies: ['markdownlint-rule-relative-links']
-        files: '^docs/decisions/(ADR-[0-9]+-.*|template)\.md$'
-        args: ['--config', '.markdownlint/adr.markdownlint-cli2.jsonc']

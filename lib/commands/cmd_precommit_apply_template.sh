@@ -7,8 +7,8 @@ __cog_precommit_apply_template_usage() {
   cog::fn::ui_data "Usage: cog precommit-apply-template --type <type> [--project-root <dir>] [--template-root <dir>] [--spell typos|cspell] [--config-conflict overwrite|skip|abort] [--companion-conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
-# The spell-check hook for the markdown/KB template is not baked into its
-# .pre-commit-config.yaml; it is a variant selected by KB language. The chosen
+# The spell-check hook for the markdown template is not baked into its
+# .pre-commit-config.yaml; it is a variant selected by content language. The chosen
 # stanza + companions live under _spell/<spell>/ and are overlaid here: the
 # companion files copy as normal companions, and hook.pre-commit.yaml is
 # appended to the config after copy (see build_json). --spell is a no-op for
@@ -55,7 +55,7 @@ __cog_precommit_apply_template_enumerate_operations() {
     done < <(find "$overlay_dir" -type f -print0 | sort -z)
   fi
   # Markdown overlay companions (dprint.markdown.json, .markdownlint-cli2.jsonc)
-  # apply to every type EXCEPT markdown: the KB markdown type already carries the
+  # apply to every type EXCEPT markdown: the markdown type already carries the
   # full markdown layer inline, so overlaying would double it. The
   # hook.pre-commit.yaml fragment is appended to the config in build_json.
   if [[ $type != markdown ]]; then

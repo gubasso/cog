@@ -2,7 +2,7 @@
 
 ## Context and Problem Statement
 
-Project bootstrap spans independent domains, language-specific tooling, publishing, identity-bearing fields, and knowledge-base routing. Re-running bootstrap should reconcile reviewed templates rather than assume an empty project.
+Project bootstrap spans independent domains, language-specific tooling, publishing, and identity-bearing fields. Re-running bootstrap should reconcile reviewed templates rather than assume an empty project.
 
 ## Considered Options
 

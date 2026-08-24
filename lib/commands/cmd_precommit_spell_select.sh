@@ -1,10 +1,10 @@
 # shellcheck shell=bash
-: 'desc: Select the markdown spell checker for a set of KB content languages.'
+: 'desc: Select the markdown spell checker for a set of content languages.'
 
-# Deterministic language -> spell-checker mapping for the markdown/KB pre-commit
+# Deterministic language -> spell-checker mapping for the markdown pre-commit
 # template. English-only (or unset) resolves to `typos`; any non-English content
 # language resolves to `cspell` (real multi-language dictionaries). The judgment
-# of which languages a KB holds stays with the caller; this command only maps a
+# of which languages the content holds stays with the caller; this command only maps a
 # declared set to the variant that `cog precommit-apply-template --spell` accepts.
 
 __cog_precommit_spell_select_self_check='(.ok|type=="boolean") and (.spell|type=="string") and (.languages|type=="array") and (.non_english|type=="boolean")'

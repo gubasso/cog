@@ -39,7 +39,6 @@ flake
 
 # --- Formats / standards / concepts ---
 CommonMark
-Diataxis
 JSONC
 JSONL
 Obsidian

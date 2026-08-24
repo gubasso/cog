@@ -59,7 +59,6 @@ forbidden_scan_codex() {
     bootstrap-rust
     bootstrap-governance
     bootstrap-installer
-    bootstrap-knowledge-base
     review-oneshot
     review-findings
     review-loop

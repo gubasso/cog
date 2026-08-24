@@ -23,4 +23,4 @@ Chosen option: `Keep prose in skill-refs and CLI data in data` — it preserves 
 
 Implemented
 
-Enacted by [skills and resources](../explanation/skills-and-resources.md) and [`skill-refs`](../../skill-refs/docs-design/README.md).
+Enacted by [skills and resources](../explanation/skills-and-resources.md).

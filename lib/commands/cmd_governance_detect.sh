@@ -1,10 +1,10 @@
 # shellcheck shell=bash
 : 'desc: Detect project governance docs presence and template type.'
 
-__cog_governance_detect_self_check='(.ok|type=="boolean") and (.detected_type|type=="string") and (.docs_dir|type=="string") and (.artifacts|type=="array")'
+__cog_governance_detect_self_check='(.ok|type=="boolean") and (.detected_type|type=="string") and (.artifacts|type=="array")'
 
 __cog_governance_detect_usage() {
-  cog::fn::ui_data "Usage: cog governance-detect [--project-root <dir>] [--docs-dir <name>] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog governance-detect [--project-root <dir>] (<out.json>|--json)"
 }
 
 # Emit a JSON array of {name, present} for each relpath, presence by existence
@@ -23,29 +23,24 @@ __cog_governance_detect_artifacts() {
 }
 
 __cog_governance_detect_build_json() {
-  local project_root="$1" docs_dir="$2"
+  local project_root="$1"
   local ok=true reason="" template_root arts present
   template_root="$(cog::fn::template::root governance)"
-  if [[ -z $docs_dir || ! $docs_dir =~ ^[A-Za-z0-9._-]+$ || $docs_dir == "." || $docs_dir == ".." ]]; then
-    ok=false
-    reason="docs-dir must be a single path segment"
-  elif [[ ! -d $project_root ]]; then
+  if [[ ! -d $project_root ]]; then
     ok=false
     reason="project root is not a directory"
   fi
-  arts="$(__cog_governance_detect_artifacts "$project_root" "CLAUDE.md" "AGENTS.md" "${docs_dir}/decisions")"
-  # Present when both governance docs exist; the ADR scaffold is a nested
-  # artifact, not a presence gate.
-  present="$(jq -c '[.[] | select(.name == "CLAUDE.md" or .name == "AGENTS.md")] | all(.present)' <<<"$arts")"
+  arts="$(__cog_governance_detect_artifacts "$project_root" "CLAUDE.md" "AGENTS.md")"
+  present="$(jq -c 'all(.[]; .present)' <<<"$arts")"
   jq -n --argjson ok "$ok" --arg project_root "$project_root" --arg template_root "$template_root" \
-    --arg docs_dir "$docs_dir" --argjson present "$present" --argjson artifacts "$arts" --arg reason "$reason" \
-    '{ok: $ok, project_root: $project_root, template_root: $template_root, docs_dir: $docs_dir,
+    --argjson present "$present" --argjson artifacts "$arts" --arg reason "$reason" \
+    '{ok: $ok, project_root: $project_root, template_root: $template_root,
       detected_type: "generic", present: $present, artifacts: $artifacts,
       reason: (if $ok then null else $reason end)}'
 }
 
 cog::cmd::governance_detect() {
-  local project_root docs_dir=docs mode="" out="" json
+  local project_root mode="" out="" json
   project_root="$(pwd -P)"
   while (($# > 0)); do
     case "$1" in
@@ -56,11 +51,6 @@ cog::cmd::governance_detect() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog governance-detect --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --docs-dir)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing docs dir" "option: --docs-dir" "" "run 'cog governance-detect --help'"
-        docs_dir="$2"
         shift 2
         ;;
       --json)
@@ -79,7 +69,7 @@ cog::cmd::governance_detect() {
   done
   [[ -n $mode || ${COG_UI_JSON:-false} == true ]] || cog::fn::error_raise "MissingArgument" "missing governance-detect output mode" "usage: cog governance-detect [flags] (<out.json>|--json)" "" "run 'cog governance-detect --help'"
   [[ -n $mode ]] || mode=json
-  json="$(__cog_governance_detect_build_json "$project_root" "$docs_dir")"
+  json="$(__cog_governance_detect_build_json "$project_root")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then cog::fn::json_emit "$__cog_governance_detect_self_check" "$json"; else cog::fn::json_write_fragment "$out" "$__cog_governance_detect_self_check" "$json"; fi
   jq -e '.ok == true' <<<"$json" >/dev/null
 }

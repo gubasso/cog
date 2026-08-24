@@ -40,7 +40,6 @@ _cog() {
     context-brief
     digest-check
     digest-stamp
-    docs-lint
     doctor
     editorconfig-apply
     editorconfig-detect
@@ -66,8 +65,6 @@ _cog() {
     installer-apply
     installer-detect
     jira-ticket-creator
-    kb-apply
-    kb-detect
     license-apply
     lint-codex-wrapper
     lock

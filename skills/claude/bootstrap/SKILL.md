@@ -30,11 +30,10 @@ It runs on a new project or an existing one. Every run refreshes the reviewed te
 
 Six run on every project: `bootstrap-lint` (`.editorconfig` plus `.pre-commit-config.yaml` — one code-style domain, two files that only work when they agree), `bootstrap-nix`, `bootstrap-repo`, `bootstrap-governance`, `bootstrap-ci`, and `bootstrap-taskrunner`.
 
-Three are conditional, and none is a `cog bootstrap-audit` domain — the audit's every-domain-in-scope matrix stays language-orthogonal, so a language a project does not use never reads as "missing":
+Two are conditional, and none is a `cog bootstrap-audit` domain — the audit's every-domain-in-scope matrix stays language-orthogonal, so a language a project does not use never reads as "missing":
 
 - **`bootstrap-rust`** — when `cog classify-project` reports Rust, or the intent is a new Rust project. Owns the crate skeleton (`Cargo.toml`, `src/`) and optional rust config, plus a publishing branch (crates.io helper scripts, `PUBLISHING.md`, release-plz/cargo-dist) taken when the intent involves publishing or release setup.
 - **`bootstrap-installer`** — when the intent involves shippable install/uninstall scripts. Owns `install.sh`/`uninstall.sh`/`install-common.sh` and wires the install recipes into the justfile.
-- **`bootstrap-knowledge-base`** — when `classify-project` reports `knowledge-base` in `project_types`, or the intent is a notes/knowledge/docs library. Owns the content-library conventions, the `_docs/` metadata scaffold, and the per-area `AGENTS.md` digest standard.
 
 **Context-brief gate.** Before dispatching to any fresh-context worker, build and validate its brief per `$(cog skill-refs path orchestration/context-brief-gate.md)` — build with `cog context-brief build --request`, confirm with `cog context-brief validate`.
 
@@ -81,16 +80,15 @@ cog precommit-detect --json
 cog editorconfig-detect --json
 cog nix-devshell-detect --json
 cog gitignore-detect --json
-cog governance-detect --json          # add --docs-dir _docs for a knowledge base
+cog governance-detect --json
 cog ci-detect --json
 cog taskrunner-detect --json
 cog cargo-detect --json               # Rust (drives bootstrap-rust)
 cog cargo-publish-detect --json       # Rust plus publishing intent
 cog installer-detect --json           # install-script intent
-cog kb-detect --json                  # knowledge base
 ```
 
-`classify-project` reports a deterministic `primary_type` with a `confidence` and an `ambiguous` flag. When `ambiguous` is `true` (or `confidence` is `low`), the deterministic rules could not settle the project shape: judge it from the whole session and the detector output, and confirm the type with the operator before dispatching `bootstrap-rust` or `bootstrap-knowledge-base`. When `ambiguous` is `false`, trust `primary_type` and dispatch deterministically.
+`classify-project` reports a deterministic `primary_type` with a `confidence` and an `ambiguous` flag. When `ambiguous` is `true` (or `confidence` is `low`), the deterministic rules could not settle the project shape: judge it from the whole session and the detector output, and confirm the type with the operator before dispatching `bootstrap-rust`. When `ambiguous` is `false`, trust `primary_type` and dispatch deterministically.
 
 Once a domain's detector resolves its template type, capture the freshness so the worker can skip re-research, and fold that JSON into its brief:
 
@@ -118,7 +116,7 @@ Dispatch the selected workers as foreground Agent subagents — environment-firs
 Only two real dependencies remain, so the waves are shallow:
 
 - **Wave 0 (conditional):** `bootstrap-rust`, when the project is Rust, so the `Cargo.toml`/`src/` skeleton exists before the type-sensitive detectors resolve `--type rust`. For a greenfield Rust project, gather the remaining detector orientation after this wave so the workers observe the now-present `Cargo.toml`. On an already-scaffolded crate it reconciles in place and may run alongside Wave 1.
-- **Wave 1:** `bootstrap-lint`, `bootstrap-nix`, `bootstrap-repo`, `bootstrap-governance`, `bootstrap-taskrunner`, and — for a knowledge base — `bootstrap-knowledge-base`. None depends on another.
+- **Wave 1:** `bootstrap-lint`, `bootstrap-nix`, `bootstrap-repo`, `bootstrap-governance`, and `bootstrap-taskrunner`. None depends on another.
 - **Wave 2:** `bootstrap-ci` (reuses the flake devshell and the justfile's recipe names) and `bootstrap-installer` (needs the justfile to wire `install`/`uninstall`/`reinstall` into).
 
 After each wave, verify the durable postcondition before starting the next: re-run `cog bootstrap-audit --json` and confirm every dispatched domain reports `present=true` (or was intentionally opted out) with `requirements_satisfied==true`, that each worker either reused a fresh review or recorded a new stamp — reporting any changed template paths — and that each touched `SKILL.md` lints clean.

@@ -1,7 +1,7 @@
 // markdownlint-cli2 config — generic profile for a code project's docs/READMEs.
 // Rule reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 //
-// Stricter than the free-form knowledge-base profile: prose line length stays off
+// Stricter than the free-form prose profile: prose line length stays off
 // (dprint unwraps to one physical line), but structural discipline a code repo's
 // docs benefit from — single top-level H1, first-line H1, ordered heading levels —
 // is left ON via `default: true`.
@@ -73,11 +73,8 @@
     "MD013": false,  // line length — dprint unwraps prose to one physical line
     "MD024": { "siblings_only": true },  // dup headings OK across sections, not within
     "MD033": false,  // inline HTML — needed for badges, <details>, <kbd>
-    // MD043 (required-headings) is deliberately absent, not set to false. A project
-    // that gates fixed heading shapes puts one array per shape in .markdownlint/ and
-    // applies it with a filtered hook entry; this file is merged OVER that config,
-    // so any value here — `false` included — overrides every shape while the hooks
-    // keep reporting success. The rule is inert without a `headings` array.
+    // MD043 (required-headings) is deliberately absent: the rule is inert without
+    // a `headings` array, so this profile neither enforces nor disables it.
     "MD046": { "style": "fenced" }  // require fenced code blocks
   },
   "customRules": ["markdownlint-rule-relative-links"],
