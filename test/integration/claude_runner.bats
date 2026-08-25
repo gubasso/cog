@@ -30,6 +30,71 @@ EOF
   printf '%s\n' "prompt" >"${BATS_TEST_TMPDIR}/prompt.md"
 }
 
+@test "cog claude-runner read-only launch records command and provider argv then finalizes" {
+  local run_dir="${BATS_TEST_TMPDIR}/read-only"
+  local st="${run_dir}/job.longrun.json"
+  mkdir -p "$run_dir"
+
+  run cog claude-runner run-exec --access read-only --effort none \
+    --account work --profile default --prompt "${BATS_TEST_TMPDIR}/prompt.md" \
+    --output "${run_dir}/out.md" --events "${run_dir}/events.jsonl" \
+    --stderr "${run_dir}/stderr.log" --state "$st"
+  assert_success
+  jq -e '.engine_meta.access == "read-only" and .engine_meta.effort == "none" and
+    .engine_meta.account == "work" and .engine_meta.profile == "default" and
+    (.engine_meta.command | contains("claude-session-rs --account work --profile default -- -p")) and
+    (.engine_meta.command | contains("--output-format stream-json --verbose")) and
+    (.engine_meta.command | contains("--permission-mode dontAsk")) and
+    (.engine_meta.command | contains("--disallowedTools")) and
+    (.engine_meta.command | contains("--effort") | not) and
+    (.engine_meta.command | contains("--dangerously-skip-permissions") | not)' "$st" >/dev/null
+
+  run cog claude-runner finalize --state "$st" --max-wall 30
+  assert_success
+  printf '%s\n' "$output" | jq -e '.ok == true and .status == "ok" and
+    .session_id == "sess-a" and .account == "work" and .profile == "default" and
+    .effort == "none"' >/dev/null
+  assert_file_contains "${run_dir}/out.md" "last message"
+  grep -F -- "--account work --profile default -- -p --output-format stream-json --verbose --permission-mode dontAsk --disallowedTools Edit,Write,NotebookEdit prompt" "$CLAUDE_FAKE_LOG" >/dev/null
+}
+
+@test "cog claude-runner write high records dangerous command and provider argv" {
+  local run_dir="${BATS_TEST_TMPDIR}/write"
+  local st="${run_dir}/job.longrun.json"
+  mkdir -p "$run_dir"
+
+  run cog claude-runner run-exec --access write --effort high \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${run_dir}/out.md" \
+    --events "${run_dir}/events.jsonl" --stderr "${run_dir}/stderr.log" --state "$st"
+  assert_success
+  jq -e '.engine_meta.access == "write" and .engine_meta.effort == "high" and
+    (.engine_meta.command | contains("--effort high")) and
+    (.engine_meta.command | contains("--dangerously-skip-permissions")) and
+    (.engine_meta.command | contains("--permission-mode") | not)' "$st" >/dev/null
+
+  run cog claude-runner finalize --state "$st" --max-wall 30
+  assert_success
+  grep -F -- "-- -p --effort high --output-format stream-json --verbose --dangerously-skip-permissions prompt" "$CLAUDE_FAKE_LOG" >/dev/null
+}
+
+@test "cog claude-runner parser rejects unsupported effort and invalid access without state" {
+  local bad_effort="${BATS_TEST_TMPDIR}/bad-effort.longrun.json"
+  run cog claude-runner run-exec --access read-only --effort minimal \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/bad-effort.out" \
+    --events "${BATS_TEST_TMPDIR}/bad-effort.jsonl" --state "$bad_effort"
+  assert_failure
+  assert_output --partial "invalid claude effort"
+  [ ! -e "$bad_effort" ]
+
+  local bad_access="${BATS_TEST_TMPDIR}/bad-access.longrun.json"
+  run cog claude-runner run-exec --access bogus --effort low \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/bad-access.out" \
+    --events "${BATS_TEST_TMPDIR}/bad-access.jsonl" --state "$bad_access"
+  assert_failure
+  assert_output --partial "invalid run-exec access"
+  [ ! -e "$bad_access" ]
+}
+
 @test "cog claude-runner creates no durable state file when a version precondition fails" {
   local run_dir="${BATS_TEST_TMPDIR}/run"
   mkdir -p "$run_dir"
@@ -96,6 +161,8 @@ EOF
   assert_success
   assert_output --partial "STATE_FILE=${dir}/j.longrun.json"
   [ -e "${dir}/j.longrun.json" ]
+  run cog claude-runner finalize --state "${dir}/j.longrun.json" --max-wall 30
+  assert_success
 }
 
 @test "cog claude-runner guards an output that collides with a prompt artifact write" {
@@ -122,6 +189,8 @@ EOF
     --state "${BATS_TEST_TMPDIR}/run/job.longrun.json"
   assert_success
   jq -e --arg repo "$repo" '.cwd == $repo' "${BATS_TEST_TMPDIR}/run/job.longrun.json"
+  run cog claude-runner finalize --state "${BATS_TEST_TMPDIR}/run/job.longrun.json" --max-wall 30
+  assert_success
 }
 
 @test "cog claude-runner finalize reports a still-running job with exit 75" {

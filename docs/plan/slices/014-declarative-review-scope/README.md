@@ -46,7 +46,6 @@ When cog review-scope is given --range or --sha, it shall union those commits' f
 When cog review-scope is given --files, it shall union that list into changed_files and record it in requested_files. -> test/integration/review_scope.bats
 When cog review-scope is given --no-worktree with no commit or file source, it shall fail rather than emit an empty scope. -> test/integration/review_scope.bats
 When a commit ref does not resolve, cog review-scope shall fail naming the ref rather than emit an empty scope. -> test/integration/review_scope.bats
-When cog review-scope check is given the same source flags, it shall count the commits' files and lines against the declared limits. -> test/integration/cmd_review_scope_check.bats
 When a review-loop handoff carries no scope field, cog review-loop-input shall emit and accept the unchanged five-key envelope. -> test/integration/review_loop_input.bats
 When a review-loop handoff carries a scope object, cog review-loop-input shall validate its ranges, shas, files, and worktree fields. -> test/integration/review_loop_input.bats
 When review-tech-scope reads a scope carrying the new keys, it shall ignore them and detect from changed_files. -> test/integration/review_tech_scope.bats

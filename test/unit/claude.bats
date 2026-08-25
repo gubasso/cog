@@ -60,6 +60,49 @@ setup() {
   [[ ${argv[*]} != *"--effort"* ]]
 }
 
+@test "claude exec command renders read-only none with account and profile" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  local events="${BATS_TEST_TMPDIR}/events.jsonl"
+  local stderr="${BATS_TEST_TMPDIR}/stderr.log"
+
+  run cog::fn::claude_exec_command work default read-only none "" "$prompt" "$events" "$stderr"
+
+  assert_success
+  [[ $output == "claude-session-rs --account work --profile default -- -p"* ]]
+  [[ $output == *'--permission-mode dontAsk --disallowedTools "Edit,Write,NotebookEdit"'* ]]
+  [[ $output != *"--effort"* ]]
+  [[ $output != *"--model"* ]]
+  [[ $output != *"--dangerously-skip-permissions"* ]]
+}
+
+@test "claude exec command renders stream options prompt substitution and redirections" {
+  local prompt="${BATS_TEST_TMPDIR}/prompt.md"
+  local events="${BATS_TEST_TMPDIR}/events.jsonl"
+  local stderr="${BATS_TEST_TMPDIR}/stderr.log"
+  local prompt_substitution="\"\$(cat \"${prompt}\")\""
+
+  run cog::fn::claude_exec_command "" "" read-only medium "" "$prompt" "$events" "$stderr"
+
+  assert_success
+  [[ $output == *"--effort medium --output-format stream-json --verbose"* ]]
+  [[ $output == *"$prompt_substitution"* ]]
+  [[ $output == *'< /dev/null'* ]]
+  [[ $output == *'> "'"$events"'"'* ]]
+  [[ $output == *'2> "'"$stderr"'"'* ]]
+}
+
+@test "claude exec command renders write high without read-only posture" {
+  run cog::fn::claude_exec_command "" "" write high "" \
+    "${BATS_TEST_TMPDIR}/prompt.md" "${BATS_TEST_TMPDIR}/events.jsonl" ""
+
+  assert_success
+  [[ $output == *"--effort high"* ]]
+  [[ $output == *"--dangerously-skip-permissions"* ]]
+  [[ $output != *"--permission-mode"* ]]
+  [[ $output != *"--disallowedTools"* ]]
+  [[ $output != *"--model"* ]]
+}
+
 @test "claude effort rejects the codex vocabulary" {
   local -a argv=()
   run cog::fn::claude_exec_argv "" "" read-only minimal opus "${BATS_TEST_TMPDIR}/prompt.md" argv

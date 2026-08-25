@@ -45,7 +45,6 @@ When cog review-scope resolves a declaration, it shall echo the normalized decla
 When a declaration names no source, cog shall refuse it rather than resolve an empty scope. -> test/integration/review_scope.bats
 When a declaration carries an unknown key or an absolute path, cog shall refuse it. -> test/unit/scope_declaration.bats
 When a review-loop handoff carries a scope object, cog review-loop-input shall validate it against the same schema review-scope uses. -> test/integration/review_loop_input.bats
-When cog review-scope check is given a declaration, it shall measure the sources it names. -> test/integration/cmd_review_scope_check.bats
 ```
 
 ## Rabbit holes

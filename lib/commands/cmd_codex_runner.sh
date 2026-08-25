@@ -53,7 +53,7 @@ __cog_codex_runner_resolve_cwd() {
 # The result JSON is produced later by `finalize`, reconstructed from durable
 # artifacts; this call only starts the job and prints STATE_FILE=/JOB_PGID=.
 __cog_codex_runner_run_exec() {
-  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" cwd="" print_command=false
+  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" cwd=""
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
@@ -111,11 +111,6 @@ __cog_codex_runner_run_exec() {
   fi
 
   command="$(cog::fn::codex_exec_command "$mode" "$effort" "$prompt" "$output" "$events" "$stderr")"
-  if [[ $print_command == true ]]; then
-    cog::fn::ui_data "$command"
-    return 0
-  fi
-
   [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
     "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
   label="$(__cog_codex_runner_label_for_state "$state")"
@@ -153,7 +148,7 @@ __cog_codex_runner_run_exec() {
 }
 
 __cog_codex_runner_run_resume() {
-  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" cwd="" print_command=false
+  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" cwd=""
   local access="read-only"
   local command label run_dir engine_meta pgid
   local -a argv=()
@@ -209,11 +204,6 @@ __cog_codex_runner_run_resume() {
     *) cog::fn::error_raise "InvalidInput" "invalid run-resume access" "access: ${access}" "expected read-only or write" "" ;;
   esac
   command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$access")"
-  if [[ $print_command == true ]]; then
-    cog::fn::ui_data "$command"
-    return 0
-  fi
-
   [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
     "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
   label="$(__cog_codex_runner_label_for_state "$state")"

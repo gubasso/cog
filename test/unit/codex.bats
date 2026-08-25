@@ -296,6 +296,41 @@ EOF
   printf '%s\n' "${argv[*]}" | grep -qv -- "2>"
 }
 
+@test "codex_exec_argv explicitly covers every cold mode posture" {
+  local prompt="${BATS_TEST_TMPDIR}/cold.md"
+  local out="${BATS_TEST_TMPDIR}/cold.out"
+  local joined
+  local -a argv=()
+  printf '%s\n' "cold prompt" >"$prompt"
+
+  cog::fn::codex_exec_argv native low "$prompt" "$out" argv
+  joined="${argv[*]}"
+  [[ $joined == *"exec -c model_reasoning_effort=low --sandbox read-only --json"* ]]
+  [[ $joined != *"sandbox_permissions"* ]]
+  [[ $joined != *"dangerously-bypass"* ]]
+
+  argv=()
+  cog::fn::codex_exec_argv fallback medium "$prompt" "$out" argv
+  joined="${argv[*]}"
+  [[ $joined == *'exec -c model_reasoning_effort=medium -c sandbox_permissions=["disk-full-read-access"] --json'* ]]
+  [[ $joined != *"--sandbox read-only"* ]]
+
+  argv=()
+  cog::fn::codex_exec_argv quick-auto high "$prompt" "$out" argv
+  joined="${argv[*]}"
+  [[ $joined == *"--account auto exec -c model_reasoning_effort=high --sandbox read-only --json"* ]]
+
+  argv=()
+  cog::fn::codex_exec_argv danger xhigh "$prompt" "$out" argv
+  joined="${argv[*]}"
+  [[ $joined == *"exec -c model_reasoning_effort=xhigh --dangerously-bypass-approvals-and-sandbox --json"* ]]
+
+  # Arrays carry argv only; shell redirections belong exclusively to command strings.
+  [[ $joined != *"< /dev/null"* ]]
+  [[ $joined != *"2>"* ]]
+  [[ ${argv[-1]} == "cold prompt" ]]
+}
+
 @test "codex_exec_argv accepts xhigh and forwards unchanged" {
   local prompt="${BATS_TEST_TMPDIR}/p.md"
   printf 'prompt\n' >"$prompt"

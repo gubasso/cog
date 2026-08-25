@@ -58,11 +58,36 @@ EOF
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first --state "$st"
   assert_success
   [[ $output == *"STATE_FILE=${st}"* ]]
+  jq -e --arg out "${BATS_TEST_TMPDIR}/out.md" --arg prompt "${BATS_TEST_TMPDIR}/prompt.md" \
+    --arg events "${BATS_TEST_TMPDIR}/events.jsonl" --arg stderr "${BATS_TEST_TMPDIR}/stderr.log" \
+    '.engine_meta.mode == "native" and .engine_meta.access == "read-only" and
+      .engine_meta.effort == "medium" and .engine_meta.thread_selection == "first" and
+      (.engine_meta.command | contains("codex-session exec -c model_reasoning_effort=medium --sandbox read-only --json")) and
+      (.engine_meta.command | contains("--output-last-message \"" + $out + "\"")) and
+      (.engine_meta.command | contains("\"$(cat \"" + $prompt + "\")\"")) and
+      (.engine_meta.command | contains("> \"" + $events + "\"")) and
+      (.engine_meta.command | contains("2> \"" + $stderr + "\""))' "$st" >/dev/null
 
   run cog codex-runner finalize --state "$st" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.action == "run-exec" and .status == "ok" and .thread_id == "thread-a" and .account == "indexed" and .effort == "medium" and .access == "read-only"' >/dev/null
   assert_file_contains "$CODEX_FAKE_LOG" "exec -c model_reasoning_effort=medium --sandbox read-only --json"
+}
+
+@test "cog codex-runner fallback records command metadata and actual provider argv" {
+  local st="${BATS_TEST_TMPDIR}/fallback.longrun.json"
+  run cog codex-runner run-exec --mode fallback --effort high \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/fallback.out" \
+    --events "${BATS_TEST_TMPDIR}/fallback.jsonl" --stderr "${BATS_TEST_TMPDIR}/fallback.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.mode == "fallback" and .engine_meta.effort == "high" and
+    (.engine_meta.command | contains("model_reasoning_effort=high")) and
+    (.engine_meta.command | contains("sandbox_permissions=[\"disk-full-read-access\"]")) and
+    (.engine_meta.command | contains("--sandbox read-only") | not)' "$st" >/dev/null
+
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  grep -F -- 'exec -c model_reasoning_effort=high -c sandbox_permissions=["disk-full-read-access"] --json' "$CODEX_FAKE_LOG" >/dev/null
 }
 
 @test "cog codex-runner run-exec defaults the durable-job cwd to the git repo root" {
@@ -78,6 +103,8 @@ EOF
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-default.out" --events "${BATS_TEST_TMPDIR}/cwd-default.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-default.err" --state "$st"
   assert_success
   jq -e --arg c "$root" '.cwd == $c' "$st" >/dev/null
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
 }
 
 @test "cog codex-runner run-exec enforces write access coherence" {
@@ -127,6 +154,7 @@ EOF
   run cog codex-runner finalize --state "$st" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.action == "run-resume" and .resume_signal == "recovered-owner" and .effort == "medium" and .thread_id == "thread-a"' >/dev/null
+  grep -F -- "--account acct exec -c model_reasoning_effort=medium resume thread-a -c sandbox_mode=read-only --json --output-last-message ${BATS_TEST_TMPDIR}/resume.md prompt" "$CODEX_FAKE_LOG" >/dev/null
 }
 
 @test "cog codex-runner run-resume defaults to read-only and records the access it ran under" {
@@ -138,6 +166,7 @@ EOF
   run cog codex-runner finalize --state "$st" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.access == "read-only"' >/dev/null
+  grep -F -- "--account acct exec -c model_reasoning_effort=medium resume thread-a -c sandbox_mode=read-only --json --output-last-message ${BATS_TEST_TMPDIR}/resume-ro.md prompt" "$CODEX_FAKE_LOG" >/dev/null
 }
 
 @test "cog codex-runner run-resume bypasses the sandbox only on explicit write access" {
@@ -149,6 +178,7 @@ EOF
   run cog codex-runner finalize --state "$st" --max-wall 30
   assert_success
   printf '%s\n' "$output" | jq -e '.access == "write"' >/dev/null
+  grep -F -- "--account acct exec -c model_reasoning_effort=medium resume thread-a --dangerously-bypass-approvals-and-sandbox --json --output-last-message ${BATS_TEST_TMPDIR}/resume-rw.md prompt" "$CODEX_FAKE_LOG" >/dev/null
 }
 
 @test "cog codex-runner run-resume rejects invalid access" {
@@ -230,6 +260,8 @@ EOF
   assert_success
   assert_output --partial "STATE_FILE=${dir}/j.longrun.json"
   [[ -e "${dir}/j.longrun.json" ]]
+  run cog codex-runner finalize --state "${dir}/j.longrun.json" --max-wall 30
+  assert_success
 }
 
 @test "cog codex-runner finalize reports a still-running job with exit 75 and never classifies it" {

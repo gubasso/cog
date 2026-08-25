@@ -57,7 +57,7 @@ __cog_claude_runner_preflight() {
 # artifacts; this call only starts the job and prints STATE_FILE=/JOB_PGID=.
 __cog_claude_runner_run_exec() {
   local access="read-only" effort="" model="" account="" profile=""
-  local prompt="" output="" events="" stderr="" state="" cwd="" print_command=false
+  local prompt="" output="" events="" stderr="" state="" cwd=""
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
@@ -110,11 +110,6 @@ __cog_claude_runner_run_exec() {
   esac
 
   command="$(cog::fn::claude_exec_command "$account" "$profile" "$access" "$effort" "$model" "$prompt" "$events" "$stderr")"
-  if [[ $print_command == true ]]; then
-    cog::fn::ui_data "$command"
-    return 0
-  fi
-
   [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
     "missing --state" "option: --state" "every claude run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
   label="$(cog::fn::runner::label_for_state "$state")"

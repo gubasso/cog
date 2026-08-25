@@ -20,6 +20,55 @@ completion_commands() {
     | sed -n 's/^[[:space:]]*\([a-z][a-z0-9-]*\)[[:space:]]*$/\1/p'
 }
 
+documentation_inventory() {
+  # Rows count as inventory only inside the one Commands table, so a broken or
+  # deleted table header fails the gate instead of silently yielding the same
+  # row list. Only a single-token top-level command row is inventory;
+  # subcommand rows contain spaces inside the backticks and are excluded.
+  awk '
+    /^\| Command[[:space:]]*\| Summary[[:space:]]*\|[[:space:]]*$/ {
+      if (seen_header++) { print "duplicate Commands table header" > "/dev/stderr"; exit 1 }
+      expect_separator = 1
+      next
+    }
+    expect_separator {
+      if ($0 !~ /^\|[[:space:]]*-+[[:space:]]*\|[[:space:]]*-+[[:space:]]*\|[[:space:]]*$/) {
+        print "Commands table header is not followed by a separator row" > "/dev/stderr"
+        exit 1
+      }
+      expect_separator = 0
+      in_table = 1
+      next
+    }
+    in_table && $0 !~ /^\|/ { in_table = 0 }
+    in_table && /^\| `[a-z][a-z0-9-]*`[[:space:]]+\| / {
+      command = $0
+      sub(/^\| `/, "", command)
+      sub(/`.*/, "", command)
+      summary = $0
+      sub(/^\| `[a-z][a-z0-9-]*`[[:space:]]+\|[[:space:]]*/, "", summary)
+      sub(/[[:space:]]*\|[[:space:]]*$/, "", summary)
+      print command "\t" summary
+    }
+    END {
+      if (!seen_header) { print "no Commands table header found" > "/dev/stderr"; exit 1 }
+      if (expect_separator) { print "Commands table header is not followed by a separator row" > "/dev/stderr"; exit 1 }
+    }
+  ' "$REPO_ROOT/docs/reference/cli-commands.md"
+}
+
+derived_command_inventory() {
+  local name module line desc
+
+  while IFS= read -r name; do
+    module="${REPO_ROOT}/lib/commands/cmd_${name//-/_}.sh"
+    line="$(sed -n '2p' "$module")"
+    [[ $line =~ ^:\ \'desc:\ (.*)\'$ ]] || return 1
+    desc="${BASH_REMATCH[1]}"
+    printf '%s\t%s\n' "$name" "$desc"
+  done < <(derived_commands)
+}
+
 @test "cog --help matches generated snapshot" {
   run cog --help
 
@@ -351,6 +400,17 @@ Global flags:
   expected="$(derived_commands)"
   actual="$(completion_commands)"
 
+  assert_equal "$actual" "$expected"
+}
+
+@test "CLI reference top-level command rows and summaries match command modules" {
+  local expected actual
+
+  expected="$(derived_command_inventory)"
+  actual="$(documentation_inventory)"
+
+  # One ordered stream makes missing, orphaned, duplicate, out-of-order, and
+  # summary drift fail in both directions.
   assert_equal "$actual" "$expected"
 }
 
