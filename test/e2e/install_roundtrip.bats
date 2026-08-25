@@ -39,11 +39,11 @@ teardown() {
   assert_output "0.1.0"
 
   # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
-  run "$BASH" -c 'cd "$1" && cog power-grade cell --model claude-opus-4-8 --effort high --json | jq -e ".ok == true" >/dev/null' bash "$BATS_TEST_TMPDIR"
+  run "$BASH" -c 'cd "$1" && cog power-grade tier --name high --json | jq -e ".ok == true" >/dev/null' bash "$BATS_TEST_TMPDIR"
   assert_success
 
   # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
-  run "$BASH" -c 'cd "$1" && cog tracking-scan --now 2026-06-29 --json | jq -e ".registry_path | contains(\"/cog/data/maintenance-tracking.yaml\")" >/dev/null' bash "$BATS_TEST_TMPDIR"
+  run "$BASH" -c 'cd "$1" && cog tracking-scan --json | jq -e ".registry_path | contains(\"/cog/data/maintenance-tracking.yaml\")" >/dev/null' bash "$BATS_TEST_TMPDIR"
   assert_success
 
   run cog doctor

@@ -22,7 +22,6 @@ __cog_review_loop_summary_validate_self_check='
 '
 
 __cog_review_loop_summary_usage() {
-  cog::fn::ui_data "Usage: cog review-loop-summary build --run-dir <dir> --termination-reason <reason> --body <file> [--out <path>|--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary finalize --run-dir <dir> [--body-file <path>] [--out <path>|--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary set-reason --run-dir <dir> --reason <reason> [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary validate --run-dir <dir> [--summary <path>] [--json]"
@@ -159,19 +158,19 @@ __cog_review_loop_summary_assert_summary() {
   local summary="$1" section label
   [[ -f $summary && -r $summary ]] || cog::fn::error_raise "InputUnreadable" \
     "review-loop summary is missing or unreadable" "path: ${summary}" "" \
-    "run 'cog review-loop-summary build' to generate it"
+    "run 'cog review-loop-summary finalize' to generate it"
   [[ -s $summary ]] || cog::fn::error_raise "InvalidInput" \
     "review-loop summary is empty" "path: ${summary}" "" \
     "the review loop must write a non-empty terminal summary"
   grep -q '^# Review Loop Summary' "$summary" || cog::fn::error_raise "InvalidInput" \
     "review-loop summary is missing its title" "path: ${summary}" \
-    "expected a '# Review Loop Summary' heading" "regenerate via 'cog review-loop-summary build'"
+    "expected a '# Review Loop Summary' heading" "regenerate via 'cog review-loop-summary finalize'"
   grep -q 'Termination reason' "$summary" || cog::fn::error_raise "InvalidInput" \
     "review-loop summary is missing the termination reason" "path: ${summary}" "" \
-    "regenerate via 'cog review-loop-summary build'"
+    "regenerate via 'cog review-loop-summary finalize'"
   grep -q '^## Per-round counts' "$summary" || cog::fn::error_raise "InvalidInput" \
     "review-loop summary is missing generated per-round counts" "path: ${summary}" "" \
-    "regenerate via 'cog review-loop-summary build'"
+    "regenerate via 'cog review-loop-summary finalize'"
   for section in files findings followups; do
     label="$(__cog_review_loop_summary_required_section "$section")"
     grep -qiF "$label" "$summary" || cog::fn::error_raise "InvalidInput" \
@@ -181,71 +180,9 @@ __cog_review_loop_summary_assert_summary() {
   done
 }
 
-__cog_review_loop_summary_build_cmd() {
-  local run_dir="" reason="" body="" out="" json="${COG_UI_JSON:-false}"
-
-  while (($# > 0)); do
-    case "$1" in
-      -h | --help)
-        __cog_review_loop_summary_usage
-        return 0
-        ;;
-      --run-dir)
-        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
-          "missing run directory" "option: --run-dir" "" "run 'cog review-loop-summary --help'"
-        run_dir="$2"
-        shift 2
-        ;;
-      --termination-reason)
-        [[ $# -ge 2 && -n ${2:-} && -z $reason ]] || cog::fn::error_raise "MissingArgument" \
-          "missing termination reason" "option: --termination-reason" "" "run 'cog review-loop-summary --help'"
-        reason="$2"
-        shift 2
-        ;;
-      --body)
-        [[ $# -ge 2 && -n ${2:-} && -z $body ]] || cog::fn::error_raise "MissingArgument" \
-          "missing summary body file" "option: --body" "" "run 'cog review-loop-summary --help'"
-        body="$2"
-        shift 2
-        ;;
-      --out)
-        [[ $# -ge 2 && -n ${2:-} && -z $out && $json != true ]] || cog::fn::error_raise "InvalidInput" \
-          "invalid review-loop-summary output mode" "option: --out" "" "choose either --out or --json"
-        out="$2"
-        shift 2
-        ;;
-      --json)
-        [[ -z $out ]] || cog::fn::error_raise "InvalidInput" \
-          "invalid review-loop-summary output mode" "option: --json" "" "choose either --out or --json"
-        json=true
-        shift
-        ;;
-      -*)
-        cog::fn::error_raise "InvalidInput" \
-          "unknown review-loop-summary build option" "option: $1" "" "run 'cog review-loop-summary --help'"
-        ;;
-      *)
-        cog::fn::error_raise "TooManyArguments" \
-          "too many review-loop-summary build arguments" "argument: $1" "" "run 'cog review-loop-summary --help'"
-        ;;
-    esac
-  done
-
-  [[ -n $run_dir ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run directory" \
-    "usage: cog review-loop-summary build --run-dir <dir> --termination-reason <reason> --body <file>" "" \
-    "run 'cog review-loop-summary --help'"
-  [[ -n $reason ]] || cog::fn::error_raise "MissingArgument" \
-    "missing termination reason" "option: --termination-reason" "" "run 'cog review-loop-summary --help'"
-  [[ -n $body ]] || cog::fn::error_raise "MissingArgument" \
-    "missing summary body file" "option: --body" "" "run 'cog review-loop-summary --help'"
-
-  __cog_review_loop_summary_write "$run_dir" "$reason" "$body" "$out" "$json"
-}
-
 # Shared terminal write path: validate the reason and narrative body, derive and assert the
 # round artifacts, assemble summary.md, assert its structure, and emit the canonical
-# REVIEW_LOOP_OK line (or JSON). Both `build` (model passes reason+body literals) and
+# REVIEW_LOOP_OK line (or JSON). Both `finalize` and
 # `finalize` (only --run-dir; reason+body read from durable run-dir artifacts) route through
 # here so a written summary.md always co-occurs with the asserted result line.
 __cog_review_loop_summary_write() {
@@ -388,7 +325,7 @@ __cog_review_loop_summary_finalize_cmd() {
 }
 
 # set-reason --run-dir <dir> --reason <reason>: record the durable termination reason during
-# the loop so finalize needs no reason literal. Validates against the same enum build enforces.
+# the loop so finalize needs no reason literal. Validates against the shared reason enum.
 __cog_review_loop_summary_set_reason_cmd() {
   local run_dir="" reason="" json="${COG_UI_JSON:-false}"
 
@@ -507,10 +444,6 @@ cog::cmd::review_loop_summary() {
       __cog_review_loop_summary_usage
       return 0
       ;;
-    build)
-      shift
-      __cog_review_loop_summary_build_cmd "$@"
-      ;;
     finalize)
       shift
       __cog_review_loop_summary_finalize_cmd "$@"
@@ -529,7 +462,7 @@ cog::cmd::review_loop_summary() {
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
-        "unknown review-loop-summary mode" "mode: $verb" "" "expected build, finalize, set-reason, or validate"
+        "unknown review-loop-summary mode" "mode: $verb" "" "expected finalize, set-reason, or validate"
       ;;
   esac
 }

@@ -4,7 +4,7 @@
 __cog_taskrunner_apply_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.mode|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.appended|type=="array")'
 
 __cog_taskrunner_apply_usage() {
-  cog::fn::ui_data "Usage: cog taskrunner-apply [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--append] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog taskrunner-apply [--project-root <dir>] [--conflict overwrite|skip|abort] [--append] (<out.json>|--json)"
 }
 
 # `just` is the only task runner cog deploys (ADR-0028).
@@ -136,11 +136,6 @@ cog::cmd::taskrunner_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog taskrunner-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog taskrunner-apply --help'"
-        template_root="$2"
         shift 2
         ;;
       --conflict)

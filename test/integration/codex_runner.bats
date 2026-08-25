@@ -53,18 +53,6 @@ EOF
   printf '%s\n' "prompt" >"${BATS_TEST_TMPDIR}/prompt.md"
 }
 
-@test "cog codex-runner renders native and fallback commands" {
-  run cog codex-runner run-exec --mode native --effort medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
-  assert_success
-  [[ $output == *"codex-session exec -c model_reasoning_effort=medium --sandbox read-only --json"* ]]
-  [[ $output == *"< /dev/null"* ]]
-  [[ $output == *"--output-last-message"* ]]
-
-  run cog codex-runner run-exec --mode fallback --effort medium --prompt prompt.md --output out.md --events events.jsonl --stderr stderr.log --print-command
-  assert_success
-  [[ $output == *"sandbox_permissions"* ]]
-}
-
 @test "cog codex-runner run-exec launches a durable job; finalize captures output, events, thread account" {
   local st="${BATS_TEST_TMPDIR}/job.longrun.json"
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/out.md" --events "${BATS_TEST_TMPDIR}/events.jsonl" --stderr "${BATS_TEST_TMPDIR}/stderr.log" --thread first --state "$st"
@@ -90,24 +78,6 @@ EOF
   run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-default.out" --events "${BATS_TEST_TMPDIR}/cwd-default.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-default.err" --state "$st"
   assert_success
   jq -e --arg c "$root" '.cwd == $c' "$st" >/dev/null
-}
-
-@test "cog codex-runner run-exec honors an explicit --cwd override" {
-  local repo="${BATS_TEST_TMPDIR}/explicit-proj"
-  mkdir -p "$repo"
-  local st="${BATS_TEST_TMPDIR}/cwd-explicit.longrun.json"
-  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-explicit.out" --events "${BATS_TEST_TMPDIR}/cwd-explicit.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-explicit.err" --cwd "$repo" --state "$st"
-  assert_success
-  jq -e --arg c "$repo" '.cwd == $c' "$st" >/dev/null
-}
-
-@test "cog codex-runner run-resume honors an explicit --cwd override" {
-  local repo="${BATS_TEST_TMPDIR}/resume-proj"
-  mkdir -p "$repo"
-  local st="${BATS_TEST_TMPDIR}/cwd-resume.longrun.json"
-  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/cwd-resume.out" --events "${BATS_TEST_TMPDIR}/cwd-resume.jsonl" --stderr "${BATS_TEST_TMPDIR}/cwd-resume.err" --cwd "$repo" --state "$st"
-  assert_success
-  jq -e --arg c "$repo" '.cwd == $c' "$st" >/dev/null
 }
 
 @test "cog codex-runner run-exec enforces write access coherence" {

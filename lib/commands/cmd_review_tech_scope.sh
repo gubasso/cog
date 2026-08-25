@@ -10,7 +10,7 @@ __cog_review_tech_scope_self_check='
 '
 
 __cog_review_tech_scope_usage() {
-  cog::fn::ui_data "Usage: cog review-tech-scope --scope <scope.json> [--classification <classification.json>] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog review-tech-scope --scope <scope.json> (<out.json>|--json)"
 }
 
 __cog_review_tech_scope_add_tech() {
@@ -148,7 +148,7 @@ __cog_review_tech_scope_research_targets_json() {
 }
 
 __cog_review_tech_scope_build_json() {
-  local scope_file="$1" classification_file="$2" scope repo_root rel techs is_cli refs research classification
+  local scope_file="$1" scope repo_root rel techs is_cli refs research
   [[ -r $scope_file ]] || cog::fn::error_raise "InputUnreadable" \
     "scope file is not readable" "path: ${scope_file}" "" "check the file path"
   scope="$(jq -c . "$scope_file" 2>/dev/null)" || cog::fn::error_raise "InvalidJsonInput" \
@@ -164,18 +164,6 @@ __cog_review_tech_scope_build_json() {
     __cog_review_tech_scope_detect_imports "$repo_root" "$rel"
   done < <(jq -r '.changed_files[]' <<<"$scope")
   __cog_review_tech_scope_detect_manifests "$repo_root"
-
-  if [[ -n $classification_file ]]; then
-    [[ -r $classification_file ]] || cog::fn::error_raise "InputUnreadable" \
-      "classification file is not readable" "path: ${classification_file}" "" "check the file path"
-    classification="$(jq -c . "$classification_file" 2>/dev/null)" || cog::fn::error_raise "InvalidJsonInput" \
-      "classification file is not valid JSON" "path: ${classification_file}" "" "check the file contents"
-    while IFS= read -r rel; do
-      [[ -n $rel ]] && __cog_review_tech_scope_add_tech language "$rel" low "classification supplemental"
-    done < <(jq -r '(.languages // [])[]? | .lang // empty' <<<"$classification")
-    [[ $(jq -r 'if .is_cli == true then "true" else "false" end' <<<"$classification") == true ]] \
-      && __cog_review_tech_scope_add_tech tool cli low "classification supplemental"
-  fi
 
   techs="$(printf '%s\n' "${REVIEW_TECHS[@]}" | jq -s '
     group_by(.kind, .name)
@@ -197,7 +185,7 @@ __cog_review_tech_scope_build_json() {
 }
 
 cog::cmd::review_tech_scope() {
-  local scope="" classification="" mode="" out="" json
+  local scope="" mode="" out="" json
 
   while (($# > 0)); do
     case "$1" in
@@ -209,12 +197,6 @@ cog::cmd::review_tech_scope() {
         [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
           "missing scope file" "option: --scope" "" "run 'cog review-tech-scope --help'"
         scope="$2"
-        shift 2
-        ;;
-      --classification)
-        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
-          "missing classification file" "option: --classification" "" "run 'cog review-tech-scope --help'"
-        classification="$2"
         shift 2
         ;;
       --json)
@@ -243,7 +225,7 @@ cog::cmd::review_tech_scope() {
     "usage: cog review-tech-scope --scope <scope.json> (<out.json>|--json)" "" \
     "run 'cog review-tech-scope --help'"
 
-  json="$(__cog_review_tech_scope_build_json "$scope" "$classification")"
+  json="$(__cog_review_tech_scope_build_json "$scope")"
   if [[ $mode == json || ${COG_UI_JSON:-false} == true ]]; then
     cog::fn::json_emit "$__cog_review_tech_scope_self_check" "$json"
   else

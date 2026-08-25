@@ -105,7 +105,7 @@ Before accepting a new layer/module, audit:
 
 ## Decision recording
 
-For non-trivial architectural changes, the PR should reference (or include) a brief decision record: problem statement, options considered, chosen option, trade-offs. The `refactor-migration-plan` skill emits a MADR-format record; use that template if you have nothing else.
+For non-trivial architectural changes, the PR should reference (or include) a brief decision record: problem statement, options considered, chosen option, trade-offs.
 
 ## See also
 

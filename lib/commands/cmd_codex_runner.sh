@@ -4,10 +4,10 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--thread first|last] [--print-command]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--print-command]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--thread first|last]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
   cog::fn::ui_data "Usage: cog codex-runner status --state <file>"
-  cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>] [--poll <secs>]"
+  cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>]"
   cog::fn::ui_data "Usage: cog codex-runner cancel --state <file> [--signal TERM|KILL]"
   cog::fn::ui_data "Usage: cog codex-runner extract-thread <events.jsonl> <first|last>"
   cog::fn::ui_data "Usage: cog codex-runner check-output <out> <stderr>"
@@ -93,14 +93,6 @@ __cog_codex_runner_run_exec() {
       --thread)
         thread_selection="${2:-}"
         shift 2
-        ;;
-      --cwd)
-        cwd="${2:-}"
-        shift 2
-        ;;
-      --print-command)
-        print_command=true
-        shift
         ;;
       *) cog::fn::error_raise "InvalidInput" "invalid run-exec argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
     esac
@@ -202,14 +194,6 @@ __cog_codex_runner_run_resume() {
       --state)
         state="${2:-}"
         shift 2
-        ;;
-      --cwd)
-        cwd="${2:-}"
-        shift 2
-        ;;
-      --print-command)
-        print_command=true
-        shift
         ;;
       *) cog::fn::error_raise "InvalidInput" "invalid run-resume argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;
     esac
@@ -321,10 +305,6 @@ __cog_codex_runner_finalize() {
         ;;
       --max-wall)
         max_wall="${2:-}"
-        shift 2
-        ;;
-      --poll)
-        poll="${2:-}"
         shift 2
         ;;
       *) cog::fn::error_raise "InvalidInput" "invalid finalize argument" "argument: $1" "" "run 'cog codex-runner --help'" ;;

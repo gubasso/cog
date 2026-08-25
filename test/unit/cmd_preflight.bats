@@ -17,29 +17,6 @@ setup() {
   source "${LIB_DIR}/commands/cmd_preflight.sh"
 }
 
-@test "preflight JSON array helper encodes lines" {
-  run __cog_preflight_json_array_from_lines one two
-
-  assert_success
-  printf '%s\n' "$output" | jq -e '. == ["one","two"]' >/dev/null
-}
-
-@test "preflight cache path is empty without session" {
-  unset CLAUDE_CODE_SESSION_ID
-
-  run __cog_preflight_agents_cache_path
-
-  assert_success
-  assert_output ""
-}
-
-@test "preflight rejects unknown agents option" {
-  run --separate-stderr __cog_preflight_agents --bad
-
-  assert_failure 65
-  [[ $stderr == *"err.kind: InvalidInput"* ]]
-}
-
 @test "preflight claude-env passes when background tasks are disabled" {
   local out="${BATS_TEST_TMPDIR}/claude-env.json"
   # shellcheck disable=SC2030 # Each bats @test runs in its own subshell; exporting the env here is intentional.

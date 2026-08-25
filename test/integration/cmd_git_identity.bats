@@ -10,7 +10,7 @@ setup() {
   # Pin the global config to an isolated file so `git config --global` neither
   # reads nor writes the invoking user's real XDG/home git config.
   export GIT_CONFIG_GLOBAL="${BATS_TEST_TMPDIR}/gitconfig-global"
-  unset RUN_DIR REFACTOR_GUIDELINE
+  unset RUN_DIR
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
   REPO="${BATS_TEST_TMPDIR}/repo"
   git init -q "$REPO"

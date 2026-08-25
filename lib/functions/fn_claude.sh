@@ -144,7 +144,7 @@ cog::fn::claude_exec_argv() {
 }
 
 # The argv equivalent above, rendered as a human-readable shell string for
-# --print-command and for the engine_meta.command record.
+# the engine_meta.command record.
 cog::fn::claude_exec_command() {
   local account="${1:-}"
   local profile="${2:-}"

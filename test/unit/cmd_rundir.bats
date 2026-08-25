@@ -35,31 +35,3 @@ setup() {
   assert_failure 64
   [[ $stderr == *"err.kind: MissingArgument"* ]]
 }
-
-@test "rundir --base prints the run base path" {
-  run cog::cmd::rundir --base
-
-  assert_success
-  [[ $output == "${XDG_STATE_HOME}/cog/runs" ]]
-}
-
-@test "rundir --base --json emits the base as JSON" {
-  run cog::cmd::rundir --base --json
-
-  assert_success
-  printf '%s\n' "$output" | jq -e --arg b "${XDG_STATE_HOME}/cog/runs" '.base == $b' >/dev/null
-}
-
-@test "rundir --base rejects a prefix" {
-  run --separate-stderr cog::cmd::rundir --base foo
-
-  assert_failure 65
-  [[ $stderr == *"err.kind: InvalidInput"* ]]
-}
-
-@test "rundir --base rejects --lock" {
-  run --separate-stderr cog::cmd::rundir --base --lock
-
-  assert_failure 65
-  [[ $stderr == *"err.kind: InvalidInput"* ]]
-}

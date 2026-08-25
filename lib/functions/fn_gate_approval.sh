@@ -150,8 +150,8 @@ cog::fn::gate_approval::prune() {
     "required command not found" "command: jq" "" "install jq and retry"
   [[ -n $older_than ]] || older_than="604800"
   [[ $older_than =~ ^[0-9]+$ ]] || cog::fn::error_raise "InvalidInput" \
-    "older-than must be a non-negative integer of seconds" "option: --older-than" \
-    "value: ${older_than}" "pass --older-than <secs>"
+    "older-than must be a non-negative integer of seconds" "" \
+    "value: ${older_than}" "check the prune-approvals TTL default"
   dir="$(cog::fn::gate_approval::dir)"
   now="$(date -u '+%s')"
   cutoff=$((now - older_than))

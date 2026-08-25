@@ -13,8 +13,8 @@
 __cog_claude_runner_self_check='.action != null and .ok != null'
 
 __cog_claude_runner_usage() {
-  cog::fn::ui_data "Usage: cog claude-runner run-exec [--access <read-only|write>] --effort <tier> [--model <name>] [--account <name>] [--profile <name>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--cwd <dir>] [--print-command]"
-  cog::fn::ui_data "Usage: cog claude-runner finalize --state <file> [--max-wall <secs>] [--poll <secs>]"
+  cog::fn::ui_data "Usage: cog claude-runner run-exec [--access <read-only|write>] --effort <tier> [--account <name>] [--profile <name>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
+  cog::fn::ui_data "Usage: cog claude-runner finalize --state <file> [--max-wall <secs>]"
   cog::fn::ui_data "Usage: cog claude-runner gate <out.json>"
 }
 
@@ -70,10 +70,6 @@ __cog_claude_runner_run_exec() {
         effort="${2:-}"
         shift 2
         ;;
-      --model)
-        model="${2:-}"
-        shift 2
-        ;;
       --account)
         account="${2:-}"
         shift 2
@@ -101,14 +97,6 @@ __cog_claude_runner_run_exec() {
       --state)
         state="${2:-}"
         shift 2
-        ;;
-      --cwd)
-        cwd="${2:-}"
-        shift 2
-        ;;
-      --print-command)
-        print_command=true
-        shift
         ;;
       *) cog::fn::error_raise "InvalidInput" "invalid run-exec argument" "argument: $1" "" "run 'cog claude-runner --help'" ;;
     esac
@@ -178,10 +166,6 @@ __cog_claude_runner_finalize() {
         ;;
       --max-wall)
         max_wall="${2:-}"
-        shift 2
-        ;;
-      --poll)
-        poll="${2:-}"
         shift 2
         ;;
       *) cog::fn::error_raise "InvalidInput" "invalid finalize argument" "argument: $1" "" "run 'cog claude-runner --help'" ;;

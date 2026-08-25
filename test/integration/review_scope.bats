@@ -438,15 +438,6 @@ diff --numstat --no-renames"
   [[ $stderr == *"more than one separator"* ]]
 }
 
-@test "cog review-scope check rejects a separator-free range the same way" {
-  # The guard and the review must never come to measure different changesets,
-  # so `check` routes through the same builder and refuses the same values.
-  run --separate-stderr cog review-scope check --max-files 100 --declaration "$(decl '{"worktree":false,"ranges":["HEAD"]}')" --json
-
-  assert_failure
-  [[ $stderr == *"needs a .. or ... separator"* ]]
-}
-
 @test "cog review-scope reports a merge in both the file list and the line stats" {
   run cog review-scope --declaration "$(decl '{"worktree":false,"shas":["mergehash"]}')" --json
 

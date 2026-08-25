@@ -53,13 +53,6 @@ EOF
   assert_file_contains "$GIT_FAKE_LOG" "rev-parse --show-toplevel"
 }
 
-@test "cog preflight agents cache miss requests classification" {
-  run cog preflight agents "${BATS_TEST_TMPDIR}/agents.json" --no-cache
-
-  assert_success
-  assert_output "NEEDS-CLASSIFICATION"
-}
-
 @test "cog preflight rejects unknown check and supports help" {
   run --separate-stderr cog preflight nope
   assert_failure

@@ -71,7 +71,7 @@ Power Grade cells are the graded model/effort entries used by `cog power-grade`.
 - `low`: Opus 4.8 at low effort / `gpt-5.4` at medium effort.
 - `cheap`: Haiku 4.5 with no effort / `gpt-5.4-mini` at medium effort.
 
-Use `cog power-grade validate --json` to check the matrix, `cell` to inspect one cell, `classify` to find policy-selectable cells that can handle a grade (non-selectable and informational cells are excluded), and `compound` to compute pass-sequence capability from the matrix-owned formula.
+Use `cog power-grade tier --name <name> --json` to resolve a named tier to its Claude and Codex cells, and `cog power-grade skill-tier` to check a skill's expected against its actual tier.
 
 ## Review And Verification Work
 

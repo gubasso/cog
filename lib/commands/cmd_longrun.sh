@@ -4,9 +4,9 @@
 __cog_longrun_usage() {
   cog::fn::ui_data "Usage: cog longrun start --label <name> --state <file> [--cwd <dir>] [--stdout <file>] [--stderr <file>] [--output <file>] [--engine <name>] [--engine-meta <json>] [--json] -- <cmd> [args...]"
   cog::fn::ui_data "Usage: cog longrun status --state <file> [--json]"
-  cog::fn::ui_data "Usage: cog longrun finalize --state <file> [--max-wall <secs>] [--poll <secs>] [--json]"
+  cog::fn::ui_data "Usage: cog longrun finalize --state <file> [--max-wall <secs>] [--json]"
   cog::fn::ui_data "Usage: cog longrun cancel --state <file> [--signal TERM|KILL] [--json]"
-  cog::fn::ui_data "Usage: cog longrun list [--run-base <dir>] [--json]"
+  cog::fn::ui_data "Usage: cog longrun list [--json]"
 }
 
 # Extract a flag value from an argument list without consuming it.
@@ -91,10 +91,6 @@ __cog_longrun_cmd_finalize() {
         ;;
       --max-wall)
         max_wall="${2:-}"
-        shift 2
-        ;;
-      --poll)
-        poll="${2:-}"
         shift 2
         ;;
       --json)
@@ -184,10 +180,6 @@ __cog_longrun_cmd_list() {
   local json="${COG_UI_JSON:-false}" run_base=""
   while (($# > 0)); do
     case "$1" in
-      --run-base)
-        run_base="${2:-}"
-        shift 2
-        ;;
       --json)
         json=true
         shift

@@ -4,7 +4,7 @@
 __cog_installer_apply_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.conflict|type=="string") and (.wired|type=="array")'
 
 __cog_installer_apply_usage() {
-  cog::fn::ui_data "Usage: cog installer-apply --type bash|generic|rust|python|node [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] [--wire-taskrunner] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog installer-apply --type bash|generic|rust|python|node [--project-root <dir>] [--conflict overwrite|skip|abort] [--wire-taskrunner] (<out.json>|--json)"
 }
 
 # The install/uninstall/reinstall recipes wired into an existing task runner.
@@ -187,11 +187,6 @@ cog::cmd::installer_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog installer-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog installer-apply --help'"
-        template_root="$2"
         shift 2
         ;;
       --conflict)

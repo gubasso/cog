@@ -93,12 +93,6 @@ The command list and short descriptions are sourced from command modules under
 *context-brief*
 	Template, build, and validate a rich-context handoff brief.
 
-*digest-check*
-	Check digest frontmatter for source drift.
-
-*digest-stamp*
-	Stamp digest frontmatter from source files.
-
 *doctor*
 	Check cog runtime health and installation prerequisites.
 
@@ -245,15 +239,6 @@ The command list and short descriptions are sourced from command modules under
 
 *readme-apply*
 	Apply a README skeleton to a project.
-
-*refactor-scan-drift*
-	Compute byte-stable source-scan fingerprint.
-
-*refactor-scan-source*
-	Run deterministic source static-analysis probes.
-
-*refactor-setup*
-	Resolve refactor migration setup paths.
 
 *require*
 	Assert required cog subcommands are installed.

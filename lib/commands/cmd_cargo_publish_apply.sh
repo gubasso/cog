@@ -4,7 +4,7 @@
 __cog_cargo_publish_apply_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.template_root|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.conflict|type=="string")'
 
 __cog_cargo_publish_apply_usage() {
-  cog::fn::ui_data "Usage: cog cargo-publish-apply [--project-root <dir>] [--template-root <dir>] [--scripts-dir <dir>] [--doc-dir <dir>] [--with-release-plz] [--with-dist] [--conflict overwrite|skip|abort] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog cargo-publish-apply [--project-root <dir>] [--doc-dir <dir>] [--with-release-plz] [--with-dist] [--conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
 # Populate OPERATIONS[] with `src TAB dst TAB mode` triples for the selected
@@ -115,16 +115,6 @@ cog::cmd::cargo_publish_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog cargo-publish-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog cargo-publish-apply --help'"
-        template_root="$2"
-        shift 2
-        ;;
-      --scripts-dir)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing scripts dir" "option: --scripts-dir" "" "run 'cog cargo-publish-apply --help'"
-        scripts_dir="$2"
         shift 2
         ;;
       --doc-dir)

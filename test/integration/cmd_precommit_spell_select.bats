@@ -5,7 +5,7 @@ setup() {
   export HOME="${BATS_TEST_TMPDIR}/home"
   export XDG_DATA_HOME="${BATS_TEST_TMPDIR}/data"
   export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state"
-  unset RUN_DIR REFACTOR_GUIDELINE
+  unset RUN_DIR
   mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
 }
 

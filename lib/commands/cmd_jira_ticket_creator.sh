@@ -6,7 +6,7 @@ __cog_jira_ticket_creator_write_self_check='(.ok == true) and (.ticket_path|type
 __cog_jira_ticket_creator_finalize_self_check='(.ok|type=="boolean") and (.index_path|type=="string") and (.coverage|type=="object")'
 
 __cog_jira_ticket_creator_usage() {
-  cog::fn::ui_data "Usage: cog jira-ticket-creator setup [--root <dir>] [--draft-root <dir>] [--range <A..B>]... [--sha <sha>]... [--path <p>]... (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog jira-ticket-creator setup [--root <dir>] [--range <A..B>]... [--sha <sha>]... [--path <p>]... (<out.json>|--json)"
   cog::fn::ui_data "Usage: cog jira-ticket-creator write --draft-dir <dir> --title <text> --issue-type <Epic|Story|Task|Bug|Sub-task> --body-file <path> [--seq <NN>] [--group <name>] (<out.json>|--json)"
   cog::fn::ui_data "Usage: cog jira-ticket-creator finalize --draft-dir <dir> --manifest <manifest.json> (<out.json>|--json)"
 }
@@ -84,11 +84,6 @@ __cog_jira_ticket_creator_setup() {
       --root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing --root value" "option: --root" "" "run 'cog jira-ticket-creator --help'"
         root_arg="$2"
-        shift 2
-        ;;
-      --draft-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing --draft-root value" "option: --draft-root" "" "run 'cog jira-ticket-creator --help'"
-        draft_root_arg="$2"
         shift 2
         ;;
       --range)

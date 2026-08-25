@@ -4,7 +4,7 @@
 __cog_readme_apply_self_check='(.ok|type=="boolean") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array")'
 
 __cog_readme_apply_usage() {
-  cog::fn::ui_data "Usage: cog readme-apply [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog readme-apply [--project-root <dir>] [--conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
 __cog_readme_apply_build_json() {
@@ -65,11 +65,6 @@ cog::cmd::readme_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog readme-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog readme-apply --help'"
-        template_root="$2"
         shift 2
         ;;
       --conflict)

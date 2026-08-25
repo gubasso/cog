@@ -4,7 +4,7 @@
 __cog_nix_devshell_detect_self_check='(.ok|type=="boolean") and (.project_root|type=="string") and (.template_root|type=="string") and (.conflicts|type=="array") and (.signals|type=="array")'
 
 __cog_nix_devshell_detect_usage() {
-  cog::fn::ui_data "Usage: cog nix-devshell-detect [--project-root <dir>] [--template-root <dir>] [--type <type>] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog nix-devshell-detect [--project-root <dir>] [--type <type>] (<out.json>|--json)"
 }
 
 cog::cmd::nix_devshell_detect() {
@@ -20,11 +20,6 @@ cog::cmd::nix_devshell_detect() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog nix-devshell-detect --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog nix-devshell-detect --help'"
-        template_root="$2"
         shift 2
         ;;
       --type)

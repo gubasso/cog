@@ -4,7 +4,7 @@
 __cog_gate_usage() {
   cog::fn::ui_data "Usage: cog gate approve --gate-id <id> --artifact <file> [--approver <name>] [--notes <text>]"
   cog::fn::ui_data "Usage: cog gate check-approval --gate-id <id> --artifact <file> [--ttl <secs>]"
-  cog::fn::ui_data "Usage: cog gate prune-approvals [--older-than <secs>]"
+  cog::fn::ui_data "Usage: cog gate prune-approvals"
   cog::fn::ui_data "Usage: cog gate --help"
 }
 
@@ -96,12 +96,6 @@ __cog_gate_prune_approvals_cmd() {
       -h | --help)
         __cog_gate_usage
         return 0
-        ;;
-      --older-than)
-        [[ $# -ge 2 && -n ${2:-} ]] || cog::fn::error_raise "MissingArgument" \
-          "missing older-than" "option: --older-than" "" "run 'cog gate --help'"
-        older_than="$2"
-        shift 2
         ;;
       -*) cog::fn::error_raise "InvalidInput" \
         "unknown gate prune-approvals option" "option: $1" "" "run 'cog gate --help'" ;;

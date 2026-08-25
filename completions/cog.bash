@@ -38,8 +38,6 @@ _cog() {
     cog-skill-creator-scaffold
     cog-skill-creator-validate
     context-brief
-    digest-check
-    digest-stamp
     doctor
     editorconfig-apply
     editorconfig-detect
@@ -89,9 +87,6 @@ _cog() {
     preflight
     print-config
     readme-apply
-    refactor-scan-drift
-    refactor-scan-source
-    refactor-setup
     require
     research-shelf
     review-comment

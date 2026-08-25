@@ -103,17 +103,3 @@ setup() {
   assert_failure
   [[ $stderr == *"artifact not found"* ]]
 }
-
-@test "cog gate prune-approvals removes expired approvals" {
-  local artifact="${BATS_TEST_TMPDIR}/work.md"
-  printf 'work body\n' >"$artifact"
-  cog gate approve --gate-id r4 --artifact "$artifact" >/dev/null
-
-  run cog gate prune-approvals --older-than 0
-  assert_success
-  printf '%s\n' "$output" | jq -e '.ok == true and (.pruned | length == 1)' >/dev/null
-
-  run cog gate check-approval --gate-id r4 --artifact "$artifact"
-  assert_failure
-  printf '%s\n' "$output" | jq -e '.status == "missing"' >/dev/null
-}

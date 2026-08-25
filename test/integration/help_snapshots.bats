@@ -52,8 +52,6 @@ Commands:
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
   context-brief  Template, build, and validate a rich-context handoff brief.
-  digest-check   Check digest frontmatter for source drift.
-  digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.
@@ -103,9 +101,6 @@ Commands:
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
   readme-apply   Apply a README skeleton to a project.
-  refactor-scan-drift Compute byte-stable source-scan fingerprint.
-  refactor-scan-source Run deterministic source static-analysis probes.
-  refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
   research-shelf Store and validate dated research findings.
   review-comment Plan or post PR comments for review findings.
@@ -165,8 +160,6 @@ Commands:
   cog-skill-creator-scaffold Compute skill scaffold paths.
   cog-skill-creator-validate Validate cog-skill-creator inputs.
   context-brief  Template, build, and validate a rich-context handoff brief.
-  digest-check   Check digest frontmatter for source drift.
-  digest-stamp   Stamp digest frontmatter from source files.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
   editorconfig-detect Detect editorconfig template type.
@@ -216,9 +209,6 @@ Commands:
   preflight      Run centralized orchestrator preflight checks.
   print-config   Print resolved configuration values and their sources.
   readme-apply   Apply a README skeleton to a project.
-  refactor-scan-drift Compute byte-stable source-scan fingerprint.
-  refactor-scan-source Run deterministic source static-analysis probes.
-  refactor-setup Resolve refactor migration setup paths.
   require        Assert required cog subcommands are installed.
   research-shelf Store and validate dated research findings.
   review-comment Plan or post PR comments for review findings.
@@ -313,7 +303,7 @@ Global flags:
   run cog review-tech-scope --help
 
   assert_success
-  assert_output "Usage: cog review-tech-scope --scope <scope.json> [--classification <classification.json>] (<out.json>|--json)
+  assert_output "Usage: cog review-tech-scope --scope <scope.json> (<out.json>|--json)
 
 Detect review technologies and bundled reference targets.
 

@@ -4,7 +4,7 @@
 __cog_ci_apply_self_check='(.ok|type=="boolean") and (.target|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array")'
 
 __cog_ci_apply_usage() {
-  cog::fn::ui_data "Usage: cog ci-apply --target github|gitlab [--project-root <dir>] [--template-root <dir>] [--release-root <dir>] [--with-release] [--conflict overwrite|skip|abort] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog ci-apply --target github|gitlab [--project-root <dir>] [--with-release] [--conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
 # Append `src TAB dst` operations for every regular file under $template_dir,
@@ -122,16 +122,6 @@ cog::cmd::ci_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog ci-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog ci-apply --help'"
-        template_root="$2"
-        shift 2
-        ;;
-      --release-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing release template root" "option: --release-root" "" "run 'cog ci-apply --help'"
-        release_root="$2"
         shift 2
         ;;
       --with-release)

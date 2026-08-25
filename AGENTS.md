@@ -20,6 +20,16 @@ Skills own sequencing, judgment, and runtime orchestration. Deterministic parsin
 
 The repository is self-contained. Load-bearing shared prose lives under `skill-refs/`; CLI-owned structured reference data lives under `data/`, one file per top-level table. External links are further reading only. Current ownership, the `data/` layout rule, and installation behavior are described in [skills and resources](./docs/explanation/skills-and-resources.md).
 
+## Reachability
+
+Cog is operated by agents, driven by skills. Skills are the entry points; every other surface exists to serve them. The one deliberate exception is the operator's out-of-band approval channel: `cog gate approve` is run by the human precisely so an executor cannot relay its own approval, per [approval gate contract](./skill-refs/orchestration/approval-gate-contract.md).
+
+**The principle.** Every command, command-specific flag, function, template, ref, and data table has a live caller — a skill, a pre-commit hook, another cog command, or a shipped script such as the installer, a `justfile` lane, or the shell completion. A thing's own tests are not a caller: they prove it works, never that anything needs it. The global flags every command inherits — `-h`/`--help`, `-V`/`--version`, `--json`, `--dry-run`, `--print-config`, `-v`/`-vv`/`-vvv` — are the CLI's operator surface and are exempt, reachable through whichever command is.
+
+**The change-time obligation.** Every cleanup enforces the principle at its own boundary. Removing a skill, a hook, or a call site includes sweeping whatever it was the last caller of, in the same change: the command, its command-specific flags, its shared functions, its tests, its refs, and its rows in the command inventories (`completions/cog.bash`, `man/cog.1.scd`, `docs/reference/cli-commands.md`, `test/integration/help_snapshots.bats`). Not deprecated, not kept because it still works. Git history is the recovery path.
+
+Those four inventories enumerate the command surface; where one of them does invoke a command, it invokes it because the command is enumerated, not because a workflow needs it. A row is never evidence of reachability.
+
 ## Orchestration guards
 
 - Use environment-first no-backgrounding.

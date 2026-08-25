@@ -4,7 +4,7 @@
 __cog_precommit_apply_template_self_check='(.ok|type=="boolean") and (.type|type=="string") and (.copied|type=="array") and (.skipped|type=="array") and (.conflicts|type=="array") and (.spell|type=="string") and (.spell_hook_appended|type=="boolean") and (.nix_hook_appended|type=="boolean") and (.markdown_hook_appended|type=="boolean")'
 
 __cog_precommit_apply_template_usage() {
-  cog::fn::ui_data "Usage: cog precommit-apply-template --type <type> [--project-root <dir>] [--template-root <dir>] [--spell typos|cspell] [--config-conflict overwrite|skip|abort] [--companion-conflict overwrite|skip|abort] (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog precommit-apply-template --type <type> [--project-root <dir>] [--spell typos|cspell] [--config-conflict overwrite|skip|abort] [--companion-conflict overwrite|skip|abort] (<out.json>|--json)"
 }
 
 # The spell-check hook for the markdown template is not baked into its
@@ -229,11 +229,6 @@ cog::cmd::precommit_apply_template() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog precommit-apply-template --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog precommit-apply-template --help'"
-        template_root="$2"
         shift 2
         ;;
       --config-conflict)

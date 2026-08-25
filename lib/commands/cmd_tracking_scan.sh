@@ -4,7 +4,7 @@
 __cog_tracking_scan_self_check='(.schema=="cog.tracking-scan.v1") and (.ok==true) and (.registry_path|type=="string") and (.now|test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and (.entry_count|type=="number") and (.overdue_count|type=="number") and (.overdue|type=="array") and (all(.overdue[]; (.id|type=="string") and (.path|type=="string") and (.last_checked|test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and (.cadence_days|type=="number") and (.due_date|test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and (.days_overdue|type=="number") and (.why|type=="string") and (.revalidate_how|type=="string")))'
 
 __cog_tracking_scan_usage() {
-  cog::fn::ui_data "Usage: cog tracking-scan [--registry <path>] [--now <YYYY-MM-DD>] [--json]"
+  cog::fn::ui_data "Usage: cog tracking-scan [--registry <path>] [--json]"
 }
 
 __cog_tracking_scan_invalid_date() {
@@ -105,13 +105,6 @@ cog::cmd::tracking_scan() {
           "missing or duplicate tracking-scan registry" "option: --registry" "" "run 'cog tracking-scan --help'"
         registry_path="$2"
         registry_seen=1
-        shift 2
-        ;;
-      --now)
-        [[ $# -ge 2 && -n ${2:-} && -z $now ]] || cog::fn::error_raise "MissingArgument" \
-          "missing or duplicate tracking-scan now date" "option: --now" "" "run 'cog tracking-scan --help'"
-        now="$2"
-        cog::fn::tracking_validate_date "$now" || __cog_tracking_scan_invalid_date "$now" "--now"
         shift 2
         ;;
       --json)

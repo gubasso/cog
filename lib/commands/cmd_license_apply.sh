@@ -4,7 +4,7 @@
 __cog_license_apply_self_check='(.ok|type=="boolean") and (.mode|type=="string")'
 
 __cog_license_apply_usage() {
-  cog::fn::ui_data "Usage: cog license-apply (--list | --spdx <id> --holder <name> --year <year> [--filename <name>] [--project-root <dir>] [--template-root <dir>] [--conflict overwrite|skip|abort]) (<out.json>|--json)"
+  cog::fn::ui_data "Usage: cog license-apply (--list | --spdx <id> --holder <name> --year <year> [--filename <name>] [--project-root <dir>] [--conflict overwrite|skip|abort]) (<out.json>|--json)"
 }
 
 # True when the destination basename is one the project's license is
@@ -165,11 +165,6 @@ cog::cmd::license_apply() {
       --project-root)
         [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing project root" "option: --project-root" "" "run 'cog license-apply --help'"
         project_root="$2"
-        shift 2
-        ;;
-      --template-root)
-        [[ $# -ge 2 ]] || cog::fn::error_raise "MissingArgument" "missing template root" "option: --template-root" "" "run 'cog license-apply --help'"
-        template_root="$2"
         shift 2
         ;;
       --conflict)

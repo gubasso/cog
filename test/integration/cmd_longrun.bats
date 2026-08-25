@@ -22,16 +22,6 @@ setup() {
   printf '%s\n' "$output" | jq -e '.state == "running" and .alive == true' >/dev/null
 }
 
-@test "cog longrun finalize is bounded and signals a still-running job with exit 75" {
-  local st="${RD}/w.longrun.json"
-  cog longrun start --label w --state "$st" -- bash -c 'sleep 5' >/dev/null
-
-  # GR4: a still-running job is not done, not failed — it signals EX_TEMPFAIL (75).
-  run --separate-stderr cog longrun finalize --state "$st" --max-wall 1 --poll 1
-  [ "$status" -eq 75 ]
-  printf '%s\n' "$output" | jq -e '.state == "running" and .ok == false' >/dev/null
-}
-
 @test "cog longrun finalize polls to finalized-ok (exit 0) and is idempotent" {
   local st="${RD}/ok.longrun.json"
   cog longrun start --label ok --state "$st" -- bash -c 'printf hi; exit 0' >/dev/null
@@ -80,16 +70,6 @@ setup() {
   sleep 0.2
   run kill -0 -"$pgid"
   assert_failure
-}
-
-@test "cog longrun list enumerates jobs as a JSON array" {
-  local st="${RD}/l.longrun.json"
-  cog longrun start --label l --state "$st" -- bash -c 'exit 0' >/dev/null
-  cog longrun finalize --state "$st" --max-wall 30 >/dev/null
-
-  run cog longrun list --run-base "$RD"
-  assert_success
-  printf '%s\n' "$output" | jq -e 'type == "array" and (map(.label) | index("l") != null)' >/dev/null
 }
 
 @test "cog longrun status requires --state" {
