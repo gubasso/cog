@@ -55,7 +55,7 @@ cog rundir snapshot-children \
 
   Run the full review loop the skill describes. Terminate through
   `cog review-loop-summary finalize` and make its printed
-  `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` line your reply's final
+  `REVIEW_LOOP_OK <summary-file> rounds=<n> reason=<reason>` line your reply's final
   line, with no text after it. Do not reply with an inline triage summary — that
   belongs in summary.md.
   ```

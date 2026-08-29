@@ -309,3 +309,122 @@ REVIEW_LOOP_OK ${run_dir}/summary.md rounds=2 reason=stall"
   assert_failure
   [[ $stderr == *"err.kind: MissingArgument"* ]]
 }
+
+# --- commit-gate: the cog-owned commit-eligibility decision for a finished loop ---
+
+finalize_with_reason() {
+  local run_dir="$1" reason="$2"
+  write_rounds "$run_dir" 1
+  write_body "$run_dir"
+  cog review-loop-summary set-reason --run-dir "$run_dir" --reason "$reason" >/dev/null
+  cog review-loop-summary finalize --run-dir "$run_dir" >/dev/null
+}
+
+@test "cog review-loop-summary commit-gate clears a findings-empty run" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  finalize_with_reason "$run_dir" findings-empty
+
+  run cog review-loop-summary commit-gate --run-dir "$run_dir"
+
+  assert_success
+  assert_output "RESOLVED ${run_dir}/summary.md
+COMMIT_GATE eligible reason=findings-empty"
+}
+
+@test "cog review-loop-summary commit-gate clears a decision-approve run" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  finalize_with_reason "$run_dir" decision-approve
+
+  run cog review-loop-summary commit-gate --run-dir "$run_dir"
+
+  assert_success
+  assert_output --partial 'COMMIT_GATE eligible reason=decision-approve'
+}
+
+@test "cog review-loop-summary commit-gate blocks every reason that leaves work owed" {
+  local run_dir reason
+  for reason in stall user-limit needs-discussion user-abort error; do
+    run_dir="${BATS_TEST_TMPDIR}/run-${reason}"
+    finalize_with_reason "$run_dir" "$reason"
+
+    run cog review-loop-summary commit-gate --run-dir "$run_dir"
+
+    # 77 is EX_NOPERM: the loop finished, and its termination reason withholds
+    # commit authority. It is a decision, not an error.
+    [[ $status -eq 77 ]]
+    assert_output "RESOLVED ${run_dir}/summary.md
+COMMIT_GATE blocked reason=${reason}"
+  done
+}
+
+@test "cog review-loop-summary commit-gate --json emits the decision on both branches" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  finalize_with_reason "$run_dir" findings-empty
+
+  run cog review-loop-summary commit-gate --run-dir "$run_dir" --json
+
+  assert_success
+  refute_output --partial 'COMMIT_GATE'
+  printf '%s\n' "$output" | jq -e --arg summary "${run_dir}/summary.md" \
+    '.ok == true and .commit_eligible == true and .termination_reason == "findings-empty" and
+    .summary_file == $summary' >/dev/null
+
+  local blocked_dir="${BATS_TEST_TMPDIR}/run-blocked"
+  finalize_with_reason "$blocked_dir" stall
+
+  run cog review-loop-summary commit-gate --run-dir "$blocked_dir" --json
+
+  [[ $status -eq 77 ]]
+  printf '%s\n' "$output" | jq -e \
+    '.ok == true and .commit_eligible == false and .termination_reason == "stall"' >/dev/null
+}
+
+@test "cog review-loop-summary commit-gate accepts an explicit --summary path" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  finalize_with_reason "$run_dir" findings-empty
+
+  run cog review-loop-summary commit-gate --summary "${run_dir}/summary.md"
+
+  assert_success
+  assert_output --partial 'COMMIT_GATE eligible reason=findings-empty'
+}
+
+@test "cog review-loop-summary commit-gate fails closed on an unfinished loop" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  write_rounds "$run_dir" 1
+
+  run --separate-stderr cog review-loop-summary commit-gate --run-dir "$run_dir"
+
+  assert_failure
+  [[ $stderr == *"err.kind: InputUnreadable"* ]]
+  refute_output --partial 'COMMIT_GATE'
+}
+
+@test "cog review-loop-summary commit-gate fails closed on a malformed summary" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  mkdir -p "$run_dir"
+  printf 'not a review-loop summary\n' >"${run_dir}/summary.md"
+
+  run --separate-stderr cog review-loop-summary commit-gate --run-dir "$run_dir"
+
+  assert_failure
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
+  refute_output --partial 'COMMIT_GATE'
+}
+
+@test "cog review-loop-summary commit-gate requires a target" {
+  run --separate-stderr cog review-loop-summary commit-gate
+
+  assert_failure
+  [[ $stderr == *"err.kind: MissingArgument"* ]]
+}
+
+@test "cog review-loop-summary commit-gate rejects an unknown option" {
+  local run_dir="${BATS_TEST_TMPDIR}/run"
+  finalize_with_reason "$run_dir" findings-empty
+
+  run --separate-stderr cog review-loop-summary commit-gate --run-dir "$run_dir" --force
+
+  assert_failure
+  [[ $stderr == *"err.kind: InvalidInput"* ]]
+}

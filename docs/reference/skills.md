@@ -64,6 +64,7 @@ Code-review skills:
 - skills/claude/review-oneshot
 - skills/claude/review-findings
 - skills/claude/review-loop
+- skills/claude/review-loop-gc
 - skills/codex/implementation-reviewer
 - skills/codex/review-oneshot
 - skills/codex/review-findings

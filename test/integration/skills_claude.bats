@@ -62,6 +62,7 @@ forbidden_scan_codex() {
     review-oneshot
     review-findings
     review-loop
+    review-loop-gc
     review-plan-multi
     suckless-patcher
     test-review

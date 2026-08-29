@@ -56,6 +56,7 @@ tiers:
       - review-plan-multi
       - review-oneshot
       - review-loop
+      - review-loop-gc
       - cog-skill-creator
     use_when: |-
       Open-ended reasoning: exploring a codebase, planning, asking or answering questions,

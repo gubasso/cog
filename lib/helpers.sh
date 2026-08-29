@@ -16,6 +16,8 @@ readonly EX_SOFTWARE
 readonly EX_IOERR
 : "${EX_TEMPFAIL:=75}"
 readonly EX_TEMPFAIL
+: "${EX_NOPERM:=77}"
+readonly EX_NOPERM
 : "${EX_CONFIG:=78}"
 readonly EX_CONFIG
 

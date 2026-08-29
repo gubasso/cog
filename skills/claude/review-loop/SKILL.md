@@ -187,7 +187,7 @@ cog review-loop-summary set-reason --run-dir "$RUN_DIR" --reason <reason>
 cog review-loop-summary finalize --run-dir "$RUN_DIR"
 ```
 
-`finalize` reads the maintained `summary-body.md` and recorded reason, derives the round count and `Per-round counts` section from `round-N-findings.json`, assembles `$RUN_DIR/summary.md`, and fails closed if the body is absent, empty, or missing a required section — `cog` never fabricates a narrative. On success it prints the canonical `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` line. It is idempotent: a re-run against an already-valid `summary.md` re-emits that same line.
+`finalize` reads the maintained `summary-body.md` and recorded reason, derives the round count and `Per-round counts` section from `round-N-findings.json`, assembles `$RUN_DIR/summary.md`, and fails closed if the body is absent, empty, or missing a required section — `cog` never fabricates a narrative. On success it prints the canonical `REVIEW_LOOP_OK <summary-file> rounds=<n> reason=<reason>` line. It is idempotent: a re-run against an already-valid `summary.md` re-emits that same line.
 
 Recovery (body-less run): when a boundary owner or parent orchestrator inherits a run whose `summary-body.md` was never written — a child that stopped after applying fixes without maintaining the body — it recovers by supplying the narrative it independently verified:
 
@@ -206,7 +206,7 @@ When the loop cannot reach a summary at all — a runner or validation error bef
 
 Every run ends with exactly one canonical status line, emitted as the trailing block of the reply with nothing after it:
 
-- `REVIEW_LOOP_OK <run-dir> rounds=<n> reason=<reason>` — surfaced verbatim from `cog review-loop-summary finalize`, which prints it only after `summary.md` is written and asserted; a boundary-owner recovery finalize (`finalize --body-file`) emits this identical line, so the handshake is unchanged whether the run terminated normally or was recovered;
+- `REVIEW_LOOP_OK <summary-file> rounds=<n> reason=<reason>` — surfaced verbatim from `cog review-loop-summary finalize`, which prints it only after `summary.md` is written and asserted; a boundary-owner recovery finalize (`finalize --body-file`) emits this identical line, so the handshake is unchanged whether the run terminated normally or was recovered;
 - `REVIEW_LOOP_FAILED <reason>` — from `cog msg failed review-loop "<reason>"` when no summary could be produced.
 
 This line is the run's machine-readable handshake: a caller reads it to confirm completion. Per-round detail, triage narrative, and followups live in `summary.md`. The run is complete — and this line is emitted — only once `cog review-loop-summary finalize` has written and asserted `summary.md`.

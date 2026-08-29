@@ -21,16 +21,40 @@ __cog_review_loop_summary_validate_self_check='
 (.summary_file | type == "string" and (. | length) > 0)
 '
 
+__cog_review_loop_summary_commit_gate_self_check='
+(.ok == true) and
+(.summary_file | type == "string" and (. | length) > 0) and
+(.termination_reason | type == "string" and (. | length) > 0) and
+(.commit_eligible | type == "boolean")
+'
+
 __cog_review_loop_summary_usage() {
   cog::fn::ui_data "Usage: cog review-loop-summary finalize --run-dir <dir> [--body-file <path>] [--out <path>|--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary set-reason --run-dir <dir> --reason <reason> [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary validate --run-dir <dir> [--summary <path>] [--json]"
+  cog::fn::ui_data "Usage: cog review-loop-summary commit-gate --run-dir <dir> [--summary <path>] [--json]"
   cog::fn::ui_data "Usage: cog review-loop-summary --help"
 }
 
 __cog_review_loop_summary_reason_ok() {
   case "$1" in
     findings-empty | decision-approve | stall | user-limit | needs-discussion | user-abort | error)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Commit-eligibility policy. `findings-empty` and `decision-approve` are the two terminal
+# reasons that mean the reviewer finished with nothing left to say, so the reviewed tree is
+# the tree a commit would capture. Every other reason ends the run with work still owed --
+# a stall, a round limit, a question for the user, an abort, or an error -- and committing
+# there would record a tree no review ever cleared. See ADR-0010.
+__cog_review_loop_summary_commit_eligible() {
+  case "$1" in
+    findings-empty | decision-approve)
       return 0
       ;;
     *)
@@ -436,6 +460,79 @@ __cog_review_loop_summary_validate_cmd() {
   fi
 }
 
+# commit-gate --run-dir <dir> [--summary <path>]: decide whether a finished review loop
+# authorizes a commit. The decision is cog-owned rather than prose-owned so a composite
+# orchestrator cannot talk itself into committing an unreviewed tree. The gate reads the
+# reason recorded inside the asserted summary.md -- the same artifact the REVIEW_LOOP_OK
+# handshake is emitted against -- so an unfinished or malformed loop fails closed instead of
+# resolving to an eligibility. Exit 0 eligible, EX_NOPERM (77) blocked, typed error otherwise.
+__cog_review_loop_summary_commit_gate_cmd() {
+  local run_dir="" summary="" json="${COG_UI_JSON:-false}" reason eligible result
+
+  while (($# > 0)); do
+    case "$1" in
+      -h | --help)
+        __cog_review_loop_summary_usage
+        return 0
+        ;;
+      --run-dir)
+        [[ $# -ge 2 && -n ${2:-} && -z $run_dir ]] || cog::fn::error_raise "MissingArgument" \
+          "missing run directory" "option: --run-dir" "" "run 'cog review-loop-summary --help'"
+        run_dir="$2"
+        shift 2
+        ;;
+      --summary)
+        [[ $# -ge 2 && -n ${2:-} && -z $summary ]] || cog::fn::error_raise "MissingArgument" \
+          "missing summary path" "option: --summary" "" "run 'cog review-loop-summary --help'"
+        summary="$2"
+        shift 2
+        ;;
+      --json)
+        json=true
+        shift
+        ;;
+      -*)
+        cog::fn::error_raise "InvalidInput" \
+          "unknown review-loop-summary commit-gate option" "option: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+      *)
+        cog::fn::error_raise "TooManyArguments" \
+          "too many review-loop-summary commit-gate arguments" "argument: $1" "" "run 'cog review-loop-summary --help'"
+        ;;
+    esac
+  done
+
+  [[ -n $run_dir || -n $summary ]] || cog::fn::error_raise "MissingArgument" \
+    "missing summary target" "usage: cog review-loop-summary commit-gate --run-dir <dir> [--summary <path>]" "" \
+    "run 'cog review-loop-summary --help'"
+  [[ -n $summary ]] || summary="$(__cog_review_loop_summary_default_path "$run_dir")"
+
+  __cog_review_loop_summary_assert_summary "$summary"
+
+  reason="$(__cog_review_loop_summary_extract_reason "$summary")"
+  if __cog_review_loop_summary_commit_eligible "$reason"; then
+    eligible=true
+  else
+    eligible=false
+  fi
+
+  result="$(jq -cn --arg summary_file "$summary" --arg reason "$reason" --argjson eligible "$eligible" \
+    '{ok: true, summary_file: $summary_file, termination_reason: $reason, commit_eligible: $eligible}')"
+
+  if [[ $json == true ]]; then
+    cog::fn::json_emit "$__cog_review_loop_summary_commit_gate_self_check" "$result"
+  else
+    cog::fn::ui_data "RESOLVED ${summary}"
+    if [[ $eligible == true ]]; then
+      cog::fn::ui_data "COMMIT_GATE eligible reason=${reason}"
+    else
+      cog::fn::ui_data "COMMIT_GATE blocked reason=${reason}"
+    fi
+  fi
+
+  [[ $eligible == true ]] || exit "$EX_NOPERM"
+}
+
 cog::cmd::review_loop_summary() {
   local verb="${1:-}"
 
@@ -456,13 +553,17 @@ cog::cmd::review_loop_summary() {
       shift
       __cog_review_loop_summary_validate_cmd "$@"
       ;;
+    commit-gate)
+      shift
+      __cog_review_loop_summary_commit_gate_cmd "$@"
+      ;;
     -*)
       cog::fn::error_raise "InvalidInput" \
         "unknown review-loop-summary option" "option: $verb" "" "run 'cog review-loop-summary --help'"
       ;;
     *)
       cog::fn::error_raise "InvalidInput" \
-        "unknown review-loop-summary mode" "mode: $verb" "" "expected finalize, set-reason, or validate"
+        "unknown review-loop-summary mode" "mode: $verb" "" "expected finalize, set-reason, validate, or commit-gate"
       ;;
   esac
 }
