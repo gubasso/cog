@@ -384,3 +384,32 @@ EOF
   assert_success
   [[ $output == *"Run codex-session orchestration"* ]]
 }
+
+@test "cog codex-runner run-exec pins a model only when --model is passed" {
+  local st="${BATS_TEST_TMPDIR}/model.longrun.json"
+  run cog codex-runner run-exec --mode native --effort medium --model gpt-5.5 --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/model.out" --events "${BATS_TEST_TMPDIR}/model.jsonl" --stderr "${BATS_TEST_TMPDIR}/model.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.model == "gpt-5.5" and
+    (.engine_meta.command | contains("exec -c model=gpt-5.5 -c model_reasoning_effort=medium"))' "$st" >/dev/null
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  assert_file_contains "$CODEX_FAKE_LOG" "exec -c model=gpt-5.5 -c model_reasoning_effort=medium"
+
+  # Omitted --model means the harness default: no model config reaches the CLI.
+  local st2="${BATS_TEST_TMPDIR}/nomodel.longrun.json"
+  run cog codex-runner run-exec --mode native --effort medium --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/nomodel.out" --events "${BATS_TEST_TMPDIR}/nomodel.jsonl" --stderr "${BATS_TEST_TMPDIR}/nomodel.err" --state "$st2"
+  assert_success
+  jq -e '.engine_meta.model == "" and
+    (.engine_meta.command | contains("-c model=") | not)' "$st2" >/dev/null
+}
+
+@test "cog codex-runner run-resume pins a model only when --model is passed" {
+  local st="${BATS_TEST_TMPDIR}/resume-model.longrun.json"
+  run cog codex-runner run-resume --account acct --thread-id thread-a --effort medium --model gpt-5.5 --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/resume-model.md" --events "${BATS_TEST_TMPDIR}/resume-model.jsonl" --stderr "${BATS_TEST_TMPDIR}/resume-model.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.model == "gpt-5.5" and
+    (.engine_meta.command | contains("exec -c model=gpt-5.5 -c model_reasoning_effort=medium resume"))' "$st" >/dev/null
+  run cog codex-runner finalize --state "$st" --max-wall 30
+  assert_success
+  assert_file_contains "$CODEX_FAKE_LOG" "exec -c model=gpt-5.5 -c model_reasoning_effort=medium resume thread-a"
+}

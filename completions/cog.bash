@@ -79,7 +79,6 @@ _cog() {
     plan-review
     plan-slug
     plugin
-    power-grade
     precommit-apply-template
     precommit-detect
     precommit-run

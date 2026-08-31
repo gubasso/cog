@@ -1,6 +1,6 @@
 # Skill → Script Extraction
 
-> The standard for deciding what stays prose in a `SKILL.md` and what moves into a versioned `cog` subcommand. Read this before adding inline shell to a skill or writing a new deterministic helper. Companion to [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) (frontmatter, model/effort tier, and body-style contract), to [`skill-class-contracts.md`](./skill-class-contracts.md) (per-class contracts), and to [`../skills-and-orchestration.md`](../skills-and-orchestration.md) (delegation/fork model).
+> The standard for deciding what stays prose in a `SKILL.md` and what moves into a versioned `cog` subcommand. Read this before adding inline shell to a skill or writing a new deterministic helper. Companion to [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) (frontmatter, explicit model/effort, and body-style contract), to [`skill-class-contracts.md`](./skill-class-contracts.md) (per-class contracts), and to [`../skills-and-orchestration.md`](../skills-and-orchestration.md) (delegation/fork model).
 
 ## Why extract at all
 
@@ -151,7 +151,7 @@ Do not extract or do the following:
 
 ## See Also
 
-- [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) — frontmatter, model/effort tier, and body-style contract; the authoring source of truth.
+- [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) — frontmatter, explicit model/effort, and body-style contract; the authoring source of truth.
 - [`skill-class-contracts.md`](./skill-class-contracts.md) — per-class skill contracts.
 - [`../skills-and-orchestration.md`](../skills-and-orchestration.md) — delegation, fork model, proof-of-delegation.
 - Implementation: `bin/cog`, `lib/commands/`, and `lib/functions/`.

@@ -14,11 +14,11 @@ allowed-tools: Bash Read Write Edit Skill
 
 # Review Loop
 
-Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the run's declared scope: a fresh from-scratch review with full input (task, reviewed plan, context, changed files). Rounds 2+ resume that same reviewer thread — warm context that retains every prior round — and in each resumed round the reviewer both re-checks whether prior findings were resolved and performs a full re-review for new regressions in the applied fixes. Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
+Round 1 invokes the Codex `review-oneshot` twin in orchestrator mode against the run's declared scope: a fresh from-scratch review with full input (task, reviewed plan, context, changed files), run at `high` effort on the harness default model. Rounds 2+ resume that same reviewer thread at `medium` effort — warm context that retains every prior round — and in each resumed round the reviewer both re-checks whether prior findings were resolved and performs a full re-review for new regressions in the applied fixes. Claude delegates finding triage to `/review-findings`, applies fixes marked `FIXED`, and repeats until the review is clean, approved, genuinely stalled, explicitly limited, or aborted by the user.
 
 **Completion contract.** The loop is complete only when `$RUN_DIR/summary.md` exists — assembled and asserted by `cog review-loop-summary finalize --run-dir "$RUN_DIR"`, whose printed `REVIEW_LOOP_OK` line is the run's trailing result line (see Terminate and Result Line Contract). `summary.md` is the single exit artifact for every termination reason, including when the work looks finished after a round's fixes. Reaching a clean or fixed state is not the end of the run; running `finalize` is. Its two inputs — the narrative body (`summary-body.md`) and the termination reason (`termination-reason.txt`) — are maintained as durable run-dir artifacts during the loop, so termination is a single mechanical command with no narrative authored in the moment of stopping. Triage narrative belongs in `summary.md`, never as a freeform reply.
 
-Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`, `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only` to every Codex review prompt. Round 1 runs cold via `run-exec`; rounds 2+ run warm via `run-resume` against the round-1 reviewer thread. Every round runs `--access read-only`, cold and warm alike — a resume inherits nothing from the cold round's sandbox, so the flag is passed explicitly on both.
+Codex invocation mechanics are owned by `cog codex-runner` (`run-exec`, `run-resume`, `extract-thread`, `gate`, `orientation`, `finalize`, `explain-status`). Prepend `cog codex-runner orientation read-only` to every Codex review prompt. Round 1 runs cold via `run-exec --effort high`; rounds 2+ run warm via `run-resume --effort medium` against the round-1 reviewer thread. Every launch states its effort explicitly, and every round runs `--access read-only`, cold and warm alike — a resume inherits nothing from the cold round's sandbox, so both flags are passed explicitly on both. No launch passes `--model`: omitting it accepts the harness default model, deliberately.
 
 **The reviewer owns no writes.** Every Codex round is sandboxed read-only, so this orchestrator performs each write the review needs: the `review-oneshot` Phase 0 setup before the round, and findings normalization after it. The reviewer reads the artifacts, reasons, and returns its findings as its final message, which the Codex CLI writes to `--output-last-message` from outside the sandbox. A prompt that asks the reviewer to run `cog review-init`, `cog review-scope`, `cog review-tech-scope`, or `cog review-normalize-findings` fails on a read-only filesystem.
 
@@ -123,7 +123,22 @@ Re-run it per round with the same declaration file: the working-tree part change
 
 When the run declares only the working tree and the scope has no changed files and no status files, there is nothing to review — terminate with reason `findings-empty`. A declaration naming a commit or a file always resolves to a non-empty scope or fails outright, so that check does not apply to it; `findings-empty` there means only what the Terminate list already says it means — the reviewer returned no findings.
 
-Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$REVIEW_SCOPE_JSON` and `$REVIEW_TECH_SCOPE_JSON` paths. Launch through `cog codex-runner run-exec --access read-only` with `medium` effort — the HIGH tier's Codex cell (`gpt-5.5@medium`). After `finalize`, capture the reviewer thread id for resume:
+Round 1 (cold): build `$RUN_DIR/round-1-prompt.txt` with `$review-oneshot <context> <output-marker>`, a read-only orientation, and the `$REVIEW_SCOPE_JSON` and `$REVIEW_TECH_SCOPE_JSON` paths. Launch it on the harness default model at `high` effort (`$SANDBOX_MODE` comes from the preflight gate; force `fallback` when it is neither `native` nor `fallback`):
+
+```bash
+cog codex-runner run-exec \
+  --mode "$SANDBOX_MODE" \
+  --access read-only \
+  --effort high \
+  --prompt "$RUN_DIR/round-1-prompt.txt" \
+  --output "$RUN_DIR/round-1-findings.json" \
+  --events "$RUN_DIR/round-1-events.jsonl" \
+  --stderr "$RUN_DIR/round-1-stderr.log" \
+  --thread last \
+  --state "$RUN_DIR/round-1.longrun.json"
+```
+
+After `finalize`, capture the reviewer thread id for resume:
 
 ```bash
 cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
@@ -131,8 +146,20 @@ cog codex-runner extract-thread "$RUN_DIR/round-1-events.jsonl" last
 
 `round-1-runner.json` also surfaces `.thread_id` and `.account`; persist both for later rounds.
 
-Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation, the round's fresh scope paths, and the resumed dual instruction above. Launch through `cog codex-runner run-resume --access read-only --account <account>
---thread-id <thread-id>` with `low` effort — the MEDIUM tier's Codex cell (`gpt-5.5@low`).
+Rounds 2+ (warm): build `$RUN_DIR/round-N-prompt.txt` with the read-only orientation, the round's fresh scope paths, and the resumed dual instruction above. Launch at `medium` effort against the round-1 reviewer thread:
+
+```bash
+cog codex-runner run-resume \
+  --account <account> \
+  --thread-id <thread-id> \
+  --access read-only \
+  --effort medium \
+  --prompt "$RUN_DIR/round-N-prompt.txt" \
+  --output "$RUN_DIR/round-N-findings.json" \
+  --events "$RUN_DIR/round-N-events.jsonl" \
+  --stderr "$RUN_DIR/round-N-stderr.log" \
+  --state "$RUN_DIR/round-N.longrun.json"
+```
 
 For every round use `finalize --max-wall <secs>` until it exits 0, 1, or 75; exit 75 means still running and should be polled again.
 

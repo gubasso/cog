@@ -1,10 +1,9 @@
 # Per-class membership contracts for the core skill taxonomy (ADR-0006, DP11).
 # `cog skill-class check` composes the scattered facet checks (skill-prefix-taxonomy,
-# model-effort-tier, producer-blindness, input-fidelity, stage-agnostic) into ONE
+# producer-blindness, input-fidelity, stage-agnostic) into ONE
 # positive class-membership assertion: a governed
 # plan-*/review-*/review-plan-*/executor-* skill must carry all its class
-# prerequisites and none of its prohibitions. The tier expectation cross-references
-# data/model-effort/{claude,codex}/tiers.yaml and is NEVER duplicated here. Marker
+# prerequisites and none of its prohibitions. Marker
 # tokens are the inner text of an HTML comment marker (e.g. `cog-skill: input-fidelity`
 # matches `<!-- cog-skill: input-fidelity -->`).
 skill_classes:
@@ -12,34 +11,29 @@ skill_classes:
     summary: Emits a self-contained implementation plan into the structural plan output contract.
     required_markers: ["cog-skill: plan-emitter"]
     forbidden_markers: []
-    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: high)"
     io_contract: Input is a goal or orientation; output is a self-contained plan in the structural plan contract.
     producer_obligations: Output is consumed producer-blind by whatever reviews or executes it.
   review:
     summary: Reviews code or a diff and emits the shared structured-findings contract.
     required_markers: []
     forbidden_markers: ["cog-skill: plan-emitter"]
-    tier_basis: "data/model-effort/claude/tiers.yaml (review-oneshot: high; otherwise registry or exempt)"
     io_contract: Input is a diff or scope; output is the shared structured-findings contract.
     producer_obligations: Findings are consumed producer-blind by review-findings triage.
   review-plan:
     summary: Reviews a plan before implementation and emits an annotated delta, not a plan.
     required_markers: []
     forbidden_markers: ["cog-skill: plan-emitter"]
-    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: high)"
     io_contract: Input is a plan; output is an annotated plan-review delta, never a self-contained plan.
     producer_obligations: A plan-naming consumer retains the review and folds it with the base plan before handoff.
   executor:
     summary: Executes one prompt or plan to completion in the caller's session.
     required_markers: []
     forbidden_markers: ["cog-skill: plan-emitter"]
-    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: medium)"
     io_contract: Input is one prompt/plan (-ar <path>); output is the canonical execution report.
     producer_obligations: Reads its input contract blind to the producer.
   bootstrap:
     summary: Scaffolds or reconciles one project domain, delegating deterministic detection and copying to cog.
     required_markers: []
     forbidden_markers: ["cog-skill: plan-emitter"]
-    tier_basis: "data/model-effort/claude/tiers.yaml (prefix default: low)"
     io_contract: Input is the target project plus operator intent; output is reconciled project files via cog *-apply, with scratch under cog rundir.
     producer_obligations: A worker that ships cog templates runs the domain-worker routine (cog bootstrap-template-review check|stamp) each run, once per domain it owns; deterministic detection and copying delegate to cog.

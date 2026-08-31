@@ -216,9 +216,6 @@ The command list and short descriptions are sourced from command modules under
 *plugin*
 	Inspect external cog-\* command plugins.
 
-*power-grade*
-	Inspect and validate model/effort power grades.
-
 *precommit-apply-template*
 	Apply a pre-commit template to a project.
 

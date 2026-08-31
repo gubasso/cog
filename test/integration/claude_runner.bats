@@ -258,3 +258,22 @@ EOF
   assert_success
   assert_output --partial "cog claude-runner run-exec"
 }
+
+@test "cog claude-runner run-exec pins a model only when --model is passed" {
+  local st="${BATS_TEST_TMPDIR}/model.longrun.json"
+  run cog claude-runner run-exec --access read-only --effort low --model haiku \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/model.out" \
+    --events "${BATS_TEST_TMPDIR}/model.jsonl" --stderr "${BATS_TEST_TMPDIR}/model.err" --state "$st"
+  assert_success
+  jq -e '.engine_meta.model == "haiku" and
+    (.engine_meta.command | contains("--model haiku --effort low"))' "$st" >/dev/null
+
+  # Omitted --model means the harness default: no --model flag reaches the CLI.
+  local st2="${BATS_TEST_TMPDIR}/nomodel.longrun.json"
+  run cog claude-runner run-exec --access read-only --effort low \
+    --prompt "${BATS_TEST_TMPDIR}/prompt.md" --output "${BATS_TEST_TMPDIR}/nomodel.out" \
+    --events "${BATS_TEST_TMPDIR}/nomodel.jsonl" --stderr "${BATS_TEST_TMPDIR}/nomodel.err" --state "$st2"
+  assert_success
+  jq -e '.engine_meta.model == "" and
+    (.engine_meta.command | contains("--model") | not)' "$st2" >/dev/null
+}

@@ -13,7 +13,7 @@
 __cog_claude_runner_self_check='.action != null and .ok != null'
 
 __cog_claude_runner_usage() {
-  cog::fn::ui_data "Usage: cog claude-runner run-exec [--access <read-only|write>] --effort <tier> [--account <name>] [--profile <name>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
+  cog::fn::ui_data "Usage: cog claude-runner run-exec [--access <read-only|write>] --effort <effort> [--model <model>] [--account <name>] [--profile <name>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
   cog::fn::ui_data "Usage: cog claude-runner finalize --state <file> [--max-wall <secs>]"
   cog::fn::ui_data "Usage: cog claude-runner gate <out.json>"
 }
@@ -70,6 +70,10 @@ __cog_claude_runner_run_exec() {
         effort="${2:-}"
         shift 2
         ;;
+      --model)
+        model="${2:-}"
+        shift 2
+        ;;
       --account)
         account="${2:-}"
         shift 2
@@ -102,7 +106,7 @@ __cog_claude_runner_run_exec() {
     esac
   done
   [[ -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-exec argument" "usage: cog claude-runner run-exec [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
+    "missing run-exec argument" "usage: cog claude-runner run-exec [--access <read-only|write>] --effort <effort> [--model <model>] --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog claude-runner --help'"
   case "$access" in
     read-only | write) ;;

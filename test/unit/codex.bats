@@ -383,3 +383,37 @@ EOF
   run cog::fn::codex_reconstruct_status "$events" "$out"
   assert_output "nonzero"
 }
+
+@test "codex_exec_argv pins a model only when one is passed" {
+  local prompt="${BATS_TEST_TMPDIR}/pin.md"
+  printf 'p\n' >"$prompt"
+  local -a argv=()
+  cog::fn::codex_exec_argv native medium "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv gpt-5.5
+  [[ ${argv[*]} == *"exec -c model=gpt-5.5 -c model_reasoning_effort=medium"* ]]
+
+  argv=()
+  cog::fn::codex_exec_argv native medium "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+  [[ ${argv[*]} != *"-c model="* ]]
+}
+
+@test "codex_resume_argv pins a model only when one is passed" {
+  local prompt="${BATS_TEST_TMPDIR}/pin-resume.md"
+  printf 'p\n' >"$prompt"
+  local -a argv=()
+  cog::fn::codex_resume_argv acct medium thr-1 "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv read-only gpt-5.5
+  [[ ${argv[*]} == *"exec -c model=gpt-5.5 -c model_reasoning_effort=medium resume thr-1"* ]]
+
+  argv=()
+  cog::fn::codex_resume_argv acct medium thr-1 "$prompt" "${BATS_TEST_TMPDIR}/o.md" argv
+  [[ ${argv[*]} == *"exec -c model_reasoning_effort=medium resume thr-1"* ]]
+}
+
+@test "codex_exec_command and codex_resume_command render the model fragment when given" {
+  run cog::fn::codex_exec_command native medium prompt.md out.md events.jsonl stderr.log gpt-5.5
+  assert_success
+  [[ $output == *"exec -c model=gpt-5.5 -c model_reasoning_effort=medium"* ]]
+
+  run cog::fn::codex_resume_command acct medium thread-1 prompt.md out.md events.jsonl read-only gpt-5.5
+  assert_success
+  [[ $output == *"exec -c model=gpt-5.5 -c model_reasoning_effort=medium resume"* ]]
+}

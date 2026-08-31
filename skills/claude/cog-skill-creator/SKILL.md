@@ -4,7 +4,7 @@ description: >
   Delegates deterministic name validation, collision checks, scaffold path computation, draft
   validation, and skill linting to the cog CLI while preserving authoring interview and skill design
   judgment in prose. Drafts skills that already satisfy the full skill contract: prefix taxonomy,
-  model/effort tier, plan-mode and plan-validate-execute gates, context-brief gate, input-fidelity, producer-blindness,
+  explicit model/effort, plan-mode and plan-validate-execute gates, context-brief gate, input-fidelity, producer-blindness,
   stage-agnostic identifiers, lean-positive prose, twin naming, and the per-class skill-class
   contract. Use when the user says "cog-skill-creator", "create a skill", "new skill", "author a
   skill", or "scaffold a skill".
@@ -27,8 +27,7 @@ Use `--personal` only when the user explicitly asks for a personal skill. Keep C
 
 The authoring references ship with `cog` and resolve through `cog skill-refs path <rel>`; resolve each at point of use. Read `$(cog skill-refs path skill-authoring/skill-script-extraction.md)` before drafting, and `$(cog skill-refs path skill-authoring/skill-class-contracts.md)` for the per-class contract. The `cog` surface is the authoritative, machine-checkable contract — query it rather than relying on any external doc:
 
-- `cog skill-class list|show --class <c>` — the per-class required/forbidden markers, tier basis, and input/output obligations.
-- `cog power-grade skill-tier --skill <name>` / `cog power-grade tier --name <tier>` — the expected model/effort tier and the registry escape hatch.
+- `cog skill-class list|show --class <c>` — the per-class required/forbidden markers and input/output obligations.
 - `cog skill-refs path orchestration/plan-mode-gate.md` / `orchestration/plan-validate-execute-gate.md` / `orchestration/context-brief-gate.md` — the canonical gate directives that orchestrators and mutators point to.
 - `cog research-shelf list|get` — dated, sourced spec-level findings tagged `skill-authoring`; consult them before asserting a frontmatter or gating fact, and re-research any entry past its `revalidate-after` per the shelf contract.
 - `cog skill-class check --skill <path>` and `cog skill-lint <path>` — the draft gates.
@@ -61,7 +60,7 @@ Classify the new skill's behavior during the interview and choose a name whose p
 cog skill-class show --class <plan|review|review-plan|executor|runner|bootstrap> --json
 ```
 
-The contract states the required markers, the forbidden markers, the expected tier, and the producer/consumer obligations for that class. `cog skill-lint`'s `skill-class-contract` rule fails a draft that misses any prerequisite or carries any prohibition.
+The contract states the required markers, the forbidden markers, and the producer/consumer obligations for that class. `cog skill-lint`'s `skill-class-contract` rule fails a draft that misses any prerequisite or carries any prohibition.
 
 ## Twin naming
 
@@ -129,7 +128,7 @@ Fix every reported issue before presenting the draft.
 
 9. Run the DRY/SoT check. Do not duplicate command logic already present in `lib/commands/` or shared mechanics already present in `lib/functions/`.
 
-10. Set `model:`/`effort:` to the class's expected tier (`cog power-grade skill-tier --skill <name>`). Default to no override for exploration/design skills so they ride the session default; pin the procedural tier (`model: opus` + `effort: low`) only for thin orchestration over deterministic mechanics; never select Sonnet.
+10. Choose `model:`/`effort:` explicitly for what the skill itself does. Default to no override so the skill rides the session default; pin `model: opus` + `effort: low` only for thin orchestration over deterministic mechanics; never select Sonnet. The same explicitness governs the body: every coding-agent launch the draft ships states a literal `--effort <value>` on the command, and passes `--model` only for a non-default model — an omitted flag means the harness default is accepted, deliberately (ADR-0036).
 
 11. Draft frontmatter and body together. Include only frontmatter fields justified by the interview and allowed by the runtime contract. Use a folded `description` when the trigger text is long. Keep prose lean, objective, and positively framed.
 

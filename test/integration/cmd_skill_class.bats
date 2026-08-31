@@ -38,14 +38,14 @@ write_skill() {
   run cog skill-class show --class executor --json
   assert_success
   [[ "$(jq -r '.class' <<<"$output")" == "executor" ]]
-  [[ "$(jq -r '.contract.tier_basis' <<<"$output")" == *"medium"* ]]
+  [[ "$(jq -r '.contract.io_contract' <<<"$output")" == *"execution report"* ]]
 }
 
 @test "cog skill-class show returns the bootstrap class contract" {
   run cog skill-class show --class bootstrap --json
   assert_success
   [[ "$(jq -r '.class' <<<"$output")" == "bootstrap" ]]
-  [[ "$(jq -r '.contract.tier_basis' <<<"$output")" == *"low"* ]]
+  [[ "$(jq -r '.contract.io_contract' <<<"$output")" == *"cog rundir"* ]]
 }
 
 @test "cog skill-class show fails closed on an unknown class" {

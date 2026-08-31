@@ -109,7 +109,8 @@ cog::fn::codex_exec_command() {
   local output_file="${4:-}"
   local events_file="${5:-}"
   local stderr_file="${6:-}"
-  local codex_effort
+  local model="${7:-}"
+  local codex_effort model_frag=""
 
   __cog_codex_require_arg "$mode" "mode" "cog::fn::codex_exec_command"
   __cog_codex_validate_mode "$mode"
@@ -118,12 +119,13 @@ cog::fn::codex_exec_command() {
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_exec_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_exec_command"
   codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
+  [[ -n $model ]] && model_frag="-c model=$model "
 
   case "$mode" in
     native)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_command"
       cat <<EOF
-codex-session exec -c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
+codex-session exec ${model_frag}-c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
   < /dev/null \\
@@ -134,7 +136,7 @@ EOF
     fallback)
       __cog_codex_require_arg "$stderr_file" "stderr_file" "cog::fn::codex_exec_command"
       cat <<EOF
-codex-session exec -c model_reasoning_effort=$codex_effort \\
+codex-session exec ${model_frag}-c model_reasoning_effort=$codex_effort \\
   -c 'sandbox_permissions=["disk-full-read-access"]' --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
@@ -145,7 +147,7 @@ EOF
       ;;
     quick-auto)
       cat <<EOF
-codex-session --account auto exec -c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
+codex-session --account auto exec ${model_frag}-c model_reasoning_effort=$codex_effort --sandbox read-only --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
   > "$events_file"
@@ -153,7 +155,7 @@ EOF
       ;;
     danger)
       cat <<EOF
-codex-session exec -c model_reasoning_effort=$codex_effort \\
+codex-session exec ${model_frag}-c model_reasoning_effort=$codex_effort \\
   --dangerously-bypass-approvals-and-sandbox --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\
@@ -175,7 +177,9 @@ cog::fn::codex_exec_argv() {
   local prompt_file="${3:-}"
   local output_file="${4:-}"
   local outvar="${5:-}"
+  local model="${6:-}"
   local codex_effort prompt
+  local -a model_args=()
 
   __cog_codex_require_arg "$mode" "mode" "cog::fn::codex_exec_argv"
   __cog_codex_validate_mode "$mode"
@@ -185,25 +189,26 @@ cog::fn::codex_exec_argv() {
   __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_exec_argv"
   codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
+  [[ -n $model ]] && model_args=(-c "model=$model")
 
   # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
   local -n __argv="$outvar"
   case "$mode" in
     native)
-      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
+      __argv=(codex-session exec "${model_args[@]}" -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
         --output-last-message "$output_file" "$prompt")
       ;;
     fallback)
-      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort"
+      __argv=(codex-session exec "${model_args[@]}" -c "model_reasoning_effort=$codex_effort"
         -c 'sandbox_permissions=["disk-full-read-access"]' --json
         --output-last-message "$output_file" "$prompt")
       ;;
     quick-auto)
-      __argv=(codex-session --account auto exec -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
+      __argv=(codex-session --account auto exec "${model_args[@]}" -c "model_reasoning_effort=$codex_effort" --sandbox read-only --json
         --output-last-message "$output_file" "$prompt")
       ;;
     danger)
-      __argv=(codex-session exec -c "model_reasoning_effort=$codex_effort"
+      __argv=(codex-session exec "${model_args[@]}" -c "model_reasoning_effort=$codex_effort"
         --dangerously-bypass-approvals-and-sandbox --json
         --output-last-message "$output_file" "$prompt")
       ;;
@@ -218,8 +223,9 @@ cog::fn::codex_resume_argv() {
   local output_file="${5:-}"
   local outvar="${6:-}"
   local access="${7:-read-only}"
+  local model="${8:-}"
   local codex_effort prompt
-  local -a sandbox_args=()
+  local -a sandbox_args=() model_args=()
 
   __cog_codex_validate_access "$access"
   mapfile -t sandbox_args < <(__cog_codex_resume_sandbox_args "$access")
@@ -231,10 +237,11 @@ cog::fn::codex_resume_argv() {
   __cog_codex_require_arg "$outvar" "outvar" "cog::fn::codex_resume_argv"
   codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
   prompt="$(__cog_codex_read_prompt "$prompt_file")"
+  [[ -n $model ]] && model_args=(-c "model=$model")
 
   # shellcheck disable=SC2178 # Nameref to the caller's array; assigned as an array below.
   local -n __argv="$outvar"
-  __argv=(codex-session --account "$account" exec -c "model_reasoning_effort=$codex_effort" resume "$thread_id"
+  __argv=(codex-session --account "$account" exec "${model_args[@]}" -c "model_reasoning_effort=$codex_effort" resume "$thread_id"
     "${sandbox_args[@]}" --json
     --output-last-message "$output_file" "$prompt")
 }
@@ -247,7 +254,8 @@ cog::fn::codex_resume_command() {
   local output_file="${5:-}"
   local events_file="${6:-}"
   local access="${7:-read-only}"
-  local codex_effort sandbox_args
+  local model="${8:-}"
+  local codex_effort sandbox_args model_frag=""
 
   __cog_codex_validate_access "$access"
   sandbox_args="$(__cog_codex_resume_sandbox_args "$access" | tr '\n' ' ')"
@@ -259,9 +267,10 @@ cog::fn::codex_resume_command() {
   __cog_codex_require_arg "$output_file" "output_file" "cog::fn::codex_resume_command"
   __cog_codex_require_arg "$events_file" "events_file" "cog::fn::codex_resume_command"
   codex_effort="$(__cog_codex_map_effort "$effort")" || return $?
+  [[ -n $model ]] && model_frag="-c model=$model "
 
   cat <<EOF
-codex-session --account "$account" exec -c model_reasoning_effort=$codex_effort resume "$thread_id" \\
+codex-session --account "$account" exec ${model_frag}-c model_reasoning_effort=$codex_effort resume "$thread_id" \\
   $sandbox_args --json \\
   --output-last-message "$output_file" \\
   "\$(cat "$prompt_file")" \\

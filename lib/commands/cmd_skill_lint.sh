@@ -1162,51 +1162,28 @@ __cog_skill_lint_check_artifact_write_ownership() {
   return "$failed"
 }
 
-# model-effort-tier: a governed Claude skill's model:/effort: frontmatter must
-# resolve to the tier the policy expects for it. The expected tier comes from the
-# authoritative registry in data/model-effort/claude (per-tier
-# `skills` lists) with a prefix-default fallback; ungoverned skills are exempt.
-# Absent model+effort rides the session default (HIGH). The known exceptions
-# (executor-prex high; codex launchers and review-findings low) live in the
-# registry, not here. See docs/decisions/ADR-0014-model-effort-and-power-grade.md.
-__cog_skill_lint_check_model_effort_tier() {
-  local file="$1" runtime name expected model effort actual
-  runtime="$(cog::fn::skill::runtime_for_path "$file")"
-  [[ $runtime == claude ]] || return 0
-
-  name="$(cog::fn::skill::frontmatter_name "$file")"
-  expected="$(cog::fn::skill::expected_tier "$name")"
-  [[ $expected == exempt ]] && return 0
-
-  model="$(cog::fn::skill::frontmatter_value "$file" model)"
-  effort="$(cog::fn::skill::frontmatter_value "$file" effort)"
-  actual="$(cog::fn::skill::tier_for_frontmatter "$model" "$effort")"
-  [[ $actual == "$expected" ]] && return 0
-
-  __cog_skill_lint_finding "$file" 1 "model-effort-tier" \
-    "model/effort resolves to tier '${actual}' (model=${model:-<default>} effort=${effort:-<default>}) but policy expects tier '${expected}'" \
-    "match the expected tier's cell (see 'cog power-grade tier --name ${expected}'), or pin the skill in the right tier's 'skills' list in data/model-effort/claude/tiers.yaml"
-  return 1
-}
-
-# model-effort-prose-label: a prose reference to a model/effort/power-grade cell
-# must name its kind correctly — a cell is a (model, effort) row (named by model@effort
-# or its slug); a tier is a named rung (named "the <TIER> tier") — per ADR-0014. Using
-# a tier word as the noun "cell" (e.g. "the Codex HIGH cell") conflates the two. Scans
-# runtime SKILL.md bodies, skipping frontmatter (governed by model-effort-tier) and
-# fenced code blocks (where an explicit `--effort <val>` is already unambiguous). An
-# inline `<!-- cog-skill-lint: allow-model-ref-label <reason> -->` on the preceding line
-# records a deliberate exception. See docs/decisions/ADR-0017-skill-authoring-and-lint.md.
-__cog_skill_lint_check_model_effort_prose_label() {
+# model-effort-indirection: a runtime skill body must state model and effort
+# directly, never through the retired tier/cell indirection (ADR-0036). Every
+# delegation names its effort as a literal --effort on the command, an omitted
+# --model/--effort means the harness default is accepted, and prose never routes
+# through "power-grade", the tier ladder ("the HIGH tier"), "cells", or
+# model@effort slugs. Scans runtime SKILL.md bodies, skipping frontmatter and
+# fenced code blocks (where an explicit `--effort <val>` is already the rule). An
+# inline `<!-- cog-skill-lint: allow-model-effort-indirection <reason> -->` on the
+# preceding line records a deliberate exception.
+__cog_skill_lint_check_model_effort_indirection() {
   local file="$1" runtime
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
   [[ -n $runtime ]] || return 0
 
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
-  local pending_allow=false lc tier
+  local pending_allow=false lc
   local fence_re='^[[:space:]]*```+'
-  local marker_re='^[[:space:]]*<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-model-ref-label[[:space:]]+[^>]*-->[[:space:]]*$'
-  local tier_cell_re='(^|[^a-z])(xhigh|high|medium|low|cheap)[[:space:]]+(codex[[:space:]]+|claude[[:space:]]+)?cells?([^a-z]|$)'
+  local marker_re='^[[:space:]]*<!--[[:space:]]*cog-skill-lint:[[:space:]]*allow-model-effort-indirection[[:space:]]+[^>]*-->[[:space:]]*$'
+  local power_grade_re='power-grade'
+  local tier_re='(^|[^a-z])(xhigh|high|medium|low|cheap)[[:space:]]+tiers?([^a-z]|$)'
+  local cell_re='(^|[^a-z])(xhigh|high|medium|low|cheap|codex|claude|model)('"'"'s)?[[:space:]]+(codex[[:space:]]+|claude[[:space:]]+)?cells?([^a-z]|$)'
+  local slug_re='[a-z0-9._-]+@(minimal|low|medium|high|xhigh|max|none)([^a-z]|$)'
 
   # shellcheck disable=SC2094
   while IFS= read -r line || [[ -n $line ]]; do
@@ -1237,15 +1214,14 @@ __cog_skill_lint_check_model_effort_prose_label() {
     fi
 
     lc="${line,,}"
-    if [[ $lc =~ $tier_cell_re ]]; then
-      tier="${BASH_REMATCH[2]}"
+    if [[ $lc =~ $power_grade_re || $lc =~ $tier_re || $lc =~ $cell_re || $lc =~ $slug_re ]]; then
       if [[ $pending_allow == true ]]; then
         pending_allow=false
         continue
       fi
-      __cog_skill_lint_finding "$file" "$line_no" "model-effort-prose-label" \
-        "names a power-grade tier as a cell ('${tier} cell'); a cell is a (model, effort) row, a tier is a named rung" \
-        "name the tier ('the ${tier^^} tier') or the explicit cell (model@effort or its slug), per ADR-0014"
+      __cog_skill_lint_finding "$file" "$line_no" "model-effort-indirection" \
+        "routes model/effort through the retired tier/cell indirection instead of stating it directly" \
+        "state the effort as a literal --effort on the command (and --model only for a non-default model); omission means the harness default, per ADR-0036"
       failed=1
     fi
 
@@ -1255,9 +1231,150 @@ __cog_skill_lint_check_model_effort_prose_label() {
   return "$failed"
 }
 
+# agent-launch-explicit-effort: every coding-agent launch a skill ships must
+# state its effort explicitly (ADR-0036). Scans fenced code blocks in runtime
+# SKILL.md bodies and their references/*.md companions, joins backslash-continued
+# lines into one logical command, and fails any `codex-runner run-exec|run-resume`
+# or `claude-runner run-exec` invocation whose --effort is missing or is not a
+# literal provider vocabulary value. --model stays optional: omitting it accepts
+# the harness default model, deliberately.
+# Reduce one logical command to the text the shell would actually parse as the
+# command: single- and double-quoted spans are blanked (their content is
+# argument data, never an option), and the command is truncated at the first
+# unquoted `#` that starts a word (a comment runs to end of line, so nothing
+# after it reaches the runner). Escaped quotes inside quoted spans are not
+# modeled; skill fences do not use them.
+__cog_skill_lint_agent_launch_sanitize() {
+  local raw="$1" out="" ch i in_sq=false in_dq=false
+  local n=${#raw}
+  for ((i = 0; i < n; i++)); do
+    ch="${raw:i:1}"
+    if [[ $in_sq == true ]]; then
+      [[ $ch == "'" ]] && in_sq=false
+      continue
+    fi
+    if [[ $in_dq == true ]]; then
+      [[ $ch == '"' ]] && in_dq=false
+      continue
+    fi
+    case "$ch" in
+      "'")
+        in_sq=true
+        continue
+        ;;
+      '"')
+        in_dq=true
+        continue
+        ;;
+      '#')
+        if [[ -z $out || ${out: -1} == ' ' || ${out: -1} == $'\t' ]]; then
+          break
+        fi
+        ;;
+    esac
+    out+="$ch"
+  done
+  printf '%s\n' "$out"
+}
+
+# Flush one accumulated logical command for the explicit-effort scan below.
+# Called only from __cog_skill_lint_scan_agent_launch_file; reads and writes its
+# caller's locals (scan_file, logical, logical_start, failed) through bash
+# dynamic scoping. The value must be a literal word from the launched runner's
+# own effort vocabulary in the space-separated form its parser accepts — a
+# variable, a bare flag, an `--effort=<v>` spelling, a wrong-provider word, or
+# an unrelated --effort substring is not an explicit, launchable statement of
+# effort ("none" is Claude's explicit omission spelling and counts there).
+__cog_skill_lint_agent_launch_flush() {
+  local launch_re='(codex-runner[[:space:]]+run-(exec|resume)|claude-runner[[:space:]]+run-exec)([^a-z-]|$)'
+  local codex_effort_re='--effort[[:space:]]+(minimal|low|medium|high|xhigh)([[:space:]]|$)'
+  local claude_effort_re='--effort[[:space:]]+(low|medium|high|xhigh|max|none)([[:space:]]|$)'
+  local effort_re vocab sanitized
+  [[ -n $logical ]] || return 0
+  sanitized="$(__cog_skill_lint_agent_launch_sanitize "$logical")"
+  if [[ $sanitized =~ $launch_re ]]; then
+    if [[ $sanitized =~ claude-runner[[:space:]]+run-exec ]]; then
+      effort_re="$claude_effort_re" vocab="low|medium|high|xhigh|max|none"
+    else
+      effort_re="$codex_effort_re" vocab="minimal|low|medium|high|xhigh"
+    fi
+    if ! [[ $sanitized =~ $effort_re ]]; then
+      __cog_skill_lint_finding "$scan_file" "$logical_start" "agent-launch-explicit-effort" \
+        "coding-agent launch carries no literal --effort value from its runner's vocabulary" \
+        "pass a literal --effort <${vocab}> (space-separated form); omit --model unless a non-default model is required, per ADR-0036"
+      failed=1
+    fi
+  fi
+  logical=""
+  logical_start=0
+  return 0
+}
+
+__cog_skill_lint_scan_agent_launch_file() {
+  local scan_file="$1"
+  local line line_no=0 failed=0 in_fence=false continued
+  local frag logical="" logical_start=0
+  local fence_re='^[[:space:]]*```+'
+
+  while IFS= read -r line || [[ -n $line ]]; do
+    line_no=$((line_no + 1))
+
+    if [[ $line =~ $fence_re ]]; then
+      __cog_skill_lint_agent_launch_flush
+      if [[ $in_fence == true ]]; then in_fence=false; else in_fence=true; fi
+      continue
+    fi
+    [[ $in_fence == true ]] || continue
+
+    # Join a backslash-continued command the way the shell does: the escape is
+    # consumed, so `cog codex-runner \` + `run-exec` still reads as one verb.
+    continued=false
+    frag="$line"
+    if [[ $frag == *\\ ]]; then
+      continued=true
+      while [[ $frag == *\\ ]]; do frag="${frag%\\}"; done
+    fi
+    if [[ -z $logical ]]; then
+      logical_start=$line_no
+      logical="$frag"
+    else
+      logical="${logical} ${frag}"
+    fi
+    if [[ $continued == false ]]; then
+      __cog_skill_lint_agent_launch_flush
+    fi
+  done <"$scan_file"
+  __cog_skill_lint_agent_launch_flush
+
+  return "$failed"
+}
+
+__cog_skill_lint_check_agent_launch_explicit_effort() {
+  local file="$1" runtime failed=0 ref ref_dir
+  runtime="$(cog::fn::skill::runtime_for_path "$file")"
+  [[ -n $runtime ]] || return 0
+
+  if ! __cog_skill_lint_scan_agent_launch_file "$file"; then
+    failed=1
+  fi
+
+  # A skill's launch surface includes its Markdown companions: a reference file
+  # can carry the executable launch block the SKILL.md only points at.
+  ref_dir="$(dirname -- "$file")/references"
+  [[ -d $ref_dir ]] || return "$failed"
+  while IFS= read -r ref; do
+    [[ -n $ref && -f $ref && -r $ref ]] || continue
+    if ! __cog_skill_lint_scan_agent_launch_file "$ref"; then
+      failed=1
+    fi
+  done < <(find "$ref_dir" -type f -name '*.md' -print 2>/dev/null | sort)
+
+  return "$failed"
+}
+
 # skill-class-contract: one positive class-membership assertion that composes the
-# scattered facet checks (skill-prefix-taxonomy, model-effort-tier,
-# producer-blindness, input-fidelity, stage-agnostic) per the data
+# scattered facet checks (skill-prefix-taxonomy, producer-blindness,
+# input-fidelity, stage-agnostic) per the data
 # SoT in data/skill-class/contracts.yaml. The facet rules stay authoritative for
 # their facet; this rule asserts the per-class union is satisfied for the declared
 # class. An ungoverned (other-class) skill passes. See ADR-0006 / DP11.
@@ -1420,10 +1537,10 @@ __cog_skill_lint_scan_file() {
   if ! __cog_skill_lint_check_artifact_write_ownership "$file"; then
     failed=1
   fi
-  if ! __cog_skill_lint_check_model_effort_tier "$file"; then
+  if ! __cog_skill_lint_check_model_effort_indirection "$file"; then
     failed=1
   fi
-  if ! __cog_skill_lint_check_model_effort_prose_label "$file"; then
+  if ! __cog_skill_lint_check_agent_launch_explicit_effort "$file"; then
     failed=1
   fi
   if ! __cog_skill_lint_check_skill_class "$file"; then

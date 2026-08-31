@@ -2,7 +2,7 @@
 
 # Skill-class contract surface (ADR-0006 / DP11). The data SoT lives at
 # data/skill-class/contracts.yaml and declares, per governed class, the required
-# and forbidden markers and the tier basis. This helper composes the existing
+# and forbidden markers and the input/output obligations. This helper composes the existing
 # cog::fn::skill::* facet predicates into one positive class-membership assertion;
 # it never duplicates their logic.
 
@@ -66,11 +66,10 @@ cog::fn::skill_class::has_marker() {
 }
 
 # Assert a skill's prefix class carries every required prerequisite and no
-# prohibition. Emits cog.skill-class.check.v1 with class, ok, missing[],
-# forbidden_present[], and the resolved tier. The Claude-only tier facet mirrors
-# the facet rule's runtime gating; an `other`-class skill is ungoverned and passes.
+# prohibition. Emits cog.skill-class.check.v1 with class, ok, missing[], and
+# forbidden_present[]; an `other`-class skill is ungoverned and passes.
 cog::fn::skill_class::check_json() {
-  local file="$1" name runtime class data contract model effort expected actual
+  local file="$1" name runtime class data contract
   [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" \
     "skill file is not readable" "path: ${file}" "" "pass a readable SKILL.md"
   name="$(cog::fn::skill::frontmatter_name "$file")"
@@ -78,7 +77,6 @@ cog::fn::skill_class::check_json() {
   class="$(cog::fn::skill::classify_prefix "$name")"
 
   local -a missing=() forbidden_present=()
-  local tier_expected="exempt" tier_actual="" tier_ok=true
 
   if cog::fn::skill_class::is_governed_class "$class"; then
     data="$(cog::fn::skill_class::data_json)"
@@ -96,22 +94,6 @@ cog::fn::skill_class::check_json() {
       [[ -n $m ]] || continue
       cog::fn::skill_class::has_marker "$file" "$m" && forbidden_present+=("marker:${m}")
     done < <(jq -r '.forbidden_markers[]?' <<<"$contract")
-
-    # Tier (Claude registry/prefix expectation; Codex has no Claude tier).
-    if [[ $runtime == claude ]]; then
-      expected="$(cog::fn::skill::expected_tier "$name")"
-      tier_expected="$expected"
-      if [[ $expected != exempt ]]; then
-        model="$(cog::fn::skill::frontmatter_value "$file" model)"
-        effort="$(cog::fn::skill::frontmatter_value "$file" effort)"
-        actual="$(cog::fn::skill::tier_for_frontmatter "$model" "$effort")"
-        tier_actual="$actual"
-        [[ $actual == "$expected" ]] || {
-          tier_ok=false
-          missing+=("tier:${expected}")
-        }
-      fi
-    fi
   fi
 
   local ok=true
@@ -127,11 +109,7 @@ cog::fn::skill_class::check_json() {
     --argjson governed "$(cog::fn::skill_class::is_governed_class "$class" && printf true || printf false)" \
     --argjson missing "$(cog::fn::skill::json_string_array "${missing[@]}")" \
     --argjson forbidden_present "$(cog::fn::skill::json_string_array "${forbidden_present[@]}")" \
-    --arg tier_expected "$tier_expected" \
-    --arg tier_actual "$tier_actual" \
-    --argjson tier_ok "$tier_ok" \
     '{schema: $schema, ok: $ok, file: $file, skill: $skill, runtime: $runtime,
       class: $class, governed: $governed, missing: $missing,
-      forbidden_present: $forbidden_present,
-      tier: {expected: $tier_expected, actual: $tier_actual, ok: $tier_ok}}'
+      forbidden_present: $forbidden_present}'
 }

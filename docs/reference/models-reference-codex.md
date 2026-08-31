@@ -6,7 +6,7 @@ Data collected: 2026-06-19; re-verified 2026-06-25 (effort enums, gpt-5.4-mini, 
 
 Revalidate by: 2026-09-25, or sooner on any new model release, CLI availability change, or pricing change
 
-Sources (trust tiers and the full allowlist live in [`data/power-grade/source-allowlist`](../../data/power-grade/source-allowlist/)):
+Sources:
 
 - PRIMARY: <https://developers.openai.com/api/docs/models/gpt-5.5>
 - PRIMARY: <https://developers.openai.com/api/docs/models/gpt-5.4>
@@ -48,38 +48,6 @@ COMMUNITY-MEASURED, NOT official; SECONDARY/LOW. Values are relative to `medium 
 
 OpenAI does not publish official per-effort token multipliers. Treat this table as a planning aid for quota risk, not a billing guarantee.
 
-## Power Grade Inputs
-
-This section is the dated Codex/GPT evidence row set consumed by `data/power-grade/matrix`. It consolidates existing sourced facts from this reference; it does not add newly researched benchmark numbers.
-
-| Source row id               | Model                 | Effort axis for matrix                                                      | Coding benchmark input                                                                                                                      | Cost input                                                                                 | Effort-quality input                                                                            | Effort-cost input                                                                                                 | Power Grade caveats                                                                                |
-| --------------------------- | --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `codex:gpt-5.5`             | `gpt-5.5`             | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `medium` | SWE-bench Verified about 88.7% (MEDIUM/SECONDARY); Terminal-Bench 2.0 82.7% (MEDIUM/SECONDARY); SWE-bench Pro 58.6% (SECONDARY)             | $5 input / $0.50 cached / $30 output per MTok; long-context multiplier above 272K input    | OpenAI latest-model guidance names medium the balanced default; high/xhigh are escalation tiers | Community-measured effort burn: minimal about 0.1x, low about 0.3x, medium 1x, high about 3-5x, xhigh about 8-15x | Benchmarks are secondary; effort multipliers are COMMUNITY-MEASURED/LOW                            |
-| `codex:gpt-5.4`             | `gpt-5.4`             | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `none`   | SWE-bench Pro about 57.7-59.1% at `xhigh` (SECONDARY); SWE-bench Verified about 80% (LOW-MEDIUM/SECONDARY)                                  | $2.50 input / $0.25 cached / $15 output per MTok; long-context multiplier above 272K input | Defaults to lowest API effort; high is a large reasoning-budget leap                            | Community-measured effort burn table applies directionally                                                        | `gpt-5.4 @ high` is an anti-pattern as a default cost-saving tier                                  |
-| `codex:gpt-5.4-mini`        | `gpt-5.4-mini`        | Codex CLI `minimal`, `low`, `medium`, `high`, `xhigh`; API default `none`   | SWE-bench Pro 54.38% (Tier-2 secondary press; not SWE-bench Verified); OpenAI qualitatively states it approaches gpt-5.4 on SWE-bench Pro   | $0.75 input / $0.075 cached / $4.50 output per MTok                                        | Supports the same effort enum as larger models; use as the routine tier at `medium` per policy  | Community-measured effort burn table applies directionally                                                        | SWE-bench Pro figure is Tier-2-sourced with caveat; do not compare it to SWE-bench Verified scores |
-| `codex:gpt-5.3-codex-spark` | `gpt-5.3-codex-spark` | `NEEDS VERIFICATION`                                                        | Text-only, optimized for near-instant real-time coding iteration; OpenAI Codex models page checked 2026-06-25; no benchmark number asserted | `NEEDS VERIFICATION`                                                                       | Effort support is `NEEDS VERIFICATION`                                                          | Effort-cost axis is `NEEDS VERIFICATION`                                                                          | Research preview; informational profile only until numeric specs and effort support are published  |
-
-### Codex model-effort qualitative inputs
-
-| Source row id                                  | Effort               | Qualitative Power Grade input                                                                                                                                                                                   |
-| ---------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `codex:gpt-5.5:minimal`                        | `minimal`            | Lowest Codex CLI reasoning tier; useful only for thin work because community-measured burn is about 0.1x of medium.                                                                                             |
-| `codex:gpt-5.5:low`                            | `low`                | Reduced reasoning budget; community-measured burn is about 0.3x of medium.                                                                                                                                      |
-| `codex:gpt-5.5:medium`                         | `medium`             | Balanced default and policy exploration pairing.                                                                                                                                                                |
-| `codex:gpt-5.5:high`                           | `high`               | Escalation for unusually hard procedural or single-pass work; community-measured burn is about 3-5x medium.                                                                                                     |
-| `codex:gpt-5.5:xhigh`                          | `xhigh`              | Exception tier for the hardest Codex tasks; community-measured burn is about 8-15x medium.                                                                                                                      |
-| `codex:gpt-5.4:minimal`                        | `minimal`            | Lowest Codex CLI reasoning tier on the lower-cost model; aligns with API `none` default.                                                                                                                        |
-| `codex:gpt-5.4:low`                            | `low`                | Reduced reasoning budget on the lower-cost model.                                                                                                                                                               |
-| `codex:gpt-5.4:medium`                         | `medium`             | Middle effort on the lower-cost model; benchmark evidence is weaker than `gpt-5.5`.                                                                                                                             |
-| `codex:gpt-5.4:high`                           | `high`               | Documented policy anti-pattern as a default because effort burn can erase the lower model price.                                                                                                                |
-| `codex:gpt-5.4:xhigh`                          | `xhigh`              | Highest effort with SWE-bench Pro evidence; use as reference evidence, not a default.                                                                                                                           |
-| `codex:gpt-5.4-mini:minimal`                   | `minimal`            | Lowest effort on the routine model; SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified.                                                                                                          |
-| `codex:gpt-5.4-mini:low`                       | `low`                | Reduced effort on the routine model; SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified.                                                                                                         |
-| `codex:gpt-5.4-mini:medium`                    | `medium`             | Routine policy pairing; pricing, context, effort support, and caveated SWE-bench Pro evidence are verified.                                                                                                     |
-| `codex:gpt-5.4-mini:high`                      | `high`               | Escalated routine model effort; SWE-bench Pro 54.38% is Tier-2-sourced and not a gpt-5.5 replacement signal.                                                                                                    |
-| `codex:gpt-5.4-mini:xhigh`                     | `xhigh`              | Highest effort on the routine model; SWE-bench Pro 54.38% is Tier-2-sourced and not SWE-bench Verified.                                                                                                         |
-| `codex:gpt-5.3-codex-spark:needs-verification` | `needs-verification` | Informational preview row only; OpenAI Codex models page checked 2026-06-25 gives text-only preview availability, while numeric specs, pricing, effort support, and benchmark data remain `NEEDS VERIFICATION`. |
-
 ## Reasoning-effort surfaces: `none` vs `minimal` vs `xhigh`
 
 Three different OpenAI surfaces enumerate reasoning effort differently; conflating them causes the lowest-tier token to mismatch. Verified 2026-06-24 against official docs.
@@ -95,7 +63,6 @@ Implications for `cog`:
 - `cog codex-runner` drives `model_reasoning_effort`, so its reachable Codex effort set is `minimal | low | medium | high | xhigh`. The runtime validator `lib/functions/fn_codex.sh` (`__cog_codex_map_effort`) accepts exactly this set and is correct; `none` is intentionally not emittable by cog.
 - `none` (API lowest tier / gpt-5.4 and gpt-5.4-mini default) and `minimal` (Codex lowest tier) denote the same ~0.1x-burn lowest tier; they are surface-specific spellings, not different levels.
 - `xhigh` is model-dependent on every surface; it is documented for `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini`.
-- `data/model-effort/codex/supported-efforts.yaml` `supported_efforts` lists the Codex (`model_reasoning_effort`) set on purpose, so the data SoT matches what cog can actually emit.
 
 ## Availability Caveats
 
@@ -106,14 +73,6 @@ Never pin any `-codex` model under ChatGPT-subscription auth. The entire `-codex
 The model picker can show a model that still returns HTTP 400 because frontend availability can drift from backend availability. Do not trust the picker alone.
 
 The subscription picker lineup confirmed on 2026-06-19 is `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` (HIGH/PRIMARY). The latest confirmable Codex CLI release is 0.141.0, dated 2026-06-18 (HIGH/PRIMARY from the Codex changelog).
-
-## Tier Intuition
-
-`gpt-5.5 @ medium` is the quality default. OpenAI's latest-model guidance names medium the recommended balanced default, and `gpt-5.5` carries the strongest available quality signal among the subscription-selectable models.
-
-`high` is escalation only. It can multiply token burn by roughly 3-5x according to community-measured data, so it should be reserved for stuck, unusually complex, or high-stakes work rather than routine defaults.
-
-`gpt-5.4 @ high` is an anti-pattern with nuance. `gpt-5.4` is about half the per-token credit cost of `gpt-5.5`, but high effort can erase that saving, and `gpt-5.4` defaults to `none`, so jumping directly to `high` is a large reasoning-budget leap. Reach for `gpt-5.5` before pushing `gpt-5.4` to high.
 
 ## Confidence and Uncertainty
 

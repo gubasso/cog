@@ -1,12 +1,12 @@
 # Claude Models Reference
 
-A dated reference for Claude model pricing, limits, effort support, benchmarks, and caveats used by `cog` model/effort policy.
+A dated reference for Claude model pricing, limits, effort support, benchmarks, and caveats informing explicit model/effort choices in `cog` skills.
 
 Data collected: 2026-06-19; re-verified 2026-06-25 (Haiku SWE-bench, Opus 4.7 cutoff and benchmark restatement, source tiers)
 
 Revalidate by: 2026-09-25, or sooner on any new model release or pricing change
 
-Sources (trust tiers and the full allowlist live in [`data/power-grade/source-allowlist`](../../data/power-grade/source-allowlist/)):
+Sources:
 
 - PRIMARY: <https://platform.claude.com/docs/en/about-claude/models/overview>
 - PRIMARY: <https://platform.claude.com/docs/en/about-claude/pricing>
@@ -43,32 +43,6 @@ Opus 4.7 supports the same effort levels as Opus 4.8. It is a previous-generatio
 Sonnet 4.6 supports `low`, `medium`, `high`, and `max`, with default `high`. It does not support `xhigh`; this is a real differentiator from Opus 4.8. Anthropic documentation recommends setting Sonnet 4.6 to `medium` when latency matters.
 
 Haiku 4.5 does not support selectable effort. Sending the `effort` parameter returns an error, so `cog` policy and skills must omit it for Haiku.
-
-## Power Grade Inputs
-
-This section is the dated Claude evidence row set consumed by `data/power-grade/matrix`. It consolidates existing sourced facts from this reference; it does not add newly researched benchmark numbers.
-
-| Source row id      | Model                          | Effort axis for matrix                                  | Coding benchmark input                                                                                                                                                                      | Cost input                                                                                       | Effort-quality input                                                                                                                                              | Effort-cost input                                                                                                                              | Power Grade caveats                                                                                                                                                                                                        |
-| ------------------ | ------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `claude:opus-4.8`  | Opus 4.8 (`claude-opus-4-8`)   | `low`, `medium`, `high`, `xhigh`, `max`; default `high` | SWE-bench Verified about 88.6% (SECONDARY); Online-Mind2Web 84% (MEDIUM/PRIMARY)                                                                                                            | $5 input / $0.50 cache read / $25 output per MTok; cache-write and batch prices in Model Catalog | Anthropic effort docs support tiered reasoning; default `high`; use `xhigh` for coding or agentic work that needs more reasoning; reserve `max` for hardest tasks | Published exact per-effort token multipliers are not asserted in this Claude reference; cost increases directionally with more thinking/output | SWE-bench figure is SECONDARY; effort deltas are qualitative, not numeric                                                                                                                                                  |
-| `claude:opus-4.7`  | Opus 4.7 (`claude-opus-4-7`)   | `low`, `medium`, `high`, `xhigh`, `max`; default `high` | SWE-bench Verified 87.6%, SWE-bench Pro 64.3%, Terminal-Bench 2.0 69.4% (Tier-1 vendor mirror); Vals AI reads 82.0% SWE-bench Verified under its independent harness (Tier-2 corroboration) | $5 input / $0.50 cache read / $25 output per MTok; cache-write and batch prices in Model Catalog | Same supported effort set as Opus 4.8; `xhigh` is the Claude Code default for that generation                                                                     | Published exact per-effort token multipliers are not asserted in this Claude reference                                                         | Anthropic's own page is chart-only for these benchmark numbers; AWS Bedrock carries the readable first-party restatement; cutoff Jan 2026 (PRIMARY, models overview); do not infer Opus 4.8 benchmark numbers for this row |
-| `claude:haiku-4.5` | Haiku 4.5 (`claude-haiku-4-5`) | no selectable effort; matrix uses a single `none` cell  | SWE-bench Verified 73.3% (PRIMARY, Anthropic news, 2026-06-24)                                                                                                                              | $1 input / $0.10 cache read / $5 output per MTok; cache-write and batch prices in Model Catalog  | `effort` is unsupported and returns an error; there is no effort-quality axis                                                                                     | There is no effort-cost axis because effort must be omitted                                                                                    | Coding benchmark sourced (SWE-bench Verified 73.3%, PRIMARY); unsupported efforts must not be emitted as executable cells                                                                                                  |
-
-### Claude model-effort qualitative inputs
-
-| Source row id            | Effort   | Qualitative Power Grade input                                                                                                       |
-| ------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `claude:opus-4.8:low`    | `low`    | Strong model at reduced effort; use for bounded procedural work when Opus quality is desired and the task is already structured.    |
-| `claude:opus-4.8:medium` | `medium` | Middle reasoning budget for moderately complex execution; no published numeric delta from low/high is asserted here.                |
-| `claude:opus-4.8:high`   | `high`   | Default exploration/planning effort; strongest regular policy pairing before escalation.                                            |
-| `claude:opus-4.8:xhigh`  | `xhigh`  | Escalation for coding or agentic work that needs more reasoning.                                                                    |
-| `claude:opus-4.8:max`    | `max`    | Highest effort tier; reserve for hardest tasks because cost/latency increase directionally with more thinking/output.               |
-| `claude:opus-4.7:low`    | `low`    | Previous-generation Opus at reduced effort; benchmark evidence is sourced via AWS Bedrock vendor mirror with Vals AI corroboration. |
-| `claude:opus-4.7:medium` | `medium` | Previous-generation middle effort; benchmark evidence is sourced via AWS Bedrock vendor mirror with Vals AI corroboration.          |
-| `claude:opus-4.7:high`   | `high`   | Previous-generation regular high effort; benchmark evidence is sourced via AWS Bedrock vendor mirror with Vals AI corroboration.    |
-| `claude:opus-4.7:xhigh`  | `xhigh`  | Previous-generation Claude Code default; benchmark evidence is sourced via AWS Bedrock vendor mirror with Vals AI corroboration.    |
-| `claude:opus-4.7:max`    | `max`    | Highest previous-generation effort; benchmark evidence is sourced via AWS Bedrock vendor mirror with Vals AI corroboration.         |
-| `claude:haiku-4.5:none`  | `none`   | Single executable Haiku cell; effort must be omitted.                                                                               |
 
 ## Policy-Forward Note
 

@@ -20,7 +20,7 @@ setup() {
 write_skill() {
   local dir="$1" name="$2" runtime="${3:-claude}"
   mkdir -p "$dir"
-  # executor-*/bootstrap-* names are governed by the model-effort-tier rule
+  # executor-*/bootstrap-* names carry a governed class contract
   # (executor → medium, bootstrap → low); pin the matching cell so generic
   # orchestrator fixtures stay tier-compliant.
   local tier_fm=""
@@ -1127,183 +1127,45 @@ EOF
   [[ $stderr != *"producer-blindness"* ]]
 }
 
-# Writes a minimal governed fixture with an explicit (model, effort) frontmatter
-# pair so the model-effort-tier rule can be exercised in isolation. Empty model
-# and effort mean "ride the session default".
-write_tier_skill() {
-  local dir="$1" name="$2" model="$3" effort="$4"
-  mkdir -p "$dir"
-  local fm=""
-  [[ -z $model ]] || fm+="model: ${model}"$'\n'
-  [[ -z $effort ]] || fm+="effort: ${effort}"$'\n'
-  cat >"$dir/SKILL.md" <<EOF
----
-name: $name
-description: Demo.
-${fm}---
-
-<!-- trigger-tests: "demo" -->
-
-# Demo
-
-\`\`\`text
-ok
-\`\`\`
-EOF
-  if [[ $name == plan-* ]]; then
-    append_plan_emitter "$dir/SKILL.md"
-  fi
-}
-
-@test "cog skill-lint accepts a governed HIGH skill that rides the session default" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo "" ""
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint rejects a governed HIGH skill pinned to the wrong tier" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo opus low
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  assert_failure
-  [[ $stderr == *"model-effort-tier"* ]]
-  [[ $stderr == *"expects tier 'high'"* ]]
-}
-
-@test "cog skill-lint does not flag a governed MEDIUM executor pinned to opus+medium" {
-  # executor-* orchestrators trip unrelated gate rules with a minimal fixture, so
-  # this asserts the model-effort-tier rule specifically does not fire.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-demo" executor-demo opus medium
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-demo/SKILL.md"
-  [[ $stderr != *"model-effort-tier"* ]]
-}
-
-@test "cog skill-lint does not flag a governed LOW bootstrap worker pinned to opus+low" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo" bootstrap-demo opus low
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo/SKILL.md"
-  [[ $stderr != *"model-effort-tier"* ]]
-}
-
-@test "cog skill-lint flags a governed LOW bootstrap worker pinned to the wrong tier" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo" bootstrap-demo opus xhigh
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/bootstrap-demo/SKILL.md"
-  assert_failure
-  [[ $stderr == *"model-effort-tier"* ]]
-  [[ $stderr == *"expects tier 'low'"* ]]
-}
-
-@test "cog skill-lint treats opus+high as equivalent to the HIGH session default" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/plan-demo" plan-demo opus high
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/plan-demo/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint resolves haiku without effort to the CHEAP tier" {
-  # A haiku-without-effort skill classifies to the cheap tier. Use an ungoverned
-  # name so the tier rule is exempt and only the haiku->cheap classification is
-  # exercised without a registry pin conflict.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/cheap-demo" cheap-demo haiku ""
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/cheap-demo/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint pins gc to the LOW tier" {
-  # 'gc' is registry-pinned low (opus, effort=low) after the provenance hardening.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc opus low
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint flags gc when pinned to haiku after the low promotion" {
-  # gc is registry-pinned low; haiku (which classifies cheap) must now fail.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc" gc haiku ""
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc/SKILL.md"
-  assert_failure
-  [[ $stderr == *"model-effort-tier"* ]]
-  [[ $stderr == *"expects tier 'low'"* ]]
-}
-
-@test "cog skill-lint pins gc-repo to the LOW tier" {
-  # The gc-repo per-repo commit worker is registry-pinned low (opus, effort=low).
-  # (Minimal fixture trips the terminal-contract marker rule, so assert the tier
-  # rule specifically does not fire.)
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo opus low
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
-  [[ $stderr != *"model-effort-tier"* ]]
-}
-
-@test "cog skill-lint flags gc-repo when pinned to haiku" {
-  # gc-repo is registry-pinned low; haiku (which classifies cheap) must fail.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/gc-repo" gc-repo haiku ""
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/gc-repo/SKILL.md"
-  assert_failure
-  [[ $stderr == *"model-effort-tier"* ]]
-  [[ $stderr == *"expects tier 'low'"* ]]
-}
-
-@test "cog skill-lint exempts an ungoverned skill regardless of model/effort" {
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-thing" demo-thing opus medium
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-thing/SKILL.md"
-  assert_success
-}
-
-@test "cog skill-lint honors a registry exception over the prefix default" {
-  # executor-prex is registry-pinned high; riding the session default satisfies it
-  # even though the executor-* prefix default is medium. (Minimal fixture trips
-  # unrelated gate rules, so assert the tier rule specifically does not fire.)
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex "" ""
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
-  [[ $stderr != *"model-effort-tier"* ]]
-}
-
-@test "cog skill-lint flags executor-prex when pinned to the executor MEDIUM default" {
-  # The registry pins executor-prex to high; opus+medium (the executor default) must fail.
-  write_tier_skill "${BATS_TEST_TMPDIR}/skills/claude/executor-prex" executor-prex opus medium
-  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/executor-prex/SKILL.md"
-  assert_failure
-  [[ $stderr == *"model-effort-tier"* ]]
-  [[ $stderr == *"expects tier 'high'"* ]]
-}
-
-@test "cog skill-lint skips the model-effort-tier rule for codex skills" {
-  write_skill "${BATS_TEST_TMPDIR}/skills/codex/executor-demo" executor-demo codex
-  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/codex/executor-demo/SKILL.md"
-  assert_success
-}
-
-@test "model-effort claude tier registry is the SoT the resolver reads" {
-  # Drift guard: every skill pinned in a tier's `skills` list must resolve to
-  # that tier via `cog power-grade skill-tier`, with the registry as its source.
-  local registry="${BATS_TEST_DIRNAME}/../../data/model-effort/claude"
-  local rung skill expected reason
-  for rung in xhigh high medium low cheap; do
-    while IFS= read -r skill; do
-      [[ -n $skill ]] || continue
-      run cog power-grade skill-tier --skill "$skill" --json
-      assert_success
-      expected="$(jq -r '.expected' <<<"$output")"
-      reason="$(jq -r '.reason' <<<"$output")"
-      assert_equal "$expected" "$rung"
-      assert_equal "$reason" registry
-    done < <(cog::fn::data::load_dir "$registry" | jq -r --arg r "$rung" '.tiers[$r].skills[]?')
-  done
-}
-
-@test "cog skill-lint flags a tier word used as the noun cell in prose" {
+@test "cog skill-lint flags tier-ladder prose in a skill body" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
-  printf '\n%s\n' 'Round 1 runs at `medium` effort (the Codex HIGH cell).' \
+  printf '\n%s\n' 'Round 1 runs at the HIGH tier.' \
     >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   assert_failure
-  [[ $stderr == *"model-effort-prose-label"* ]]
+  [[ $stderr == *"model-effort-indirection"* ]]
 }
 
-@test "cog skill-lint accepts a labeled tier-and-cell reference" {
+@test "cog skill-lint flags cell prose and model@effort slugs in a skill body" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
-  printf '\n%s\n' 'Round 1 runs at `medium` effort — the HIGH tier'\''s Codex cell (`gpt-5.5@medium`).' \
+  printf '\n%s\n' 'Launch with the Codex cell (`gpt-5.5@medium`).' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"model-effort-indirection"* ]]
+}
+
+@test "cog skill-lint flags power-grade prose in a skill body" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  printf '\n%s\n' 'Resolve the tier with cog power-grade first.' \
+    >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"model-effort-indirection"* ]]
+}
+
+@test "cog skill-lint accepts direct effort prose stated without indirection" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
+  printf '\n%s\n' 'Round 1 runs at `high` effort on the harness default model; rounds 2+ run at `medium` effort.' \
     >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
@@ -1311,12 +1173,12 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint honors an allow-model-ref-label marker" {
+@test "cog skill-lint honors an allow-model-effort-indirection marker" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   {
     # shellcheck disable=SC2016  # literal markdown prose written to a fixture file
-    printf '\n%s\n' '<!-- cog-skill-lint: allow-model-ref-label documented legacy phrasing -->'
-    printf '%s\n' 'Round 1 runs at medium effort (the Codex HIGH cell).'
+    printf '\n%s\n' '<!-- cog-skill-lint: allow-model-effort-indirection documented legacy phrasing -->'
+    printf '%s\n' 'The retired ladder called this the HIGH tier.'
   } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
@@ -1324,17 +1186,186 @@ EOF
   assert_success
 }
 
-@test "cog skill-lint ignores tier-cell phrasing inside a fenced block" {
+@test "cog skill-lint ignores tier phrasing inside a fenced block" {
   write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
   {
     printf '\n```text\n'
-    printf '%s\n' 'the Codex HIGH cell'
+    printf '%s\n' 'the HIGH tier cell'
     printf '```\n'
   } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
 
   assert_success
+}
+
+@test "cog skill-lint fails a fenced coding-agent launch that omits --effort" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC1003,SC2016  # literal fixture lines: trailing backslashes and unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec \\'
+    printf '%s\n' '  --mode danger --access write \\'
+    printf '%s\n' '  --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
+}
+
+@test "cog skill-lint accepts a fenced coding-agent launch with a literal --effort" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC1003,SC2016  # literal fixture lines: trailing backslashes and unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec \\'
+    printf '%s\n' '  --mode danger --access write \\'
+    printf '%s\n' '  --effort medium \\'
+    printf '%s\n' '  --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+    printf '\n```bash\n'
+    printf '%s\n' 'cog claude-runner run-exec --access read-only --effort low --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/claude-output.md" --events "$RUN_DIR/e2.jsonl" --state "$RUN_DIR/s2.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_success
+}
+
+@test "cog skill-lint rejects a variable or bare --effort as non-literal" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal fixture lines: unexpanded variables
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --effort "$EFFORT" --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
+}
+
+@test "cog skill-lint scans a skill reference companion for launch effort" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  mkdir -p "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/references"
+  # shellcheck disable=SC2016  # literal fixture line: unexpanded $RUN_DIR
+  {
+    printf '%s\n' '# Launch reference'
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/references/launch.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"references/launch.md"* ]]
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
+}
+
+@test "cog skill-lint rejects a wrong-provider or equals-form effort value" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal fixture lines: unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --effort max --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+    printf '\n```bash\n'
+    printf '%s\n' 'cog claude-runner run-exec --access read-only --effort minimal --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/claude-output.md" --events "$RUN_DIR/e2.jsonl" --state "$RUN_DIR/s2.longrun.json"'
+    printf '```\n'
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --effort=high --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output2.md" --events "$RUN_DIR/e3.jsonl" --state "$RUN_DIR/s3.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [ "$(grep -c 'agent-launch-explicit-effort' <<<"$stderr")" -eq 3 ]
+}
+
+@test "cog skill-lint joins a continuation that splits the launch verb" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC1003,SC2016  # literal fixture lines: trailing backslashes and unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner \\'
+    printf '%s\n' '  run-exec \\'
+    printf '%s\n' '  --mode danger --access write \\'
+    printf '%s\n' '  --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
+}
+
+@test "cog skill-lint rejects a prefix-extended or commented-out effort value" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal fixture lines: unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --effort high5 --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/codex-output2.md" --events "$RUN_DIR/e2.jsonl" --state "$RUN_DIR/s2.longrun.json" # --effort high'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [ "$(grep -c 'agent-launch-explicit-effort' <<<"$stderr")" -eq 2 ]
+}
+
+@test "cog skill-lint respects shell quoting for comments and effort text" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal fixture lines: unexpanded $RUN_DIR
+  {
+    # a quoted '#' is argument data, not a comment: the real --effort must count
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --prompt "$RUN_DIR/question #1.md" --effort high --output "$RUN_DIR/codex-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+  assert_success
+
+  # quoted text mentioning --effort is data, not an option: the launch still fails
+  # shellcheck disable=SC2016  # literal fixture line: unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog codex-runner run-exec --mode danger --access write --prompt "use --effort high for the nested example" --output "$RUN_DIR/codex-output2.md" --events "$RUN_DIR/e2.jsonl" --state "$RUN_DIR/s2.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
+}
+
+@test "cog skill-lint flags a claude-runner launch without --effort" {
+  write_skill "${BATS_TEST_TMPDIR}/skills/claude/demo-skill" demo-skill claude
+  # shellcheck disable=SC2016  # literal fixture line: unexpanded $RUN_DIR
+  {
+    printf '\n```bash\n'
+    printf '%s\n' 'cog claude-runner run-exec --access read-only --prompt "$RUN_DIR/p.md" --output "$RUN_DIR/claude-output.md" --events "$RUN_DIR/e.jsonl" --state "$RUN_DIR/s.longrun.json"'
+    printf '```\n'
+  } >>"${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"agent-launch-explicit-effort"* ]]
 }
 
 @test "cog skill-lint fails a cog-plan-builder-named plan-emitter (DP1 taxonomy regression)" {

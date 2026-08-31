@@ -21,8 +21,8 @@ Chosen option: `Use named cells and tiers with source and skill registries` — 
 
 ## Status
 
-Implemented
-
-Enacted by [power grade](../explanation/power-grade.md) and [model-effort policy](../reference/model-effort-policy.md).
+Superseded
 
 Amended by [ADR-0032](./ADR-0032-remove-the-plan-vault-and-the-round-layer.md) — the tier ladder survives; the executor-capability routing half of the power grade does not.
+
+Superseded by [ADR-0036](./ADR-0036-explicit-model-and-effort-at-every-delegation.md) — the tier ladder, the cell registries, and `cog power-grade` are removed; model and effort are stated explicitly at every delegation.

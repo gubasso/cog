@@ -10,7 +10,7 @@ An executor takes one plan or prompt and records no outcome data. Which executor
 
 ## Current constraints
 
-A terminal result is explicit, not inferred from missing work. Artifacts use absolute run-directory paths where required, and review effort follows governed model-effort policy.
+A terminal result is explicit, not inferred from missing work. Artifacts use absolute run-directory paths where required, and review effort is stated explicitly at each delegation (ADR-0036).
 
 ## Unresolved
 

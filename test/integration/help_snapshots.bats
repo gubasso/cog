@@ -142,7 +142,6 @@ Commands:
   plan-review    Write, inspect, and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plugin         Inspect external cog-* command plugins.
-  power-grade    Inspect and validate model/effort power grades.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   precommit-run  Run pre-commit hooks across stages and collect failures.
@@ -250,7 +249,6 @@ Commands:
   plan-review    Write, inspect, and validate annotated plan review artifacts.
   plan-slug      Derive and validate an implementation plan slug.
   plugin         Inspect external cog-* command plugins.
-  power-grade    Inspect and validate model/effort power grades.
   precommit-apply-template Apply a pre-commit template to a project.
   precommit-detect Detect pre-commit template type.
   precommit-run  Run pre-commit hooks across stages and collect failures.

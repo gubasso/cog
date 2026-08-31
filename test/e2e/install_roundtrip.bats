@@ -30,17 +30,12 @@ teardown() {
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/pre-commit"
   assert_dir_exists "$XDG_DATA_HOME/cog/skill-refs/templates/editorconfig"
   assert_file_exists "$XDG_DATA_HOME/cog/skill-refs/orchestration/context-brief-contract.md"
-  assert_file_exists "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml"
-  assert_file_exists "$XDG_DATA_HOME/cog/data/model-effort/claude/tiers.yaml"
+  assert_file_exists "$XDG_DATA_HOME/cog/data/skill-class/contracts.yaml"
   assert_file_exists "$XDG_DATA_HOME/cog/data/maintenance-tracking.yaml"
 
   run cog --version
   assert_success
   assert_output "0.1.0"
-
-  # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
-  run "$BASH" -c 'cd "$1" && cog power-grade tier --name high --json | jq -e ".ok == true" >/dev/null' bash "$BATS_TEST_TMPDIR"
-  assert_success
 
   # shellcheck disable=SC2016 # $1 is intentionally expanded inside the child shell.
   run "$BASH" -c 'cd "$1" && cog tracking-scan --json | jq -e ".registry_path | contains(\"/cog/data/maintenance-tracking.yaml\")" >/dev/null' bash "$BATS_TEST_TMPDIR"
@@ -189,7 +184,7 @@ teardown() {
   assert_file_exists "$manifest"
   grep -Fqx "$PREFIX/bin/cog" "$manifest"
   grep -Fqx "$PREFIX/lib/cog/lib/helpers.sh" "$manifest"
-  grep -Fqx "$XDG_DATA_HOME/cog/data/power-grade/matrix/model-cells.yaml" "$manifest"
+  grep -Fqx "$XDG_DATA_HOME/cog/data/skill-class/contracts.yaml" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/data/research-shelf/index.jsonl" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/cog/skill-refs/orchestration/context-brief-contract.md" "$manifest"
   grep -Fqx "$XDG_DATA_HOME/bash-completion/completions/cog" "$manifest"

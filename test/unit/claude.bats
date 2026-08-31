@@ -56,7 +56,7 @@ setup() {
   local -a argv=()
   cog::fn::claude_exec_argv "" "" read-only none opus "${BATS_TEST_TMPDIR}/prompt.md" argv
   # claude --effort none is rejected with a warning and silently defaults, so
-  # the none rung must dispatch with no --effort flag at all.
+  # an effort of none must dispatch with no --effort flag at all.
   [[ ${argv[*]} != *"--effort"* ]]
 }
 

@@ -4,8 +4,8 @@
 __cog_codex_runner_self_check='.action != null and .ok != null'
 
 __cog_codex_runner_usage() {
-  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--thread first|last]"
-  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
+  cog::fn::ui_data "Usage: cog codex-runner run-exec --mode <native|fallback|danger|quick-auto> [--access <read-only|write>] --effort <effort> [--model <model>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>] [--thread first|last]"
+  cog::fn::ui_data "Usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <effort> [--model <model>] --prompt <file> --output <file> --events <file> --state <file> [--stderr <file>]"
   cog::fn::ui_data "Usage: cog codex-runner status --state <file>"
   cog::fn::ui_data "Usage: cog codex-runner finalize --state <file> [--max-wall <secs>]"
   cog::fn::ui_data "Usage: cog codex-runner cancel --state <file> [--signal TERM|KILL]"
@@ -53,7 +53,7 @@ __cog_codex_runner_resolve_cwd() {
 # The result JSON is produced later by `finalize`, reconstructed from durable
 # artifacts; this call only starts the job and prints STATE_FILE=/JOB_PGID=.
 __cog_codex_runner_run_exec() {
-  local mode="" access="read-only" effort="" prompt="" output="" events="" stderr="" state="" thread_selection="" cwd=""
+  local mode="" access="read-only" effort="" model="" prompt="" output="" events="" stderr="" state="" thread_selection="" cwd=""
   local command label run_dir engine_meta pgid
   local -a argv=()
   while (($# > 0)); do
@@ -64,6 +64,10 @@ __cog_codex_runner_run_exec() {
         ;;
       --effort)
         effort="${2:-}"
+        shift 2
+        ;;
+      --model)
+        model="${2:-}"
         shift 2
         ;;
       --access)
@@ -98,7 +102,7 @@ __cog_codex_runner_run_exec() {
     esac
   done
   [[ -n $mode && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
+    "missing run-exec argument" "usage: cog codex-runner run-exec --mode <mode> [--access <read-only|write>] --effort <effort> [--model <model>] --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog codex-runner --help'"
   case "$access" in
     read-only | write) ;;
@@ -110,7 +114,7 @@ __cog_codex_runner_run_exec() {
       "only danger is write-capable" "use --mode danger or --access read-only"
   fi
 
-  command="$(cog::fn::codex_exec_command "$mode" "$effort" "$prompt" "$output" "$events" "$stderr")"
+  command="$(cog::fn::codex_exec_command "$mode" "$effort" "$prompt" "$output" "$events" "$stderr" "$model")"
   [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
     "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
   label="$(__cog_codex_runner_label_for_state "$state")"
@@ -132,11 +136,11 @@ __cog_codex_runner_run_exec() {
   cog::fn::runner::ensure_run_dir codex-runner "$run_dir"
   __cog_codex_runner_preflight "${run_dir}/${label}.preflight.json"
 
-  cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv
+  cog::fn::codex_exec_argv "$mode" "$effort" "$prompt" "$output" argv "$model"
   engine_meta="$(jq -cn \
     --arg engine_action run-exec --arg mode "$mode" --arg access "$access" \
-    --arg effort "$effort" --arg thread_selection "$thread_selection" --arg command "$command" \
-    '{engine_action: $engine_action, mode: $mode, access: $access, effort: $effort,
+    --arg effort "$effort" --arg model "$model" --arg thread_selection "$thread_selection" --arg command "$command" \
+    '{engine_action: $engine_action, mode: $mode, access: $access, effort: $effort, model: $model,
       thread_selection: $thread_selection, command: $command}')"
 
   cog::fn::longrun::start --state "$state" --label "$label" --cwd "$cwd" \
@@ -148,7 +152,7 @@ __cog_codex_runner_run_exec() {
 }
 
 __cog_codex_runner_run_resume() {
-  local account="" thread_id="" effort="" prompt="" output="" events="" stderr="" state="" cwd=""
+  local account="" thread_id="" effort="" model="" prompt="" output="" events="" stderr="" state="" cwd=""
   local access="read-only"
   local command label run_dir engine_meta pgid
   local -a argv=()
@@ -168,6 +172,10 @@ __cog_codex_runner_run_resume() {
         ;;
       --effort)
         effort="${2:-}"
+        shift 2
+        ;;
+      --model)
+        model="${2:-}"
         shift 2
         ;;
       --prompt)
@@ -194,7 +202,7 @@ __cog_codex_runner_run_resume() {
     esac
   done
   [[ -n $account && -n $thread_id && -n $effort && -n $prompt && -n $output && -n $events ]] || cog::fn::error_raise "MissingArgument" \
-    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <tier> --prompt <file> --output <file> --events <file> --state <file>" "" \
+    "missing run-resume argument" "usage: cog codex-runner run-resume --account <name> --thread-id <id> [--access <read-only|write>] --effort <effort> [--model <model>] --prompt <file> --output <file> --events <file> --state <file>" "" \
     "run 'cog codex-runner --help'"
   # A resume inherits nothing from the cold round's sandbox, so access is
   # declared per call and defaults closed: a warm round of a read-only review
@@ -203,7 +211,7 @@ __cog_codex_runner_run_resume() {
     read-only | write) ;;
     *) cog::fn::error_raise "InvalidInput" "invalid run-resume access" "access: ${access}" "expected read-only or write" "" ;;
   esac
-  command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$access")"
+  command="$(cog::fn::codex_resume_command "$account" "$effort" "$thread_id" "$prompt" "$output" "$events" "$access" "$model")"
   [[ -n $state ]] || cog::fn::error_raise "MissingArgument" \
     "missing --state" "option: --state" "every codex run is a durable job" "pass --state <run-dir>/<label>.longrun.json"
   label="$(__cog_codex_runner_label_for_state "$state")"
@@ -225,12 +233,12 @@ __cog_codex_runner_run_resume() {
   cog::fn::runner::ensure_run_dir codex-runner "$run_dir"
   __cog_codex_runner_preflight "${run_dir}/${label}.preflight.json"
 
-  cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv "$access"
+  cog::fn::codex_resume_argv "$account" "$effort" "$thread_id" "$prompt" "$output" argv "$access" "$model"
   engine_meta="$(jq -cn \
     --arg engine_action run-resume --arg account "$account" --arg thread_id "$thread_id" \
-    --arg effort "$effort" --arg access "$access" --arg command "$command" \
+    --arg effort "$effort" --arg model "$model" --arg access "$access" --arg command "$command" \
     '{engine_action: $engine_action, account: $account, thread_id: $thread_id,
-      effort: $effort, access: $access, command: $command}')"
+      effort: $effort, model: $model, access: $access, command: $command}')"
 
   cog::fn::longrun::start --state "$state" --label "$label" --cwd "$cwd" \
     --stdout "$events" --stderr "$stderr" --output "$output" \

@@ -6,44 +6,20 @@ entries:
     path: docs/reference/models-reference-claude.md
     last_checked: 2026-06-25
     cadence_days: 90
-    owner: model-effort policy
-    why: "Claude model pricing, benchmarks, and available tiers change; the model/effort policy rests on them."
-    revalidate_how: "Web-research official Anthropic sources; update figures + Data collected date; re-derive policy if tiers shift."
+    owner: models reference
+    why: "Claude model pricing, benchmarks, and selectable efforts change; explicit model/effort choices in skills rest on them."
+    revalidate_how: "Web-research official Anthropic sources; update figures + Data collected date."
     references:
-      - docs/reference/model-effort-policy.md
-      - data/model-effort/claude
-      - data/power-grade/matrix
+      - docs/decisions/ADR-0036-explicit-model-and-effort-at-every-delegation.md
   - id: models-reference-codex
     path: docs/reference/models-reference-codex.md
     last_checked: 2026-06-25
     cadence_days: 90
-    owner: model-effort policy
-    why: "Codex-selectable GPT models, pricing, and effort multipliers change; the codex policy rests on them."
+    owner: models reference
+    why: "Codex-selectable GPT models, pricing, and effort multipliers change; explicit model/effort choices in skills rest on them."
     revalidate_how: "Web-research official OpenAI/Codex sources; update figures + Data collected date; re-check the -codex API-only caveat."
     references:
-      - docs/reference/model-effort-policy.md
-      - data/model-effort/codex
-      - data/power-grade/matrix
-  - id: power-grade-matrix
-    path: data/power-grade/matrix
-    last_checked: 2026-06-25
-    cadence_days: 90
-    owner: power-grade policy
-    why: "The matrix grades model/effort capability from model benchmarks, pricing, effort support, and policy defaults that can drift."
-    revalidate_how: "Refresh docs/reference/models-reference-claude.md and docs/reference/models-reference-codex.md from authoritative sources, preserve NEEDS VERIFICATION for gaps, then update grades, source_refs, and this last_checked date."
-    references:
-      - docs/reference/model-effort-policy.md
-      - docs/decisions/ADR-0014-model-effort-and-power-grade.md
-  - id: power-grade-source-allowlist
-    path: data/power-grade/source-allowlist
-    last_checked: 2026-06-25
-    cadence_days: 90
-    owner: power-grade policy
-    why: "Trusted-source URLs, tiers, and leaderboard domains drift; the matrix sourcing policy rests on them."
-    revalidate_how: "Re-check each source URL is live and canonical, re-confirm tier and clears_needs_verification, then update last_checked. Tier 3 entries stay recorded as excluded."
-    references:
-      - docs/decisions/ADR-0014-model-effort-and-power-grade.md
-      - data/power-grade/matrix
+      - docs/decisions/ADR-0036-explicit-model-and-effort-at-every-delegation.md
   - id: research-shelf
     path: data/research-shelf/index.jsonl
     last_checked: 2026-06-20

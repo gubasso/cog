@@ -1,15 +1,15 @@
 # Skill-class contracts
 
-The core skill taxonomy (ADR-0006) has five governed classes. Each carries a positive membership contract — the markers, tier, and input/output obligations a skill of that class MUST satisfy. The data source of truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show --class <c>
+The core skill taxonomy (ADR-0006) has five governed classes. Each carries a positive membership contract — the markers and input/output obligations a skill of that class MUST satisfy. The data source of truth is `data/skill-class/contracts.yaml`; query it with `cog skill-class show --class <c>
 --json` and verify a draft with `cog skill-class check --skill <path> --json`. `cog skill-lint`'s `skill-class-contract` rule enforces the union.
 
-| Class         | Prefix          | Tier (prefix default)                     | Input → output                                                 |
-| ------------- | --------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| `plan`        | `plan-*`        | high                                      | goal/orientation → self-contained plan-doc                     |
-| `review`      | `review-*`      | review-oneshot high; else registry/exempt | diff/scope → shared structured-findings contract               |
-| `review-plan` | `review-plan-*` | high                                      | plan → annotated plan-review delta                             |
-| `executor`    | `executor-*`    | medium                                    | one prompt/plan (`-ar <path>`) → canonical execution report    |
-| `bootstrap`   | `bootstrap-*`   | low                                       | project + operator intent → reconciled files via `cog *-apply` |
+| Class         | Prefix          | Input → output                                                 |
+| ------------- | --------------- | -------------------------------------------------------------- |
+| `plan`        | `plan-*`        | goal/orientation → self-contained plan-doc                     |
+| `review`      | `review-*`      | diff/scope → shared structured-findings contract               |
+| `review-plan` | `review-plan-*` | plan → annotated plan-review delta                             |
+| `executor`    | `executor-*`    | one prompt/plan (`-ar <path>`) → canonical execution report    |
+| `bootstrap`   | `bootstrap-*`   | project + operator intent → reconciled files via `cog *-apply` |
 
 | Class                                            | `plan-emitter` marker |
 | ------------------------------------------------ | --------------------- |
@@ -22,7 +22,6 @@ The `bootstrap-*` class covers the domain and language workers; the `bootstrap` 
 
 Cross-cutting prerequisites the class check composes (each stays owned by its own facet rule):
 
-- **model/effort tier** — must resolve to the class's expected tier from `data/model-effort/{claude,codex}/tiers.yaml` (the registry's per-tier `skills` list is the single escape hatch).
 - **prefix taxonomy** — a governed declared intent (plan-emitter, plan-reviewer, executor) must match the name's prefix class.
 - **producer-blindness** — a consumer names only its structural input contract, never the producing skill.
 - **input-fidelity** — a brief-building delegator at a fresh-context boundary carries the `<!-- cog-skill: input-fidelity -->` marker.

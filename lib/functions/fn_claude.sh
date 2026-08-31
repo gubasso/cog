@@ -57,10 +57,10 @@ __cog_claude_validate_access() {
   esac
 }
 
-# Map a cog effort tier onto the `claude --effort` vocabulary. `none` is an
-# omission, not a value: `claude --effort none` is rejected with a warning and
-# the default effort is used silently, so the none rung is dispatched by passing
-# no --effort flag at all. Emitting nothing here is what expresses that.
+# Validate a claude effort value against the `claude --effort` vocabulary.
+# `none` is an omission, not a value: `claude --effort none` is rejected with a
+# warning and the default effort is used silently, so `none` is dispatched by
+# passing no --effort flag at all. Emitting nothing here is what expresses that.
 __cog_claude_map_effort() {
   local effort="${1:-}"
 

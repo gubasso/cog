@@ -187,7 +187,7 @@ forbidden_scan_codex() {
     [ ! -e "$repo_root/skills/claude/$skill" ]
     [ ! -e "$repo_root/skills/codex/$skill" ]
   done
-  run grep -qE 'runner-all|runner-plan|plan-builder-to-queue' "$repo_root/data/model-effort/claude/tiers.yaml"
+  run grep -rqE 'runner-all|runner-plan|plan-builder-to-queue' "$repo_root/lib" "$repo_root/data"
   assert_failure
 }
 
@@ -244,8 +244,6 @@ forbidden_scan_codex() {
   [ ! -e "$repo_root/skills/claude/plan-writer/SKILL.md" ]
   [ ! -e "$repo_root/skills/codex/plan-writer/SKILL.md" ]
   [ ! -e "$repo_root/lib/commands/cmd_plan_writer_multi_setup.sh" ]
-  run grep -q "plan-writer-multi" "$repo_root/data/model-effort/claude/tiers.yaml"
-  assert_failure
-  run grep -q "plan-writer" "$repo_root/data/model-effort/codex/tiers.yaml"
+  run grep -rq "plan-writer" "$repo_root/lib" "$repo_root/data"
   assert_failure
 }
