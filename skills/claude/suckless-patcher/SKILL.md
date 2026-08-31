@@ -16,6 +16,10 @@ effort: low
 
 The shared mechanical contract is identical to the Codex `suckless-patcher` skill.
 
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+
+Here `cog suckless-apply`'s built-in `git apply --check` probe is the Phase 2 preview, and the build is the closing verification.
+
 ## Reference Resolution
 
 Shared references ship with `cog` and resolve through `cog skill-refs path <rel>`. The resolver always succeeds for shipped references. `REFS/patch-strategies.md` means `$(cog skill-refs path tools/suckless/patch-strategies.md)`.
@@ -26,6 +30,7 @@ The user provides:
 
 1. Patch file - a `.diff` file, local path or to be downloaded.
 2. Patch URL - the suckless.org page for this patch, such as `https://dwm.suckless.org/patches/vanitygaps/`.
+3. `--no-plan` (optional) - skip the plan-approval turn only, per the gate.
 
 ## Cog Contract
 

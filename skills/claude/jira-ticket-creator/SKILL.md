@@ -7,7 +7,7 @@ description: >
   renders JIRA wiki markdown into the project's .draft/ directory, and asks clarifying
   questions first. Use when the user says "jira-ticket-creator", "create jira tickets",
   "draft jira tickets from commits", or "turn these commits into tickets".
-argument-hint: "[<prompt>] [--range <A..B>] [--sha <sha>]... [--path <file>]..."
+argument-hint: "[--no-plan] [<prompt>] [--range <A..B>] [--sha <sha>]... [--path <file>]..."
 model: opus
 effort: low
 allowed-tools: Bash Read Write Grep Glob AskUserQuestion
@@ -18,6 +18,10 @@ allowed-tools: Bash Read Write Grep Glob AskUserQuestion
 # JIRA Ticket Creator
 
 Turn a body of work into a small set of coherent JIRA tickets and write one JIRA-wiki markdown file per ticket into the project's `.draft/` directory, ready to copy-paste into JIRA. Grouping, classification, and prose authoring are your judgment; the deterministic mechanics — resolving the draft directory, parsing commits, deriving filenames, writing and validating artifacts, and checking commit coverage — belong to `cog jira-ticket-creator`.
+
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+
+The clarifying questions this skill already asks are Phase 1 work, done from read-only git inspection of the given ranges, SHAs, and paths. `cog jira-ticket-creator setup` already mutates the project — it creates the timestamped `.draft/` directory — so the workflow orders it after the approval turn, and everything from it onward runs only once the plan, which lists the full ticket set with each ticket's type, group, and sequence, is approved.
 
 ## Reference resolution
 
@@ -30,24 +34,14 @@ The request may combine any of:
 - a freeform prompt describing the features that landed (or the plan that will land);
 - git commit ranges (`--range A..B`) and/or an explicit list of SHAs (`--sha <sha>`), including non-contiguous commits;
 - file paths in scope (`--path <file>`);
-- a forward-looking implementation plan (a path to read, or described in the prompt).
+- a forward-looking implementation plan (a path to read, or described in the prompt);
+- `--no-plan` — skip the plan-approval turn only, per the gate.
 
 Read any referenced files and plans with Read/Grep so the tickets reflect what actually changed.
 
 ## Workflow
 
-### 1. Scaffold and load the commit corpus
-
-Resolve the draft directory and parse the commits in one call, and open a scratch directory for staging bodies:
-
-```bash
-cog jira-ticket-creator setup --range <A..B> --sha <sha> --path <file> --json
-cog rundir jira-ticket-creator
-```
-
-Read `draft_dir`, `index_path`, and `commits` from the setup JSON, and the staging directory path from `cog rundir`. Use the literal `draft_dir` and staging paths in the commands below. Each commit carries its parsed `type`, `scope`, `description`, and `breaking` fields.
-
-### 2. Clarify with the user
+### 1. Clarify with the user
 
 When the grouping or classification is genuinely ambiguous in a way that changes the tickets, ask with AskUserQuestion before writing. Good questions to resolve:
 
@@ -57,9 +51,9 @@ When the grouping or classification is genuinely ambiguous in a way that changes
 
 When the request already makes these clear, record that no interview was needed and proceed.
 
-### 3. Group and classify
+### 2. Group and classify
 
-Apply `REFS/ticket-authoring.md`:
+Inspect the corpus read-only, mirroring setup's selector exactly: one `git log <range> ...` walk over all given ranges together, one `git log --no-walk <sha> ...` over the explicit SHAs so their ancestry stays out, de-duplicated across the two with the first occurrence winning; `--path` values are contextual scope for the grouping, not git-log filters. Read/Grep any referenced plan. Then apply `REFS/ticket-authoring.md`:
 
 - Cluster commits by scope, then split by distinct deliverable or acceptance outcome.
 - Fold supporting commits (`refactor`, `chore`, `test`, `docs`, `style`, `build`, `ci`, `perf`) into the parent ticket whose behavior they enable; raise a standalone Task only when a whole cluster is technical with nothing user-facing to attach to.
@@ -67,6 +61,17 @@ Apply `REFS/ticket-authoring.md`:
 - Raise an Epic (or a parent with subtasks) only when it holds two or more children; a theme with a single deliverable becomes that one Story/Task directly, with no Epic wrapper.
 - Right-size with INVEST: split a ticket that has no single acceptance criterion; fold a lone supporting commit that carries no independent value.
 - Every source commit is claimed by exactly one ticket.
+
+### 3. Scaffold and load the commit corpus
+
+This is the run's first mutation — setup creates the timestamped draft directory — so it runs only after the plan is approved. Resolve the draft directory and parse the commits in one call, and open a scratch directory for staging bodies:
+
+```bash
+cog jira-ticket-creator setup --range <A..B> --sha <sha> --path <file> --json
+cog rundir jira-ticket-creator
+```
+
+Read `draft_dir`, `index_path`, and `commits` from the setup JSON, and the staging directory path from `cog rundir`. Use the literal `draft_dir` and staging paths in the commands below. Each commit carries its parsed `type`, `scope`, `description`, and `breaking` fields; when they disagree with the read-only grouping, stop and re-plan.
 
 ### 4. Write one file per ticket
 

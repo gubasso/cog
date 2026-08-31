@@ -11,6 +11,10 @@ effort: low
 
 runbook-execute helper extraction is DEFERRED because it is high-risk, environment-sensitive, network-dependent, and requires real OBS credentials.
 
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+
+Classify every operation by side effect: the read-only forms — `status`, `diff`, `results`, `buildinfo`, `buildlog`, the display forms of `meta prj`/`meta pkg`, and the watch loops — never trigger the gate; every other supported operation mutates the workspace checkout or remote OBS state (`branch`, `co`, `up`, `ci`, `vc`, `revert`, `getbinaries`, `rebuild`, `rdelete`, the metadata-writing `meta` forms such as `-e` or `-F`, and any `add`/`rm`) and the first of them does. A leading `--no-plan` token in the request applies the flag's rule above.
+
 ## Scope
 
 This is the generic, portable OBS skill. It reads configuration from environment variables so the same skill can drive any OBS overlay project. Per-project copies may hard-code constants, but this generic version stays environment-driven.

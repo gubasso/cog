@@ -106,7 +106,7 @@ Helper output is evidence, not permission to delete content. A `user-added` line
 
 ## Guardrails
 
-- Never auto-apply.
+- Never auto-apply. The diff-and-approval presentation is this skill's plan-validate-execute gate equivalent — the full proposed rewrite is a stronger preview than a plan (`$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`).
 - Never silently remove a user-authored instruction.
 - When in doubt, keep the instruction.
 - Do not add new instructions the user did not ask for.

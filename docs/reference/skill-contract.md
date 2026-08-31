@@ -65,6 +65,8 @@ Claude skills allow:
 
 The Claude allowlist above must match `cog::fn::skill::allowed_frontmatter_keys_json` and `test/integration/cmd_skill_lint.bats`.
 
+The portable Agent Skills specification ([agentskills.io/specification](https://agentskills.io/specification), further reading) allows exactly six frontmatter fields: `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`. Claude keys beyond those are Claude Code extension keys; the Codex allowlist is a strict subset; `compatibility` is portable-spec-only and not in cog's runtime allowlists. No allowlist in any runtime carries a gating field, so behavioral gates live in prose — see the plan-mode, plan-validate-execute, and context-brief gate sections. Provenance: the research-shelf entries tagged `skill-authoring` (`cog research-shelf list`).
+
 ## Prefix taxonomy
 
 Skill names must follow [ADR-0006](../decisions/ADR-0006-runtime-skill-trees-and-taxonomy.md). The prefix declares what a skill does:
@@ -242,7 +244,21 @@ Every Claude `executor-*` skill carries a short Phase 0 pointer that keeps the S
 follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 ```
 
-The referenced directive tells the user, if plan mode is active, to STOP, exit plan mode (`Shift+Tab`), and re-invoke the skill; it must not call `ExitPlanMode` (that presents a plan for approval — wrong semantics) and must not silently continue. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza — skill-refs is the single mechanism for shared cross-skill text. Codex skills are exempt — Codex has no Claude plan mode.
+The referenced directive tells the user, if plan mode is active, to STOP, exit plan mode (`Shift+Tab`), and re-invoke the skill; it must not call `ExitPlanMode` (that presents a plan for approval — wrong semantics) and must not silently continue. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza — skill-refs is the single mechanism for shared cross-skill text. Codex skills are exempt — Codex has no Claude plan mode. This is the plan-consuming polarity; a plan-originating mutator carries the opposite one (see "Plan-validate-execute gate" below), and one skill carries exactly one polarity.
+
+## Plan-validate-execute gate
+
+A plan-originating mutator — a user-launched skill whose job includes mutating user-owned files, repositories, or services without an already-approved plan (`bootstrap`, `suckless-patcher`, `jira-ticket-creator`, `osc-obs`) — carries the opposite polarity from the executor STOP gate: it enters plan mode first, presents the ordered plan for approval, validates previews, then executes one mutation at a time. One skill carries exactly one polarity, because a skill cannot both stop on plan mode and enter it. The gate lives on the user-launched entry layer — a fresh-context worker never sees plan mode and cannot run the approval turn — and Codex skills are exempt. See [ADR-0035](../decisions/ADR-0035-two-polarity-plan-gates-from-one-skill-refs-home.md).
+
+Every plan-originating mutator carries this byte-identical stanza before every other `##` section, deferring the full protocol to the shared source of truth, `skill-refs/orchestration/plan-validate-execute-gate.md`:
+
+```text
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+```
+
+Each carrier also accepts a `--no-plan` input, which skips only the Phase 1 approval turn: the plan is still stated in the reply, and the validate and execute phases still run. No skill may instruct pre-approving or allowlisting `ExitPlanMode` — its approval prompt is the gate, and approving it automatically is the same as having no gate.
+
+A skill that presents its complete proposed artifact verbatim and waits for an explicit approve/abort before writing (`cog-skill-creator`, `claudemd`) already satisfies this contract with a stronger preview; it keeps its own gate, carries no stanza, and adds no second approval turn. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza.
 
 ## Context-brief gate
 
@@ -280,6 +296,8 @@ The suppression names `allow-inline-shell` and `allow-orchestration-history` mus
 - Is repeated command logic shared through `cog::fn::*`?
 - Does orchestration prose follow `docs/reference/orchestration-contract.md`?
 - Does every `executor-*` skill carry the Phase 0 plan-mode gate pointer (see Plan-mode gate)?
+- Does every plan-originating mutator carry the plan-validate-execute gate stanza and `--no-plan` handling, and does no skill carry both gate polarities?
+- Does no skill instruct pre-approving or allowlisting `ExitPlanMode`?
 - Does every brief-building delegator carry the `input-fidelity` marker and enrichment-only prose?
 - Does the skill body describe judgment and sequencing rather than reimplementing mechanics?
 - Does `cog skill-lint <SKILL.md>` pass for touched skills?

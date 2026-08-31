@@ -8,7 +8,7 @@ description: >
   installing what is absent and improving what is present. Use when the user
   says "bootstrap", "project bootstrap", "bootstrap a project", "scaffold a new
   project", or "set up a project".
-argument-hint: "[project-dir] <what to set up / free-form intent>"
+argument-hint: "[--no-plan] [project-dir] <what to set up / free-form intent>"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Agent Skill AskUserQuestion Grep Glob
 model: opus
@@ -26,6 +26,10 @@ It runs on a new project or an existing one. Every run refreshes the reviewed te
 
 **This orchestrator is the only interactive component.** Workers never interview; everything they need arrives in their brief.
 
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+
+The audit, the detectors, and the interview are Phase 1 research; `cog rundir`, brief building, and worker dispatch happen only after the plan is approved.
+
 ## Workers
 
 Six run on every project: `bootstrap-lint` (`.editorconfig` plus `.pre-commit-config.yaml` — one code-style domain, two files that only work when they agree), `bootstrap-nix`, `bootstrap-repo`, `bootstrap-governance`, `bootstrap-ci`, and `bootstrap-taskrunner`.
@@ -39,7 +43,7 @@ Two are conditional, and none is a `cog bootstrap-audit` domain — the audit's 
 
 ## Inputs
 
-`$ARGUMENTS` is an optional target project directory (default: the current working directory) plus free-form intent describing what to set up. The intent orients the interview; it is never assumed to be complete.
+`$ARGUMENTS` is an optional target project directory (default: the current working directory) plus free-form intent describing what to set up. The intent orients the interview; it is never assumed to be complete. A leading `--no-plan` token skips the plan-approval turn only, per the gate.
 
 ## Audit and interview
 

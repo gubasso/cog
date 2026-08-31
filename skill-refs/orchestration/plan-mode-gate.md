@@ -1,6 +1,6 @@
 # Plan-mode gate
 
-Single source of truth for the Phase-0 plan-mode gate. Every Claude `executor-*` orchestrator carries a short in-body imperative that points here; this file owns the full protocol. The gate lives on the orchestrator layer — the caller a user launches gates once at entry, then delegates to gate-free plan/review workers. Plan-mode detection stays probabilistic in skill prose.
+Single source of truth for the Phase-0 plan-mode gate. Every Claude `executor-*` orchestrator carries a short in-body imperative that points here; this file owns the full protocol. The gate lives on the orchestrator layer — the caller a user launches gates once at entry, then delegates to gate-free plan/review workers. Plan-mode detection stays probabilistic in skill prose. A plan-originating mutator carries the opposite polarity — it enters plan mode first, per `orchestration/plan-validate-execute-gate.md`; one skill carries exactly one polarity.
 
 ## Directive
 

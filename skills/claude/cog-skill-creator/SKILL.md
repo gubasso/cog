@@ -4,7 +4,7 @@ description: >
   Delegates deterministic name validation, collision checks, scaffold path computation, draft
   validation, and skill linting to the cog CLI while preserving authoring interview and skill design
   judgment in prose. Drafts skills that already satisfy the full skill contract: prefix taxonomy,
-  model/effort tier, plan-mode gate, context-brief gate, input-fidelity, producer-blindness,
+  model/effort tier, plan-mode and plan-validate-execute gates, context-brief gate, input-fidelity, producer-blindness,
   stage-agnostic identifiers, lean-positive prose, twin naming, and the per-class skill-class
   contract. Use when the user says "cog-skill-creator", "create a skill", "new skill", "author a
   skill", or "scaffold a skill".
@@ -29,7 +29,8 @@ The authoring references ship with `cog` and resolve through `cog skill-refs pat
 
 - `cog skill-class list|show --class <c>` — the per-class required/forbidden markers, tier basis, and input/output obligations.
 - `cog power-grade skill-tier --skill <name>` / `cog power-grade tier --name <tier>` — the expected model/effort tier and the registry escape hatch.
-- `cog skill-refs path orchestration/plan-mode-gate.md` / `orchestration/context-brief-gate.md` — the canonical gate directives that orchestrators point to.
+- `cog skill-refs path orchestration/plan-mode-gate.md` / `orchestration/plan-validate-execute-gate.md` / `orchestration/context-brief-gate.md` — the canonical gate directives that orchestrators and mutators point to.
+- `cog research-shelf list|get` — dated, sourced spec-level findings tagged `skill-authoring`; consult them before asserting a frontmatter or gating fact, and re-research any entry past its `revalidate-after` per the shelf contract.
 - `cog skill-class check --skill <path>` and `cog skill-lint <path>` — the draft gates.
 
 ## Inputs
@@ -119,7 +120,8 @@ Fix every reported issue before presenting the draft.
    - include env-preflight requirements when foreground execution matters.
 
 8. Apply the class contract's markers and gates:
-   - `executor-*` carries a Phase 0 plan-mode gate pointer (see Plan-mode gate).
+   - `executor-*` carries a Phase 0 plan-mode gate pointer (see Plan gates).
+   - A plan-originating mutator — a user-launched skill that mutates user-owned files, repositories, or services without an already-approved plan — carries the plan-validate-execute gate stanza and a `--no-plan` input; one skill carries exactly one gate polarity (see Plan gates).
    - A brief-building delegator at a fresh-context boundary carries the input-fidelity marker and a context-brief gate pointer to `$(cog skill-refs path orchestration/context-brief-gate.md)`.
    - A `plan-*` emitter carries the plan-emitter marker.
    - A consumer is producer-blind: it names only its structural input contract, never the producer.
@@ -143,22 +145,30 @@ Fix every reported issue before presenting the draft.
     cog skill-lint "$DRAFT_FILE"
     ```
 
-15. Present the proposed tree in fenced blocks, one block per file, labeled with the relative path. Wait for `approve`, `approve with changes: <notes>`, or `abort`. Never auto-apply.
+15. Present the proposed tree in fenced blocks, one block per file, labeled with the relative path. Wait for `approve`, `approve with changes: <notes>`, or `abort`. Never auto-apply. This approve/abort presentation is this skill's own plan-validate-execute gate equivalent — the full draft is a stronger preview than a plan (`$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`).
 
 16. After approval, write files according to the scaffold JSON. Personal scope writes to stage paths first, then installs from `$STAGE` to `$DEST`. Project scope writes directly to `skills/<runtime>/<name>/`.
 
 17. On success, report written paths and the invocation hint.
 
-## Plan-mode gate
+## Plan gates
 
-The plan-mode gate lives on the executor-\* orchestrator layer, not on plan/review workers. If the new skill is a Claude `executor-*` skill, give it a short Phase 0 pointer that keeps the STOP imperative in the body and defers the full protocol to the shared source of truth:
+Two polarities, one per skill, never both — a skill cannot both stop on plan mode and enter it. Both gates live on the user-launched entry layer: the caller gates once, then delegates to gate-free workers. Codex skills are exempt — Codex has no Claude plan mode.
+
+A plan-consuming Claude `executor-*` skill carries a short Phase 0 pointer that keeps the STOP imperative in the body and defers the full protocol to the shared source of truth:
 
 ```text
 **Phase 0 — Plan-mode gate.** If Claude Code plan mode is active, STOP before any other work and
 follow `$(cog skill-refs path orchestration/plan-mode-gate.md)`.
 ```
 
-The caller gates once at entry (plan mode is read-only and blocks writes), then delegates to gate-free workers. The canonical directive — do not call `ExitPlanMode`, do not silently continue — lives in `skill-refs/orchestration/plan-mode-gate.md`; the skill body carries only the pointer. Codex skills are exempt.
+A plan-originating mutator carries the opposite polarity — plan first, present, validate, then execute — via the byte-identical stanza, placed before every other `##` section:
+
+```text
+**Plan-validate-execute gate.** Before the first mutation of any kind, follow `$(cog skill-refs path orchestration/plan-validate-execute-gate.md)`: enter plan mode, present the ordered plan for approval, validate previews, then execute one mutation at a time. `--no-plan` skips the approval turn only — the plan is still stated, and the validate and execute phases still run.
+```
+
+A skill that presents its complete proposed artifact verbatim and waits for an explicit approve/abort before writing already satisfies the plan-validate-execute contract with a stronger preview; it keeps its own gate, carries no stanza, and adds no second approval turn. The canonical directives live in `skill-refs/orchestration/`; the skill body carries only its pointer.
 
 ## Rules
 
@@ -166,6 +176,9 @@ The caller gates once at entry (plan mode is read-only and blocks writes), then 
 - Never invent frontmatter fields absent from the runtime contract.
 - Never give a governed-intent skill a name whose prefix does not match its behavior.
 - Never ship a Claude executor-*/runner- skill without its Phase 0 plan-mode gate pointer.
+- Never ship a plan-originating mutator without its plan-validate-execute gate stanza and `--no-plan` input.
+- Never give one skill both gate polarities.
+- Never instruct pre-approving or allowlisting `ExitPlanMode` — approving it automatically is the same as having no gate.
 - Never select Sonnet; use `model: opus` + `effort: low`, or no override.
 - Never skip the approval gate.
 - Never treat `cog-skill-creator-scaffold` output as permission to write. It is path computation only.
