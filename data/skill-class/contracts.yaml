@@ -1,5 +1,5 @@
 # Per-class membership contracts for the core skill taxonomy (ADR-0006, DP11).
-# `cog skill-class check` composes the scattered facet checks (skill-prefix-taxonomy,
+# `cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks (skill-prefix-taxonomy,
 # producer-blindness, input-fidelity, stage-agnostic) into ONE
 # positive class-membership assertion: a governed
 # plan-*/review-*/review-plan-*/executor-* skill must carry all its class

@@ -131,16 +131,6 @@ Audit CLAUDE.\&md deterministic signals.\&
 Run codex-session orchestration helpers.\&
 .PP
 .RE
-\fBcog-skill-creator-scaffold\fR
-.RS 4
-Compute skill scaffold paths.\&
-.PP
-.RE
-\fBcog-skill-creator-validate\fR
-.RS 4
-Validate cog-skill-creator inputs.\&
-.PP
-.RE
 \fBcontext-brief\fR
 .RS 4
 Template, build, and validate a rich-context handoff brief.\&
@@ -451,11 +441,6 @@ Validate review findings JSON.\&
 Create a workflow run directory and optionally acquire its lock.\&
 .PP
 .RE
-\fBskill-class\fR
-.RS 4
-Show and check core skill-class contracts and prerequisites.\&
-.PP
-.RE
 \fBskill-lint\fR
 .RS 4
 Lint SKILL.\&md files against the skill/script boundary.\&
@@ -464,6 +449,11 @@ Lint SKILL.\&md files against the skill/script boundary.\&
 \fBskill-refs\fR
 .RS 4
 Resolve in-repo/installed skill-source reference files.\&
+.PP
+.RE
+\fBskill-vendor\fR
+.RS 4
+Check or refresh vendored skill-package references against their owner.\&
 .PP
 .RE
 \fBsuckless-apply\fR
@@ -544,7 +534,7 @@ Newline-delimited absolute file paths owned by the installer.\& If
 .RE
 \fB$HOME/.\&claude/skills/\fR
 .RS 4
-Installed Claude skills copied from \fBskills/claude/\fR.\&
+Installed Claude skills copied from \fBskills-native/claude/\fR.\&
 .PP
 .RE
 \fB$HOME/.\&claude/agents/\fR
@@ -554,7 +544,7 @@ Installed Claude agents copied from \fBagents/claude/\fR.\&
 .RE
 \fB$HOME/.\&agents/skills/\fR
 .RS 4
-Installed Codex skills copied from \fBskills/codex/\fR.\&
+Installed Codex skills copied from \fBskills-native/codex/\fR.\&
 .PP
 .RE
 .SH ENVIRONMENT

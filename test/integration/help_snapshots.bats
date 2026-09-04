@@ -98,8 +98,6 @@ Commands:
   claude-runner  Run claude-session orchestration helpers.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
-  cog-skill-creator-scaffold Compute skill scaffold paths.
-  cog-skill-creator-validate Validate cog-skill-creator inputs.
   context-brief  Template, build, and validate a rich-context handoff brief.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
@@ -162,9 +160,9 @@ Commands:
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
+  skill-vendor   Check or refresh vendored skill-package references against their owner.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.
@@ -205,8 +203,6 @@ Commands:
   claude-runner  Run claude-session orchestration helpers.
   claudemd-audit Audit CLAUDE.md deterministic signals.
   codex-runner   Run codex-session orchestration helpers.
-  cog-skill-creator-scaffold Compute skill scaffold paths.
-  cog-skill-creator-validate Validate cog-skill-creator inputs.
   context-brief  Template, build, and validate a rich-context handoff brief.
   doctor         Check cog runtime health and installation prerequisites.
   editorconfig-apply Apply an editorconfig template to a project.
@@ -269,9 +265,9 @@ Commands:
   review-tech-scope Detect review technologies and bundled reference targets.
   review-validate-findings Validate review findings JSON.
   rundir         Create a workflow run directory and optionally acquire its lock.
-  skill-class    Show and check core skill-class contracts and prerequisites.
   skill-lint     Lint SKILL.md files against the skill/script boundary.
   skill-refs     Resolve in-repo/installed skill-source reference files.
+  skill-vendor   Check or refresh vendored skill-package references against their owner.
   suckless-apply Check, apply, and build a suckless patch.
   suckless-conflicts List suckless patch conflict artifacts.
   suckless-preflight Detect suckless tree signals and clean state.

@@ -24,8 +24,11 @@ record_path() {
 }
 
 record_tree_files() {
-  local src_dir="$1"
-  local dest_dir="$2"
+  # A caller can pass a directory with a trailing slash, because a `for d in
+  # dir/*/` glob produces one. Strip it, or the prefix below never matches and
+  # every recorded path is absolute-on-absolute, which leaves the manifest wrong.
+  local src_dir="${1%/}"
+  local dest_dir="${2%/}"
   local path rel
 
   while IFS= read -r path; do
@@ -194,12 +197,39 @@ require_source_path "$repo_root/data/maintenance-tracking.yaml"
 require_source_path "$repo_root/data/research-shelf/index.jsonl"
 require_source_path "$repo_root/VERSION"
 require_source_path "$repo_root/completions/cog.bash"
+require_source_path "$repo_root/skills"
+require_source_path "$repo_root/skills-native/claude"
+require_source_path "$repo_root/skills-native/codex"
 if [[ ! -e $repo_root/man/cog.1 && ! -e $repo_root/man/cog.1.scd && $scdoc_available -eq 1 ]]; then
   cog_install_die "missing source path $repo_root/man/cog.1.scd; run from a complete cog checkout"
 fi
 if [[ ! -e $repo_root/man/cog.1 && $scdoc_available -eq 0 ]]; then
   cog_install_warn "scdoc not found and no prebuilt man/cog.1 exists; man page install will be skipped"
 fi
+
+# A skill has one authored owner. A name that exists as both a portable package
+# and a runtime-native package has two, and the install order alone would decide
+# which one a user ends up running. Fail here, before the first destination
+# write, so the payload is never half applied.
+assert_unambiguous_skill_ownership() {
+  local portable native name collision=""
+
+  for portable in "$repo_root"/skills/*/; do
+    [[ -d $portable ]] || continue
+    name="$(basename "$portable")"
+    for native in "$repo_root/skills-native"/*/"$name"; do
+      [[ -d $native ]] || continue
+      collision+=" ${name}"
+      break
+    done
+  done
+
+  if [[ -n $collision ]]; then
+    cog_install_die "skill name owned by both a portable and a native source:${collision}; keep exactly one authored owner per name"
+  fi
+  return 0
+}
+assert_unambiguous_skill_ownership
 
 cog_install_require_writable_dir "$state_dir" "state directory"
 cog_install_require_writable_dir "$app_root" "application root"
@@ -281,12 +311,24 @@ ln -sfn "$app_root/bin/cog" "$bin_link"
 record_path "$bin_link"
 cog_install_ok "Link executable"
 
-cog_install_set_step "sync Claude and Codex skills" "Check write permissions under $home/.claude and $home/.agents; if COG_INSTALL_MIRROR=1, verify the target roots are safe to mirror."
-cog_install_step "Sync Claude and Codex skills"
-sync_tree "$repo_root/skills/claude" "$home/.claude/skills"
+cog_install_set_step "sync skills and agents" "Check write permissions under $home/.claude and $home/.agents; if COG_INSTALL_MIRROR=1, verify the target roots are safe to mirror."
+cog_install_step "Sync skills and agents"
+# The native trees run first. Each targets exactly one root and keeps the
+# whole-tree copy, and in mirror mode that copy deletes everything under the
+# root that the current source does not ship. Placing the portable packages
+# afterwards keeps them out of that deletion.
+sync_tree "$repo_root/skills-native/claude" "$home/.claude/skills"
 sync_tree "$repo_root/agents/claude" "$home/.claude/agents"
-sync_tree "$repo_root/skills/codex" "$home/.agents/skills"
-cog_install_ok "Sync Claude and Codex skills"
+sync_tree "$repo_root/skills-native/codex" "$home/.agents/skills"
+# A portable package has one authored owner and projects the same bytes into
+# every supported agent root, so it is copied per package rather than per tree.
+for skill_pkg in "$repo_root"/skills/*/; do
+  [[ -d $skill_pkg ]] || continue
+  skill_name="$(basename "$skill_pkg")"
+  sync_tree "$skill_pkg" "$home/.claude/skills/$skill_name"
+  sync_tree "$skill_pkg" "$home/.agents/skills/$skill_name"
+done
+cog_install_ok "Sync skills and agents"
 
 cog_install_set_step "install shell integration" "Check write permissions under $comp_dir."
 cog_install_step "Install shell integration"

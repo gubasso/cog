@@ -38,10 +38,12 @@ Read-only data subtrees are refreshed on install. The append-only research shelf
 
 ## Skill and agent overlays
 
-| Path                   | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `$HOME/.claude/skills` | Installed Claude skills copied from `skills/claude`. |
-| `$HOME/.claude/agents` | Installed Claude agents copied from `agents/claude`. |
-| `$HOME/.agents/skills` | Installed Codex skills copied from `skills/codex`.   |
+| Path                   | Purpose                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `$HOME/.claude/skills` | Portable packages from `skills/`, plus Claude-native ones from `skills-native/claude`. |
+| `$HOME/.claude/agents` | Installed Claude agents copied from `agents/claude`.                                   |
+| `$HOME/.agents/skills` | Portable packages from `skills/`, plus Codex-native ones from `skills-native/codex`.   |
+
+A portable package is copied per package into both skill roots, and the two copies are the same bytes. A native package reaches only its own root. The installer refuses to run when one name exists in both source classes.
 
 These roots may contain user-authored content. `uninstall.sh` removes only manifest-listed files and prunes empty directories.

@@ -52,7 +52,7 @@ teardown() {
   [[ $stderr == *"Preflight"* ]]
   [[ $stderr == *"Copy application payload"* ]]
   [[ $stderr == *"Link executable"* ]]
-  [[ $stderr == *"Sync Claude and Codex skills"* ]]
+  [[ $stderr == *"Sync skills and agents"* ]]
   [[ $stderr == *"Finalize manifest"* ]]
 }
 
@@ -115,6 +115,71 @@ teardown() {
   run find "$HOME/.agents/skills" -type f -print -quit
   assert_success
   [ -n "$output" ]
+}
+
+# A portable package has one authored owner, so the two projections must be the
+# same bytes. Compare the whole package, not just SKILL.md, because a companion
+# file that drifts breaks the guarantee just as badly.
+@test "a portable package installs byte-identically into both agent roots" {
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  local pkg name
+  for pkg in "$REPO_ROOT"/skills/*/; do
+    [ -d "$pkg" ] || continue
+    name="$(basename "$pkg")"
+
+    assert_file_exists "$HOME/.claude/skills/$name/SKILL.md"
+    assert_file_exists "$HOME/.agents/skills/$name/SKILL.md"
+
+    run diff -r "$pkg" "$HOME/.claude/skills/$name"
+    assert_success
+    run diff -r "$pkg" "$HOME/.agents/skills/$name"
+    assert_success
+  done
+}
+
+@test "a native package reaches only its own agent root" {
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  # gc is Claude-native and has no Codex twin; implementation-reviewer is Codex-only.
+  assert_file_exists "$HOME/.claude/skills/gc/SKILL.md"
+  assert_file_not_exists "$HOME/.agents/skills/gc/SKILL.md"
+  assert_file_exists "$HOME/.agents/skills/implementation-reviewer/SKILL.md"
+  assert_file_not_exists "$HOME/.claude/skills/implementation-reviewer/SKILL.md"
+}
+
+@test "every installed portable file is recorded in the manifest" {
+  run "$REPO_ROOT/install.sh"
+  assert_success
+
+  local manifest="$XDG_STATE_HOME/cog/install-manifest"
+  local pkg name rel
+  for pkg in "$REPO_ROOT"/skills/*/; do
+    [ -d "$pkg" ] || continue
+    name="$(basename "$pkg")"
+    while IFS= read -r rel; do
+      grep -qxF "$HOME/.claude/skills/$name/$rel" "$manifest"
+      grep -qxF "$HOME/.agents/skills/$name/$rel" "$manifest"
+    done < <(cd "$pkg" && find . -type f -printf '%P\n')
+  done
+}
+
+@test "a name owned by both a portable and a native source fails before any write" {
+  local staged="$BATS_TEST_TMPDIR/collide"
+  cp -a "$REPO_ROOT" "$staged"
+  rm -rf "$staged/.git"
+  mkdir -p "$staged/skills-native/claude/skill-creator"
+  cp "$staged/skills/skill-creator/SKILL.md" "$staged/skills-native/claude/skill-creator/SKILL.md"
+
+  run "$staged/install.sh"
+  assert_failure
+  assert_output --partial "owned by both a portable and a native source"
+
+  # Fails closed: nothing reached a destination root.
+  assert_dir_not_exists "$HOME/.claude/skills"
+  assert_dir_not_exists "$HOME/.agents/skills"
 }
 
 @test "uninstall preserves user-authored files" {

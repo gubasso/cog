@@ -31,4 +31,4 @@ The rule that bounds the removal: cog never chooses, deploys, wires, or recommen
 
 Implemented
 
-Enacted in [taskrunner-detect](../../lib/commands/cmd_taskrunner_detect.sh), [taskrunner-apply](../../lib/commands/cmd_taskrunner_apply.sh), [installer-apply](../../lib/commands/cmd_installer_apply.sh), and [bootstrap-taskrunner](../../skills/claude/bootstrap-taskrunner/SKILL.md).
+Enacted in [taskrunner-detect](../../lib/commands/cmd_taskrunner_detect.sh), [taskrunner-apply](../../lib/commands/cmd_taskrunner_apply.sh), [installer-apply](../../lib/commands/cmd_installer_apply.sh), and [bootstrap-taskrunner](../../skills-native/claude/bootstrap-taskrunner/SKILL.md).

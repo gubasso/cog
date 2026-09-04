@@ -67,7 +67,7 @@ repos:
         name: codex single-entrypoint invariant
         entry: bin/cog lint-codex-wrapper
         language: system
-        files: ^skills/claude/.*/SKILL\.md$
+        files: ^skills-native/claude/.*/SKILL\.md$
         pass_filenames: true
         stages: [pre-commit]
 
@@ -75,8 +75,16 @@ repos:
         name: skill boundary lint
         entry: bin/cog skill-lint
         language: system
-        files: ^(skills/(claude|codex)/.*/SKILL\.md|\.claude/skills/.*/SKILL\.md)$
+        files: ^(skills/[^/]+/SKILL\.md|skills-native/(claude|codex)/.*/SKILL\.md|\.claude/skills/.*/SKILL\.md)$
         pass_filenames: true
+        stages: [pre-commit]
+
+      - id: skill-vendor-check
+        name: vendored skill references match their owner
+        entry: bin/cog skill-vendor check
+        language: system
+        files: ^(skill-refs/skill-authoring/universal/.*\.md|skills/[^/]+/references/.*)$
+        pass_filenames: false
         stages: [pre-commit]
 
       - id: skill-refs-lint

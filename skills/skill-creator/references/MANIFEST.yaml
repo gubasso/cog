@@ -1,0 +1,12 @@
+# Vendored copies. Each digest is the SHA-256 of the file beside it.
+# These files are copies. Edit them at the source below, not here.
+source: skill-refs/skill-authoring/universal
+files:
+  checklist.md: 79871e27d18313d791f88369e09c22d1821ea61de3c735670ec31a9893ae4e94
+  descriptions-and-triggers.md: 2afc292cd7d8ede09d61f0cb609c318c42d2a6a85477c3f8d99bdda9d931612b
+  evaluations.md: d315ca610fb9a76e8e0d80b67f1a8eb22283d518fd4d3eeef10a00df7ae45213
+  progressive-disclosure.md: 415592ec6eb26d35e5587932d8808757a156dc57df53549684e333c5dc0bdd06
+  script-extraction.md: 5b08489830c2dcee64e2a57334921ea0a02acce907e975549a6dc9a3c90612ed
+  security.md: e43da466a2318efd1990ad82b609085c4d0996ed122bdc87c455e9d3b02a4684
+  standard.md: 6274ee2e640f417a97a0c67de0c61d6a02fca9c07243a760d5259337c8981818
+  writing-style.md: 08a04dd626c43b1b10b251e8555534e1c4794867b4f55aaf5c7be9907de788e2

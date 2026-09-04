@@ -17,7 +17,10 @@ __cog_skill_lint_add_default_files() {
   local root="$1" path
   while IFS= read -r path; do
     [[ -n $path ]] && printf '%s\n' "$path"
-  done < <(find "$root/skills/claude" "$root/skills/codex" "$root/.claude/skills" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null | sort)
+  done < <({
+    find "$root/skills" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null
+    find "$root/skills-native/claude" "$root/skills-native/codex" "$root/.claude/skills" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null
+  } | sort)
 }
 
 # Runtime skill-refs markdown (everything under skill-refs/ except the
@@ -50,7 +53,7 @@ __cog_skill_lint_check_structure() {
 
   runtime="$(cog::fn::skill::runtime_for_path "$file")"
   if [[ -z $runtime ]]; then
-    __cog_skill_lint_finding "$file" 1 "path" "could not determine skill runtime" "place SKILL.md under skills/claude, skills/codex, or .claude/skills"
+    __cog_skill_lint_finding "$file" 1 "path" "could not determine skill runtime" "place SKILL.md under skills/<name> for a portable package, or under skills-native/claude or skills-native/codex for a runtime-native one"
     failed=1
   fi
 
@@ -178,18 +181,21 @@ __cog_skill_lint_check_prefix_taxonomy() {
 
 __cog_skill_lint_check_source_paths() {
   # Runtime skill files must not reference another skill's source-tree path
-  # (e.g. skills/claude/<name>/SKILL.md or the stale Codex twin shape
+  # (e.g. skills-native/claude/<name>/SKILL.md or the stale Codex twin shape
   # codex-session/.agents/skills/<name>/SKILL.md). Such source-repo meta has no
   # meaning in the end-user runtime; reference the skill by its runtime name or
-  # move the meta to docs/. Authoring placeholders (skills/claude/<name>/SKILL.md
+  # move the meta to docs/. Authoring placeholders (skills-native/claude/<name>/SKILL.md
   # with a literal <name>) and runtime-installed delegation paths
   # ($HOME/.claude/skills/... or project-local .claude/skills/...) are not
   # matched: the regex anchors to a concrete claude/codex source segment and a
-  # real skill name. See docs/decisions/ADR-0017-skill-authoring-and-lint.md.
+  # real skill name. The portable shape skills/<name>/SKILL.md is deliberately
+  # exempt, because a skill that teaches skill authoring must be able to show
+  # that layout as the destination it writes. See
+  # docs/decisions/ADR-0017-skill-authoring-and-lint.md.
   local file="$1"
   local line line_no=0 failed=0 in_frontmatter=false frontmatter_done=false in_fence=false
   local fence_re='^[[:space:]]*```+'
-  local src_re='(skills/(claude|codex)|codex-session/\.agents/skills)/[a-z0-9-]+/SKILL\.md'
+  local src_re='(skills-native/(claude|codex)|codex-session/\.agents/skills)/[a-z0-9-]+/SKILL\.md'
 
   # shellcheck disable=SC2094
   while IFS= read -r line || [[ -n $line ]]; do
@@ -1389,14 +1395,14 @@ __cog_skill_lint_check_skill_class() {
     [[ -n $item ]] || continue
     __cog_skill_lint_finding "$file" 1 "skill-class-contract" \
       "class '${class}' contract: missing prerequisite '${item}'" \
-      "satisfy the '${class}' class contract (cog skill-class show --class ${class})"
+      "add the missing '${item}' to satisfy the '${class}' class contract; the contract is in skill-refs/skill-authoring/skill-class-contracts.md"
     failed=1
   done < <(jq -r '.missing[]?' <<<"$report")
   while IFS= read -r item; do
     [[ -n $item ]] || continue
     __cog_skill_lint_finding "$file" 1 "skill-class-contract" \
       "class '${class}' contract: forbidden '${item}' present" \
-      "remove the prohibited '${item}' (cog skill-class show --class ${class})"
+      "remove the prohibited '${item}'; the '${class}' contract is in skill-refs/skill-authoring/skill-class-contracts.md"
     failed=1
   done < <(jq -r '.forbidden_present[]?' <<<"$report")
   return "$failed"
@@ -1561,6 +1567,33 @@ __cog_skill_lint_scan_file() {
   return "$failed"
 }
 
+# skill-source-ownership: a skill has one authored owner, so a name must not exist
+# as both a portable package and a runtime-native one. This is the only rule here
+# that is a property of the tree rather than of one file, so it runs once per
+# invocation against the repository, whatever file list the caller passed. The
+# installer enforces the same invariant at install time; catching it here means a
+# collision fails at the authoring gate instead of at a user's machine.
+__cog_skill_lint_check_source_ownership() {
+  local root="$1" portable name native failed=0
+
+  [[ -d $root/skills ]] || return 0
+
+  for portable in "$root"/skills/*/; do
+    [[ -d $portable ]] || continue
+    name="$(basename "$portable")"
+    for native in "$root/skills-native"/*/"$name"; do
+      [[ -d $native ]] || continue
+      __cog_skill_lint_finding "skills/${name}" 1 "skill-source-ownership" \
+        "skill name owned by both a portable and a native source" \
+        "keep one authored owner: delete ${native#"$root"/}, or move the portable package under skills-native/"
+      failed=1
+      break
+    done
+  done
+
+  return "$failed"
+}
+
 cog::cmd::skill_lint() {
   local repo_root file failed=0
   local -a files=()
@@ -1582,6 +1615,11 @@ cog::cmd::skill_lint() {
     while IFS= read -r file; do
       files+=("$file")
     done < <(__cog_skill_lint_add_default_skill_refs "$repo_root")
+  fi
+
+  [[ -n ${repo_root:-} ]] || repo_root="$(__cog_skill_lint_repo_root)"
+  if ! __cog_skill_lint_check_source_ownership "$repo_root"; then
+    failed=1
   fi
 
   for file in "${files[@]}"; do

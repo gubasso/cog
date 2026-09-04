@@ -23,38 +23,11 @@ cog::fn::skill_class::data_json() {
   cog::fn::data::load_dir "$path"
 }
 
-cog::fn::skill_class::governed_classes() {
-  printf '%s\n' plan review review-plan executor bootstrap
-}
-
 cog::fn::skill_class::is_governed_class() {
   case "${1:-}" in
     plan | review | review-plan | executor | bootstrap) return 0 ;;
     *) return 1 ;;
   esac
-}
-
-cog::fn::skill_class::list_json() {
-  local data
-  data="$(cog::fn::skill_class::data_json)"
-  jq -n --argjson classes "$(jq -c '.skill_classes' <<<"$data")" \
-    '{schema: "cog.skill-class.list.v1", ok: true,
-      classes: ($classes | to_entries | map({class: .key, summary: .value.summary,
-        required_markers: .value.required_markers,
-        forbidden_markers: .value.forbidden_markers}))}'
-}
-
-cog::fn::skill_class::show_json() {
-  local class="${1:-}" data contract
-  cog::fn::skill_class::is_governed_class "$class" || cog::fn::error_raise "InvalidInput" \
-    "unknown skill class" "class: ${class}" "expected plan|review|review-plan|executor|bootstrap" \
-    "run 'cog skill-class list'"
-  data="$(cog::fn::skill_class::data_json)"
-  contract="$(jq -c --arg c "$class" '.skill_classes[$c]' <<<"$data")"
-  [[ $contract != null ]] || cog::fn::error_raise "InputNotFound" \
-    "skill class has no contract entry" "class: ${class}" "" "add it to data/skill-class/contracts.yaml"
-  jq -n --arg class "$class" --argjson contract "$contract" \
-    '{schema: "cog.skill-class.show.v1", ok: true, class: $class, contract: $contract}'
 }
 
 # True when an HTML-comment marker whose inner token is $2 is present in file $1.

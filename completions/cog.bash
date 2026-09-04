@@ -35,8 +35,6 @@ _cog() {
     claude-runner
     claudemd-audit
     codex-runner
-    cog-skill-creator-scaffold
-    cog-skill-creator-validate
     context-brief
     doctor
     editorconfig-apply
@@ -99,9 +97,9 @@ _cog() {
     review-tech-scope
     review-validate-findings
     rundir
-    skill-class
     skill-lint
     skill-refs
+    skill-vendor
     suckless-apply
     suckless-conflicts
     suckless-preflight

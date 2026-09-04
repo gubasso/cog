@@ -1,0 +1,32 @@
+# Portability fixtures for the portable skill-creator package.
+# Repository-only. These are never installed with the skill.
+skill: skill-creator
+class: portable
+
+runtimes:
+  - id: claude-code
+    discovery_path: "$HOME/.claude/skills/skill-creator/SKILL.md"
+    invocation: "/skill-creator"
+  - id: codex
+    discovery_path: "$HOME/.agents/skills/skill-creator/SKILL.md"
+    invocation: "$skill-creator"
+
+expect_frontmatter_accepted: [name, description]
+
+expect:
+  - "the same bytes are present at both discovery paths"
+  - "the skill body appears in the transcript after invocation"
+  - "every references/ file resolves relative to the skill directory"
+  - "no invocation of cog occurs during the run"
+
+permitted_differences:
+  - "the invocation prefix differs per runtime"
+
+# The package declares only the upstream Agent Skills required pair, which is the
+# intersection of every target runtime's allowlist. A field one runtime accepts
+# and another rejects would break byte-identical projection.
+forbidden_frontmatter:
+  - model
+  - effort
+  - allowed-tools
+  - argument-hint

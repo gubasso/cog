@@ -520,7 +520,7 @@ This is the most useful heuristic for review: it forces you to identify what the
 
 ---
 
-These heuristics drive the lint rules in the `test-review` skill (`skills/claude/test-review/`; Claude planner + Codex implementer, ships with cog). Invoke the skill on any project to audit the suite against this principles file and produce a refactor plan.
+These heuristics drive the lint rules in the `test-review` skill (`skills-native/claude/test-review/`; Claude planner + Codex implementer, ships with cog). Invoke the skill on any project to audit the suite against this principles file and produce a refactor plan.
 
 ## What to mock, what not to mock
 

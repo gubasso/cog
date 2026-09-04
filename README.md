@@ -6,9 +6,10 @@ The CLI installs as a self-contained app root. The payload includes:
 
 - `bin/cog`, `lib/`, `templates/`, and `VERSION`
 - Bash completion and an optional man page
-- Claude skills under `skills/claude/`
+- Portable skills under `skills/`, installed byte-identically into every agent root
+- Claude-native skills under `skills-native/claude/`
+- Codex-native skills under `skills-native/codex/`
 - Claude agents under `agents/claude/`
-- Codex skills under `skills/codex/`
 
 ## Quick Start
 

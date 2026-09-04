@@ -84,12 +84,6 @@ The command list and short descriptions are sourced from command modules under
 *codex-runner*
 	Run codex-session orchestration helpers.
 
-*cog-skill-creator-scaffold*
-	Compute skill scaffold paths.
-
-*cog-skill-creator-validate*
-	Validate cog-skill-creator inputs.
-
 *context-brief*
 	Template, build, and validate a rich-context handoff brief.
 
@@ -276,14 +270,14 @@ The command list and short descriptions are sourced from command modules under
 *rundir*
 	Create a workflow run directory and optionally acquire its lock.
 
-*skill-class*
-	Show and check core skill-class contracts and prerequisites.
-
 *skill-lint*
 	Lint SKILL.md files against the skill/script boundary.
 
 *skill-refs*
 	Resolve in-repo/installed skill-source reference files.
+
+*skill-vendor*
+	Check or refresh vendored skill-package references against their owner.
 
 *suckless-apply*
 	Check, apply, and build a suckless patch.
@@ -334,13 +328,13 @@ The command list and short descriptions are sourced from command modules under
 	*XDG_STATE_HOME* is unset, the default is *$HOME/.local/state*.
 
 *$HOME/.claude/skills/*
-	Installed Claude skills copied from *skills/claude/*.
+	Installed Claude skills copied from *skills-native/claude/*.
 
 *$HOME/.claude/agents/*
 	Installed Claude agents copied from *agents/claude/*.
 
 *$HOME/.agents/skills/*
-	Installed Codex skills copied from *skills/codex/*.
+	Installed Codex skills copied from *skills-native/codex/*.
 
 # ENVIRONMENT
 

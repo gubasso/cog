@@ -420,6 +420,6 @@ Fail closed. If proof is ambiguous, stop and report the ambiguity instead of con
 ## See Also
 
 - [`skill-authoring/skill-script-extraction.md`](skill-authoring/skill-script-extraction.md) — when to move deterministic shell out of a `SKILL.md` body into a versioned `cog` subcommand, and the `msg` output/status contract parents parse.
-- `skills/claude/executor-prex/SKILL.md`
-- `skills/claude/review-plan-oneshot/SKILL.md`
-- `skills/claude/review-loop/SKILL.md`
+- `skills-native/claude/executor-prex/SKILL.md`
+- `skills-native/claude/review-plan-oneshot/SKILL.md`
+- `skills-native/claude/review-loop/SKILL.md`

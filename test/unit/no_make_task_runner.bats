@@ -18,7 +18,7 @@ setup() {
 _allowlisted() {
   case "$1" in
     lib/commands/cmd_suckless_*.sh) return 0 ;;
-    skills/*/suckless-patcher/SKILL.md) return 0 ;;
+    skills-native/*/suckless-patcher/SKILL.md) return 0 ;;
     skill-refs/tools/suckless/*) return 0 ;;
     skill-refs/templates/pre-commit/c/.pre-commit-config.yaml) return 0 ;;
     skill-refs/templates/editorconfig/c/.editorconfig) return 0 ;;
@@ -51,6 +51,18 @@ _allowlisted() {
     printf '  %s\n' "${offenders[@]}" >&2
     return 1
   fi
+}
+
+# The skill allowlist entry is deliberately narrow. A portable package under
+# skills/ is never a foreign build tree, so it must never be covered by it.
+@test "the skill make exception covers only the native suckless twins" {
+  _allowlisted "skills-native/claude/suckless-patcher/SKILL.md"
+  _allowlisted "skills-native/codex/suckless-patcher/SKILL.md"
+
+  run _allowlisted "skills/skill-creator/SKILL.md"
+  [ "$status" -ne 0 ]
+  run _allowlisted "skills-native/claude/gc/SKILL.md"
+  [ "$status" -ne 0 ]
 }
 
 @test "the make task-runner template is gone" {

@@ -1,0 +1,72 @@
+# Trigger fixtures for the portable skill-creator package.
+# Repository-only. These are never installed with the skill.
+skill: skill-creator
+min_pass_rate: 0.9
+runs_per_case: 5
+
+cases:
+  - id: create-plain
+    prompt: "create a skill that formats my changelog"
+    triggers: true
+    class: positive
+    split: train
+
+  - id: create-terse
+    prompt: "new skill please"
+    triggers: true
+    class: positive
+    split: train
+
+  - id: author-skill-md
+    prompt: "I need to write a SKILL.md for a deploy checklist workflow"
+    triggers: true
+    class: positive
+    split: train
+
+  - id: scaffold-package
+    prompt: "scaffold an agent skill package with references and a script"
+    triggers: true
+    class: positive
+    split: validation
+
+  - id: revise-existing
+    prompt: "review this skill and improve its description, it never fires"
+    triggers: true
+    class: positive
+    split: validation
+
+  - id: near-miss-invoke
+    prompt: "use the changelog skill on this repo"
+    triggers: false
+    class: near-miss
+    split: train
+
+  - id: near-miss-list
+    prompt: "what skills do I have installed"
+    triggers: false
+    class: near-miss
+    split: train
+
+  - id: near-miss-docs
+    prompt: "write documentation for this module"
+    triggers: false
+    class: near-miss
+    split: validation
+
+  - id: near-miss-agent
+    prompt: "create a subagent that reviews pull requests"
+    triggers: false
+    class: near-miss
+    split: validation
+
+  - id: negative-rebase
+    prompt: "rebase my branch onto main and resolve the conflicts"
+    triggers: false
+    class: negative
+    split: train
+
+  - id: negative-test
+    prompt: "add unit tests for the parser"
+    triggers: false
+    class: negative
+    split: validation

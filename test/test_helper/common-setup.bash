@@ -21,6 +21,16 @@ _common_setup() {
   mapfile -t cog_longrun_env_vars < <(compgen -A variable COG_LR_ || :)
   ((${#cog_longrun_env_vars[@]})) && unset "${cog_longrun_env_vars[@]}"
 
+  # Neutralize the developer's own git configuration. Setting HOME to a temp dir
+  # is not enough: git reads $XDG_CONFIG_HOME/git/config first, and that variable
+  # keeps pointing at the real config. A global config carrying a `~`-relative
+  # hook path then resolves that `~` against the test's temp HOME, where the hook
+  # does not exist, and every test that makes a commit fails on a machine whose
+  # owner configured one. GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM (git 2.32+) are
+  # git's own opt-out, so the suite reads repo-local configuration alone.
+  export GIT_CONFIG_GLOBAL=/dev/null
+  export GIT_CONFIG_SYSTEM=/dev/null
+
   PATH="${BATS_TEST_DIRNAME}/../../bin:${PATH}"
   export XDG_DATA_HOME="${XDG_DATA_HOME:-${BATS_TEST_TMPDIR}/data}"
 }

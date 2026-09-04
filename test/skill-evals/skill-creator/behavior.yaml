@@ -1,0 +1,82 @@
+# Behavior fixtures for the portable skill-creator package.
+# Repository-only. These are never installed with the skill.
+#
+# The load-bearing assertion across every case: the produced package invokes no
+# cog command. That is the property the split exists to guarantee.
+skill: skill-creator
+runs_per_case: 3
+baseline: required
+
+cases:
+  - id: simple-read-only-skill
+    prompt: "create a skill that summarizes a CSV file's columns and types"
+    side_effects: [write-tempdir, write-target-package]
+    expect_artifacts:
+      - "<target>/SKILL.md"
+    assert_deterministic:
+      - "SKILL.md frontmatter carries name and description"
+      - "the frontmatter name equals the directory name"
+      - "the description states when to use the skill"
+      - "the package invokes no cog command"
+      - "no file was written outside the target package and the working directory"
+    assert_judgment:
+      - "the description names at least one phrasing a user would type"
+      - "the body carries no fact a capable agent already knows"
+    cleanup: "remove the target package and the working directory"
+
+  - id: skill-with-a-script
+    prompt: "create a skill that validates a JSON file against a schema, with the validation in a script"
+    side_effects: [write-tempdir, write-target-package]
+    expect_artifacts:
+      - "<target>/SKILL.md"
+      - "<target>/scripts/"
+    assert_deterministic:
+      - "the deterministic routine lives in scripts/, not inline in the body"
+      - "the script is referenced from the body"
+      - "the package invokes no cog command"
+    assert_judgment:
+      - "judgment stayed in the body and mechanics moved to the script"
+    cleanup: "remove the target package and the working directory"
+
+  - id: skill-carrying-a-reference
+    prompt: "create a skill that writes release notes, following our house writing style"
+    side_effects: [write-tempdir, write-target-package]
+    expect_artifacts:
+      - "<target>/SKILL.md"
+      - "<target>/references/"
+    assert_deterministic:
+      - "every reference the body names resolves inside the package"
+      - "no reference points at another reference"
+      - "the package invokes no cog command"
+    cleanup: "remove the target package and the working directory"
+
+  - id: vague-request-asks
+    prompt: "make me a skill"
+    side_effects: []
+    expect_artifacts: []
+    assert_deterministic:
+      - "no file was written"
+    assert_judgment:
+      - "the run asked for the purpose instead of inventing one"
+    cleanup: "none"
+
+  - id: name-collision-aborts
+    prompt: "create a skill called release-notes"
+    setup: "a skill named release-notes already exists at the target location"
+    side_effects: []
+    expect_artifacts: []
+    assert_deterministic:
+      - "the existing skill is unchanged"
+      - "no file was written"
+    assert_judgment:
+      - "the run reported the collision rather than overwriting or renaming silently"
+    cleanup: "none"
+
+  - id: writes-only-after-approval
+    prompt: "create a skill that tags releases"
+    side_effects: [write-tempdir]
+    expect_artifacts: []
+    assert_deterministic:
+      - "the full proposed tree was presented before any write"
+      - "no file was written before approval was given"
+    cleanup: "remove the working directory"

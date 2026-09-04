@@ -5,7 +5,7 @@ __cog_lint_codex_wrapper_usage() {
   cog::fn::ui_data "Usage: cog lint-codex-wrapper [FILE ...]"
   cog::fn::ui_data ""
   cog::fn::ui_data "Scans bash/sh/shell markdown fences for command-position codex-session calls."
-  cog::fn::ui_data "With no FILE args, scans skills/claude/*/SKILL.md from the cog repo root."
+  cog::fn::ui_data "With no FILE args, scans skills-native/claude/*/SKILL.md from the cog repo root."
 }
 
 __cog_lint_codex_wrapper_repo_root() {
@@ -131,7 +131,7 @@ cog::cmd::lint_codex_wrapper() {
     repo_root="$(__cog_lint_codex_wrapper_repo_root)"
     while IFS= read -r file; do
       [[ -n $file ]] && files+=("$file")
-    done < <(find "$repo_root/skills/claude" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null | sort)
+    done < <(find "$repo_root/skills-native/claude" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print 2>/dev/null | sort)
   fi
 
   for file in "${files[@]}"; do

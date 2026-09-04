@@ -4,7 +4,11 @@ Runtime skills coordinate judgment around deterministic cog operations. [ADR-000
 
 ## Components and boundaries
 
-Native skill trees live under `skills/claude/` and `skills/codex/`. Shared runtime prose lives under `skill-refs/`; deploy payloads live under `skill-refs/templates/`; CLI-owned structured registries live under `data/`.
+A skill has one authored owner, in one of two source classes. A portable package lives at `skills/<name>/` and installs the same bytes into every supported agent root. A native package lives at `skills-native/claude/<name>/` or `skills-native/codex/<name>/` and reaches only its own root, because a runtime capability changes its body or its frontmatter. One name never appears in both classes, and `install.sh` fails closed when it does.
+
+Shared runtime prose lives under `skill-refs/`; deploy payloads live under `skill-refs/templates/`; CLI-owned structured registries live under `data/`.
+
+Authoring rules are split by who owns them. `skill-refs/skill-authoring/universal/` owns the rules that hold for any Agent Skill in any project, and it names no CLI and no repository layout. `docs/reference/skill-contract.md` owns cog house policy: the prefix taxonomy, the class contracts, the gate stanzas, and the cog command mechanics. The universal corpus ships inside the portable `skill-creator` package as byte-identical copies, so that package runs where cog is absent; `cog skill-vendor check` fails on drift between the owner and the copies.
 
 Skills own sequencing, evidence interpretation, and judgment. Commands and shared functions own deterministic parsing, validation, repeated shell mechanics, and filesystem state transitions.
 

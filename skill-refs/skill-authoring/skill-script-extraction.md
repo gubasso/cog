@@ -1,36 +1,6 @@
-# Skill → Script Extraction
+# Skill Script Extraction in cog
 
-> The standard for deciding what stays prose in a `SKILL.md` and what moves into a versioned `cog` subcommand. Read this before adding inline shell to a skill or writing a new deterministic helper. Companion to [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) (frontmatter, explicit model/effort, and body-style contract), to [`skill-class-contracts.md`](./skill-class-contracts.md) (per-class contracts), and to [`../skills-and-orchestration.md`](../skills-and-orchestration.md) (delegation/fork model).
-
-## Why extract at all
-
-A `SKILL.md` body is read **in full on every invocation**. An inline heredoc therefore costs load-time tokens every single time the skill fires, regardless of how often the shell inside it actually runs at runtime. "Called once" is irrelevant — the cost is paid at load, not at call.
-
-Moving that shell into a versioned `cog` subcommand buys three things at once:
-
-1. **Tokens.** The skill body shrinks to a few command invocations and the JSON contract it reads.
-2. **Determinism.** A subcommand runs byte-identically every time. Prose-shell re-emitted by the model can drift between runs; a file on disk cannot.
-3. **Testability.** A subcommand has a `bats` suite. Inline prose-shell never can.
-
-This supersedes the older anti-sprawl rule ("extract only if duplicated in ≥2 skills"). Single-use is fine. The bar is now determinism + non-triviality, not reuse count.
-
-## The extraction rule
-
-**Extract any shell chunk that is deterministic AND more than a trivial one-liner.** Apply four guardrails so the rule does not overshoot:
-
-1. **Split judgment-tangled chunks — do not bulk-move them.** Move the deterministic half (exit-code → status classification, severity → label mapping, file scaffolding, flag parsing, jq/yq parsing, proof validation). Keep the _decision_ (wait-vs-escalate, resume-vs-fresh, re-verify-a-finding) as prose. Keep the seam clean.
-2. **Keep genuinely trivial one-liners inline.** `command -v jq`, a single `git rev-parse`, a single `jq -r '.field'`. Wrapping these costs more than it saves.
-3. **Coarse, not micro.** A _few_ subcommands per stage, each doing a meaningful unit and emitting **one JSON object** the orchestrator reads a handful of fields from — never a cloud of micro-helpers stitched together with `jq` between each call. Do not trade shell tokens for JSON-plumbing tokens.
-4. **Prompt/message CONTENT stays model-authored.** Only the scaffolding extracts — writing the file, conditional flags, run-dir setup. The natural-language text passed to a subagent or to Codex is data the model writes, not something a subcommand hard-codes.
-
-### Worked judgment calls
-
-| Chunk                                                                                | Verdict                                | Reason                                             |
-| ------------------------------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------- |
-| 30-line preflight gate parsing codex session health and exiting on unhealthy session | **Extract** (`codex-runner gate`)      | Deterministic; repeated; fails closed legibly.     |
-| `jq -r '.thread_id'` after an extract                                                | **Keep inline**                        | Trivial single read.                               |
-| Resume-fallback reaction table; finding → status triage; plan-conformance check      | **Keep prose**                         | Reads deterministic inputs but encodes a decision. |
-| RUN_DIR + N output-path scaffolding                                                  | **Extract** (`rundir` / `review-init`) | Pure scaffolding, identical every run.             |
+> How cog's own skills bind deterministic mechanics to `cog` subcommands. Read this after [`universal/script-extraction.md`](./universal/script-extraction.md), which owns the decision of what to extract and why. This file owns only the cog-specific mechanics: the subcommand contract, the run-directory lifecycle, the output planes, and the degradation rules.
 
 ## The skill-as-orchestrator model
 
@@ -137,21 +107,10 @@ Cover, at minimum: the happy-path JSON shape (self-check passes), each usage err
 
 Integration and unit suites run through the pre-commit hooks that `just test` drives; run a single file directly with `bats test/integration/cmd_<name>.bats`.
 
-## Anti-patterns (rejected)
-
-Do not extract or do the following:
-
-- **Trivial single reads.** `jq -r '.thread_id'`, a single `git rev-parse`, `command -v X` — inline.
-- **Prompt heredocs / message bodies.** Content is model-authored; only the scaffolding extracts.
-- **Judgment tables.** A table that reads deterministic inputs but encodes a _decision_ (resume-fallback reaction, finding → status triage, plan-conformance) stays prose.
-- **Per-skill `*-parse-flags` micro-helpers** where parsing is a 1–2 line `case`. Only genuinely multi-line parsers (executor-prex, plan-multi) earn a subcommand.
-- **Micro-helper clouds.** Several subcommands stitched with `jq` between each call. Make it coarse: one subcommand, one JSON object.
-- **Hand-rolled `cog` resolve/fallback blocks.** Bare call + `require`; never a stale `_tmp` fallback.
-- **Silent truncation.** If a helper bounds coverage (top-N, sampling, no-retry), it must say so on stderr; a silent cap reads as "covered everything" when it did not.
-
 ## See Also
 
-- [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) — frontmatter, explicit model/effort, and body-style contract; the authoring source of truth.
+- [`universal/script-extraction.md`](./universal/script-extraction.md) — what to extract and why; the decision this file's mechanics implement.
+- [`../../docs/reference/skill-contract.md`](../../docs/reference/skill-contract.md) — frontmatter, explicit model/effort, and body-style contract; the cog house-policy source of truth.
 - [`skill-class-contracts.md`](./skill-class-contracts.md) — per-class skill contracts.
 - [`../skills-and-orchestration.md`](../skills-and-orchestration.md) — delegation, fork model, proof-of-delegation.
 - Implementation: `bin/cog`, `lib/commands/`, and `lib/functions/`.

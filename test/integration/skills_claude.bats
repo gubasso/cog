@@ -24,9 +24,9 @@ forbidden_scan() {
   local pattern='agent-helper|AGENT_HELPER|/workspaces/\.dotfiles'
 
   if command -v rg >/dev/null 2>&1; then
-    rg -n "$pattern" "$repo_root/skills/claude" "$repo_root/agents/claude"
+    rg -n "$pattern" "$repo_root/skills-native/claude" "$repo_root/agents/claude"
   else
-    grep -rE -n "$pattern" "$repo_root/skills/claude" "$repo_root/agents/claude"
+    grep -rE -n "$pattern" "$repo_root/skills-native/claude" "$repo_root/agents/claude"
   fi
 }
 
@@ -34,9 +34,9 @@ forbidden_scan_codex() {
   local pattern='agent-helper|AGENT_HELPER|/workspaces/\.dotfiles'
 
   if command -v rg >/dev/null 2>&1; then
-    rg -n "$pattern" "$repo_root/skills/codex"
+    rg -n "$pattern" "$repo_root/skills-native/codex"
   else
-    grep -rE -n "$pattern" "$repo_root/skills/codex"
+    grep -rE -n "$pattern" "$repo_root/skills-native/codex"
   fi
 }
 
@@ -70,16 +70,40 @@ forbidden_scan_codex() {
   local skill
 
   for skill in "${skills[@]}"; do
-    assert_markdown_frontmatter "$repo_root/skills/claude/$skill/SKILL.md"
+    assert_markdown_frontmatter "$repo_root/skills-native/claude/$skill/SKILL.md"
   done
 }
 
-@test "shipped cog-skill-creator has valid frontmatter" {
-  assert_markdown_frontmatter "$repo_root/skills/claude/cog-skill-creator/SKILL.md"
+@test "all portable skills have valid frontmatter" {
+  local skills=(
+    skill-creator
+  )
+  local skill
+
+  for skill in "${skills[@]}"; do
+    assert_markdown_frontmatter "$repo_root/skills/$skill/SKILL.md"
+  done
 }
 
-@test "cog-skill-creator is no longer a repo-local skill" {
-  [ ! -e "$repo_root/.claude/skills/cog-skill-creator/SKILL.md" ]
+@test "no skill name is owned by both a portable and a native source" {
+  local portable name
+
+  for portable in "$repo_root"/skills/*/; do
+    [ -d "$portable" ] || continue
+    name="$(basename "$portable")"
+    [ ! -e "$repo_root/skills-native/claude/$name" ]
+    [ ! -e "$repo_root/skills-native/codex/$name" ]
+  done
+}
+
+@test "a portable skill body invokes no cog command" {
+  local portable
+
+  for portable in "$repo_root"/skills/*/; do
+    [ -d "$portable" ] || continue
+    run grep -rnE '(^|[^[:alnum:]_-])cog[[:space:]]+[a-z]' "$portable"
+    [ "$status" -ne 0 ]
+  done
 }
 
 @test "all Codex skills have valid frontmatter" {
@@ -95,7 +119,7 @@ forbidden_scan_codex() {
   local skill
 
   for skill in "${skills[@]}"; do
-    assert_markdown_frontmatter "$repo_root/skills/codex/$skill/SKILL.md"
+    assert_markdown_frontmatter "$repo_root/skills-native/codex/$skill/SKILL.md"
   done
 }
 
@@ -120,7 +144,7 @@ forbidden_scan_codex() {
 @test "gc skills document canonical multi-repo status contract" {
   # The gc coordinator documents the aggregation view and result-line contract; the
   # gc-repo worker emits the per-repo status lines.
-  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  local coordinator="$repo_root/skills-native/claude/gc/SKILL.md"
   assert_file_contains "$coordinator" "cog gc-commit-parse"
   assert_file_contains "$coordinator" "COMMIT_OK <sha>"
   assert_file_contains "$coordinator" "COMMIT_PUSH_OK <sha> repo=<root>"
@@ -130,7 +154,7 @@ forbidden_scan_codex() {
   assert_file_contains "$coordinator" "repo-root"
   assert_file_contains "$coordinator" "repo-set"
 
-  local worker="$repo_root/skills/claude/gc-repo/SKILL.md"
+  local worker="$repo_root/skills-native/claude/gc-repo/SKILL.md"
   assert_file_contains "$worker" "cog msg ok commit"
   assert_file_contains "$worker" "COMMIT_OK <sha>"
   assert_file_contains "$worker" "COMMIT_PUSH_OK <sha> repo=<root>"
@@ -145,7 +169,7 @@ forbidden_scan_codex() {
   # Provenance/safety gates stay in the coordinator; the diffstat materiality,
   # whole-file staging, and destructive-git guards live in the shared commit
   # routine both the inline path and the per-repo worker follow.
-  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  local coordinator="$repo_root/skills-native/claude/gc/SKILL.md"
   assert_file_contains "$coordinator" "foreign-dirty"
   assert_file_contains "$coordinator" "git reset --hard"
   assert_file_contains "$coordinator" "git stash list"
@@ -160,21 +184,21 @@ forbidden_scan_codex() {
 @test "gc commits a single repo inline and shares one commit routine" {
   # The default path runs in the caller's own context: no fan-out, no worker.
   # Every commit path resolves the same routine, so the prose cannot drift.
-  local coordinator="$repo_root/skills/claude/gc/SKILL.md"
+  local coordinator="$repo_root/skills-native/claude/gc/SKILL.md"
   assert_file_contains "$coordinator" "gc/commit-routine.md"
   assert_file_contains "$coordinator" "in this context"
   assert_file_not_contains "$coordinator" "never stage or commit inline"
 
   local file
   for file in \
-    "$repo_root/skills/claude/gc-repo/SKILL.md" \
-    "$repo_root/skills/claude/gc-hook-fix/SKILL.md"; do
+    "$repo_root/skills-native/claude/gc-repo/SKILL.md" \
+    "$repo_root/skills-native/claude/gc-hook-fix/SKILL.md"; do
     assert_file_contains "$file" "gc/commit-routine.md"
   done
 }
 
 @test "plan multi documents satellite repos" {
-  local file="$repo_root/skills/claude/plan-multi/SKILL.md"
+  local file="$repo_root/skills-native/claude/plan-multi/SKILL.md"
 
   assert_file_contains "$file" "codex-runner"
 }
@@ -184,8 +208,8 @@ forbidden_scan_codex() {
   for skill in plan-builder-to-queue plan-builder-to-queue-vetted-multi runner-all runner-plan \
     review-queue-rounds plan-split review-plan-complexity plan-capability-spec plan-solution-spec \
     executor-greenfield-from-spec review-plan-capability-spec review-plan-solution-spec; do
-    [ ! -e "$repo_root/skills/claude/$skill" ]
-    [ ! -e "$repo_root/skills/codex/$skill" ]
+    [ ! -e "$repo_root/skills-native/claude/$skill" ]
+    [ ! -e "$repo_root/skills-native/codex/$skill" ]
   done
   run grep -rqE 'runner-all|runner-plan|plan-builder-to-queue' "$repo_root/lib" "$repo_root/data"
   assert_failure
@@ -194,10 +218,10 @@ forbidden_scan_codex() {
 @test "review folding consumers keep review and plan artifacts distinct" {
   local file
   for file in \
-    "$repo_root/skills/claude/executor-oneshot/SKILL.md" \
-    "$repo_root/skills/codex/executor-oneshot/SKILL.md" \
-    "$repo_root/skills/claude/executor-oneshot-codex/SKILL.md" \
-    "$repo_root/skills/claude/plan-vetted/SKILL.md"; do
+    "$repo_root/skills-native/claude/executor-oneshot/SKILL.md" \
+    "$repo_root/skills-native/codex/executor-oneshot/SKILL.md" \
+    "$repo_root/skills-native/claude/executor-oneshot-codex/SKILL.md" \
+    "$repo_root/skills-native/claude/plan-vetted/SKILL.md"; do
     assert_file_contains "$file" "prepared-plan-review.md"
     assert_file_contains "$file" "prepared-plan.md"
     assert_file_contains "$file" "plan-review-fold.md"
@@ -205,20 +229,20 @@ forbidden_scan_codex() {
     assert_file_contains "$file" "cog plan-review fold-check\|prepared-plan-fold-check.json"
   done
 
-  file="$repo_root/skills/claude/executor-prex/SKILL.md"
+  file="$repo_root/skills-native/claude/executor-prex/SKILL.md"
   assert_file_contains "$file" "plan-review.md"
   assert_file_contains "$file" "vetted-plan.md"
   assert_file_contains "$file" "plan-review-fold.md"
-  assert_file_contains "$repo_root/skills/claude/executor-prex/references/review-plan.md" "cog plan-review fold-check"
+  assert_file_contains "$repo_root/skills-native/claude/executor-prex/references/review-plan.md" "cog plan-review fold-check"
 }
 
 @test "implementation instructions never ask workers to reconcile annotations" {
   run rg -n 'implement the reconciled plan|apply APPROVED|skip REMOVED' \
-    "$repo_root/skills/claude/executor-oneshot/SKILL.md" \
-    "$repo_root/skills/codex/executor-oneshot/SKILL.md" \
-    "$repo_root/skills/claude/executor-oneshot-codex/SKILL.md" \
-    "$repo_root/skills/claude/executor-vetted/SKILL.md" \
-    "$repo_root/skills/claude/executor-prex/references/implement.md"
+    "$repo_root/skills-native/claude/executor-oneshot/SKILL.md" \
+    "$repo_root/skills-native/codex/executor-oneshot/SKILL.md" \
+    "$repo_root/skills-native/claude/executor-oneshot-codex/SKILL.md" \
+    "$repo_root/skills-native/claude/executor-vetted/SKILL.md" \
+    "$repo_root/skills-native/claude/executor-prex/references/implement.md"
   assert_failure
 }
 
@@ -227,22 +251,22 @@ forbidden_scan_codex() {
   while IFS= read -r file; do
     name="$(basename "$(dirname "$file")")"
     [[ $name == plan-* ]]
-  done < <(rg -l 'cog-skill: plan-emitter' "$repo_root/skills/claude" "$repo_root/skills/codex")
-  for file in "$repo_root"/skills/claude/plan-*/SKILL.md "$repo_root"/skills/codex/plan-*/SKILL.md; do
+  done < <(rg -l 'cog-skill: plan-emitter' "$repo_root/skills-native/claude" "$repo_root/skills-native/codex")
+  for file in "$repo_root"/skills-native/claude/plan-*/SKILL.md "$repo_root"/skills-native/codex/plan-*/SKILL.md; do
     assert_file_contains "$file" "cog-skill: plan-emitter"
   done
 }
 
 @test "review-plan-multi stays a review and plan-vetted owns the fold" {
-  assert_file_contains "$repo_root/skills/claude/review-plan-multi/SKILL.md" "FINAL_REVIEW"
-  assert_file_not_contains "$repo_root/skills/claude/review-plan-multi/SKILL.md" "plan-review-fold.md"
-  assert_file_contains "$repo_root/skills/claude/plan-vetted/SKILL.md" "plan-review-fold.md"
+  assert_file_contains "$repo_root/skills-native/claude/review-plan-multi/SKILL.md" "FINAL_REVIEW"
+  assert_file_not_contains "$repo_root/skills-native/claude/review-plan-multi/SKILL.md" "plan-review-fold.md"
+  assert_file_contains "$repo_root/skills-native/claude/plan-vetted/SKILL.md" "plan-review-fold.md"
 }
 
 @test "deleted authoring surfaces no longer exist (DP6 regression)" {
-  [ ! -e "$repo_root/skills/claude/plan-writer-multi/SKILL.md" ]
-  [ ! -e "$repo_root/skills/claude/plan-writer/SKILL.md" ]
-  [ ! -e "$repo_root/skills/codex/plan-writer/SKILL.md" ]
+  [ ! -e "$repo_root/skills-native/claude/plan-writer-multi/SKILL.md" ]
+  [ ! -e "$repo_root/skills-native/claude/plan-writer/SKILL.md" ]
+  [ ! -e "$repo_root/skills-native/codex/plan-writer/SKILL.md" ]
   [ ! -e "$repo_root/lib/commands/cmd_plan_writer_multi_setup.sh" ]
   run grep -rq "plan-writer" "$repo_root/lib" "$repo_root/data"
   assert_failure

@@ -37,5 +37,5 @@ entries:
     why: "Per-ecosystem release tooling, release-please's extra-files behavior, and trusted-publishing practice drift; the bootstrap release setup rests on them."
     revalidate_how: "Web-research authoritative sources (git-cliff, release-plz.dev, Changesets, release-please, crates.io Trusted Publishing docs); re-confirm the per-ecosystem table and the release-please plain-file disqualification, then update last_checked and any release templates."
     references:
-      - skills/claude/bootstrap-ci/SKILL.md
+      - skills-native/claude/bootstrap-ci/SKILL.md
       - skill-refs/templates/release/github

@@ -35,4 +35,4 @@ Because skill-lint derived a worker's domain from its name, the merges would hav
 
 Implemented
 
-Enacted in [bootstrap-lint](../../skills/claude/bootstrap-lint/SKILL.md), [bootstrap-rust](../../skills/claude/bootstrap-rust/SKILL.md), and [fn_bootstrap_review](../../lib/functions/fn_bootstrap_review.sh).
+Enacted in [bootstrap-lint](../../skills-native/claude/bootstrap-lint/SKILL.md), [bootstrap-rust](../../skills-native/claude/bootstrap-rust/SKILL.md), and [fn_bootstrap_review](../../lib/functions/fn_bootstrap_review.sh).

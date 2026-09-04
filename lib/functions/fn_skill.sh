@@ -31,11 +31,19 @@ cog::fn::skill::parent_dir_name() {
   basename -- "$dir"
 }
 
+# Classify an authored or installed SKILL.md path into its source class.
+# `codex` and `claude` are the runtime-native classes under skills-native/;
+# `portable` is the single-owner class under skills/<name>/ that installs
+# byte-identically into every supported agent root. Native patterns are matched
+# first because a case glob's `*` also spans `/`, so the portable pattern would
+# otherwise swallow the deeper native paths. An empty result means the path is
+# not a governed skill source and callers skip class checks.
 cog::fn::skill::runtime_for_path() {
   local file="$1"
   case "$file" in
-    skills/codex/*/SKILL.md | */skills/codex/*/SKILL.md) printf '%s\n' codex ;;
-    skills/claude/*/SKILL.md | */skills/claude/*/SKILL.md | .claude/skills/*/SKILL.md | */.claude/skills/*/SKILL.md) printf '%s\n' claude ;;
+    skills-native/codex/*/SKILL.md | */skills-native/codex/*/SKILL.md | .agents/skills/*/SKILL.md | */.agents/skills/*/SKILL.md) printf '%s\n' codex ;;
+    skills-native/claude/*/SKILL.md | */skills-native/claude/*/SKILL.md | .claude/skills/*/SKILL.md | */.claude/skills/*/SKILL.md) printf '%s\n' claude ;;
+    skills/*/SKILL.md | */skills/*/SKILL.md) printf '%s\n' portable ;;
     *) printf '%s\n' "" ;;
   esac
 }
@@ -98,12 +106,6 @@ cog::fn::skill::classify_prefix() {
   esac
 }
 
-cog::fn::skill::name_in_namespace() {
-  local namespace="$1" name="$2"
-  cog::fn::skill::name_is_valid "$name" || return 1
-  [[ "$(cog::fn::skill::classify_prefix "$name")" == "$namespace" ]]
-}
-
 cog::fn::skill::is_plan_reviewer_intent() {
   local file="$1"
   grep -qiE 'review implementation plans|review this plan|^# Plan Reviewer|^name:[[:space:]]*plan-reviewer|^name:[[:space:]]*review-plan' "$file"
@@ -127,49 +129,14 @@ cog::fn::skill::untagged_fence_lines_json() {
   printf '%s\n' "$fence_lines" | cog::fn::skill::json_number_array_from_lines
 }
 
-cog::fn::skill::draft_json() {
-  local file="$1" name line_count under_500 valid_name has_trigger_tests ok reason="" emojis_json fences_json
-  [[ -r $file && -f $file ]] || cog::fn::error_raise "InputUnreadable" "draft skill file is not readable" "path: ${file}" "" "check the path"
-  line_count="$(cog::fn::skill::line_count "$file")"
-  if [[ $line_count -le 500 ]]; then under_500=true; else under_500=false; fi
-  name="$(cog::fn::skill::frontmatter_name "$file")"
-  if cog::fn::skill::name_is_valid "$name"; then valid_name=true; else valid_name=false; fi
-  if cog::fn::skill::has_trigger_tests "$file"; then has_trigger_tests=true; else has_trigger_tests=false; fi
-  emojis_json="$(cog::fn::skill::emoji_lines_json "$file")"
-  fences_json="$(cog::fn::skill::untagged_fence_lines_json "$file")"
-  ok=true
-  [[ $under_500 == true ]] || {
-    ok=false
-    reason="SKILL.md exceeds 500 lines"
-  }
-  [[ $valid_name == true ]] || {
-    ok=false
-    reason="${reason:-invalid or missing skill name}"
-  }
-  [[ $has_trigger_tests == true ]] || {
-    ok=false
-    reason="${reason:-missing trigger-tests comment}"
-  }
-  [[ $emojis_json == "[]" ]] || {
-    ok=false
-    reason="${reason:-emoji characters present}"
-  }
-  [[ $fences_json == "[]" ]] || {
-    ok=false
-    reason="${reason:-untagged code fences}"
-  }
-  jq -n --argjson ok "$ok" --arg file "$file" --argjson line_count "$line_count" --argjson under_500 "$under_500" \
-    --arg name "$name" --argjson valid_name "$valid_name" --argjson has_trigger_tests "$has_trigger_tests" \
-    --argjson emojis "$emojis_json" --argjson untagged_fences "$fences_json" --arg reason "$reason" \
-    '{ok: $ok, mode: "draft", file: $file, line_count: $line_count, under_500: $under_500,
-      name: $name, valid_name: $valid_name, has_trigger_tests: $has_trigger_tests,
-      emojis: $emojis, untagged_fences: $untagged_fences, reason: (if $ok then null else $reason end)}'
-}
-
 cog::fn::skill::allowed_frontmatter_keys_json() {
   local runtime="$1"
   case "$runtime" in
-    codex)
+    # A portable package installs the same bytes into every supported agent
+    # root, so its frontmatter must be valid in all of them. The allowlist is
+    # therefore the intersection of the runtime allowlists below, which is the
+    # upstream Agent Skills required pair.
+    portable | codex)
       cog::fn::skill::json_string_array name description
       ;;
     claude)
@@ -195,18 +162,4 @@ cog::fn::skill::unknown_frontmatter_keys_json() {
   keys="$(cog::fn::skill::frontmatter_keys_json "$file")"
   allowed="$(cog::fn::skill::allowed_frontmatter_keys_json "$runtime")"
   jq -cn --argjson keys "$keys" --argjson allowed "$allowed" '$keys - $allowed'
-}
-
-# Read a single frontmatter scalar value by key (empty when the key is absent).
-cog::fn::skill::frontmatter_value() {
-  local file="$1" key="$2" value
-  value="$(awk -v key="$key" '
-    NR==1 && $0=="---"{f=1; next}
-    f && $0=="---"{exit}
-    f && index($0, key ":")==1 {
-      sub("^" key ":[[:space:]]*", "")
-      print
-      exit
-    }' "$file")"
-  cog::fn::skill::name_normalize_frontmatter_value "$value"
 }

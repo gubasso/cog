@@ -1,6 +1,8 @@
 # Skill Contract
 
-This reference defines the repository contract for `SKILL.md` files and the skill/script boundary.
+This reference defines the **cog house policy** for `SKILL.md` files and the skill/script boundary: the prefix taxonomy, the class contracts, the gate stanzas, the cog command mechanics, and the lint rules that enforce them.
+
+It is not the whole authoring standard. The rules that hold for any Agent Skill in any project — routing descriptions, progressive disclosure, controlled prose, script extraction, safety bounds, and evaluation fixtures — are owned by [`skill-refs/skill-authoring/universal/`](../../skill-refs/skill-authoring/universal/standard.md). Read that first, then this. Where a section below names a universal owner, that owner states the principle and this section states only how cog enforces it.
 
 ## Premise
 
@@ -8,21 +10,27 @@ Skills are probabilistic orchestrators. They keep sequencing, judgment, escalati
 
 ## Responsibility Boundary
 
-Use a `cog` subcommand or shared helper for repeatable parsing, validation, filesystem work, git mechanics, output shaping, and workflow preflight checks. A skill may call those commands and decide what to do with their results.
+**This section governs native, cog-bound skills only.** A portable package keeps its deterministic mechanics in its own `scripts/`, because it cannot call `cog`.
+
+A native skill uses a `cog` subcommand or shared helper for repeatable parsing, validation, filesystem work, git mechanics, output shaping, and workflow preflight checks. A skill may call those commands and decide what to do with their results.
 
 When a skill or command script is created or edited, check for duplicated deterministic mechanics. If two command modules need the same logic, move it to `lib/functions/` under `cog::fn::*`.
 
 ## Self-contained references
 
-Runtime skills resolve load-bearing shared references through `cog skill-refs path <rel>`. `skill-refs/` is the shipped source of truth for skill-external resources, installed under `$XDG_DATA_HOME/cog/skill-refs` and available from the repo checkout during development.
+**This section governs native, cog-bound skills only.** A portable package under `skills/` invokes no `cog` command, so it carries its references inside its own package directory and resolves them by a path relative to the skill. See [`universal/progressive-disclosure.md`](../../skill-refs/skill-authoring/universal/progressive-disclosure.md).
+
+A native runtime skill resolves load-bearing shared references through `cog skill-refs path <rel>`. `skill-refs/` is the shipped source of truth for skill-external resources, installed under `$XDG_DATA_HOME/cog/skill-refs` and available from the repo checkout during development.
 
 Codex invocation mechanics are exposed to skills through `cog codex-runner` subcommands such as `run-exec`, `finalize`, `orientation`, and `explain-status`. The Codex conventions reference under `docs/reference/` is maintenance documentation for that command surface, not a runtime skill dependency.
 
-Any external or local docs repository is optional further reading only, never a load-bearing runtime dependency. When guidance is load-bearing for a shipped skill, import it into `skill-refs/` and resolve it with `cog skill-refs path`. See [ADR-0008](../decisions/ADR-0008-self-contained-resource-homes.md).
+Any external or local docs repository is optional further reading only, never a load-bearing runtime dependency. When guidance is load-bearing for a native skill, import it into `skill-refs/` and resolve it with `cog skill-refs path`. When it is load-bearing for a portable package, vendor it into that package's own `references/` and register the pairing with `cog skill-vendor`. See [ADR-0008](../decisions/ADR-0008-self-contained-resource-homes.md) and [ADR-0038](../decisions/ADR-0038-universal-authoring-standard-and-house-policy.md).
 
 ## SoT executor delegation
 
-Shared judgment workflows use one canonical executor skill. Callers assemble context, invoke that runtime skill by name, and persist the structured output instead of reimplementing the workflow inline. The reference case is `review-loop` delegating finding triage to `review-findings`.
+> Universal owner: [`universal/standard.md`](../../skill-refs/skill-authoring/universal/standard.md) — one authored owner per rule.
+
+In cog, a shared judgment workflow uses one canonical executor skill. Callers assemble context, invoke that runtime skill by name, and persist the structured output instead of reimplementing the workflow inline. The reference case is `review-loop` delegating finding triage to `review-findings`.
 
 ## Orchestration Contract
 
@@ -87,8 +95,7 @@ This taxonomy is related accepted skill governance alongside [ADR-0036](../decis
 
 The `plan` class requires `cog-skill: plan-emitter`; `review`, `review-plan`, `executor`, and `bootstrap` forbid it, with equal enforcement for Claude and Codex. Plan reviewers write one top-level Markdown list item per actionable annotation and never author fold IDs. A plan-naming consumer follows `plan-quality/plan-review-fold.md`, and every plan handoff passes the `cog plan-doc` structural gate.
 
-Each governed class — `plan`, `review`, `review-plan`, `executor`, `bootstrap` — carries one positive membership contract: the markers and input/output obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review obligation: a `bootstrap-*` worker that ships cog templates references the domain-worker routine (`cog bootstrap-template-review`) once per template-review domain it owns, enforced by the `bootstrap-template-review` rule against the skill-to-domain mapping. The source of truth is [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml). Query it with `cog skill-class
-list|show --class <c>` and verify a draft with `cog skill-class check --skill <path>`.
+Each governed class — `plan`, `review`, `review-plan`, `executor`, `bootstrap` — carries one positive membership contract: the markers and input/output obligations a skill of that class MUST satisfy. The `bootstrap` class adds a template-review obligation: a `bootstrap-*` worker that ships cog templates references the domain-worker routine (`cog bootstrap-template-review`) once per template-review domain it owns, enforced by the `bootstrap-template-review` rule against the skill-to-domain mapping. The source of truth is [`data/skill-class/contracts.yaml`](../../data/skill-class/contracts.yaml). Read that table for a class's contract, and verify a draft with `cog skill-lint <path>`, whose `skill-class-contract` rule asserts the union.
 
 `cog skill-lint`'s `skill-class-contract` rule composes the scattered facet checks (`skill-prefix-taxonomy`, `producer-blindness`, `input-fidelity`, `stage-agnostic-identifiers`) into a single class-membership assertion that fails closed on any missing prerequisite or present prohibition. The facet rules stay authoritative for their facet; the class rule asserts the per-class union. An ungoverned (`other`-class) skill is exempt. The full per-class table lives in [`skill-refs/skill-authoring/skill-class-contracts.md`](../../skill-refs/skill-authoring/skill-class-contracts.md).
 
@@ -107,7 +114,7 @@ Prose never routes model or effort through the retired indirection vocabulary �
 
 ## Twin and delegation skill naming
 
-Native twins use one base name in both runtime trees and are distinguished by directory: `skills/claude/<name>/` and `skills/codex/<name>/`. The skill frontmatter `name` matches that shared base name in both trees. When one native twin is changed, inspect the other twin for the matching contract update.
+Native twins use one base name in both runtime trees and are distinguished by directory: `skills-native/claude/<name>/` and `skills-native/codex/<name>/`. The skill frontmatter `name` matches that shared base name in both trees. When one native twin is changed, inspect the other twin for the matching contract update.
 
 Delegation launchers use a platform-token suffix when the suffix is a user-facing hint that the current platform runs the other platform under the hood. For example, a Claude skill ending in `-codex` launches Codex-backed work while Claude keeps the orchestration surface.
 
@@ -115,7 +122,9 @@ This rule is recorded in [ADR-0006](../decisions/ADR-0006-runtime-skill-trees-an
 
 ## Stage-agnostic identifiers
 
-Machine-facing identifiers in skills are named for role or content, not stage number. This covers run-dir artifact filenames, skill `references/` filenames, cross-skill handoff and JSON field names, CLI flags, and executor ordinal values.
+> Universal owner: [`universal/writing-style.md`](../../skill-refs/skill-authoring/universal/writing-style.md) — one term for one concept.
+
+In cog this covers run-dir artifact filenames, skill `references/` filenames, cross-skill handoff and JSON field names, CLI flags, and executor ordinal values.
 
 The linted banned forms are identifier patterns such as `stage[0-9]+[-_.]`, `--stage[0-9]+`, and `stage[0-9]+` followed by a closing identifier delimiter. Human prose forms with a word boundary and space, such as `Stage N` or `stage N`, are allowed for sequence descriptions.
 
@@ -138,16 +147,18 @@ The same convention binds `cog codex-runner` artifacts. A durable codex job laun
 
 ## Lean positive prose
 
-Skill prose is lean, objective, and positively framed. State what the skill IS and MUST DO, not what it isn't. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
+> Universal owner: [`universal/writing-style.md`](../../skill-refs/skill-authoring/universal/writing-style.md) and [`universal/progressive-disclosure.md`](../../skill-refs/skill-authoring/universal/progressive-disclosure.md).
+
+The cog-specific parts of that rule are below. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 
 - Positive framing. Drop preemptive "what this skill is not" scoping. Negative or exclusion statements are allowed only when explicitly requested or when correcting a recurrent drift; an operational guardrail with an empirical reason (a known drift, a command behavior, a sandbox/tool constraint, an explicit user/orchestrator policy) is not a violation. This part is prose judgment, not linted.
-- No source-repo meta. A runtime skill file must not reference another skill's source-tree path (`skills/claude/<name>/SKILL.md`, `skills/codex/<name>/SKILL.md`, or the stale twin shape `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead. Reference sibling skills by their runtime name (`/plan-oneshot`, `$plan-multi`).
+- No source-repo meta. A runtime skill file must not reference another skill's source-tree path (`skills-native/claude/<name>/SKILL.md`, `skills-native/codex/<name>/SKILL.md`, or the stale twin shape `codex-session/.agents/skills/<name>/SKILL.md`). Such meta has no meaning in an end user's installed runtime, where each skill resolves under that user's own tree; put it in `docs/` instead. Reference sibling skills by their runtime name (`/plan-oneshot`, `$plan-multi`).
 
 Runtime-installed delegation paths (`$HOME/.claude/skills/<name>/SKILL.md`), project-local runtime paths (`.claude/skills/<name>/SKILL.md`), `cog skill-refs path ...` resolvers, and authoring placeholders with a literal `<name>` are not source-repo meta violations. The `skill-source-path-reference` lint rule below is anchored to concrete `claude`/`codex` source segments with a real skill name so those legitimate references are not flagged.
 
 ## Producer-blind consumers
 
-A consumer skill depends only on its structural input contract and is blind to which skill produced that input. Describe the contract the skill reads — the plan document shape, the shared structured-findings contract — never the identity of the producing skill. All input validation and parsing is delegated to `cog`. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
+A consumer skill depends only on its structural input contract and is blind to which skill produced that input. Describe the contract the skill reads — the plan document shape, the shared structured-findings contract — never the identity of the producing skill. In cog, all input validation and parsing is delegated to `cog`. See [ADR-0017](../decisions/ADR-0017-skill-authoring-and-lint.md).
 
 Enforcement is the `producer-blindness` lint rule, keyed off a curated consumer-to-producer map held in `lib/commands/cmd_skill_lint.sh` (not an in-skill marker). The rule scans mapped consumer skills for a forbidden producer name as a whole skill-name token, in both the frontmatter `description:` text and body prose, while ignoring fenced code blocks. Current map entries:
 
@@ -253,7 +264,7 @@ Every plan-originating mutator carries this byte-identical stanza before every o
 
 Each carrier also accepts a `--no-plan` input, which skips only the Phase 1 approval turn: the plan is still stated in the reply, and the validate and execute phases still run. No skill may instruct pre-approving or allowlisting `ExitPlanMode` — its approval prompt is the gate, and approving it automatically is the same as having no gate.
 
-A skill that presents its complete proposed artifact verbatim and waits for an explicit approve/abort before writing (`cog-skill-creator`, `claudemd`) already satisfies this contract with a stronger preview; it keeps its own gate, carries no stanza, and adds no second approval turn. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza.
+A skill that presents its complete proposed artifact verbatim and waits for an explicit approve/abort before writing (`claudemd`, and the shipped `skill-creator`) already satisfies this contract with a stronger preview; it keeps its own gate, carries no stanza, and adds no second approval turn. The gate is a prose pointer to one skill-refs source of truth, not a stamped, lint-drift-checked stanza.
 
 ## Context-brief gate
 
