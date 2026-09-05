@@ -58,3 +58,13 @@ setup() {
   assert_success
   printf '%s\n' "$output" | jq -e '.ok == true and (.sha | length > 0)' >/dev/null
 }
+
+@test "gc-commit log dir ignores XDG_RUNTIME_DIR" {
+  export XDG_RUNTIME_DIR="${BATS_TEST_TMPDIR}/runtime"
+  mkdir -p "$XDG_RUNTIME_DIR"
+
+  run __cog_gc_commit_log_dir
+
+  assert_success
+  assert_output "${XDG_STATE_HOME}/cog/skill-runs"
+}

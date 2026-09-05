@@ -121,8 +121,12 @@ __cog_research_error_object() {
   local line="$1"
   local reason="$2"
 
-  jq -cn --argjson line "$line" --arg reason "$reason" \
-    '{line: $line, reason: $reason}'
+  # The reason reaches jq as input, not as an --arg argv string. A duplicate-id
+  # reason embeds the offending id, and the entry schema puts no length bound on
+  # an id, so one bad record can carry a reason past MAX_ARG_STRLEN (128KiB on
+  # Linux) and fail execve with E2BIG. -R -n reads it as one raw line.
+  printf '%s\n' "$reason" | jq -cRn --argjson line "$line" \
+    '{line: $line, reason: input}'
 }
 
 cog::fn::research::init_json() {
@@ -214,16 +218,19 @@ cog::fn::research::validate_json() {
     done <"$index"
   fi
 
-  jq -n \
+  # The errors array carries one object per bad line, so it grows with the index
+  # and cannot ride argv (see the note in list_json). It reaches jq as input
+  # instead. An empty array makes printf emit one blank line, which `jq -s`
+  # reads as zero inputs and slurps to [] — the same [] --argjson produced.
+  printf '%s\n' "${errors[@]}" | jq -s \
     --arg schema "cog.research-shelf.v1" \
     --arg action "validate" \
     --arg root "$root" \
     --arg index "$index" \
     --argjson ok "$ok" \
     --argjson entries "$entry_count" \
-    --argjson errors "$(printf '%s\n' "${errors[@]}" | jq -s '.')" \
     '{schema: $schema, ok: $ok, action: $action, root: $root, index: $index,
-      entries: $entries, errors: $errors}'
+      entries: $entries, errors: .}'
 }
 
 cog::fn::research::record_json() {
@@ -274,7 +281,7 @@ cog::fn::research::record_json() {
 
 cog::fn::research::list_json() {
   local root="${1:-}"
-  local index report entries_json
+  local index report
 
   cog::fn::research::require_jq
   index="$(cog::fn::research::index_path "$root")"
@@ -282,14 +289,18 @@ cog::fn::research::list_json() {
   jq -e '.ok == true' <<<"$report" >/dev/null || cog::fn::error_raise "InvalidInput" \
     "research shelf failed validation" "path: ${index}" "$(jq -c '.' <<<"$report")" \
     "fix the research shelf before listing"
-  entries_json="$(jq -s -c '.' "$index")"
-  jq -n \
+  # The shelf is jq's own input, never an --argjson value: --argjson puts the
+  # value in argv, and one argv string above MAX_ARG_STRLEN (128KiB on Linux)
+  # fails execve with E2BIG, which a growing index reaches. -s slurps the JSONL
+  # that validate_json just proved well-formed and present, so `.` is the entry
+  # array the separate slurp used to build.
+  jq -s \
     --arg schema "cog.research-shelf.v1" \
     --arg action "list" \
     --arg root "$root" \
     --arg index "$index" \
-    --argjson entries "$entries_json" \
-    '{schema: $schema, ok: true, action: $action, root: $root, index: $index, entries: $entries}'
+    '{schema: $schema, ok: true, action: $action, root: $root, index: $index, entries: .}' \
+    "$index"
 }
 
 cog::fn::research::get_json() {
@@ -318,32 +329,4 @@ cog::fn::research::get_json() {
     --arg index "$index" \
     --argjson entry "$entry_json" \
     '{schema: $schema, ok: true, action: $action, root: $root, index: $index, entry: $entry}'
-}
-
-# Select shelf entries whose topic-tags include EVERY requested tag and whose
-# revalidate-after is on or after <as_of>. revalidate-after is validated
-# YYYY-MM-DD on record, so a lexical `>=` equals a chronological comparison.
-# Reads the JSONL leniently (unparseable/blank lines are skipped, matching the
-# read-side tolerance of record_json); an empty or missing index yields [].
-# Args: <index-path> <tags-json-array> <as_of-date>.
-cog::fn::research::fresh_entries() {
-  local index="${1:-}" tags_json="${2:-[]}" as_of="${3:-}"
-
-  cog::fn::research::require_jq
-  [[ -n $index ]] || cog::fn::error_raise "MissingArgument" \
-    "missing research shelf index" "function: cog::fn::research::fresh_entries" "" ""
-  [[ -n $as_of ]] || cog::fn::error_raise "MissingArgument" \
-    "missing as-of date" "function: cog::fn::research::fresh_entries" "" ""
-  [[ -n $tags_json ]] || tags_json='[]'
-  if [[ ! -f $index ]]; then
-    jq -cn '[]'
-    return 0
-  fi
-  jq -R -s -c --argjson tags "$tags_json" --arg as_of "$as_of" '
-    [ split("\n")[] | select(length > 0) | (fromjson? // empty) ]
-    | map(select(
-        ((."topic-tags" // []) as $t | (($tags - $t) | length) == 0)
-        and (((."revalidate-after") // "0000-00-00") >= $as_of)
-      ))
-  ' "$index"
 }

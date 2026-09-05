@@ -117,10 +117,22 @@ cog::fn::skill::is_executor_intent() {
   grep -qF 'Codex plans' "$file" && grep -qF 'Codex implements' "$file"
 }
 
+# Report the 1-based line numbers carrying an emoji.
+#
+# The (*UTF) verb is load-bearing, not decoration. Every code point in the class
+# is above U+FFFF, and PCRE accepts those only in UTF mode, which grep enables
+# from the locale. Under LC_ALL=C the pattern failed to compile, grep exited 2,
+# and the old `|| true` swallowed it — so the gate reported a clean file for
+# every skill and the lint failed open exactly where it was meant to bite. The
+# verb turns UTF mode on inside the pattern, so the class compiles under every
+# locale, and a status above 1 is now an error rather than "no match".
 cog::fn::skill::emoji_lines_json() {
-  local file="$1" emoji_lines
-  emoji_lines="$(grep -nP '[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}]' "$file" | cut -d: -f1 || true)"
-  printf '%s\n' "$emoji_lines" | cog::fn::skill::json_number_array_from_lines
+  local file="$1" emoji_lines status=0
+  emoji_lines="$(grep -nP '(*UTF)[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{1F1E6}-\x{1F1FF}]' "$file")" || status=$?
+  ((status <= 1)) || cog::fn::error_raise "InvalidInput" \
+    "could not scan a skill for emoji" "path: ${file}" "grep exit status: ${status}" \
+    "check that grep supports -P with UTF patterns"
+  printf '%s\n' "$emoji_lines" | cut -d: -f1 | cog::fn::skill::json_number_array_from_lines
 }
 
 cog::fn::skill::untagged_fence_lines_json() {

@@ -113,16 +113,17 @@ cog::fn::bootstrap_review::template_roots_json() {
   printf '%s\n' "${objs[@]}" | jq -cs '.'
 }
 
-# Check the freshness state of a domain/type template review. Selects fresh entries
-# via the shared cog::fn::research::fresh_entries helper (tag-subset + date), and
-# distinguishes stale (a matching entry exists but is past revalidate-after) from
+# Check the freshness state of a domain/type template review. Matching entries are
+# those whose topic-tags include every requested tag; fresh ones are that set
+# narrowed to revalidate-after on or after <as_of>. revalidate-after is validated
+# YYYY-MM-DD on record, so a lexical `>=` equals a chronological comparison. The
+# check distinguishes stale (a matching entry exists but is past revalidate-after) from
 # missing (no matching entry) from invalid (skill-refs unresolved). Freshness is
 # decided purely against the stamped revalidate-after, so this only compares dates;
 # the window is chosen at stamp time. Args: <domain> <type> [research-root].
 cog::fn::bootstrap_review::check_json() {
   local domain="${1:-}" type="${2:-}" research_override="${3:-}"
-  local research_root index tags_json as_of skill_refs template_roots
-  local all_matching fresh_matching
+  local research_root index index_src tags_json as_of skill_refs template_roots
 
   cog::fn::research::require_jq
   as_of="$(date -u +%F)"
@@ -134,26 +135,26 @@ cog::fn::bootstrap_review::check_json() {
   index=""
   [[ -n $research_root ]] && index="${research_root}/index.jsonl"
 
-  if [[ -n $index && -f $index ]]; then
-    all_matching="$(jq -R -s -c --argjson tags "$tags_json" '
-      [ split("\n")[] | select(length > 0) | (fromjson? // empty) ]
-      | map(select((."topic-tags" // []) as $t | (($tags - $t) | length) == 0))
-    ' "$index")"
-    fresh_matching="$(cog::fn::research::fresh_entries "$index" "$tags_json" "$as_of")"
-  else
-    all_matching='[]'
-    fresh_matching='[]'
-  fi
+  # The shelf is jq's own input, never an --argjson value: --argjson puts the
+  # value in argv, and one argv string above MAX_ARG_STRLEN (128KiB on Linux)
+  # fails execve with E2BIG, which a growing index reaches. Reading it here is
+  # lenient (blank and unparseable lines are skipped), matching the read-side
+  # tolerance of record_json; a missing index reads as an empty shelf. $fresh is
+  # derived from $all rather than filtered separately, because it IS $all
+  # narrowed by revalidate-after — deriving it keeps the two from drifting.
+  index_src="$index"
+  [[ -n $index && -f $index ]] || index_src=/dev/null
 
-  jq -n \
+  jq -R -s \
     --arg schema "cog.bootstrap-template-review.v1" \
     --arg domain "$domain" --arg type "$type" \
     --argjson tags "$tags_json" --arg as_of "$as_of" \
     --argjson skill_refs "$skill_refs" \
-    --argjson template_roots "$template_roots" \
-    --argjson all "$all_matching" \
-    --argjson fresh "$fresh_matching" '
-    ($skill_refs.origin) as $origin
+    --argjson template_roots "$template_roots" '
+    ([ split("\n")[] | select(length > 0) | (fromjson? // empty) ]
+      | map(select((."topic-tags" // []) as $t | (($tags - $t) | length) == 0))) as $all
+    | ($all | map(select(((."revalidate-after") // "0000-00-00") >= $as_of))) as $fresh
+    | ($skill_refs.origin) as $origin
     | ($fresh | sort_by(."recorded-date") | last) as $freshest
     | ($all | sort_by(."recorded-date") | last) as $newest
     | (if $origin == "none" then {state: "invalid", fresh: false, pick: null}
@@ -168,7 +169,8 @@ cog::fn::bootstrap_review::check_json() {
       entry_id: ($r.pick.id // null),
       summary: ($r.pick."stable-summary" // null),
       skill_refs: {root: $skill_refs.root, origin: $skill_refs.origin, writable: $skill_refs.writable},
-      template_roots: $template_roots}'
+      template_roots: $template_roots}' \
+    "$index_src"
 }
 
 # Assert every path a stamp claims to have changed is a file under the resolved

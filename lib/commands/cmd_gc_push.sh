@@ -8,7 +8,8 @@ __cog_gc_push_usage() {
 }
 
 __cog_gc_push_log_dir() {
-  printf '%s/cog/skill-runs\n' "${XDG_RUNTIME_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}}"
+  # A push log is state, not runtime; see the note in cmd_gc_commit.sh.
+  printf '%s/cog/skill-runs\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
 }
 
 __cog_gc_push_new_log_file() {

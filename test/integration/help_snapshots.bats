@@ -7,7 +7,7 @@ setup() {
 }
 
 derived_commands() {
-  find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | sort \
+  find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | LC_ALL=C sort \
     | sed 's#.*/cmd_##; s#\.sh$##; s#_#-#g'
 }
 
@@ -385,7 +385,7 @@ Global flags:
     [[ $line =~ ^:\ \'desc:\ (.*)\'$ ]]
     desc="${BASH_REMATCH[1]}"
     [[ $root_help == *"$desc"* ]]
-  done < <(find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | sort)
+  done < <(find "$REPO_ROOT/lib/commands" -maxdepth 1 -name 'cmd_*.sh' | LC_ALL=C sort)
 }
 
 @test "bash completion command list matches command modules" {
@@ -414,4 +414,22 @@ Global flags:
   while IFS= read -r name; do
     grep -F "*${name}*" "$REPO_ROOT/man/cog.1.scd" >/dev/null
   done < <(derived_commands)
+}
+
+@test "cog --help command order does not depend on the locale" {
+  local c_order collating_order probe
+
+  # The locale must be one whose collation actually differs from byte order, or
+  # the test passes against an unpinned sort and gates nothing. C.UTF-8 does NOT
+  # qualify: glibc collates it by code point, exactly like C. A full locale such
+  # as en_US.UTF-8 ignores the hyphen at the first level and orders
+  # `claudemd-audit` before `claude-runner`, which is the drift that broke the
+  # snapshot. Skip rather than pass when the box has no such locale installed.
+  probe="$(printf 'claude-runner\nclaudemd-audit\n' | LC_ALL=en_US.UTF-8 sort 2>/dev/null | head -n 1)"
+  [ "$probe" = "claudemd-audit" ] || skip "no locale with non-bytewise collation available"
+
+  c_order="$(LC_ALL=C cog --help)"
+  collating_order="$(LC_ALL=en_US.UTF-8 cog --help)"
+
+  [ "$c_order" = "$collating_order" ]
 }

@@ -119,3 +119,43 @@ setup() {
   [ "$(jq -r '.ok' <<<"$output")" = "false" ]
   [ "$(jq -r '.review.state' <<<"$output")" = "invalid" ]
 }
+
+# Write a matching shelf whose total size is above the per-argument kernel cap,
+# so any form that routes the entries through argv fails. Linux caps ONE argv
+# string at MAX_ARG_STRLEN (128KiB) while macOS caps only the ~1MB total, so the
+# payload clears both: 3 records with a 256KiB summary each is about 800KB, and
+# check reads the shelf in one pass. printf is a builtin, so building the fixture
+# does not itself hit the cap the fixture exists to exceed.
+write_oversized_matching_shelf() {
+  local revalidate_after="$1"
+  local pad i
+  pad="$(head -c 262144 /dev/zero | tr '\0' 'x')"
+  mkdir -p "$SHELF"
+  for i in 1 2 3; do
+    printf '{"id":"rs-2026062%s","recorded-date":"2026-06-2%s","topic-tags":["bootstrap-template","precommit","rust"],"sources":[{"title":"t","url":"https://example.test","publisher":"p","access-date":"2026-06-20"}],"stable-summary":"%s","revalidate-after":"%s","consuming-skills":["s"]}\n' \
+      "$i" "$i" "$pad" "$revalidate_after"
+  done >"${SHELF}/index.jsonl"
+}
+
+@test "bootstrap-template-review check reports fresh for a shelf above the argv limit" {
+  write_oversized_matching_shelf 2099-01-01
+
+  run cog::cmd::bootstrap_template_review check --domain precommit --type rust --research-root "$SHELF" --json
+
+  assert_success
+  [ "$(jq -r '.review.state' <<<"$output")" = "fresh" ]
+  [ "$(jq -r '.review.fresh' <<<"$output")" = "true" ]
+  [ "$(jq -r '.entry_id' <<<"$output")" = "rs-20260623" ]
+  [ "$(jq -r '.revalidate_after' <<<"$output")" = "2099-01-01" ]
+}
+
+@test "bootstrap-template-review check narrows fresh out of matching entries past revalidate-after" {
+  write_oversized_matching_shelf 2000-01-01
+
+  run cog::cmd::bootstrap_template_review check --domain precommit --type rust --research-root "$SHELF" --json
+
+  assert_success
+  [ "$(jq -r '.review.state' <<<"$output")" = "stale" ]
+  [ "$(jq -r '.review.fresh' <<<"$output")" = "false" ]
+  [ "$(jq -r '.entry_id' <<<"$output")" = "rs-20260623" ]
+}

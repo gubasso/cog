@@ -56,7 +56,11 @@ __cog_gc_commit_read_paths() {
 }
 
 __cog_gc_commit_log_dir() {
-  printf '%s/cog/skill-runs\n' "${XDG_RUNTIME_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}}"
+  # A commit log is state, not runtime: gc-classify-failure reads it after the
+  # run, and XDG_RUNTIME_DIR is wiped at logout. Preferring the runtime dir also
+  # scattered one host's logs across two directories, because a git hook and an
+  # interactive shell do not agree on whether that variable is set.
+  printf '%s/cog/skill-runs\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
 }
 
 __cog_gc_commit_new_log_file() {

@@ -118,6 +118,18 @@ append_plan_emitter() {
   [[ $stderr == *"emoji"* ]]
 }
 
+@test "cog skill-lint rejects emoji under a C locale" {
+  write_skill "${BATS_TEST_TMPDIR}/skills-native/claude/demo-skill" demo-skill claude
+  # An astral-plane emoji (U+1F680), whose code point PCRE accepts only in UTF
+  # mode. The escapes live in the format string, because %s does not expand them.
+  printf 'rocket: \xF0\x9F\x9A\x80\n' >>"${BATS_TEST_TMPDIR}/skills-native/claude/demo-skill/SKILL.md"
+
+  LC_ALL=C run --separate-stderr cog skill-lint "${BATS_TEST_TMPDIR}/skills-native/claude/demo-skill/SKILL.md"
+
+  assert_failure
+  [[ $stderr == *"emoji"* ]]
+}
+
 @test "cog skill-lint rejects invalid names" {
   write_skill "${BATS_TEST_TMPDIR}/skills-native/claude/Demo_Skill" Demo_Skill claude
 

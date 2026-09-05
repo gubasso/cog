@@ -69,11 +69,14 @@ cog::fn::plan_doc::validate_text() {
     errors+=("$(__cog_plan_doc_error_json "missing Acceptance Criteria section")")
   }
 
-  jq -n \
+  # The errors array reaches jq as input, not as an --argjson argv string:
+  # --argjson puts the value in argv, where one string above MAX_ARG_STRLEN
+  # (128KiB on Linux) fails execve with E2BIG. An empty array makes printf emit
+  # one blank line, which `jq -s` reads as zero inputs and slurps to [].
+  printf '%s\n' "${errors[@]}" | jq -s \
     --argjson ok "$ok" \
     --arg path "$label" \
-    --argjson errors "$(printf '%s\n' "${errors[@]}" | jq -s '.')" \
-    '{ok: $ok, path: $path, errors: $errors}'
+    '{ok: $ok, path: $path, errors: .}'
 }
 
 cog::fn::plan_doc::validate_content() {

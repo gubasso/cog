@@ -1,7 +1,7 @@
 # Bash completion for cog.
 #
 # The command list is static and mirrors:
-#   find lib/commands -maxdepth 1 -name 'cmd_*.sh' | sort | sed 's#.*/cmd_##; s#\.sh$##; s#_#-#g'
+#   find lib/commands -maxdepth 1 -name 'cmd_*.sh' | LC_ALL=C sort | sed 's#.*/cmd_##; s#\.sh$##; s#_#-#g'
 # Per-command option completion is intentionally deferred because command
 # metadata currently exposes command names and desc sentinels, not option specs.
 

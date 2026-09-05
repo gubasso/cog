@@ -55,9 +55,13 @@ __cog_help_list_commands() {
   local path base slug display desc
   local -a paths=()
 
+  # LC_ALL=C pins byte order, so the command list is identical under every
+  # locale. A UTF-8 collation ignores the hyphen at the first level and orders
+  # `claudemd-audit` before `claude-runner`, which drifts the help output away
+  # from the tracked inventories that were generated with byte order.
   while IFS= read -r path; do
     paths+=("$path")
-  done < <(find "${LIB_DIR}/commands" -maxdepth 1 -type f -name 'cmd_*.sh' | sort)
+  done < <(find "${LIB_DIR}/commands" -maxdepth 1 -type f -name 'cmd_*.sh' | LC_ALL=C sort)
 
   for path in "${paths[@]}"; do
     base="${path##*/}"
